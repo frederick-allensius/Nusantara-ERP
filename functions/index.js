@@ -16,6 +16,9 @@ import { getCollection } from './firestore.js';
 // Nightly Firestore backup (Cloud Scheduler → serverBackups). See backup.js.
 export { nightlyBackup } from './backup.js';
 
+// Server-enforced audit trail (see access-log.js).
+export { onBusinessWrite, recordLogout, adminListAccessLog } from './access-log.js';
+
 // Username → Firebase custom-token auth callables (see auth.js).
 export {
   loginWithUsername,

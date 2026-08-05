@@ -290,3 +290,17 @@ export async function removeUser(username) {
   await callAdmin('adminDeleteUser', { username });
   return true;
 }
+
+/**
+ * Server-enforced audit trail (accessLog): who created/updated/deleted which
+ * record, and every login/logout/failed-login — written by Cloud Functions via
+ * the Admin SDK, so no client can edit or erase it (see functions/access-log.js).
+ * Admin-only; unavailable in local (non-Firebase) mode since there is no server.
+ */
+export async function listAccessLog(limit = 200) {
+  if (isLocalMode()) {
+    return [];
+  }
+  const { entries } = await callAdmin('adminListAccessLog', { limit });
+  return entries || [];
+}

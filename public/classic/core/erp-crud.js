@@ -2679,6 +2679,7 @@ function showUserManagement() {
          <button class="btn-ghost" id="um-depts" style="font-size:11px;padding:4px 10px">Kelola Departemen</button>
          <button class="btn" id="um-sync" style="font-size:11px;padding:4px 10px">Sinkronkan dari Departemen</button>
          <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">📋 Log Aktivitas User</button>
+         <button class="btn-ghost" id="um-access-log" style="font-size:11px;padding:4px 10px">🔒 Log Akses (Audit)</button>
        </div>`;
 
   openModal(
@@ -2810,6 +2811,7 @@ function showUserManagement() {
     });
     document.getElementById('um-add')?.addEventListener('click', () => showAddLocalUser(load));
     document.getElementById('um-log')?.addEventListener('click', showLoginLog);
+    document.getElementById('um-access-log')?.addEventListener('click', showAccessLog);
     load();
   }, 60);
 }
@@ -2925,6 +2927,92 @@ function showLoginLog() {
       showToast('Log dibersihkan', 'success');
       showLoginLog();
     });
+  }, 40);
+}
+
+// Server-enforced audit trail (accessLog): every create/update/delete on a
+// business record, plus login/logout/failed-login — written by Cloud Functions
+// (functions/access-log.js) via the Admin SDK, so unlike the local login log
+// above, this one has no "clear" button: nobody can erase it from the app.
+function showAccessLog() {
+  openModal(
+    'Log Akses (Audit Trail)',
+    `<div id="al-list" style="min-height:60px">
+       <div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Memuat log akses…</div>
+     </div>`,
+    `<button class="btn-ghost" id="al-back">Kembali</button>
+     <button class="btn" data-action="closeModal">Tutup</button>`,
+    true
+  );
+
+  const fmt = ts => {
+    try {
+      return new Date(ts).toLocaleString('id-ID');
+    } catch (_) {
+      return String(ts);
+    }
+  };
+  const ACTION_LABELS = {
+    create: '<span style="color:var(--success,#16a34a);font-weight:700">Tambah</span>',
+    update: '<span style="color:var(--primary,#2563eb);font-weight:700">Ubah</span>',
+    delete: '<span style="color:var(--danger);font-weight:700">Hapus</span>',
+    login: '<span style="color:var(--success,#16a34a);font-weight:700">Login</span>',
+    logout: '<span style="color:var(--muted)">Logout</span>',
+    login_failed: '<span style="color:var(--danger);font-weight:700">Login Gagal</span>',
+  };
+
+  function render(entries) {
+    const el = document.getElementById('al-list');
+    if (!el) {
+      return;
+    }
+    if (!entries.length) {
+      el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada aktivitas tercatat.</div>`;
+      return;
+    }
+    const rows = entries
+      .map(
+        e => `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.at))}</td>
+        <td style="padding:6px 8px;font-size:12px;font-weight:600">${escapeHtml(e.actor || '—')}</td>
+        <td style="padding:6px 8px;font-size:11px">${ACTION_LABELS[e.action] || escapeHtml(e.action || '')}</td>
+        <td style="padding:6px 8px;font-size:11px;color:var(--muted)">${escapeHtml(e.collection || '—')}</td>
+        <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${escapeHtml(e.docId || '')}</td>
+      </tr>`
+      )
+      .join('');
+    el.innerHTML = `
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Menampilkan ${entries.length} aktivitas terakhir. Log ini ditulis oleh server — tidak bisa diubah atau dihapus lewat aplikasi.</div>
+      <div class="table-wrap" style="overflow:auto;max-height:55vh">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1.5px solid var(--border)">
+            <th style="text-align:left;padding:6px 8px;font-size:11px">Waktu</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px">User</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px">Aksi</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px">Koleksi</th>
+            <th style="text-align:left;padding:6px 8px;font-size:11px">Dokumen</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  if (window.erpUsers && typeof window.erpUsers.accessLog === 'function') {
+    window.erpUsers
+      .accessLog(300)
+      .then(render)
+      .catch(e => {
+        const el = document.getElementById('al-list');
+        if (el) {
+          el.innerHTML = `<div style="font-size:12px;color:var(--danger);text-align:center;padding:14px">Gagal memuat: ${escapeHtml(e?.message || String(e))}</div>`;
+        }
+      });
+  } else {
+    render([]);
+  }
+
+  setTimeout(() => {
+    document.getElementById('al-back')?.addEventListener('click', showUserManagement);
   }, 40);
 }
 

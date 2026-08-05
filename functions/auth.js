@@ -33,6 +33,7 @@ import {
   verifyAndBurnBackupCode,
 } from './auth-users.js';
 import { verifyTOTP } from './totp.js';
+import { appendAccessLog } from './access-log.js';
 
 const CALL_OPTS = { cors: true, maxInstances: 10 };
 
@@ -161,6 +162,7 @@ export const loginWithUsername = onCall(CALL_OPTS, async request => {
   const user = await verifyPassword(username, password);
   if (!user) {
     recordFailedAttempt(tKey);
+    await appendAccessLog({ type: 'auth', action: 'login_failed', actor: username });
     // Same message for unknown user and wrong password — don't reveal which.
     throw new HttpsError('unauthenticated', 'Username atau password salah');
   }
@@ -177,12 +179,14 @@ export const loginWithUsername = onCall(CALL_OPTS, async request => {
     const okBackup = okTotp ? false : await verifyAndBurnBackupCode(user.username, totp);
     if (!okTotp && !okBackup) {
       recordFailedAttempt(tKey);
+      await appendAccessLog({ type: 'auth', action: 'login_failed', actor: user.username });
       throw new HttpsError('unauthenticated', 'Kode 2FA salah atau sudah dipakai');
     }
   }
 
   clearFailedAttempts(tKey);
   const token = await mintToken(user);
+  await appendAccessLog({ type: 'auth', action: 'login', actor: user.username });
   return { token, mustChangePassword: !!user.mustChangePassword, role: user.role || 'viewer' };
 });
 

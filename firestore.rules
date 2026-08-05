@@ -146,6 +146,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── accessLog: server-enforced audit trail (who touched what, when) ──────
+    // Written only by Cloud Functions via the Admin SDK: the onBusinessWrite
+    // trigger (every create/update/delete on a business collection) and the
+    // login/logout callables in functions/auth.js + functions/access-log.js.
+    // No client — not even an admin — may write or delete an entry through the
+    // app, so the trail can't be edited or erased from inside the product.
+    // Same OR-combine gotcha as authUsers/serverBackups: this sibling `if false`
+    // alone would be overridden by the catch-all's signedIn() read below, so
+    // accessLog is also excluded there.
+    match /accessLog/{document=**} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ── glSeed: read-only GL seed (Accurate journals + chart of accounts) ─────
     // Replaces the old PUBLIC public/accurate-data.json, whose flat file exposed
     // the company's full financials (5,501 journal vouchers) to anyone — Firebase
@@ -168,8 +182,10 @@ service cloud.firestore {
     // excluded from reads here to keep it private.)
     // Server-only collections are excluded from every catch-all grant because
     // Firestore OR-combines allow rules — their sibling `if false` blocks above
-    // are not enough on their own. authUsers (password hashes + 2FA secrets) and
-    // serverBackups (full-DB snapshots) must never be client-reachable.
+    // are not enough on their own. authUsers (password hashes + 2FA secrets),
+    // serverBackups (full-DB snapshots) and accessLog (audit trail) must never
+    // be client-writable, and accessLog must never be client-readable either
+    // (admin-only, granted explicitly above).
     match /{collection}/{document=**} {
       // Read requires an APPROVED identity, not merely a signed-in one: a user
       // who has only self-provisioned the inactive `pending` doc (or was since
@@ -181,15 +197,18 @@ service cloud.firestore {
         && role() != 'pending'
         && collection != 'users'
         && collection != 'authUsers'
-        && collection != 'serverBackups';
+        && collection != 'serverBackups'
+        && collection != 'accessLog';
       allow create, update: if verified()
         && canWriteModule(moduleOf(collection))
         && collection != 'authUsers'
-        && collection != 'serverBackups';
+        && collection != 'serverBackups'
+        && collection != 'accessLog';
       allow delete: if verified()
         && canDeleteModule(moduleOf(collection))
         && collection != 'authUsers'
-        && collection != 'serverBackups';
+        && collection != 'serverBackups'
+        && collection != 'accessLog';
     }
   }
 }

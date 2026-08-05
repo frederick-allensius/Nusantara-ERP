@@ -36,6 +36,7 @@ import {
   createUser,
   resetUserPassword,
   removeUser,
+  listAccessLog,
   ROLES,
   ROLE_LABELS,
 } from './core/user-role.js';
@@ -126,6 +127,7 @@ window.erpUsers = {
   roleLabels: ROLE_LABELS,
   loginLog: getLoginLog,
   clearLoginLog,
+  accessLog: listAccessLog,
 };
 
 // Make v3.0 features globally available

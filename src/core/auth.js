@@ -764,6 +764,15 @@ export async function logout(message) {
   currentUser = null;
   _pending2FA = null;
   if (_useFirebase && fbAuth) {
+    // Best-effort server-side audit entry — must run before signOut() drops the
+    // ID token the callable needs to identify the caller.
+    if (fbFunctions && fbAuth.currentUser) {
+      try {
+        await httpsCallable(fbFunctions, 'recordLogout')();
+      } catch (e) {
+        console.warn('[Auth] recordLogout failed:', e);
+      }
+    }
     try {
       await signOut(fbAuth);
     } catch (e) {
