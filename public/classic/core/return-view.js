@@ -483,7 +483,7 @@
     (doc.lines || []).forEach(function (l) {
       if (l.itemId === 'custom') return;
       var item = items.find(function (i) {
-        return i.id === l.itemId;
+        return String(i.id) === String(l.itemId);
       });
       if (!item) return;
       var qty = Number(l.qty) || 0;

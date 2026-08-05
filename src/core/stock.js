@@ -22,7 +22,7 @@ export function applyStockMutation(order, direction) {
       if (line.itemId === 'custom') {
         return;
       }
-      const item = DB.inventoryItems.find(i => i.id === line.itemId);
+      const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
       if (!item) {
         return;
       }
@@ -52,7 +52,7 @@ export function applyStockMutation(order, direction) {
     if (line.itemId === 'custom') {
       return;
     }
-    const item = DB.inventoryItems.find(i => i.id === line.itemId);
+    const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
     if (!item) {
       return;
     }
@@ -125,7 +125,7 @@ export function checkOversell(lines, excludeOrderId) {
     if (line.itemId === 'custom') {
       return;
     }
-    const item = DB.inventoryItems.find(i => i.id === line.itemId);
+    const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
     if (!item) {
       return;
     }
@@ -163,7 +163,7 @@ export function checkOversell(lines, excludeOrderId) {
  * Optionally scoped to a specific warehouse.
  */
 export function getAvailableStock(itemId, warehouseId) {
-  const item = DB.inventoryItems.find(i => i.id === itemId);
+  const item = DB.inventoryItems.find(i => String(i.id) === String(itemId));
   if (!item) {
     return 0;
   }

@@ -195,7 +195,7 @@
           if (!itemId) {
             return;
           }
-          const item = (db().inventoryItems || []).find(i => i.id === itemId);
+          const item = (db().inventoryItems || []).find(i => String(i.id) === String(itemId));
           if (!item) {
             return;
           }
@@ -228,7 +228,7 @@
 
     // Mutate stock immediately (the cost ledger + GL derive from current stock).
     lines.forEach(l => {
-      const item = data.inventoryItems.find(i => i.id === l.itemId);
+      const item = data.inventoryItems.find(i => String(i.id) === String(l.itemId));
       if (!item) {
         return;
       }
@@ -255,7 +255,7 @@
     const adj = data.itemAdjustments[idx];
     // Reverse the stock mutation.
     (adj.lines || []).forEach(l => {
-      const item = data.inventoryItems.find(i => i.id === l.itemId);
+      const item = data.inventoryItems.find(i => String(i.id) === String(l.itemId));
       if (!item) {
         return;
       }

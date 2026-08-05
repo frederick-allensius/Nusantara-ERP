@@ -55,7 +55,7 @@ function buildSalesOrderDoc(data) {
   let lineDiscountTotal = 0;
   const rowsHtml = lines
     .map(l => {
-      const it = items.find(x => x.id === l.itemId) || itemByName[l.itemName] || {};
+      const it = items.find(x => String(x.id) === String(l.itemId)) || itemByName[l.itemName] || {};
       const code = l.itemCode || it.sku || '';
       const unit = l.unit || it.unit || '';
       const disc = l.discount || 0;
@@ -237,7 +237,7 @@ function buildPurchaseOrderDoc(data) {
   let lineDiscountTotal = 0;
   const rowsHtml = lines
     .map(l => {
-      const it = items.find(x => x.id === l.itemId) || itemByName[l.itemName] || {};
+      const it = items.find(x => String(x.id) === String(l.itemId)) || itemByName[l.itemName] || {};
       const code = l.itemCode || it.sku || '';
       const unit = l.unit || it.unit || '';
       const disc = l.lineDiscount || l.discount || 0;
@@ -408,7 +408,9 @@ function buildDeliveryOrderDoc(data) {
 
   const totalQty = doLines.reduce((s, l) => s + (l.qty || 0), 0);
   const firstLine = doLines.length > 0 ? doLines[0] : {};
-  const firstInv = firstLine.itemId ? invItems.find(x => x.id === firstLine.itemId) : null;
+  const firstInv = firstLine.itemId
+    ? invItems.find(x => String(x.id) === String(firstLine.itemId))
+    : null;
   const mainUnit = firstLine.unit || (firstInv && firstInv.unit) || '';
   const qtyPOStr =
     totalQty > 0 ? `${Math.round(totalQty).toLocaleString('id-ID')} ${mainUnit}` : '';
@@ -417,7 +419,7 @@ function buildDeliveryOrderDoc(data) {
   let rowNum = 0;
   const buildItemBlock = l => {
     rowNum++;
-    const it = invItems.find(x => x.id === l.itemId) || {};
+    const it = invItems.find(x => String(x.id) === String(l.itemId)) || {};
     const name = (l.itemName || it.name || '').toUpperCase();
     const unit = l.unit || it.unit || '';
     return `<tr>
@@ -802,7 +804,7 @@ function initLineItems(priceField, existingLines) {
     const opts = DB.inventoryItems
       .map(
         i =>
-          `<option value="${i.id}" data-unit="${escapeHtml(i.unit)}" data-price="${i[priceField]}"${!isCustom && i.id === line.itemId ? ' selected' : ''}>${escapeHtml(i.name)}</option>`
+          `<option value="${i.id}" data-unit="${escapeHtml(i.unit)}" data-price="${i[priceField]}"${!isCustom && String(i.id) === String(line.itemId) ? ' selected' : ''}>${escapeHtml(i.name)}</option>`
       )
       .join('');
 
@@ -1046,7 +1048,7 @@ function deleteSO(id) {
       if (l.itemId === 'custom') {
         return;
       }
-      const item = DB.inventoryItems.find(i => i.id === l.itemId);
+      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
       if (item) {
         item.stock = Math.max(0, item.stock + l.qty);
       }
@@ -1249,7 +1251,7 @@ function editPO(id) {
           if (l.itemId === 'custom') {
             return;
           }
-          const item = DB.inventoryItems.find(i => i.id === l.itemId);
+          const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
           if (item) {
             item.stock = Math.max(0, item.stock - l.qty);
           }
@@ -1308,7 +1310,7 @@ function deletePO(id) {
       if (l.itemId === 'custom') {
         return;
       }
-      const item = DB.inventoryItems.find(i => i.id === l.itemId);
+      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
       if (item) {
         item.stock = Math.max(0, item.stock - l.qty);
       }
@@ -5781,7 +5783,7 @@ function editSO(id) {
           if (line.itemId === 'custom') {
             return;
           }
-          const item = DB.inventoryItems.find(i => i.id === line.itemId);
+          const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
           // FIX: Guard against negative inventory with Math.max(0, ...)
           if (item) {
             item.stock = Math.max(0, item.stock + line.qty);
@@ -5795,7 +5797,7 @@ function editSO(id) {
           if (line.itemId === 'custom') {
             return;
           }
-          const item = DB.inventoryItems.find(i => i.id === line.itemId);
+          const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
           // FIX: Guard against negative inventory with Math.max(0, ...)
           if (item) {
             item.stock = Math.max(0, item.stock + line.qty);
@@ -5859,7 +5861,7 @@ function inlineSOStatus(id, newStatus) {
       if (l.itemId === 'custom') {
         return;
       }
-      const item = DB.inventoryItems.find(i => i.id === l.itemId);
+      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
       // FIX: Guard against negative inventory with Math.max(0, ...)
       if (item) {
         item.stock = Math.max(0, item.stock + l.qty);
@@ -6022,7 +6024,7 @@ function bulkSOStatus(newStatus) {
         if (l.itemId === 'custom') {
           return;
         }
-        const item = DB.inventoryItems.find(i => i.id === l.itemId);
+        const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
         // FIX: Guard against negative inventory with Math.max(0, ...)
         if (item) {
           item.stock = Math.max(0, item.stock + l.qty);

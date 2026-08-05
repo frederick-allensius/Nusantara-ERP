@@ -36,7 +36,7 @@
     if (itemId === 'custom' || itemId === null || itemId === undefined) {
       return null;
     }
-    return (db().inventoryItems || []).find(i => i.id === itemId) || null;
+    return (db().inventoryItems || []).find(i => String(i.id) === String(itemId)) || null;
   }
 
   // Net recorded movement per inventory item across PO receipts, adjustments and

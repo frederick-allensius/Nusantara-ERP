@@ -326,7 +326,7 @@
       _updateRailActive(menuId);
       _activeFlyout = menuId;
       if (config.view) {
-        navigate(config.view);
+        window.navigate(config.view);
       }
       return;
     }
@@ -484,7 +484,14 @@
             typeof window.NSAMenu.handle === 'function' &&
             window.NSAMenu.handle(viewId, itemLabel);
           if (!handled) {
-            navigate(viewId);
+            // Go through window.navigate (not the local `navigate` binding):
+            // this IIFE's own `navigate` is the pristine, unwrapped original —
+            // view-tabs/doc-tabs/rbac/lazy-views all layer wraps onto
+            // window.navigate only, so calling it directly here silently
+            // bypassed all of them (most importantly the lazy-chunk loader
+            // for General Ledger / Financial Reports / Quotations / Returns /
+            // Warehouse / Adjustments / Invoices).
+            window.navigate(viewId);
           }
           for (const [menuId, config] of Object.entries(MENU_CONFIG)) {
             if (config.items && config.items.some(i => i.view === viewId)) {
@@ -1120,7 +1127,7 @@
   if (typeof window.ERP !== 'undefined' && window.ERP.registerAction) {
     window.ERP.registerAction('retryView', function retryView(id) {
       _renderedViews.delete(id || window.activeView);
-      navigate(id || window.activeView);
+      window.navigate(id || window.activeView);
       return true;
     });
   }

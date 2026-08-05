@@ -175,7 +175,7 @@
     if (itemId === 'custom') {
       return null;
     }
-    return (db().inventoryItems || []).find(i => i.id === itemId) || null;
+    return (db().inventoryItems || []).find(i => String(i.id) === String(itemId)) || null;
   }
 
   // ── Sales Order posting ─────────────────────────────────────────────────────
