@@ -339,6 +339,11 @@
       }
       var mod = FN_TO_MODULE[fnName];
       var wrapped = function () {
+        // Tabs live inside the module's own view; opened from anywhere else
+        // (dashboard, finance summary, another module) the document is a dialog.
+        if (window.activeView !== mod) {
+          return orig.apply(this, arguments);
+        }
         var prev = captureModule;
         captureModule = mod;
         try {

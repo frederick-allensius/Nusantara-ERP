@@ -96,6 +96,21 @@ Browser pane, otherwise rely on the tests.
   (`_itemCategoryList`); unused `ITEM_CATEGORIES` removed; neutral placeholders.
 - Warehouse and financial-report tabs use the segmented control.
 
+### Findings fixed after the navigation work
+- T-20 settings identity (name + role, calm account card), T-21 global search (party fields,
+  invoices, delivery orders), T-24 backup import card (uses `erpBackup.importFromFile`, then
+  reloads), T-34 `docNum` shows numbers as stored.
+
+### Ringkasan / dashboard (T-22)
+- `modules/dashboard.js` rebuilt: KPI tiles — Kas & bank (`GL.trialBalance`, CASH_BANK),
+  Piutang/Hutang (`Balances.summary`), Penjualan bulan ini + laba kotor (REVENUE/COGS
+  journal lines, vs last month); 6-month sales vs purchases chart from journals using
+  `--chart-*` tokens; Perlu tindakan (statuses); Jatuh tempo terdekat; Stok menipis;
+  Aktivitas terbaru (audit log, falls back to latest documents); company data checklist
+  until complete; "Atur Tampilan" hides blocks per browser (`nsa_dash_hidden_v2`).
+- `ui/doc-tabs.js`: a document opens as a tab only inside its own module view; from the
+  dashboard, finance summary or other pages it opens as a dialog.
+
 ## Verifying in a browser without signing in
 
 `harness.local/ui.html` (git-ignored by `*.local`) boots the classic bundle with the app's
@@ -104,17 +119,16 @@ with `NSANav.open('<menu label>')`. Delete the folder when the revamp is done.
 
 ## Next (in order)
 
-1. Browser pass in the harness: dark theme, collapsed sidebar + popover, drawer ≤768px,
-   document detail (modal and document tabs), ledger, invoices, forms.
-2. Remaining findings: T-20 settings "[object Object]", T-21 search, T-24 import backup
-   JSON card, T-34 docNum, hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens,
-   emoji icons (Daftar Laporan, empty states).
-3. Dashboard rebuild (T-22, docs/09 §4) from ledger, Balances and the audit log; charts use
-   `--chart-*` tokens.
-4. Demo data generator (T-35) in `src/core/db.js` defaults — realistic and internally
+Browser pass done in the harness: light/dark, collapsed sidebar + popover, drawer ≤768px,
+document tab, ledger, sales list, dashboard.
+
+1. Demo data generator (T-35) in `src/core/db.js` defaults — realistic and internally
    consistent; keep the product domain of the existing demo items; no tile/ceramic workflows.
-5. Docs sync: 08 statuses → "Diperbaiki"; 05 §5; 02/09 as implemented (tax entries gated by
-   the `tax` module); 04 (`journalVouchers`); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs
-   removed, navigate chain).
-6. Final summary for the user: firestore rules/functions need a manual deploy; open
+2. UI polish: hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens; emoji icons
+   (Daftar Laporan, empty states); inline-styled tables in extras pages → `.data-table`.
+3. Docs sync: 08 statuses → "Diperbaiki" (T-18…T-22, T-24, T-32, T-33, T-34); 05 §5; 02/09
+   as implemented (tax entries gated by the `tax` module; dashboard blocks); 04
+   (`journalVouchers`); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs removed, navigate chain);
+   MEETING_KIT demo steps (menu names).
+4. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; remove `harness.local/`.
