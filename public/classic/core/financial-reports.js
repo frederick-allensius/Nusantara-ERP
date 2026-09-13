@@ -154,11 +154,12 @@
   function tabBtn(id, label) {
     var on = activeTab === id;
     return (
-      '<button class="btn-ghost" data-action="finTab" data-val="' +
+      '<button class="seg-tab' +
+      (on ? ' active' : '') +
+      '" role="tab" aria-selected="' +
+      on +
+      '" data-action="finTab" data-val="' +
       id +
-      '"' +
-      ' style="font-size:12px;padding:6px 14px;border-radius:8px;font-weight:700;' +
-      (on ? 'background:var(--primary);color:#fff' : 'color:var(--muted)') +
       '">' +
       esc(label) +
       '</button>'
@@ -824,7 +825,7 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(
             'Laporan Keuangan',
-            'Laba Rugi, Neraca, dan Arus Kas berdasarkan General Ledger',
+            'Laba rugi, neraca, dan arus kas dari buku besar',
             'Cetak',
             'finPrint'
           )
@@ -836,7 +837,7 @@
 
     return (
       header +
-      '<div style="display:flex;gap:6px;margin-bottom:6px">' +
+      '<div class="seg-tabs" role="tablist" aria-label="Laporan keuangan">' +
       tabBtn('pl', 'Laba Rugi') +
       tabBtn('bs', 'Neraca') +
       tabBtn('cf', 'Arus Kas') +

@@ -33,11 +33,12 @@
   function tabBtn(id, label) {
     var on = activeTab === id;
     return (
-      '<button class="btn-ghost" data-action="whTab" data-val="' +
+      '<button class="seg-tab' +
+      (on ? ' active' : '') +
+      '" role="tab" aria-selected="' +
+      on +
+      '" data-action="whTab" data-val="' +
       id +
-      '"' +
-      ' style="font-size:12px;padding:6px 14px;border-radius:8px;font-weight:700;' +
-      (on ? 'background:var(--primary);color:#fff' : 'color:var(--muted)') +
       '">' +
       esc(label) +
       '</button>'
@@ -286,12 +287,12 @@
     var header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'Gudang & Transfer',
-            'Manajemen gudang, stok per lokasi, dan transfer item',
-            'Transfer Item',
+            'Gudang',
+            'Daftar gudang, stok per gudang, dan transfer barang antargudang',
+            'Transfer Barang',
             'whNewIT'
           )
-        : '<h1>Gudang & Transfer</h1>';
+        : '<h1>Gudang</h1>';
 
     var body = '';
     if (activeTab === 'stock') body = stockTab();
@@ -300,10 +301,10 @@
 
     return (
       header +
-      '<div style="display:flex;gap:6px;margin-bottom:14px">' +
+      '<div class="seg-tabs" role="tablist" aria-label="Gudang">' +
       tabBtn('warehouses', 'Gudang') +
       tabBtn('stock', 'Stok per Gudang') +
-      tabBtn('transfers', 'Transfer Item') +
+      tabBtn('transfers', 'Transfer Barang') +
       '</div>' +
       body
     );
@@ -428,7 +429,7 @@
     }
 
     window.openModal(
-      'Transfer Item',
+      'Transfer Barang',
       '<div class="form-row">' +
         '<div class="form-group"><label class="form-label">Dari Gudang</label>' +
         '<select class="form-select" id="it-from">' +

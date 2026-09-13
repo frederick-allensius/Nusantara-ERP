@@ -129,7 +129,7 @@
     var header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'Anggaran (Budget)',
+            'Anggaran',
             'Penyusunan anggaran per akun & periode',
             'Tambah Budget',
             'addBudget'
@@ -327,8 +327,8 @@
   function openBudgetMonitor() {
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr('Budget vs Actual', 'Laporan perbandingan anggaran vs realisasi GL')
-        : '<h1>Budget vs Actual</h1>';
+        ? window.secHdr('Realisasi Anggaran', 'Perbandingan anggaran dengan realisasi di buku besar')
+        : '<h1>Realisasi Anggaran</h1>';
 
     var result = renderBudgetVsActual('', '');
 
@@ -425,7 +425,7 @@
     var header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'Transfer Budget',
+            'Transfer Anggaran',
             'Pemindahan anggaran antar akun',
             'Transfer Baru',
             'newBudgetTransfer'
@@ -484,7 +484,7 @@
       '</div>';
 
     modal(
-      'Transfer Budget',
+      'Transfer Anggaran',
       body,
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
         '<button class="btn" id="bt-save">Transfer</button>',
@@ -554,7 +554,7 @@
     var header =
       typeof window.secHdr === 'function'
         ? window.secHdr('Riwayat Akun', 'Riwayat transaksi per akun buku besar')
-        : '<h1>Account History</h1>';
+        : '<h1>Riwayat Akun</h1>';
 
     var acOptions = accounts
       .map(function (a) {
@@ -1467,7 +1467,7 @@
 
     injectView(
       'finance',
-      '<div class="sec-hdr"><div><h1>Audit Journal</h1><p>Semua entri jurnal — ' +
+      '<div class="sec-hdr"><div><h1>Audit Jurnal</h1><p>Semua entri jurnal — ' +
         journals.length.toLocaleString('id-ID') +
         ' total</p></div></div>' +
         '<div class="card" style="margin-bottom:12px">' +

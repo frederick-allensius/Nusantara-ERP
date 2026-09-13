@@ -133,17 +133,11 @@ const FILTER_OPTIONS = {
     ['Received', 'Diterima'],
     ['Cancelled', 'Dibatalkan'],
   ],
-  inventory: [
-    ['all', 'Semua'],
-    ['Low', 'Stok Rendah'],
-    ['Granit', 'Granit'],
-    ['Marmer', 'Marmer'],
-    ['Andesit', 'Andesit'],
-    ['Travertine', 'Travertine'],
-    ['Koral', 'Koral'],
-    ['Candi', 'Candi'],
-    ['Paras', 'Paras'],
-  ],
+  // Category filters follow the data: configured categories plus those in use.
+  get inventory() {
+    const cats = typeof _itemCategoryList === 'function' ? _itemCategoryList() : [];
+    return [['all', 'Semua'], ['Low', 'Stok Rendah'], ...cats.map(c => [c, c])];
+  },
   logistics: [
     ['all', 'Semua'],
     ['Sent', 'Terkirim'],
@@ -306,7 +300,7 @@ function filterBtn(type) {
   const isActive = f !== 'all';
 
   const activeStyle = isActive
-    ? 'background:var(--primary);color:#fff;border-color:var(--primary)'
+    ? 'background:var(--primary-strong);color:var(--on-primary);border-color:var(--primary-strong)'
     : '';
 
   const clearChip = isActive
@@ -722,7 +716,7 @@ function renderPurchase() {
   const paged = applyPage(orders, 'purchase');
 
   return `
-  ${secHdr('Pembelian', 'Kelola purchase order dan hutang supplier', 'Buat PO Baru', 'addPO')}
+  ${secHdr('Pesanan Pembelian', 'Purchase order ke supplier beserta penerimaan barang dan pembayarannya', 'Buat PO', 'addPO')}
   ${statRow([
     { label: 'PO Bulan Ini', value: String(thisMthOrders.length), sub: monthLabel },
     { label: 'Nilai Bulan Ini', value: idr(thisMthVal), sub: `Total all-time: ${idr(totalVal)}` },
@@ -799,7 +793,7 @@ function renderInventory() {
   const pagedItems = applyPage(items, 'inventory');
 
   return `
-  ${secHdr('Inventori', 'Katalog item dan manajemen stok batu alam', 'Tambah Item', 'addItem')}
+  ${secHdr('Barang & Stok', 'Daftar barang, stok, dan nilai persediaan', 'Tambah Barang', 'addItem')}
   ${
     lowCount > 0
       ? `<div class="alert-warn">
@@ -815,7 +809,7 @@ function renderInventory() {
     { label: 'Total Item', value: String(DB.inventoryItems.length), sub: 'Aktif di katalog' },
     { label: 'Nilai Stok Total', value: idr(totalValue), sub: 'Berdasarkan harga beli' },
     { label: 'Stok Rendah', value: `${lowCount} item`, sub: 'Di bawah minimum', color: '#FF3B30' },
-    { label: 'Kategori', value: String(cats.length), sub: 'Jenis batu alam' },
+    { label: 'Kategori', value: String(cats.length), sub: 'Kelompok barang' },
   ])}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -1020,7 +1014,7 @@ function renderAssets() {
   const recentDisposals = disposals.slice(0, 5);
 
   return `
-  ${secHdr('Aset Tetap', 'Registrasi aset tetap, kategori, mutasi, dan disposisi', 'Tambah Aset', 'addAsset')}
+  ${secHdr('Daftar Aset', 'Aset tetap perusahaan beserta kategori, mutasi, dan pelepasannya', 'Tambah Aset', 'addAsset')}
   ${statRow([
     { label: 'Total Aset', value: String(assets.length), sub: 'Aset tercatat' },
     { label: 'Nilai Perolehan', value: idrFull(totalCost), sub: 'Total biaya perolehan' },
@@ -1198,7 +1192,7 @@ function renderTax() {
   ).length;
 
   return `
-  ${secHdr('Perpajakan', 'Rekap PPN, e-Faktur, dan kepatuhan pajak', 'Edit Pengaturan Pajak', 'editTaxSettings')}
+  ${secHdr('Pajak & PPN', 'PPN keluaran dan masukan dari transaksi, serta pengaturan pajak perusahaan', 'Ubah Pengaturan Pajak', 'editTaxSettings')}
   ${statRow([
     {
       label: 'PPN Keluaran',
@@ -1407,7 +1401,7 @@ function renderLogistics() {
   const paged = applyPage(orders, 'logistics');
 
   return `
-  ${secHdr('Logistik', 'Pengiriman, armada kendaraan, dan ekspedisi', 'Buat DO Baru', 'addDO')}
+  ${secHdr('Surat Jalan', 'Pengiriman barang ke pelanggan, armada, dan ekspedisi', 'Buat Surat Jalan', 'addDO')}
   ${statRow([
     {
       label: 'DO Difakturkan',
@@ -1676,7 +1670,7 @@ function renderSettings() {
     },
     {
       title: 'Kategori Item',
-      sub: 'Kelola jenis dan kategori batu alam',
+      sub: 'Kelola kategori barang',
       icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
       action: 'manageItemCategories',
     },
@@ -1701,7 +1695,7 @@ function renderSettings() {
   ];
 
   return `
-  ${secHdr('Pengaturan', 'Konfigurasi sistem, perusahaan, dan akun')}
+  ${secHdr('Pengaturan Umum', 'Konfigurasi sistem, perusahaan, dan akun pengguna')}
   
   <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border:none">
     <div style="display:flex;align-items:center;gap:16px">
@@ -3014,7 +3008,7 @@ function renderSales() {
           .join('');
 
   return `
-  ${secHdr('Penjualan', 'Kelola sales order, invoice, dan piutang', 'Buat SO Baru', 'addSO')}
+  ${secHdr('Pesanan Penjualan', 'Sales order dari pelanggan beserta pengiriman, faktur, dan pembayarannya', 'Buat SO', 'addSO')}
   ${statRow([
     { label: 'SO Bulan Ini', value: String(thisMthOrders.length), sub: monthLabel },
     { label: 'Nilai Bulan Ini', value: idr(thisMthVal), sub: `Total all-time: ${idr(totalVal)}` },

@@ -152,7 +152,7 @@
     });
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Employee</h1><p>Direktori karyawan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Karyawan</h1><p>Direktori karyawan dan jabatannya</p></div>' +
         '<button class="btn" data-action="addEmpM">+ Tambah Karyawan</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Karyawan</div><div class="stat-val">' +
@@ -359,7 +359,7 @@
       : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Belum ada kontak ditambahkan.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Contact</h1><p>Direktori kontak bisnis &amp; CRM</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kontak</h1><p>Direktori kontak bisnis</p></div>' +
         '<button class="btn" data-action="addContact">+ Tambah Kontak</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -517,7 +517,7 @@
       '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--muted)">Belum ada kategori.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Customer Category</h1><p>Kelompok / segmentasi pelanggan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kategori Pelanggan</h1><p>Pengelompokan pelanggan</p></div>' +
         '<button class="btn" data-action="addCustCat">+ Tambah Kategori</button></div>' +
         '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
         cats
@@ -621,7 +621,7 @@
       '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--muted)">Belum ada kategori.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Supplier Category</h1><p>Kelompok / segmentasi supplier</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kategori Supplier</h1><p>Pengelompokan supplier</p></div>' +
         '<button class="btn" data-action="addSuppCat">+ Tambah Kategori</button></div>' +
         '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
         cats

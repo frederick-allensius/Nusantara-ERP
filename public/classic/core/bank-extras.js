@@ -793,7 +793,7 @@
       : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Belum ada rekening koran diinput.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Bank Statement</h1><p>Rekening koran per rekening dan periode</p></div>' +
+      '<div class="sec-hdr"><div><h1>Rekening Koran</h1><p>Rekening koran per rekening dan periode</p></div>' +
         '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div>' +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +
@@ -1103,12 +1103,12 @@
 
     if (!statements.length) {
       injectView(
-        '<div class="sec-hdr"><div><h1>Bank Reconcile</h1><p>Pencocokan rekening koran dengan buku besar</p></div></div>' +
+        '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan buku besar</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
           '<div style="font-size:32px;margin-bottom:12px">🏦</div>' +
           '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
-          '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Bank Statement</div>' +
-          '<button class="btn" data-action="goToBankStatement">Buka Bank Statement</button></div>'
+          '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Rekening Koran</div>' +
+          '<button class="btn" data-action="goToBankStatement">Buka Rekening Koran</button></div>'
       );
       return;
     }
@@ -1164,7 +1164,7 @@
     var pct = bsEntries.length ? Math.round((reconciledCount / bsEntries.length) * 100) : 0;
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Bank Reconcile</h1><p>Pencocokan rekening koran dengan transaksi sistem</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan transaksi sistem</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
         '<div><div style="font-size:12px;color:var(--muted)">Rekening</div><div style="font-weight:700">' +

@@ -77,12 +77,12 @@
 
     if (!assets.length) {
       injectView(
-        '<div class="sec-hdr"><div><h1>Asset per Location</h1><p>Daftar aset dikelompokkan berdasarkan lokasi</p></div></div>' +
+        '<div class="sec-hdr"><div><h1>Aset per Lokasi</h1><p>Daftar aset dikelompokkan berdasarkan lokasi</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
           '<div style="font-size:36px;margin-bottom:12px">🏗️</div>' +
           '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada data aset</div>' +
           '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Tambahkan aset melalui menu Fixed Assets atau tandai item inventory sebagai aset</div>' +
-          '<button class="btn-ghost" data-action="navAssets">Buka Fixed Assets</button></div>'
+          '<button class="btn-ghost" data-action="navAssets">Buka Daftar Aset</button></div>'
       );
       return;
     }
@@ -231,8 +231,8 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Asset per Location</h1><p>Aset dikelompokkan berdasarkan lokasi/departemen</p></div>' +
-        '<button class="btn-ghost" data-action="navAssets">Buka Fixed Assets</button></div>' +
+      '<div class="sec-hdr"><div><h1>Aset per Lokasi</h1><p>Aset dikelompokkan berdasarkan lokasi/departemen</p></div>' +
+        '<button class="btn-ghost" data-action="navAssets">Buka Daftar Aset</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Aset</div><div class="stat-val">' +
         totalAssets +
@@ -683,7 +683,7 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Fixed Asset Edited</h1><p>Riwayat perubahan data aset tetap</p></div>' +
+      '<div class="sec-hdr"><div><h1>Riwayat Perubahan Aset</h1><p>Riwayat perubahan data aset tetap</p></div>' +
         '<button class="btn" data-action="axEditAsset">Edit Aset</button></div>' +
         statRow([
           ['Total Perubahan', String(log.length), 'Entri tercatat'],
@@ -858,7 +858,7 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>FA Disposition</h1><p>Pelepasan aset tetap — penjualan, penghapusbukuan, kehilangan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Pelepasan Aset</h1><p>Pelepasan aset tetap — penjualan, penghapusbukuan, kehilangan</p></div>' +
         '<button class="btn" data-action="axNewDisp">+ Catat Pelepasan</button></div>' +
         statRow([
           ['Aset Dilepas', String(disposed.length), s.assets.length + ' aset total'],
@@ -1000,7 +1000,7 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Asset Transfer</h1><p>Pemindahan aset tetap antar lokasi/departemen</p></div>' +
+      '<div class="sec-hdr"><div><h1>Mutasi Aset</h1><p>Pemindahan aset tetap antar lokasi atau departemen</p></div>' +
         '<button class="btn" data-action="axNewTrf">+ Transfer Aset</button></div>' +
         statRow([
           ['Total Transfer', String(transfers.length), 'Riwayat tercatat'],

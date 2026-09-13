@@ -84,7 +84,7 @@
 
     injectView(
       'inventory',
-      '<div class="sec-hdr"><div><h1>Item Unit</h1><p>Satuan ukuran yang digunakan pada item inventaris</p></div>' +
+      '<div class="sec-hdr"><div><h1>Satuan Barang</h1><p>Satuan ukuran yang dipakai pada barang</p></div>' +
         '<button class="btn" data-action="addUnit">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -135,13 +135,17 @@
   // § 2  ITEM CATEGORY  (DB.settings.itemCategories — string array)
   // ══════════════════════════════════════════════════════════════════════════
   function openItemCategory() {
-    var cats = ensureSettings('itemCategories', [
-      'Agregat',
-      'Batu Alam',
-      'Pasir',
-      'Jasa',
-      'Lainnya',
-    ]);
+    // First use starts from the categories items already carry (no preset list).
+    var cats = ensureSettings(
+      'itemCategories',
+      (db().inventoryItems || [])
+        .map(function (it) {
+          return it.category;
+        })
+        .filter(function (c, i, arr) {
+          return c && arr.indexOf(c) === i;
+        })
+    );
 
     var rows = cats
       .map(function (c, i) {
@@ -167,7 +171,7 @@
 
     injectView(
       'inventory',
-      '<div class="sec-hdr"><div><h1>Item Category</h1><p>Kategori pengelompokan item inventaris</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kategori Barang</h1><p>Pengelompokan barang</p></div>' +
         '<button class="btn" data-action="addItemCat">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -188,7 +192,7 @@
     modal(
       'Tambah Kategori',
       '<div class="form-group"><label class="form-label">Nama Kategori</label>' +
-        '<input class="form-input" id="icat-name" placeholder="Agregat, Batu Alam, Jasa..."></div>',
+        '<input class="form-input" id="icat-name" placeholder="Contoh: Bahan Baku"></div>',
       '<button class="btn" id="saveItemCat">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
     );
     setTimeout(function () {
@@ -246,7 +250,7 @@
 
     injectView(
       'inventory',
-      '<div class="sec-hdr"><div><h1>Item Brand</h1><p>Merek / brand item inventaris</p></div>' +
+      '<div class="sec-hdr"><div><h1>Merek Barang</h1><p>Merek barang</p></div>' +
         '<button class="btn" data-action="addItemBrand">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -366,7 +370,7 @@
 
     injectView(
       'inventory',
-      '<div class="sec-hdr"><div><h1>Item Requisition</h1><p>Permintaan barang internal</p></div>' +
+      '<div class="sec-hdr"><div><h1>Permintaan Barang</h1><p>Permintaan barang internal antarbagian</p></div>' +
         '<button class="btn" data-action="addIR">+ Buat Permintaan</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +

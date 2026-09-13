@@ -86,24 +86,35 @@ Browser pane, otherwise rely on the tests.
   effect/aging/summary blocks. `mobile.css`: old flyout/rail rules removed, drawer sizing.
 - navigate wrap chain is now: lazy-views → rbac → doc-tabs → ui/nav.js.
 
+### Terminology & data-driven defaults (Phase B, part 2)
+- Page headers match their menu entries: erp-view list pages (Pesanan Penjualan/Pembelian,
+  Barang & Stok, Surat Jalan, Daftar Aset, Pajak & PPN, Pengaturan Umum) and injected pages
+  in asset/bank/master/tax/report/budget/inventory/settings extras, adjust-view,
+  warehouse-view ("AI Business Analysis" → "Analisis Bisnis").
+- No preset stone categories in the product: inventory filter categories
+  (`FILTER_OPTIONS.inventory` getter) and item-category defaults come from the data
+  (`_itemCategoryList`); unused `ITEM_CATEGORIES` removed; neutral placeholders.
+- Warehouse and financial-report tabs use the segmented control.
+
+## Verifying in a browser without signing in
+
+`harness.local/ui.html` (git-ignored by `*.local`) boots the classic bundle with the app's
+demo data, like the smoke test. Open `http://localhost:8088/harness.local/ui.html`, drive it
+with `NSANav.open('<menu label>')`. Delete the folder when the revamp is done.
+
 ## Next (in order)
 
-1. Browser check (light/dark, collapsed, drawer) once a signed-in session is available.
-2. Terminology sweep of page headers still in English/old names — erp-view secHdr
-   (Pembelian, Inventori, Logistik, Penjualan, Perpajakan, Laporan); asset-extras (Asset per
-   Location, Fixed Asset Edited, FA Disposition, Asset Transfer); bank-extras (Bank
-   Statement, Bank Reconcile, SmartLink e-Banking); master-extras (Employee, Contact,
-   Customer/Supplier Category); tax-extras (e-Faktur CTAS, Tax Invoice Email, e-Faktur
-   Legacy); report-extras (AI Business Analysis → Analisis Bisnis, emoji icons in Daftar
-   Laporan); budget-gl-extras (Anggaran (Budget), Budget vs Actual, Transfer Budget);
-   business-specific stone wording/defaults in renderInventory and inventory-extras (T-32).
-3. Remaining findings: T-20 settings "[object Object]", T-21 search, T-24 import backup
-   JSON card, T-34 docNum, hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens.
-4. Dashboard rebuild (T-22, docs/09 §4) from ledger, Balances and the audit log; charts use
+1. Browser pass in the harness: dark theme, collapsed sidebar + popover, drawer ≤768px,
+   document detail (modal and document tabs), ledger, invoices, forms.
+2. Remaining findings: T-20 settings "[object Object]", T-21 search, T-24 import backup
+   JSON card, T-34 docNum, hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens,
+   emoji icons (Daftar Laporan, empty states).
+3. Dashboard rebuild (T-22, docs/09 §4) from ledger, Balances and the audit log; charts use
    `--chart-*` tokens.
-5. Demo data generator (T-35) in `src/core/db.js` defaults.
-6. Docs sync: 08 statuses → "Diperbaiki"; 05 §5; 02/09 as implemented (tax entries gated by
+4. Demo data generator (T-35) in `src/core/db.js` defaults — realistic and internally
+   consistent; keep the product domain of the existing demo items; no tile/ceramic workflows.
+5. Docs sync: 08 statuses → "Diperbaiki"; 05 §5; 02/09 as implemented (tax entries gated by
    the `tax` module); 04 (`journalVouchers`); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs
    removed, navigate chain).
-7. Final summary for the user: firestore rules/functions need a manual deploy; open
-   decisions requiring confirmation.
+6. Final summary for the user: firestore rules/functions need a manual deploy; open
+   decisions requiring confirmation; remove `harness.local/`.

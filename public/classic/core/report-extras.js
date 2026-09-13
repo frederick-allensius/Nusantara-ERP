@@ -781,7 +781,7 @@
       : '<div style="color:var(--muted);font-size:12px">Belum ada data item terjual.</div>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>🤖 AI Business Analysis</h1><p>Insight otomatis dari data bisnis Anda — dianalisis ' +
+      '<div class="sec-hdr"><div><h1>Analisis Bisnis</h1><p>Ringkasan berbasis aturan dari data transaksi — dianalisis ' +
         today() +
         '</p></div>' +
         '<button class="btn-ghost" data-action="refreshAI">↻ Refresh</button></div>' +

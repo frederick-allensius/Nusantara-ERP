@@ -35,7 +35,7 @@
     const header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'Penyesuaian Persediaan',
+            'Penyesuaian Stok',
             'Koreksi stok & nilai persediaan (stock opname, kerusakan, dll.)',
             'Buat Penyesuaian',
             'adjNew'

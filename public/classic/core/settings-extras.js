@@ -87,7 +87,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Currency</h1><p>Mata uang dan kurs terhadap IDR</p></div>' +
+      '<div class="sec-hdr"><div><h1>Mata Uang</h1><p>Mata uang dan kurs terhadap Rupiah</p></div>' +
         '<button class="btn" data-action="addCurrency">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -196,7 +196,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Payment Term</h1><p>Syarat pembayaran standar</p></div>' +
+      '<div class="sec-hdr"><div><h1>Termin Pembayaran</h1><p>Syarat pembayaran standar</p></div>' +
         '<button class="btn" data-action="addPT">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -291,7 +291,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Shipment</h1><p>Metode pengiriman barang</p></div>' +
+      '<div class="sec-hdr"><div><h1>Metode Pengiriman</h1><p>Cara pengiriman barang</p></div>' +
         '<button class="btn" data-action="addShip">+ Tambah</button></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -413,7 +413,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Calendar</h1><p>Periode fiskal dan hari libur nasional</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Kalender</h1><p>Periode fiskal dan hari libur nasional</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="font-size:12px;font-weight:700;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Tahun Fiskal</div>' +
         '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
@@ -545,7 +545,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Activity Log</h1><p>Riwayat aktivitas dan transaksi keuangan (150 entri terbaru)</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Log Aktivitas</h1><p>Riwayat aktivitas dan transaksi keuangan (150 entri terbaru)</p></div></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
         '<thead><tr>' +
@@ -599,7 +599,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Sales Category</h1><p>Kategori untuk pengelompokan penjualan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kategori Penjualan</h1><p>Kategori untuk pengelompokan penjualan</p></div>' +
         '<button class="btn" data-action="addSaleCat">+ Tambah</button></div>' +
         '<div class="card">' +
         items +
@@ -671,7 +671,7 @@
 
     injectView(
       'settings',
-      '<div class="sec-hdr"><div><h1>Favorite Transaction</h1><p>Template transaksi yang sering digunakan</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Transaksi Favorit</h1><p>Template transaksi yang sering digunakan</p></div></div>' +
         '<div class="card" style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +

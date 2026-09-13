@@ -849,18 +849,6 @@ const DO_STATUSES = [
   ['In Transit', 'Dalam Pengiriman'],
   ['Delivered', 'Terkirim'],
 ];
-const ITEM_CATEGORIES = [
-  'Granit',
-  'Marmer',
-  'Andesit',
-  'Travertine',
-  'Koral',
-  'Candi',
-  'Paras',
-  'Batu Alam',
-  'Lainnya',
-];
-
 function statusOptions(list, current) {
   // If the document carries a status outside the known list (e.g. legacy or
   // Accurate-imported values), keep it as a selectable option — otherwise the
@@ -3668,7 +3656,7 @@ function showAddItemCategory() {
     `
     <div class="form-group">
       <label class="form-label">Nama Kategori</label>
-      <input class="form-input" id="new-category-name" type="text" placeholder="Contoh: Granit Premium">
+      <input class="form-input" id="new-category-name" type="text" placeholder="Contoh: Bahan Baku">
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>

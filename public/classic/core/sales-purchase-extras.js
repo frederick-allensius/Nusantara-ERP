@@ -787,9 +787,9 @@
           '</td>' +
           '<td class="td-p">' +
           (!r.posted
-            ? '<button class="action-primary" data-action="postReceipt" data-id="' +
+            ? '<button class="btn btn-sm" data-action="postReceipt" data-id="' +
               esc(r.id) +
-              '" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--primary);color:#fff;cursor:pointer">Terima & Stok</button> '
+              '">Terima & Stok</button> '
             : '') +
           '<button class="action-edit" data-action="delReceipt" data-id="' +
           esc(r.id) +

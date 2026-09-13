@@ -159,7 +159,7 @@
       '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada faktur PPN.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>e-Faktur CTAS</h1><p>Laporan faktur pajak — format upload ke aplikasi e-Faktur DJP</p></div>' +
+      '<div class="sec-hdr"><div><h1>Ekspor e-Faktur</h1><p>Laporan faktur pajak — format upload ke aplikasi e-Faktur DJP</p></div>' +
         '<div style="display:flex;gap:8px">' +
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
         '<button class="btn" data-action="exportCTAS">Export CSV</button></div></div>' +
@@ -291,7 +291,7 @@
       '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">Belum ada email dikirim.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Tax Invoice Email</h1><p>Kirim faktur pajak via email ke pelanggan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kirim Faktur Pajak via Email</h1><p>Kirim faktur pajak via email ke pelanggan</p></div>' +
         '<button class="btn" data-action="sendAllTaxEmail">Kirim Semua</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Faktur</div><div class="stat-val">' +
@@ -400,7 +400,7 @@
       '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada faktur.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>e-Faktur Legacy</h1><p>Format lama e-Faktur (CSV) — kompatibel aplikasi versi sebelum 4.x</p></div>' +
+      '<div class="sec-hdr"><div><h1>e-Faktur Format Lama</h1><p>Format lama e-Faktur (CSV) — kompatibel aplikasi versi sebelum 4.x</p></div>' +
         '<div style="display:flex;gap:8px">' +
         (monthOpts
           ? '<select class="form-select" id="legacy-month" style="font-size:13px">' +
