@@ -29,12 +29,14 @@ const STATUS = {
     ['Confirmed', 'Dikonfirmasi'],
     ['Paid', 'Lunas'],
     ['Delivered', 'Terkirim'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   PO: [
     ['Draft', 'Draft'],
     ['Confirmed', 'Dikonfirmasi'],
     ['Paid', 'Lunas'],
     ['Received', 'Diterima'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   DO: [
     ['Pending', 'Pending'],
@@ -49,33 +51,42 @@ const STATUS = {
     ['Draft', 'Draft'],
     ['Outstanding', 'Belum Lunas'],
     ['Paid', 'Lunas'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   PI: [
     ['Draft', 'Draft'],
     ['Outstanding', 'Belum Lunas'],
     ['Paid', 'Lunas'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   SR: [
     ['Draft', 'Draft'],
     ['Posted', 'Diposting'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   PP: [
     ['Draft', 'Draft'],
     ['Posted', 'Diposting'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   SRN: [
     ['Draft', 'Draft'],
     ['Posted', 'Diposting'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   PRN: [
     ['Draft', 'Draft'],
     ['Posted', 'Diposting'],
+    ['Cancelled', 'Dibatalkan'],
   ],
   IT: [['Posted', 'Diposting']],
 };
 
-// Intended happy-path forward transitions. DocEngine.canTransition validates
-// against these in later phases.
+// Allowed status moves, validated by DocEngine.canTransition.
+// Correction model (docs/05-SIKLUS-STATUS-DAN-KOREKSI.md): a delivered/received
+// order stays delivered/received — payment progress is computed from payments,
+// not stored in the status — and a posted document is corrected by cancelling
+// it (only while nothing downstream is active) or by a return/adjustment.
 const TRANSITIONS = {
   SQ: {
     Draft: ['Sent'],
@@ -90,16 +101,18 @@ const TRANSITIONS = {
     Rejected: [],
   },
   SO: {
-    Draft: ['Confirmed', 'Paid', 'Delivered'],
-    Confirmed: ['Paid', 'Delivered', 'Draft'],
-    Paid: ['Delivered', 'Confirmed'],
-    Delivered: ['Paid'],
+    Draft: ['Confirmed', 'Paid', 'Delivered', 'Cancelled'],
+    Confirmed: ['Paid', 'Delivered', 'Draft', 'Cancelled'],
+    Paid: ['Delivered', 'Confirmed', 'Cancelled'],
+    Delivered: ['Cancelled'],
+    Cancelled: ['Draft'],
   },
   PO: {
-    Draft: ['Confirmed', 'Paid', 'Received'],
-    Confirmed: ['Paid', 'Received', 'Draft'],
-    Paid: ['Received', 'Confirmed'],
-    Received: ['Paid'],
+    Draft: ['Confirmed', 'Paid', 'Received', 'Cancelled'],
+    Confirmed: ['Paid', 'Received', 'Draft', 'Cancelled'],
+    Paid: ['Received', 'Confirmed', 'Cancelled'],
+    Received: ['Cancelled'],
+    Cancelled: ['Draft'],
   },
   DO: {
     Pending: ['Sent', 'In Transit', 'Delivered'],
@@ -111,19 +124,21 @@ const TRANSITIONS = {
     Delivered: ['In Transit', 'Invoiced'],
   },
   SI: {
-    Draft: ['Outstanding'],
-    Outstanding: ['Paid', 'Draft'],
-    Paid: [],
+    Draft: ['Outstanding', 'Cancelled'],
+    Outstanding: ['Paid', 'Draft', 'Cancelled'],
+    Paid: ['Outstanding'],
+    Cancelled: [],
   },
   PI: {
-    Draft: ['Outstanding'],
-    Outstanding: ['Paid', 'Draft'],
-    Paid: [],
+    Draft: ['Outstanding', 'Cancelled'],
+    Outstanding: ['Paid', 'Draft', 'Cancelled'],
+    Paid: ['Outstanding'],
+    Cancelled: [],
   },
-  SR: { Draft: ['Posted'], Posted: [] },
-  PP: { Draft: ['Posted'], Posted: [] },
-  SRN: { Draft: ['Posted'], Posted: [] },
-  PRN: { Draft: ['Posted'], Posted: [] },
+  SR: { Draft: ['Posted', 'Cancelled'], Posted: ['Cancelled'], Cancelled: [] },
+  PP: { Draft: ['Posted', 'Cancelled'], Posted: ['Cancelled'], Cancelled: [] },
+  SRN: { Draft: ['Posted', 'Cancelled'], Posted: [], Cancelled: [] },
+  PRN: { Draft: ['Posted', 'Cancelled'], Posted: [], Cancelled: [] },
   IT: { Posted: [] },
 };
 

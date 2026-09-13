@@ -1,23 +1,30 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Nusantara ERP — General Ledger View  (gl-view.js)
-// Phase 2b of the V4 plan (see docs/ARCHITECTURE_ERP_V4.md).
+// Nusantara ERP — Buku Besar  (gl-view.js)
 //
-// The user-facing GL: a "General Ledger" view (#view-ledger, already in index.html)
-// with three tabs — Neraca Saldo (Trial Balance), Jurnal (all journals), Bagan Akun
-// (Chart of Accounts) — plus a Journal Voucher entry modal that enforces Dr === Cr
-// via GL.postJournalVoucher().
+// The ledger view (#view-ledger) with three tabs — Neraca Saldo (trial balance),
+// Jurnal (every journal, filterable by source) and Bagan Akun (chart of
+// accounts) — plus the Jurnal Umum entry modal, which enforces Dr === Cr through
+// GL.postJournalVoucher().
 //
-// Additive & non-breaking: registers window.renderLedger and ERP actions; the only
-// edits elsewhere are a one-line `case 'ledger'` in erp-view.js's getRenderer switch
-// and repointing two flyout items in nav.js to this view.
-//
-// Global-scope rule: classic <script>, IIFE-wrapped, exposes only window.renderLedger
-// (+ ERP action registrations). Declares no colliding top-level names.
+// Loaded lazily (lazy-views.js). Global-scope rule: classic <script>,
+// IIFE-wrapped; exposes window.renderLedger, window._ledgerExtras (sidebar
+// entries open a tab through it) and ERP action registrations.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   let activeTab = 'trial'; // 'trial' | 'journals' | 'chart'
+  let journalFilter = 'all'; // 'all' | 'auto' | 'manual'
+  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
+  const TAB_ENTRY = { trial: 'Neraca Saldo', journals: 'Jurnal', chart: 'Bagan Akun' };
+
+  function syncMenu() {
+    if (window.NSANav && typeof window.NSANav.markActive === 'function') {
+      window.NSANav.markActive(
+        activeTab === 'journals' && journalFilter === 'manual' ? 'Jurnal Umum' : TAB_ENTRY[activeTab]
+      );
+    }
+  }
 
   function esc(s) {
     if (typeof window.escapeHtml === 'function') {
@@ -53,9 +60,7 @@
 
   function tabBtn(id, label) {
     const on = activeTab === id;
-    return `<button class="btn-ghost" data-action="glTab" data-val="${id}"
-      style="font-size:12px;padding:6px 14px;border-radius:8px;font-weight:700;
-      ${on ? 'background:var(--primary);color:#fff' : 'color:var(--muted)'}">${esc(label)}</button>`;
+    return `<button class="seg-tab${on ? ' active' : ''}" role="tab" aria-selected="${on}" data-action="glTab" data-val="${id}">${esc(label)}</button>`;
   }
 
   // ── Trial Balance tab ───────────────────────────────────────────────────────
@@ -66,7 +71,7 @@
     const rows =
       tb.rows.length === 0
         ? `<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--muted);font-size:13px">
-             Belum ada transaksi yang membentuk jurnal. Buat SO (Terkirim) / PO (Diterima) atau Jurnal Umum.
+             Belum ada jurnal. Saldo akun terbentuk saat dokumen diposting atau jurnal umum dicatat.
            </td></tr>`
         : tb.rows
             .map(
@@ -118,12 +123,35 @@
 
   // ── Journals tab ────────────────────────────────────────────────────────────
   function journalsTab() {
-    const journals = (db().journals || []).slice().reverse(); // newest first
+    const journals = (db().journals || [])
+      .filter(j =>
+        journalFilter === 'manual'
+          ? j.source === 'manual'
+          : journalFilter === 'auto'
+            ? j.source !== 'manual'
+            : true
+      )
+      .reverse(); // newest first
+    const filters = [
+      ['all', 'Semua'],
+      ['auto', 'Otomatis dari dokumen'],
+      ['manual', 'Jurnal Umum'],
+    ]
+      .map(
+        ([id, label]) =>
+          `<button class="seg-tab${journalFilter === id ? ' active' : ''}" role="tab" aria-selected="${journalFilter === id}" data-action="glJournalFilter" data-val="${id}">${label}</button>`
+      )
+      .join('');
+    const head = `<div class="card-head">
+        <div class="card-title">Daftar Jurnal <span class="t-muted">(${journals.length})</span></div>
+        <div class="seg-tabs seg-tabs-sm" role="tablist" aria-label="Sumber jurnal">${filters}</div>
+      </div>`;
     if (journals.length === 0) {
-      return `<div class="card"><div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">
-        Belum ada jurnal. Jurnal otomatis dibuat saat SO Terkirim / PO Diterima / pembayaran dicatat,
-        atau buat <strong>Jurnal Umum</strong> manual.
-      </div></div>`;
+      const empty =
+        journalFilter === 'manual'
+          ? 'Belum ada jurnal umum. Gunakan <strong>Buat Jurnal Umum</strong> untuk saldo awal, penyesuaian, atau transaksi yang tidak berasal dari dokumen.'
+          : 'Belum ada jurnal. Jurnal otomatis terbentuk saat barang dikirim atau diterima, faktur diterbitkan, pembayaran dicatat, dan transaksi kas & bank disimpan.';
+      return `<div class="card">${head}<div class="empty-inline">${empty}</div></div>`;
     }
     const cards = journals
       .map(j => {
@@ -160,10 +188,7 @@
         </div>`;
       })
       .join('');
-    return `<div class="card">
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Daftar Jurnal (${journals.length})</div>
-      ${cards}
-    </div>`;
+    return `<div class="card">${head}${cards}</div>`;
   }
 
   // ── Chart of Accounts tab ───────────────────────────────────────────────────
@@ -197,12 +222,12 @@
     const header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'General Ledger',
-            'Buku besar — neraca saldo, jurnal & bagan akun',
-            'Jurnal Umum',
+            'Buku Besar',
+            'Neraca saldo, jurnal, dan bagan akun',
+            'Buat Jurnal Umum',
             'glPostJV'
           )
-        : '<h1>General Ledger</h1>';
+        : '<h1>Buku Besar</h1>';
     let bodyHtml = '';
     if (activeTab === 'journals') {
       bodyHtml = journalsTab();
@@ -213,7 +238,7 @@
     }
     return `
     ${header}
-    <div style="display:flex;gap:6px;margin-bottom:14px">
+    <div class="seg-tabs" role="tablist" aria-label="Buku besar">
       ${tabBtn('trial', 'Neraca Saldo')}
       ${tabBtn('journals', 'Jurnal')}
       ${tabBtn('chart', 'Bagan Akun')}
@@ -363,6 +388,7 @@
           window.closeModal?.();
           activeTab = 'journals';
           refresh();
+          syncMenu();
           window.showToast?.('Jurnal umum berhasil disimpan', 'success');
         } catch (err) {
           window.showToast?.(err.message || 'Gagal menyimpan jurnal', 'danger');
@@ -376,11 +402,37 @@
   // ── Wire up ─────────────────────────────────────────────────────────────────
   window.renderLedger = renderLedger;
 
+  window._ledgerExtras = {
+    // Open a tab (and, for Jurnal, a source filter) from the sidebar.
+    openTab: function (tab, filter) {
+      activeTab = TAB_ENTRY[tab] ? tab : 'trial';
+      if (filter) {
+        journalFilter = filter;
+      }
+      if (typeof window.invalidateView === 'function') {
+        window.invalidateView('ledger');
+      }
+      if (typeof window.navigate === 'function') {
+        window.navigate('ledger');
+      }
+      syncMenu();
+    },
+  };
+
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
     window.ERP.registerAction('glTab', function (id, type, val) {
       if (val) {
         activeTab = val;
         refresh();
+        syncMenu();
+      }
+      return true;
+    });
+    window.ERP.registerAction('glJournalFilter', function (id, type, val) {
+      if (val) {
+        journalFilter = val;
+        refresh();
+        syncMenu();
       }
       return true;
     });

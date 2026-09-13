@@ -1,34 +1,37 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Nusantara ERP — General Ledger Engine  (gl.js)
-// Phase 2a of the V4 plan (see docs/ARCHITECTURE_ERP_V4.md).
 //
 // Data-driven double-entry posting. Journals are DERIVED from documents, never hand
 // kept in sync: `reconcileAll()` rebuilds every auto-journal from the current state
-// of SO/PO + paymentLogs, so it is safe to run on every save (idempotent, stable
-// ids — no sequence burn). Manual Journal Vouchers (source === 'manual') are
-// preserved across reconciles.
+// of the documents, so it is safe to run on every save (idempotent, stable ids — no
+// sequence burn). Manual Journal Vouchers (source === 'manual') and imported
+// journals are preserved across reconciles.
 //
-// Posting model (status-driven, per the Phase 2 decision):
-//   • SO status 'Delivered'  → Dr Receivable (net) + Dr Sales Discount (disc)
-//                              Cr Sales (gross); and Dr COGS / Cr Inventory (cost).
-//   • SO paymentLogs         → Dr Cash/Bank / Cr Receivable (per payment).
-//   • PO status 'Received'   → Dr Inventory (inv lines) + Dr Expense (other lines)
-//                              Cr Payable (total).
-//   • PO paymentLogs         → Dr Payable / Cr Cash/Bank (per payment).
-// Cash is taken from the real payment records (paymentLogs), which also drive the
-// 'Paid' status — this lets a Delivered-and-paid order show both AR and its
-// settlement. Known simplification: paying before delivery shows as negative AR
-// (a customer advance); down-payment modelling comes with the invoice doc types.
-//
-// COGS uses item.cost (Phase 3 swaps in perpetual moving-average cost).
+// Posting model (status-driven). Business action → accounting consequence:
+//   • SO 'Delivered'   → Dr COGS / Cr Inventory (moving-average cost), plus — only
+//                        while the order has no active Sales Invoice — Dr Receivable
+//                        (+ Sales Discount) / Cr Sales + PPN Keluaran.
+//   • Sales Invoice    → Dr Receivable (+ Sales Discount) / Cr Sales + PPN Keluaran.
+//     (Outstanding/Paid) COGS only for an invoice without a source SO.
+//   • PO 'Received'    → Dr Inventory / Expense + PPN Masukan / Cr Payable — only
+//                        while the order has no active Purchase Invoice.
+//   • Purchase Invoice → Dr Inventory / Expense + PPN Masukan / Cr Payable.
+//   • Payments         → SO/PO payment logs, Sales Receipts, Purchase Payments:
+//                        Cash/Bank vs Receivable/Payable. Payment-log rows created by
+//                        applying a down payment are skipped — the down-payment
+//                        journals already move the cash.
+//   • Returns, adjustments, down payments, payroll, other payments/deposits and bank
+//     transfers: see the builders below. docs/04-AKUNTANSI.md describes the rules
+//     for business users.
 //
 // Global-scope rule: classic <script>, IIFE-wrapped, exposes ONLY window.GL.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
-  // ── Default Chart of Accounts (Accurate-style, Indonesian) ──────────────────
-  // Seeded into DB.accountsChart by db.js when empty. Editable in-app later.
+  // ── Default Chart of Accounts (Indonesian) ─────────────────────────────────
+  // Seeded into DB.accountsChart when empty; accounts missing from an existing
+  // chart are appended (add-only, user edits are never overwritten).
   const DEFAULT_CHART = [
     { no: '110101', name: 'Kas', type: 'CASH_BANK' },
     { no: '110102', name: 'Bank BCA', type: 'CASH_BANK' },
@@ -50,6 +53,8 @@
     { no: '610301', name: 'Beban Gaji', type: 'EXPENSE' },
     { no: '610302', name: 'Beban Tunjangan', type: 'EXPENSE' },
     { no: '210401', name: 'Hutang Gaji', type: 'OTHER_CURRENT_LIABILITY' },
+    { no: '610401', name: 'Beban Administrasi Bank', type: 'EXPENSE' },
+    { no: '710101', name: 'Pendapatan Lain-lain', type: 'OTHER_INCOME' },
   ];
 
   // Company-level default account per posting slot (3-layer resolution falls back
@@ -71,6 +76,8 @@
     salaryExpense: '610301',
     allowanceExpense: '610302',
     salaryPayable: '210401',
+    bankFee: '610401',
+    otherIncome: '710101',
   };
 
   // Payment-method → cash/bank account.
@@ -79,6 +86,16 @@
     'Transfer BCA': '110102',
     'Transfer Mandiri': '110103',
   };
+
+  // Bank name → cash/bank account, for Kas & Bank accounts (settings.bankAccounts)
+  // that don't carry an explicit glAccountNo.
+  const BANK_NAME_ACCOUNTS = [
+    ['BCA', '110102'],
+    ['MANDIRI', '110103'],
+  ];
+
+  // Other Payment category → posting slot. Unlisted categories use purchaseExpense.
+  const PAYMENT_CATEGORY_SLOTS = { Gaji: 'salaryExpense' };
 
   function db() {
     return window.DB || {};
@@ -93,10 +110,8 @@
       data.accountsChart = DEFAULT_CHART.map(a => ({ ...a, balance: 0, currency: 'IDR' }));
       return data.accountsChart;
     }
-    // Add-only merge: an existing chart (e.g. from a DB created before a new default
-    // account was introduced) gets any missing DEFAULT_CHART accounts appended.
-    // Never overwrites user edits. Without this, a journal could reference an account
-    // absent from the chart and silently drop out of the trial balance.
+    // Add-only merge: without it a journal could reference an account absent from
+    // the chart and silently drop out of the trial balance.
     const have = new Set(data.accountsChart.map(a => a.no));
     DEFAULT_CHART.forEach(a => {
       if (!have.has(a.no)) {
@@ -129,6 +144,44 @@
 
   function cashAccountForMethod(method) {
     return METHOD_ACCOUNTS[method] || COMPANY_DEFAULTS.cash;
+  }
+
+  // Cash/bank account for a Kas & Bank record: the cash method books to Kas;
+  // otherwise the chosen bank account's glAccountNo, or a match on its bank name.
+  function bankAccountGL(bankAccountId, method) {
+    if (method === 'Tunai') {
+      return COMPANY_DEFAULTS.cash;
+    }
+    const accounts = (db().settings && db().settings.bankAccounts) || [];
+    const acc = accounts.find(a => a.id === bankAccountId);
+    if (acc && acc.glAccountNo) {
+      return acc.glAccountNo;
+    }
+    const label = String((acc && (acc.bank || acc.name)) || '').toUpperCase();
+    const hit = BANK_NAME_ACCOUNTS.find(([key]) => label.indexOf(key) !== -1);
+    return hit ? hit[1] : COMPANY_DEFAULTS.cash;
+  }
+
+  function isDownPaymentLog(p) {
+    return p.method === 'Down Payment' || p.source === 'DP';
+  }
+
+  function isActiveInvoice(inv) {
+    return !!inv && (inv.status === 'Outstanding' || inv.status === 'Paid');
+  }
+
+  // Does an order already have an active invoice drawn from it?
+  function hasActiveInvoice(collection, sourceType, orderId) {
+    return (db()[collection] || []).some(
+      inv =>
+        isActiveInvoice(inv) &&
+        inv.sourceId === orderId &&
+        (!inv.sourceType || inv.sourceType === sourceType)
+    );
+  }
+
+  function isCancelled(doc) {
+    return doc.status === 'Cancelled';
   }
 
   function docTaxRate(doc) {
@@ -178,47 +231,141 @@
     return (db().inventoryItems || []).find(i => String(i.id) === String(itemId)) || null;
   }
 
+  // Cost of inventory lines at the static item.cost.
+  function staticCost(lines) {
+    return lines.reduce((s, l) => {
+      const item = inventoryItem(l.itemId);
+      return item ? s + (Number(l.qty) || 0) * (Number(item.cost) || 0) : s;
+    }, 0);
+  }
+
+  // Debit/credit helpers that swap sides for reversing documents (returns).
+  function sides(reverse) {
+    return {
+      dr: (accountNo, amount, memo) =>
+        reverse ? { accountNo, credit: amount, memo } : { accountNo, debit: amount, memo },
+      cr: (accountNo, amount, memo) =>
+        reverse ? { accountNo, debit: amount, memo } : { accountNo, credit: amount, memo },
+    };
+  }
+
+  // Revenue side of a sale (SO delivery, Sales Invoice) or its reversal (Sales
+  // Return): receivable, sales discount, gross sales and PPN Keluaran. For a
+  // tax-inclusive document the line subtotals already contain PPN, so the
+  // receivable is the subtotal itself and sales exclude the PPN portion.
+  function revenueLines(doc, party, label, reverse) {
+    const lines = doc.lines || [];
+    // Round the totals first so every derived amount is a whole rupiah and the
+    // journal balances exactly (decimal quantities/prices included).
+    const gross = round(lines.reduce((s, l) => s + lineGross(l), 0));
+    const net = round(lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0));
+    const disc = gross - net;
+    const ppn = docPPN(doc, net);
+    const incl = !!doc.taxInclusive && ppn > 0;
+    const s = sides(reverse);
+    return [
+      s.dr(
+        resolveAccount('receivable', { party }),
+        incl ? net : net + ppn,
+        reverse ? `Pengurangan piutang ${label}` : `Piutang ${label}`
+      ),
+      s.dr(
+        resolveAccount('salesDiscount', { party }),
+        disc,
+        reverse ? 'Reversal diskon' : 'Diskon penjualan'
+      ),
+      s.cr(
+        resolveAccount('sales', { party }),
+        incl ? gross - ppn : gross,
+        reverse ? `Retur penjualan ${label}` : `Penjualan ${label}`
+      ),
+      s.cr(
+        resolveAccount('ppnOut', { party }),
+        ppn,
+        reverse ? `Reversal PPN Keluaran ${label}` : `PPN Keluaran ${label}`
+      ),
+    ];
+  }
+
+  // Purchase side (PO receipt, Purchase Invoice) or its reversal (Purchase Return):
+  // inventory lines to Inventory, other lines to expense, PPN Masukan, payable.
+  function purchaseLines(doc, party, label, reverse) {
+    let invAmt = 0;
+    let otherAmt = 0;
+    (doc.lines || []).forEach(l => {
+      const sub = Number(l.subtotal) || 0;
+      if (inventoryItem(l.itemId)) {
+        invAmt += sub;
+      } else {
+        otherAmt += sub;
+      }
+    });
+    invAmt = round(invAmt);
+    otherAmt = round(otherAmt);
+    const gross = invAmt + otherAmt;
+    const ppn = docPPN(doc, gross);
+    if (doc.taxInclusive && ppn > 0 && gross > 0) {
+      // Line subtotals include PPN: book only the net cost.
+      const netTotal = gross - ppn;
+      const invNet = round((invAmt * netTotal) / gross);
+      otherAmt = netTotal - invNet;
+      invAmt = invNet;
+    }
+    const s = sides(reverse);
+    return [
+      s.dr(
+        resolveAccount('inventory', { party }),
+        invAmt,
+        reverse ? `Pengurangan persediaan ${label}` : `Persediaan ${label}`
+      ),
+      s.dr(
+        resolveAccount('purchaseExpense', { party }),
+        otherAmt,
+        reverse ? `Reversal beban ${label}` : `Pembelian lain ${label}`
+      ),
+      s.dr(
+        resolveAccount('ppnIn', { party }),
+        ppn,
+        reverse ? `Reversal PPN Masukan ${label}` : `PPN Masukan ${label}`
+      ),
+      s.cr(
+        resolveAccount('payable', { party }),
+        invAmt + otherAmt + ppn,
+        reverse ? `Retur pembelian ${label}` : `Hutang ${label}`
+      ),
+    ];
+  }
+
   // ── Sales Order posting ─────────────────────────────────────────────────────
   function buildSOJournals(o) {
     const out = [];
-    const lines = o.lines || [];
-    const gross = lines.reduce((s, l) => s + lineGross(l), 0);
-    const net = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
-    const disc = gross - net;
     const party = (db().customers || []).find(c => c.id === o.customerId) || null;
 
     if (o.status === 'Delivered') {
-      // Phase 3a: COGS from the perpetual moving-average cost ledger when available;
-      // fall back to static item.cost (the Phase 2 behaviour) otherwise.
+      // COGS from the perpetual moving-average cost ledger when available; static
+      // item.cost otherwise.
       let cogs = null;
       if (window.CostLedger && typeof window.CostLedger.cogsForSO === 'function') {
         cogs = window.CostLedger.cogsForSO(o.id);
       }
       if (cogs === null || cogs === undefined) {
-        cogs = lines.reduce((s, l) => {
-          const item = inventoryItem(l.itemId);
-          return item ? s + (Number(l.qty) || 0) * (Number(item.cost) || 0) : s;
-        }, 0);
+        cogs = staticCost(o.lines || []);
       }
       cogs = round(cogs);
 
-      const ppn = docPPN(o, net);
-      const raw = [
-        { accountNo: resolveAccount('receivable', { party }), debit: net + ppn, memo: `Piutang ${o.id}` },
-        {
-          accountNo: resolveAccount('salesDiscount', { party }),
-          debit: disc,
-          memo: 'Diskon penjualan',
-        },
-        { accountNo: resolveAccount('sales', { party }), credit: gross, memo: `Penjualan ${o.id}` },
-        { accountNo: resolveAccount('ppnOut', { party }), credit: ppn, memo: `PPN Keluaran ${o.id}` },
+      // Once the order is invoiced, the invoice carries revenue, receivable and PPN;
+      // the delivery keeps only the goods movement.
+      const raw = hasActiveInvoice('salesInvoices', 'SO', o.id)
+        ? []
+        : revenueLines(o, party, o.id, false);
+      raw.push(
         { accountNo: resolveAccount('cogs', { party }), debit: cogs, memo: 'HPP' },
         {
           accountNo: resolveAccount('inventory', { party }),
           credit: cogs,
           memo: 'Pengurangan persediaan',
-        },
-      ];
+        }
+      );
       const j = makeJournal(`J:SO:${o.id}:rev`, o.id, o.date, { docType: 'SO', docId: o.id }, raw);
       if (j) {
         out.push(j);
@@ -227,7 +374,7 @@
 
     // Cash receipts from real payment records.
     (db().paymentLogs || [])
-      .filter(p => p.type === 'SO' && p.orderId === o.id)
+      .filter(p => p.type === 'SO' && p.orderId === o.id && !isDownPaymentLog(p))
       .forEach(p => {
         const j = makeJournal(
           `J:SO:${o.id}:pay:${p.id}`,
@@ -258,43 +405,23 @@
   // ── Purchase Order posting ──────────────────────────────────────────────────
   function buildPOJournals(o) {
     const out = [];
-    const lines = o.lines || [];
     const party = (db().suppliers || []).find(s => s.id === o.supplierId) || null;
 
-    if (o.status === 'Received') {
-      let invAmt = 0;
-      let otherAmt = 0;
-      lines.forEach(l => {
-        const sub = Number(l.subtotal) || 0;
-        if (inventoryItem(l.itemId)) {
-          invAmt += sub;
-        } else {
-          otherAmt += sub;
-        }
-      });
-      const total = invAmt + otherAmt;
-      const ppn = docPPN(o, total);
-      const j = makeJournal(`J:PO:${o.id}:recv`, o.id, o.date, { docType: 'PO', docId: o.id }, [
-        {
-          accountNo: resolveAccount('inventory', { party }),
-          debit: invAmt,
-          memo: `Persediaan ${o.id}`,
-        },
-        {
-          accountNo: resolveAccount('purchaseExpense', { party }),
-          debit: otherAmt,
-          memo: `Pembelian lain ${o.id}`,
-        },
-        { accountNo: resolveAccount('ppnIn', { party }), debit: ppn, memo: `PPN Masukan ${o.id}` },
-        { accountNo: resolveAccount('payable', { party }), credit: total + ppn, memo: `Hutang ${o.id}` },
-      ]);
+    if (o.status === 'Received' && !hasActiveInvoice('purchaseInvoices', 'PO', o.id)) {
+      const j = makeJournal(
+        `J:PO:${o.id}:recv`,
+        o.id,
+        o.date,
+        { docType: 'PO', docId: o.id },
+        purchaseLines(o, party, o.id, false)
+      );
       if (j) {
         out.push(j);
       }
     }
 
     (db().paymentLogs || [])
-      .filter(p => p.type === 'PO' && p.orderId === o.id)
+      .filter(p => p.type === 'PO' && p.orderId === o.id && !isDownPaymentLog(p))
       .forEach(p => {
         const j = makeJournal(
           `J:PO:${o.id}:pay:${p.id}`,
@@ -322,121 +449,56 @@
     return out;
   }
 
-  // ── Sales Invoice posting (Phase 4) ─────────────────────────────────────────
-  // When status is Outstanding or Paid: Dr Receivable / Cr Sales (+ discount split).
-  // COGS via cost ledger (same as SO Delivered).
-  function buildSIJournals(inv) {
-    const out = [];
-    if (inv.status !== 'Outstanding' && inv.status !== 'Paid') {
-      return out;
+  // ── Sales Invoice posting ───────────────────────────────────────────────────
+  function invoiceSourceOrder(inv) {
+    if (!inv.sourceId || (inv.sourceType && inv.sourceType !== 'SO')) {
+      return null;
     }
-    const lines = inv.lines || [];
-    const gross = lines.reduce((s, l) => s + lineGross(l), 0);
-    const net = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
-    const disc = gross - net;
-    const party = (db().customers || []).find(c => c.id === inv.customerId) || null;
-
-    let cogs = null;
-    if (window.CostLedger && typeof window.CostLedger.cogsForSO === 'function') {
-      cogs = window.CostLedger.cogsForSO(inv.id);
-    }
-    if (cogs === null || cogs === undefined) {
-      cogs = lines.reduce((s, l) => {
-        const item = inventoryItem(l.itemId);
-        return item ? s + (Number(l.qty) || 0) * (Number(item.cost) || 0) : s;
-      }, 0);
-    }
-    cogs = round(cogs);
-
-    const ppn = docPPN(inv, net);
-    const raw = [
-      {
-        accountNo: resolveAccount('receivable', { party }),
-        debit: net + ppn,
-        memo: `Piutang ${inv.number || inv.id}`,
-      },
-      {
-        accountNo: resolveAccount('salesDiscount', { party }),
-        debit: disc,
-        memo: 'Diskon penjualan',
-      },
-      {
-        accountNo: resolveAccount('sales', { party }),
-        credit: gross,
-        memo: `Penjualan ${inv.number || inv.id}`,
-      },
-      { accountNo: resolveAccount('ppnOut', { party }), credit: ppn, memo: `PPN Keluaran ${inv.number || inv.id}` },
-      { accountNo: resolveAccount('cogs', { party }), debit: cogs, memo: 'HPP' },
-      {
-        accountNo: resolveAccount('inventory', { party }),
-        credit: cogs,
-        memo: 'Pengurangan persediaan',
-      },
-    ];
-    const j = makeJournal(
-      `J:SI:${inv.id}:rev`,
-      inv.number || inv.id,
-      inv.date,
-      { docType: 'SI', docId: inv.id },
-      raw
-    );
-    if (j) {
-      out.push(j);
-    }
-    return out;
+    return (db().salesOrders || []).find(o => o.id === inv.sourceId) || null;
   }
 
-  // ── Purchase Invoice posting (Phase 4) ─────────────────────────────────────
-  function buildPIJournals(inv) {
-    const out = [];
-    if (inv.status !== 'Outstanding' && inv.status !== 'Paid') {
-      return out;
+  function buildSIJournals(inv) {
+    if (!isActiveInvoice(inv)) {
+      return [];
     }
-    const lines = inv.lines || [];
-    const party = (db().suppliers || []).find(s => s.id === inv.supplierId) || null;
-    let invAmt = 0;
-    let otherAmt = 0;
-    lines.forEach(l => {
-      const sub = Number(l.subtotal) || 0;
-      if (inventoryItem(l.itemId)) {
-        invAmt += sub;
-      } else {
-        otherAmt += sub;
-      }
-    });
-    const total = invAmt + otherAmt;
-    const ppn = docPPN(inv, total);
-    const j = makeJournal(
-      `J:PI:${inv.id}:recv`,
-      inv.number || inv.id,
-      inv.date,
-      { docType: 'PI', docId: inv.id },
-      [
+    const party = (db().customers || []).find(c => c.id === inv.customerId) || null;
+    const label = inv.number || inv.id;
+    const raw = revenueLines(inv, party, label, false);
+    // The goods movement belongs to the source order's delivery. Only an invoice
+    // without a source order (e.g. imported) books COGS itself, at item cost.
+    if (!invoiceSourceOrder(inv)) {
+      const cogs = round(staticCost(inv.lines || []));
+      raw.push(
+        { accountNo: resolveAccount('cogs', { party }), debit: cogs, memo: 'HPP' },
         {
           accountNo: resolveAccount('inventory', { party }),
-          debit: invAmt,
-          memo: `Persediaan ${inv.number || inv.id}`,
-        },
-        {
-          accountNo: resolveAccount('purchaseExpense', { party }),
-          debit: otherAmt,
-          memo: `Pembelian lain ${inv.number || inv.id}`,
-        },
-        { accountNo: resolveAccount('ppnIn', { party }), debit: ppn, memo: `PPN Masukan ${inv.number || inv.id}` },
-        {
-          accountNo: resolveAccount('payable', { party }),
-          credit: total + ppn,
-          memo: `Hutang ${inv.number || inv.id}`,
-        },
-      ]
-    );
-    if (j) {
-      out.push(j);
+          credit: cogs,
+          memo: 'Pengurangan persediaan',
+        }
+      );
     }
-    return out;
+    const j = makeJournal(`J:SI:${inv.id}:rev`, label, inv.date, { docType: 'SI', docId: inv.id }, raw);
+    return j ? [j] : [];
   }
 
-  // ── Sales Receipt posting (Phase 4) ────────────────────────────────────────
+  // ── Purchase Invoice posting ────────────────────────────────────────────────
+  function buildPIJournals(inv) {
+    if (!isActiveInvoice(inv)) {
+      return [];
+    }
+    const party = (db().suppliers || []).find(s => s.id === inv.supplierId) || null;
+    const label = inv.number || inv.id;
+    const j = makeJournal(
+      `J:PI:${inv.id}:recv`,
+      label,
+      inv.date,
+      { docType: 'PI', docId: inv.id },
+      purchaseLines(inv, party, label, false)
+    );
+    return j ? [j] : [];
+  }
+
+  // ── Sales Receipt posting ───────────────────────────────────────────────────
   function buildSRJournals(r) {
     if (r.status !== 'Posted') {
       return [];
@@ -463,7 +525,7 @@
     return j ? [j] : [];
   }
 
-  // ── Purchase Payment posting (Phase 4) ─────────────────────────────────────
+  // ── Purchase Payment posting ────────────────────────────────────────────────
   function buildPPJournals(p) {
     if (p.status !== 'Posted') {
       return [];
@@ -490,112 +552,46 @@
     return j ? [j] : [];
   }
 
-  // ── Sales Return posting (Phase 5) ───────────────────────────────────────────
-  // When status is Posted: reverses the revenue + COGS entries of the original sale.
-  //   Dr Sales (gross) / Cr Receivable (net) + Cr Sales Discount (disc)
-  //   Dr Inventory (cost) / Cr COGS (cost)
+  // ── Sales Return posting ────────────────────────────────────────────────────
+  // Posted: reverses the revenue side of the sale and returns the goods to
+  // inventory at item cost (Dr Inventory / Cr COGS).
   function buildSRNJournals(r) {
     if (r.status !== 'Posted') {
       return [];
     }
-    const lines = r.lines || [];
-    const gross = lines.reduce((s, l) => s + lineGross(l), 0);
-    const net = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
-    const disc = gross - net;
     const party = (db().customers || []).find(c => c.id === r.customerId) || null;
-
-    // COGS reversal: use static cost for returned items
-    let cogs = lines.reduce((s, l) => {
-      const item = inventoryItem(l.itemId);
-      return item ? s + (Number(l.qty) || 0) * (Number(item.cost) || 0) : s;
-    }, 0);
-    cogs = round(cogs);
-
-    const ppn = docPPN(r, net);
-    const raw = [
-      {
-        accountNo: resolveAccount('sales', { party }),
-        debit: gross,
-        memo: 'Retur penjualan ' + r.id,
-      },
-      { accountNo: resolveAccount('ppnOut', { party }), debit: ppn, memo: 'Reversal PPN Keluaran ' + r.id },
-      {
-        accountNo: resolveAccount('receivable', { party }),
-        credit: net + ppn,
-        memo: 'Pengurangan piutang ' + r.id,
-      },
-      {
-        accountNo: resolveAccount('salesDiscount', { party }),
-        credit: disc,
-        memo: 'Reversal diskon',
-      },
+    const raw = revenueLines(r, party, r.id, true);
+    const cogs = round(staticCost(r.lines || []));
+    raw.push(
       {
         accountNo: resolveAccount('inventory', { party }),
         debit: cogs,
         memo: 'Pengembalian persediaan ' + r.id,
       },
-      { accountNo: resolveAccount('cogs', { party }), credit: cogs, memo: 'Reversal HPP ' + r.id },
-    ];
-    const j = makeJournal(
-      'J:SRN:' + r.id,
-      r.number || r.id,
-      r.date,
-      { docType: 'SRN', docId: r.id },
-      raw
+      { accountNo: resolveAccount('cogs', { party }), credit: cogs, memo: 'Reversal HPP ' + r.id }
     );
+    const j = makeJournal('J:SRN:' + r.id, r.number || r.id, r.date, { docType: 'SRN', docId: r.id }, raw);
     return j ? [j] : [];
   }
 
-  // ── Purchase Return posting (Phase 5) ──────────────────────────────────────
-  // When status is Posted: reverses the purchase receipt entries.
-  //   Dr Payable / Cr Inventory (inv lines) + Cr Expense (other lines)
+  // ── Purchase Return posting ─────────────────────────────────────────────────
+  // Posted: reverses the purchase (Dr Payable / Cr Inventory, Expense, PPN Masukan).
   function buildPRNJournals(r) {
     if (r.status !== 'Posted') {
       return [];
     }
-    const lines = r.lines || [];
     const party = (db().suppliers || []).find(s => s.id === r.supplierId) || null;
-
-    let invAmt = 0;
-    let otherAmt = 0;
-    lines.forEach(l => {
-      const sub = Number(l.subtotal) || 0;
-      if (inventoryItem(l.itemId)) {
-        invAmt += sub;
-      } else {
-        otherAmt += sub;
-      }
-    });
-    const total = invAmt + otherAmt;
-    const ppn = docPPN(r, total);
     const j = makeJournal(
       'J:PRN:' + r.id,
       r.number || r.id,
       r.date,
       { docType: 'PRN', docId: r.id },
-      [
-        {
-          accountNo: resolveAccount('payable', { party }),
-          debit: total + ppn,
-          memo: 'Retur pembelian ' + r.id,
-        },
-        {
-          accountNo: resolveAccount('inventory', { party }),
-          credit: invAmt,
-          memo: 'Pengurangan persediaan ' + r.id,
-        },
-        {
-          accountNo: resolveAccount('purchaseExpense', { party }),
-          credit: otherAmt,
-          memo: 'Reversal beban ' + r.id,
-        },
-        { accountNo: resolveAccount('ppnIn', { party }), credit: ppn, memo: 'Reversal PPN Masukan ' + r.id },
-      ]
+      purchaseLines(r, party, r.id, true)
     );
     return j ? [j] : [];
   }
 
-  // ── Item Adjustment posting (Phase 3a) ──────────────────────────────────────
+  // ── Item Adjustment posting ─────────────────────────────────────────────────
   // Inventory increase  → Dr Inventory / Cr Beban Penyesuaian (a gain).
   // Inventory decrease  → Dr Beban Penyesuaian / Cr Inventory (a loss).
   // The signed value comes from the cost ledger (moving-average for outs).
@@ -629,10 +625,10 @@
     return j ? [j] : [];
   }
 
-  // ── Down Payment posting ─────────────────────────────────────────────────
-  // Sales DP (Received):  Dr Cash / Cr Uang Muka Penjualan
-  // Sales DP (Applied):   Dr Uang Muka Penjualan / Cr Receivable
-  // Purchase DP (Paid):   Dr Uang Muka Pembelian / Cr Cash
+  // ── Down Payment posting ────────────────────────────────────────────────────
+  // Sales DP (Received):   Dr Cash / Cr Uang Muka Penjualan
+  // Sales DP (Applied):    Dr Uang Muka Penjualan / Cr Receivable
+  // Purchase DP (Paid):    Dr Uang Muka Pembelian / Cr Cash
   // Purchase DP (Applied): Dr Payable / Cr Uang Muka Pembelian
   function buildSalesDPJournals(dp) {
     const out = [];
@@ -704,7 +700,7 @@
     return out;
   }
 
-  // ── Payroll posting ──────────────────────────────────────────────────────────
+  // ── Payroll posting ─────────────────────────────────────────────────────────
   function buildPayrollJournals(run) {
     if (!run.posted || !run.totalAmount) return [];
     const salary = (run.details || []).reduce((s, d) => s + (d.salary || 0), 0);
@@ -719,7 +715,58 @@
     return j ? [j] : [];
   }
 
-  // ── Reconcile: rebuild all auto-journals, preserve manual + Accurate ones ───
+  // ── Kas & Bank: other payments, other deposits, bank transfers ──────────────
+  // Other Payment : Dr expense (record's accountNo, else by category) / Cr cash-bank
+  // Other Deposit : Dr cash-bank / Cr other income (category 'Penjualan' → Sales)
+  // Bank Transfer : Dr destination (+ Dr bank fee) / Cr source (amount + fee)
+  function buildOtherPaymentJournals(p) {
+    const amt = round(p.amount);
+    if (amt <= 0 || isCancelled(p)) return [];
+    const label = p.number || p.id;
+    const expense =
+      p.accountNo || resolveAccount(PAYMENT_CATEGORY_SLOTS[p.category] || 'purchaseExpense', {});
+    const j = makeJournal(`J:OP:${p.id}`, label, p.date, { docType: 'OP', docId: p.id }, [
+      {
+        accountNo: expense,
+        debit: amt,
+        memo: [p.category, p.payee].filter(Boolean).join(' — ') || `Pengeluaran ${label}`,
+      },
+      { accountNo: bankAccountGL(p.bankAccountId, p.method), credit: amt, memo: `Pengeluaran ${label}` },
+    ]);
+    return j ? [j] : [];
+  }
+
+  function buildOtherDepositJournals(d) {
+    const amt = round(d.amount);
+    if (amt <= 0 || isCancelled(d)) return [];
+    const label = d.number || d.id;
+    const income =
+      d.accountNo || resolveAccount(d.category === 'Penjualan' ? 'sales' : 'otherIncome', {});
+    const j = makeJournal(`J:OD:${d.id}`, label, d.date, { docType: 'OD', docId: d.id }, [
+      { accountNo: bankAccountGL(d.bankAccountId, d.method), debit: amt, memo: `Penerimaan ${label}` },
+      {
+        accountNo: income,
+        credit: amt,
+        memo: [d.category, d.payer].filter(Boolean).join(' — ') || `Penerimaan ${label}`,
+      },
+    ]);
+    return j ? [j] : [];
+  }
+
+  function buildBankTransferJournals(t) {
+    const amt = round(t.amount);
+    const fee = round(t.fee);
+    if (amt <= 0 || isCancelled(t)) return [];
+    const label = t.number || t.id;
+    const j = makeJournal(`J:BT:${t.id}`, label, t.date, { docType: 'BT', docId: t.id }, [
+      { accountNo: bankAccountGL(t.toAccountId), debit: amt, memo: `Transfer masuk ${label}` },
+      { accountNo: resolveAccount('bankFee', {}), debit: fee, memo: `Biaya transfer ${label}` },
+      { accountNo: bankAccountGL(t.fromAccountId), credit: amt + fee, memo: `Transfer keluar ${label}` },
+    ]);
+    return j ? [j] : [];
+  }
+
+  // ── Reconcile: rebuild all auto-journals, preserve manual + imported ones ───
   function isManual(j) {
     return j.source === 'manual' || (j.source && j.source.docType === 'JV');
   }
@@ -730,33 +777,63 @@
   function reconcileAll() {
     const data = db();
     ensureChart();
-    // Phase 3a: drop the cost-ledger cache so COGS reflects current stock state.
+    // Drop the cost-ledger cache so COGS reflects the current stock state.
     if (window.CostLedger && typeof window.CostLedger.invalidate === 'function') {
       window.CostLedger.invalidate();
     }
     const manual = (data.journals || []).filter(isManual);
+    // Manual vouchers are also kept in DB.journalVouchers — the store that syncs
+    // across devices (derived journals don't). Merge vouchers that arrived from
+    // another device, and backfill the store with vouchers that only exist here.
+    if (!Array.isArray(data.journalVouchers)) {
+      data.journalVouchers = [];
+    }
+    const inLedger = new Set(manual.map(j => j.id));
+    data.journalVouchers.forEach(j => {
+      if (j && !inLedger.has(j.id)) {
+        manual.push(j);
+        inLedger.add(j.id);
+      }
+    });
+    const inStore = new Set(data.journalVouchers.map(j => j && j.id));
+    manual.forEach(j => {
+      if (!inStore.has(j.id)) {
+        data.journalVouchers.push(JSON.parse(JSON.stringify(j)));
+      }
+    });
     const accurate = (data.journals || []).filter(isAccurate);
     const auto = [];
-    (data.salesOrders || []).forEach(o => buildSOJournals(o).forEach(j => auto.push(j)));
-    (data.purchaseOrders || []).forEach(o => buildPOJournals(o).forEach(j => auto.push(j)));
-    (data.itemAdjustments || []).forEach(a =>
-      buildAdjustmentJournals(a).forEach(j => auto.push(j))
-    );
-    // Phase 4 doc types
-    (data.salesInvoices || []).forEach(d => buildSIJournals(d).forEach(j => auto.push(j)));
-    (data.purchaseInvoices || []).forEach(d => buildPIJournals(d).forEach(j => auto.push(j)));
-    (data.salesReceipts || []).forEach(d => buildSRJournals(d).forEach(j => auto.push(j)));
-    (data.purchasePayments || []).forEach(d => buildPPJournals(d).forEach(j => auto.push(j)));
-    // Phase 5: Sales/Purchase Returns
-    (data.salesReturns || []).forEach(d => buildSRNJournals(d).forEach(j => auto.push(j)));
-    (data.purchaseReturns || []).forEach(d => buildPRNJournals(d).forEach(j => auto.push(j)));
-    // Phase 6: Down Payments
-    (data.salesDownPayments || []).forEach(d => buildSalesDPJournals(d).forEach(j => auto.push(j)));
-    (data.purchaseDownPayments || []).forEach(d => buildPurchaseDPJournals(d).forEach(j => auto.push(j)));
-    // Phase 7: Payroll
-    (data.payrollRuns || []).forEach(r => buildPayrollJournals(r).forEach(j => auto.push(j)));
+    const add = (collection, build) =>
+      (data[collection] || []).forEach(d => build(d).forEach(j => auto.push(j)));
+    add('salesOrders', buildSOJournals);
+    add('purchaseOrders', buildPOJournals);
+    add('itemAdjustments', buildAdjustmentJournals);
+    add('salesInvoices', buildSIJournals);
+    add('purchaseInvoices', buildPIJournals);
+    add('salesReceipts', buildSRJournals);
+    add('purchasePayments', buildPPJournals);
+    add('salesReturns', buildSRNJournals);
+    add('purchaseReturns', buildPRNJournals);
+    add('salesDownPayments', buildSalesDPJournals);
+    add('purchaseDownPayments', buildPurchaseDPJournals);
+    add('payrollRuns', buildPayrollJournals);
+    add('otherPayments', buildOtherPaymentJournals);
+    add('otherDeposits', buildOtherDepositJournals);
+    add('bankTransfers', buildBankTransferJournals);
     data.journals = [...accurate, ...manual, ...auto];
     return auto.length;
+  }
+
+  // Journals derived from one document (e.g. for a "Dampak akuntansi" panel).
+  function journalsForDoc(docType, docId) {
+    return (db().journals || []).filter(
+      j =>
+        j &&
+        j.source &&
+        typeof j.source === 'object' &&
+        j.source.docType === docType &&
+        String(j.source.docId) === String(docId)
+    );
   }
 
   // ── Trial Balance (computed live from journals) ─────────────────────────────
@@ -776,9 +853,8 @@
     let totalDebit = 0;
     let totalCredit = 0;
     // Iterate the union of chart accounts and any account that actually appears in a
-    // journal. The latter guards against a journal line referencing an account that
-    // is missing from the chart — it must still show (and keep the TB balanced)
-    // rather than being silently dropped.
+    // journal, so a line referencing an account missing from the chart still shows
+    // (and keeps the trial balance balanced).
     const order = chart().map(a => a.no);
     const seen = new Set(order);
     sums.forEach((_v, no) => {
@@ -793,10 +869,8 @@
       if (!s) {
         return;
       }
-      // Net the account, then present it on a single side. A positive net lands
-      // in the Debit column, a negative net in the Credit column — this keeps the
-      // trial balance totals equal as long as every journal is balanced,
-      // regardless of each account's "normal" side (contra accounts included).
+      // Net the account, then present it on a single side: positive net → Debit,
+      // negative net → Credit. Totals stay equal as long as every journal balances.
       const net = s.debit - s.credit;
       const debit = round(net > 0 ? net : 0);
       const credit = round(net < 0 ? -net : 0);
@@ -838,6 +912,10 @@
       j.memo = memo;
     }
     data.journals.push(j);
+    if (!Array.isArray(data.journalVouchers)) {
+      data.journalVouchers = [];
+    }
+    data.journalVouchers.push(JSON.parse(JSON.stringify(j)));
     return j;
   }
 
@@ -847,6 +925,8 @@
     ensureChart,
     resolveAccount,
     accountName,
+    bankAccountGL,
+    hasActiveInvoice,
     buildSOJournals,
     buildPOJournals,
     buildSIJournals,
@@ -858,6 +938,11 @@
     buildPRNJournals,
     buildSalesDPJournals,
     buildPurchaseDPJournals,
+    buildPayrollJournals,
+    buildOtherPaymentJournals,
+    buildOtherDepositJournals,
+    buildBankTransferJournals,
+    journalsForDoc,
     reconcileAll,
     trialBalance,
     postJournalVoucher,

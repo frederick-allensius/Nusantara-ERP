@@ -1,17 +1,49 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Nusantara ERP — Quotation View  (quotation-view.js)
-// Phase 5: Sales Quotation (SQ) and Purchase Quotation (PQ).
+// Nusantara ERP — Quotations  (quotation-view.js)
 //
-// Two-tab view at #view-quotations. Each quotation can be converted to SO/PO
-// via the "Convert" action, which copies lines into a new Draft SO/PO.
+// Sales Quotation (SQ) and Purchase Quotation (PQ) at #view-quotations.
+//   Draft → Sent → Accepted / Rejected. Drafts can be edited or deleted; a sent
+//   quotation can go back to Draft for changes. An accepted quotation converts
+//   ONCE into a Draft SO/PO (lines copied, link kept in `convertedTo` and the
+//   order's `sourceQuotation`). Quotations never touch stock or the ledger.
 //
-// Global-scope rule: classic <script>, IIFE-wrapped, exposes only
-// window.renderQuotations (+ ERP action registrations).
+// All buttons use data-action delegation (the hosting CSP blocks inline handlers).
+// Global-scope rule: classic <script>, IIFE-wrapped; exposes window.renderQuotations,
+// window.viewQuotation and window._quotationExtras.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   let activeTab = 'SQ'; // 'SQ' | 'PQ'
+
+  const TYPES = {
+    SQ: {
+      label: 'Penawaran Penjualan',
+      sub: 'Penawaran harga ke pelanggan sebelum pesanan dibuat',
+      coll: 'salesQuotations',
+      party: 'customer',
+      partyId: 'customerId',
+      partyColl: 'customers',
+      partyLabel: 'Pelanggan',
+      priceField: 'sell',
+      target: 'SO',
+      targetColl: 'salesOrders',
+      targetLabel: 'Sales Order',
+    },
+    PQ: {
+      label: 'Penawaran Pembelian',
+      sub: 'Penawaran harga dari supplier sebelum pembelian',
+      coll: 'purchaseQuotations',
+      party: 'supplier',
+      partyId: 'supplierId',
+      partyColl: 'suppliers',
+      partyLabel: 'Supplier',
+      priceField: 'cost',
+      target: 'PO',
+      targetColl: 'purchaseOrders',
+      targetLabel: 'Purchase Order',
+    },
+  };
 
   function esc(s) {
     return typeof window.escapeHtml === 'function'
@@ -24,547 +56,510 @@
   function db() {
     return window.DB || {};
   }
-
-  var TAB_LABELS = { SQ: 'Penawaran Penjualan', PQ: 'Penawaran Pembelian' };
-
-  function tabBtn(id) {
-    var on = activeTab === id;
-    return (
-      '<button class="btn-ghost" data-action="qtTab" data-val="' +
-      id +
-      '"' +
-      ' style="font-size:12px;padding:6px 14px;border-radius:8px;font-weight:700;' +
-      (on ? 'background:var(--primary);color:#fff' : 'color:var(--muted)') +
-      '">' +
-      esc(TAB_LABELS[id]) +
-      '</button>'
-    );
+  function toast(msg, type) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, type);
+    }
   }
-
-  function statusBadge(s) {
+  function badge(s) {
     return typeof window.badge === 'function' ? window.badge(s) : esc(s);
   }
-
-  function collFor(t) {
-    return t === 'PQ' ? 'purchaseQuotations' : 'salesQuotations';
+  function same(a, b) {
+    return a !== null && a !== undefined && String(a) === String(b);
   }
-  function partyField(t) {
-    return t === 'PQ' ? 'supplier' : 'customer';
+  function docNo(d) {
+    return d ? d.number || d.id : '';
   }
-  function partyIdField(t) {
-    return t === 'PQ' ? 'supplierId' : 'customerId';
+  function todayStr() {
+    return typeof window.today === 'function' ? window.today() : new Date().toISOString().slice(0, 10);
   }
-  function partyColl(t) {
-    return t === 'PQ' ? 'suppliers' : 'customers';
-  }
-  function partyLabel(t) {
-    return t === 'PQ' ? 'Supplier' : 'Pelanggan';
-  }
-
-  // ── List rendering ──────────────────────────────────────────────────────────
-  function listTab(type) {
-    var coll = collFor(type);
-    var docs = (db()[coll] || []).slice().reverse();
-    if (docs.length === 0) {
-      return (
-        '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">' +
-        'Belum ada ' +
-        TAB_LABELS[type].toLowerCase() +
-        '. Klik <strong>Buat Quotation</strong>.' +
-        '</div></div>'
-      );
+  function save() {
+    if (typeof window.saveDB === 'function') {
+      window.saveDB();
     }
-    var pf = partyField(type);
-    var rows = docs
-      .map(function (d) {
-        var canConvert = d.status === 'Accepted';
-        return (
-          '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">' +
-          esc(d.number || d.id) +
-          '</td>' +
-          '<td class="td-p" style="font-size:13px;font-weight:600">' +
-          esc(d[pf] || '—') +
-          '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
-          esc(d.date) +
-          '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
-          esc(d.validUntil || '—') +
-          '</td>' +
-          '<td class="td-p" style="font-size:13px;font-weight:800;text-align:right">' +
-          money(d.amount || 0) +
-          '</td>' +
-          '<td class="td-p">' +
-          statusBadge(d.status) +
-          '</td>' +
-          '<td class="td-p">' +
-          '<button class="action-ghost" data-action="qtView" data-id="' +
-          esc(d.id) +
-          '" data-type="' +
-          type +
-          '">Lihat</button>' +
-          (d.status === 'Draft'
-            ? ' <button class="action-primary" data-action="qtSend" data-id="' +
-              esc(d.id) +
-              '" data-type="' +
-              type +
-              '">Kirim</button>'
-            : '') +
-          (canConvert
-            ? ' <button class="action-primary" data-action="qtConvert" data-id="' +
-              esc(d.id) +
-              '" data-type="' +
-              type +
-              '" style="background:#34C759">Convert → ' +
-              (type === 'SQ' ? 'SO' : 'PO') +
-              '</button>'
-            : '') +
-          '</td>' +
-          '</tr>'
-        );
+  }
+  function findQuote(type, id) {
+    return (db()[TYPES[type].coll] || []).find(d => same(d.id, id)) || null;
+  }
+
+  // The order created from a quotation (explicit link, or a legacy order that
+  // references the quotation number).
+  function convertedOrder(type, q) {
+    const t = TYPES[type];
+    const orders = db()[t.targetColl] || [];
+    if (q.convertedTo) {
+      const hit = orders.find(o => same(o.id, q.convertedTo));
+      if (hit) {
+        return hit;
+      }
+    }
+    return orders.find(o => o.sourceQuotation && (o.sourceQuotation === q.number || o.sourceQuotation === q.id)) || null;
+  }
+
+  // ── List ────────────────────────────────────────────────────────────────────
+  function tabsHTML() {
+    return (
+      '<div class="seg-tabs" role="tablist">' +
+      ['SQ', 'PQ']
+        .map(
+          t =>
+            `<button class="seg-tab${t === activeTab ? ' active' : ''}" role="tab" aria-selected="${t === activeTab}" data-action="qtTab" data-val="${t}">${esc(TYPES[t].label)}</button>`
+        )
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function listHTML(type) {
+    const t = TYPES[type];
+    const docs = (db()[t.coll] || []).slice().sort((a, b) => ((a.date || '') < (b.date || '') ? 1 : -1));
+    if (docs.length === 0) {
+      return `<div class="card"><div class="empty-state">
+        <div class="empty-title">Belum ada ${esc(t.label.toLowerCase())}</div>
+        <div class="empty-text">Penawaran bisa dikonversi menjadi ${esc(t.targetLabel)} setelah diterima.</div>
+        <button class="btn" data-action="qtNew">Buat Penawaran</button>
+      </div></div>`;
+    }
+    const today = todayStr();
+    const rows = docs
+      .map(d => {
+        const order = convertedOrder(type, d);
+        const expired = d.validUntil && d.validUntil < today && (d.status === 'Draft' || d.status === 'Sent');
+        let action = `<button class="action-ghost" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`;
+        if (d.status === 'Draft') {
+          action = `<button class="action-primary" data-action="qtSend" data-id="${esc(d.id)}" data-type="${type}">Tandai Dikirim</button>`;
+        } else if (d.status === 'Accepted' && !order) {
+          action = `<button class="action-primary" data-action="qtConvert" data-id="${esc(d.id)}" data-type="${type}">Buat ${t.target}</button>`;
+        }
+        return `<tr class="row-link" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">
+          <td class="doc-no">${esc(docNo(d))}</td>
+          <td class="t-strong">${esc(d[t.party] || '—')}</td>
+          <td class="t-muted">${esc(d.date || '')}</td>
+          <td class="${expired ? 't-danger' : 't-muted'}">${esc(d.validUntil || '—')}</td>
+          <td class="t-num">${money(d.amount || 0)}</td>
+          <td>${badge(d.status)}${order ? ` <span class="chip">→ ${esc(docNo(order))}</span>` : ''}</td>
+          <td class="t-actions">${action}</td>
+        </tr>`;
       })
       .join('');
-
-    return (
-      '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:10px">' +
-      TAB_LABELS[type] +
-      ' (' +
-      docs.length +
-      ')</div>' +
-      '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">No.</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">' +
-      partyLabel(type) +
-      '</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Tanggal</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Berlaku s/d</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Jumlah</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Aksi</th>' +
-      '</tr></thead>' +
-      '<tbody>' +
-      rows +
-      '</tbody>' +
-      '</table></div></div>'
-    );
+    return `<div class="card card-flush"><div class="table-wrap"><table class="data-table">
+      <thead><tr><th>No. Penawaran</th><th>${t.partyLabel}</th><th>Tanggal</th><th>Berlaku s/d</th><th class="t-num">Jumlah</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>`;
   }
 
-  // ── Main renderer ─────────────────────────────────────────────────────────
   function renderQuotations() {
-    var header =
+    const t = TYPES[activeTab];
+    const header =
       typeof window.secHdr === 'function'
-        ? window.secHdr('Quotation', 'Penawaran penjualan & pembelian', 'Buat Quotation', 'qtNew')
-        : '<h1>Quotation</h1>';
-    return (
-      header +
-      '<div style="display:flex;gap:6px;margin-bottom:14px">' +
-      tabBtn('SQ') +
-      tabBtn('PQ') +
-      '</div>' +
-      listTab(activeTab)
-    );
+        ? window.secHdr(t.label, t.sub, 'Buat Penawaran', 'qtNew')
+        : `<h1>${esc(t.label)}</h1>`;
+    return header + tabsHTML() + listHTML(activeTab);
   }
 
   function refresh() {
-    var el = document.getElementById('view-quotations');
-    if (el) el.innerHTML = renderQuotations();
+    const el = document.getElementById('view-quotations');
+    if (el && window.activeView === 'quotations') {
+      el.innerHTML = renderQuotations();
+    } else if (typeof window.invalidateView === 'function') {
+      window.invalidateView('quotations');
+    }
   }
 
-  // ── Create modal ──────────────────────────────────────────────────────────
-  function itemOptions(type) {
-    var priceField = type === 'PQ' ? 'cost' : 'sell';
+  // ── Create / edit ───────────────────────────────────────────────────────────
+  function itemOptions(type, selectedId) {
+    const priceField = TYPES[type].priceField;
     return (db().inventoryItems || [])
-      .map(function (i) {
-        return (
-          '<option value="' +
-          esc(i.id) +
-          '" data-price="' +
-          (i[priceField] || 0) +
-          '" data-name="' +
-          esc(i.name) +
-          '">' +
-          esc(i.name) +
-          ' (' +
-          esc(i.unit) +
-          ')</option>'
-        );
-      })
+      .map(
+        i =>
+          `<option value="${esc(i.id)}" data-price="${Number(i[priceField]) || 0}" data-name="${esc(i.name)}" data-unit="${esc(i.unit || '')}"${same(i.id, selectedId) ? ' selected' : ''}>${esc(i.name)}${i.unit ? ` (${esc(i.unit)})` : ''}</option>`
+      )
       .join('');
   }
 
-  function lineRowHTML(type) {
-    return (
-      '<tr class="qt-line">' +
-      '<td style="padding:4px 6px"><select class="form-select qt-item" style="font-size:12px;padding:5px 8px;width:100%">' +
-      '<option value="custom">— Item manual —</option>' +
-      itemOptions(type) +
-      '</select></td>' +
-      '<td style="padding:4px 6px"><input class="form-input qt-qty" type="number" min="1" value="1" style="font-size:12px;padding:5px 8px;width:70px"></td>' +
-      '<td style="padding:4px 6px"><input class="form-input qt-price" type="number" min="0" value="0" style="font-size:12px;padding:5px 8px;width:120px"></td>' +
-      '<td style="padding:4px 6px;font-size:12px;font-weight:700;text-align:right" class="qt-sub">Rp 0</td>' +
-      '<td style="padding:4px 6px;text-align:center"><button type="button" class="qt-del" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button></td>' +
-      '</tr>'
-    );
+  function lineRowHTML(type, line) {
+    line = line || {};
+    const isCustom = !line.itemId || line.itemId === 'custom';
+    return `<tr class="qt-line">
+      <td>
+        <select class="form-select qt-item">
+          <option value="custom"${isCustom ? ' selected' : ''}>Barang/jasa lain (tulis manual)</option>
+          ${itemOptions(type, isCustom ? null : line.itemId)}
+        </select>
+        <input class="form-input qt-custom" type="text" placeholder="Nama barang / jasa" value="${isCustom ? esc(line.itemName || '') : ''}" style="margin-top:4px;${isCustom ? '' : 'display:none'}">
+      </td>
+      <td><input class="form-input t-num qt-qty" type="number" min="0" step="any" value="${line.qty || 1}" style="width:90px"></td>
+      <td><input class="form-input t-num qt-price" type="number" min="0" step="any" value="${line.price || 0}" style="width:130px"></td>
+      <td class="t-num qt-sub">${money(Math.round((Number(line.qty) || 0) * (Number(line.price) || 0)))}</td>
+      <td class="t-actions"><button type="button" class="icon-btn qt-del" title="Hapus baris" aria-label="Hapus baris">✕</button></td>
+    </tr>`;
   }
 
-  function openNewModal(type) {
-    if (!window.openModal) return;
-    var today =
-      typeof window.today === 'function' ? window.today() : new Date().toISOString().slice(0, 10);
-    var parties = (db()[partyColl(type)] || [])
-      .map(function (p) {
-        return '<option value="' + esc(p.name) + '">';
-      })
-      .join('');
+  function openFormModal(type, existing) {
+    const t = TYPES[type];
+    if (!window.openModal) {
+      return;
+    }
+    if (existing && existing.status !== 'Draft') {
+      toast('Hanya penawaran Draft yang bisa diubah', 'info');
+      return;
+    }
+    const parties = (db()[t.partyColl] || []).map(p => `<option value="${esc(p.name)}">`).join('');
+    const lines = existing && existing.lines && existing.lines.length ? existing.lines : [null];
 
     window.openModal(
-      'Buat ' + TAB_LABELS[type],
-      '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">' +
-        partyLabel(type) +
-        '</label>' +
-        '<input class="form-input" id="qt-party" type="text" list="qt-parties" placeholder="Nama ' +
-        partyLabel(type).toLowerCase() +
-        '">' +
-        '<datalist id="qt-parties">' +
-        parties +
-        '</datalist></div>' +
-        '<div class="form-group"><label class="form-label">Tanggal</label>' +
-        '<input class="form-input" id="qt-date" type="date" value="' +
-        today +
-        '"></div>' +
-        '<div class="form-group"><label class="form-label">Berlaku s/d</label>' +
-        '<input class="form-input" id="qt-valid" type="date"></div>' +
-        '</div>' +
-        '<div style="margin-top:10px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<span class="form-label" style="margin:0;font-size:13px;font-weight:700">Item</span>' +
-        '<button type="button" class="btn-ghost" id="qt-add-line" style="font-size:11px;padding:4px 10px">+ Tambah Item</button>' +
-        '</div>' +
-        '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)">' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left">Item</th>' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:80px">Qty</th>' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:130px">Harga</th>' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:right;width:130px">Subtotal</th>' +
-        '<th style="width:30px"></th>' +
-        '</tr></thead><tbody id="qt-lines">' +
-        lineRowHTML(type) +
-        '</tbody></table>' +
-        '<div style="display:flex;justify-content:flex-end;margin-top:8px;font-size:13px;font-weight:800">Total: <span id="qt-total" style="margin-left:6px">Rp 0</span></div>' +
-        '</div>' +
-        '<div class="form-row" style="margin-top:10px"><div class="form-group"><label class="form-label">Catatan</label>' +
-        '<input class="form-input" id="qt-note" type="text" placeholder="Syarat & ketentuan (opsional)"></div></div>',
-      '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
-        ' <button class="btn" id="qt-save">Simpan</button>',
+      existing ? `Ubah ${t.label} ${esc(docNo(existing))}` : `Buat ${t.label}`,
+      `<div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="qt-party">${t.partyLabel} <span class="req">*</span></label>
+          <input class="form-input" id="qt-party" type="text" list="qt-parties" value="${esc(existing ? existing[t.party] || '' : '')}" placeholder="Nama ${t.partyLabel.toLowerCase()}">
+          <datalist id="qt-parties">${parties}</datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="qt-date">Tanggal</label>
+          <input class="form-input" id="qt-date" type="date" value="${esc(existing ? existing.date : todayStr())}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="qt-valid">Berlaku s/d</label>
+          <input class="form-input" id="qt-valid" type="date" value="${esc(existing ? existing.validUntil || '' : '')}">
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-head">
+          <div class="detail-section-title">Barang</div>
+          <button type="button" class="action-ghost" id="qt-add-line">+ Tambah baris</button>
+        </div>
+        <table class="data-table compact">
+          <thead><tr><th>Barang</th><th class="t-num">Qty</th><th class="t-num">Harga</th><th class="t-num">Subtotal</th><th></th></tr></thead>
+          <tbody id="qt-lines">${lines.map(l => lineRowHTML(type, l)).join('')}</tbody>
+        </table>
+        <div class="inline-total">Total <strong id="qt-total">${money(0)}</strong></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label" for="qt-note">Catatan</label>
+          <input class="form-input" id="qt-note" type="text" value="${esc(existing ? existing.note || '' : '')}" placeholder="Syarat & ketentuan (opsional)">
+        </div>
+      </div>`,
+      `<button class="btn-ghost" data-action="closeModal">Batal</button>
+       <button class="btn" id="qt-save">${existing ? 'Simpan Perubahan' : 'Simpan'}</button>`,
       true
     );
 
-    setTimeout(function () {
-      var body = document.getElementById('qt-lines');
-      var totalEl = document.getElementById('qt-total');
-
-      function recalcLine(tr) {
-        var qty = parseFloat(tr.querySelector('.qt-qty').value) || 0;
-        var price = parseFloat(tr.querySelector('.qt-price').value) || 0;
-        var sub = Math.round(qty * price);
-        tr.querySelector('.qt-sub').textContent = money(sub);
+    setTimeout(() => {
+      const body = document.getElementById('qt-lines');
+      const totalEl = document.getElementById('qt-total');
+      if (!body) {
+        return;
       }
-      function recalcTotal() {
-        var total = 0;
-        body.querySelectorAll('tr').forEach(function (tr) {
-          var qty = parseFloat(tr.querySelector('.qt-qty').value) || 0;
-          var price = parseFloat(tr.querySelector('.qt-price').value) || 0;
-          total += Math.round(qty * price);
+      function lineValues(tr) {
+        const qty = parseFloat(tr.querySelector('.qt-qty').value) || 0;
+        const price = parseFloat(tr.querySelector('.qt-price').value) || 0;
+        return { qty, price, sub: Math.round(qty * price) };
+      }
+      function recalc() {
+        let total = 0;
+        body.querySelectorAll('tr').forEach(tr => {
+          const v = lineValues(tr);
+          tr.querySelector('.qt-sub').textContent = money(v.sub);
+          total += v.sub;
         });
         totalEl.textContent = money(total);
       }
       function wireRow(tr) {
-        var itemSel = tr.querySelector('.qt-item');
-        var priceInp = tr.querySelector('.qt-price');
-        itemSel.addEventListener('change', function () {
-          var opt = itemSel.options[itemSel.selectedIndex];
-          if (opt && opt.dataset.price) priceInp.value = opt.dataset.price;
-          recalcLine(tr);
-          recalcTotal();
+        const sel = tr.querySelector('.qt-item');
+        const custom = tr.querySelector('.qt-custom');
+        sel.addEventListener('change', () => {
+          const opt = sel.options[sel.selectedIndex];
+          const isCustom = sel.value === 'custom';
+          custom.style.display = isCustom ? '' : 'none';
+          if (!isCustom && opt && opt.dataset.price) {
+            tr.querySelector('.qt-price').value = opt.dataset.price;
+          }
+          recalc();
         });
-        tr.querySelector('.qt-qty').addEventListener('input', function () {
-          recalcLine(tr);
-          recalcTotal();
-        });
-        priceInp.addEventListener('input', function () {
-          recalcLine(tr);
-          recalcTotal();
-        });
-        tr.querySelector('.qt-del').addEventListener('click', function () {
+        tr.querySelector('.qt-qty').addEventListener('input', recalc);
+        tr.querySelector('.qt-price').addEventListener('input', recalc);
+        tr.querySelector('.qt-del').addEventListener('click', () => {
           tr.remove();
-          recalcTotal();
+          recalc();
         });
       }
       body.querySelectorAll('tr').forEach(wireRow);
+      recalc();
 
-      document.getElementById('qt-add-line').addEventListener('click', function () {
-        var tmp = document.createElement('tbody');
-        tmp.innerHTML = lineRowHTML(type);
-        var tr = tmp.firstElementChild;
+      document.getElementById('qt-add-line').addEventListener('click', () => {
+        const tmp = document.createElement('tbody');
+        tmp.innerHTML = lineRowHTML(type, null);
+        const tr = tmp.firstElementChild;
         body.appendChild(tr);
         wireRow(tr);
       });
 
-      document.getElementById('qt-save').addEventListener('click', function () {
-        var partyName = (document.getElementById('qt-party').value || '').trim();
+      document.getElementById('qt-save').addEventListener('click', () => {
+        const partyName = (document.getElementById('qt-party').value || '').trim();
         if (!partyName) {
-          window.showToast(partyLabel(type) + ' harus diisi', 'warning');
+          toast(`${t.partyLabel} harus diisi`, 'warning');
           return;
         }
-        var date = document.getElementById('qt-date').value;
-        var validUntil = document.getElementById('qt-valid').value || '';
-        var note = (document.getElementById('qt-note').value || '').trim();
-        var lines = [];
-        body.querySelectorAll('tr').forEach(function (tr) {
-          var itemSel = tr.querySelector('.qt-item');
-          var itemId = itemSel.value;
-          var itemName =
-            itemId === 'custom'
-              ? 'Custom Item'
-              : itemSel.options[itemSel.selectedIndex].dataset.name || '';
-          var qty = parseFloat(tr.querySelector('.qt-qty').value) || 0;
-          var price = parseFloat(tr.querySelector('.qt-price').value) || 0;
-          if (qty > 0 && price > 0) {
-            lines.push({
-              itemId: itemId,
-              itemName: itemName,
-              qty: qty,
-              price: price,
-              subtotal: Math.round(qty * price),
+        const date = document.getElementById('qt-date').value || todayStr();
+        const collected = [];
+        let missingName = false;
+        body.querySelectorAll('tr').forEach(tr => {
+          const sel = tr.querySelector('.qt-item');
+          const v = lineValues(tr);
+          if (v.qty <= 0 || v.price <= 0) {
+            return;
+          }
+          if (sel.value === 'custom') {
+            const name = (tr.querySelector('.qt-custom').value || '').trim();
+            if (!name) {
+              missingName = true;
+              return;
+            }
+            collected.push({ itemId: 'custom', itemName: name, unit: 'ls', qty: v.qty, price: v.price, lineDiscount: 0, subtotal: v.sub });
+          } else {
+            const opt = sel.options[sel.selectedIndex];
+            collected.push({
+              itemId: String(sel.value),
+              itemName: (opt && opt.dataset.name) || '',
+              unit: (opt && opt.dataset.unit) || '',
+              qty: v.qty,
+              price: v.price,
+              lineDiscount: 0,
+              subtotal: v.sub,
             });
           }
         });
-        if (lines.length === 0) {
-          window.showToast('Tambahkan minimal 1 item', 'warning');
+        if (missingName) {
+          toast('Isi nama untuk barang/jasa yang ditulis manual', 'warning');
           return;
         }
-
-        var data = db();
-        var coll = collFor(type);
-        if (!Array.isArray(data[coll])) data[coll] = [];
-        var number = window.DocEngine
-          ? window.DocEngine.nextNumber(type, date, {
-              sequences: data.numberSequences,
-              commit: true,
-            })
-          : type + '-' + Date.now();
-        var id = type + '-' + Date.now();
-        var amount = lines.reduce(function (s, l) {
-          return s + l.subtotal;
-        }, 0);
-
-        // Resolve party ID
-        var partyId = window.DocEngine ? window.DocEngine.resolvePartyId(type, partyName) : null;
-
-        var doc = {
-          id: id,
-          number: number,
-          date: date,
-          validUntil: validUntil,
-          status: 'Draft',
-          amount: amount,
-          lines: lines,
-          note: note,
+        if (collected.length === 0) {
+          toast('Tambahkan minimal 1 barang dengan jumlah dan harga', 'warning');
+          return;
+        }
+        const data = db();
+        if (!Array.isArray(data[t.coll])) {
+          data[t.coll] = [];
+        }
+        const fields = {
+          date,
+          validUntil: document.getElementById('qt-valid').value || '',
+          amount: collected.reduce((s, l) => s + l.subtotal, 0),
+          lines: collected,
+          note: (document.getElementById('qt-note').value || '').trim(),
+          [t.party]: partyName,
+          [t.partyId]: window.DocEngine ? window.DocEngine.resolvePartyId(type, partyName) : null,
         };
-        doc[partyField(type)] = partyName;
-        doc[partyIdField(type)] = partyId;
-
-        data[coll].push(doc);
-        if (window.saveDB) window.saveDB();
-        if (window.closeModal) window.closeModal();
+        let number;
+        if (existing) {
+          Object.assign(existing, fields);
+          number = docNo(existing);
+        } else {
+          number = window.DocEngine
+            ? window.DocEngine.nextNumber(type, date, { sequences: data.numberSequences, commit: true })
+            : `${type}-${Date.now()}`;
+          data[t.coll].push(Object.assign({ id: `${type}-${Date.now()}`, number, status: 'Draft' }, fields));
+        }
+        save();
+        if (window.closeModal) {
+          window.closeModal();
+        }
         refresh();
-        window.showToast(number + ' berhasil dibuat', 'success');
+        toast(existing ? `${number} diperbarui` : `${number} dibuat`, 'success');
       });
     }, 50);
   }
 
-  // ── Send (Draft → Sent) ───────────────────────────────────────────────────
-  function sendQuotation(type, id) {
-    var coll = collFor(type);
-    var doc = (db()[coll] || []).find(function (d) {
-      return d.id === id;
-    });
-    if (!doc || doc.status !== 'Draft') return;
-    doc.status = 'Sent';
-    if (window.saveDB) window.saveDB();
+  // ── Status changes ──────────────────────────────────────────────────────────
+  function setStatus(type, id, next) {
+    const q = findQuote(type, id);
+    if (!q) {
+      return;
+    }
+    if (window.DocEngine && !window.DocEngine.canTransition(type, q.status, next)) {
+      toast('Perubahan status ini tidak diizinkan', 'warning');
+      return;
+    }
+    q.status = next;
+    save();
+    if (window.closeModal) {
+      window.closeModal();
+    }
     refresh();
-    window.showToast((doc.number || doc.id) + ' → Dikirim', 'success');
+    const labels = { Sent: 'ditandai dikirim', Accepted: 'diterima', Rejected: 'ditolak', Draft: 'dikembalikan ke Draft' };
+    toast(`${docNo(q)} ${labels[next] || next}`, 'success');
   }
 
-  // ── Convert to SO/PO ─────────────────────────────────────────────────────
+  function deleteDraft(type, id) {
+    const list = db()[TYPES[type].coll] || [];
+    const idx = list.findIndex(d => same(d.id, id));
+    if (idx === -1 || list[idx].status !== 'Draft') {
+      toast('Hanya penawaran Draft yang bisa dihapus', 'info');
+      return;
+    }
+    if (!window.confirm(`Hapus ${docNo(list[idx])}?`)) {
+      return;
+    }
+    const removed = list.splice(idx, 1)[0];
+    save();
+    if (window.closeModal) {
+      window.closeModal();
+    }
+    refresh();
+    toast(`${docNo(removed)} dihapus`, 'success');
+  }
+
+  // ── Convert to SO/PO (once) ─────────────────────────────────────────────────
   function convertQuotation(type, id) {
-    var coll = collFor(type);
-    var doc = (db()[coll] || []).find(function (d) {
-      return d.id === id;
-    });
-    if (!doc || doc.status !== 'Accepted') return;
-
-    var data = db();
-    var targetType = type === 'SQ' ? 'SO' : 'PO';
-    var targetColl = type === 'SQ' ? 'salesOrders' : 'purchaseOrders';
-    if (!Array.isArray(data[targetColl])) data[targetColl] = [];
-
-    // Generate next ID using the existing pattern
-    var nextId =
-      typeof window.nextId === 'function'
-        ? window.nextId(targetType, data[targetColl])
-        : targetType + '-' + Date.now();
-
-    var newDoc = {
-      id: nextId,
-      date:
-        typeof window.today === 'function' ? window.today() : new Date().toISOString().slice(0, 10),
+    const t = TYPES[type];
+    const q = findQuote(type, id);
+    if (!q || q.status !== 'Accepted') {
+      return;
+    }
+    const existing = convertedOrder(type, q);
+    if (existing) {
+      toast(`${docNo(q)} sudah dikonversi menjadi ${docNo(existing)}`, 'info');
+      return;
+    }
+    const data = db();
+    if (!Array.isArray(data[t.targetColl])) {
+      data[t.targetColl] = [];
+    }
+    const date = todayStr();
+    const order = {
+      id:
+        typeof window.nextId === 'function'
+          ? window.nextId(t.target, data[t.targetColl])
+          : `${t.target}-${Date.now()}`,
+      number: window.DocEngine ? window.DocEngine.nextNumber(t.target, date, { commit: true }) : undefined,
+      date,
       status: 'Draft',
-      amount: doc.amount || 0,
-      lines: (doc.lines || []).map(function (l) {
-        return Object.assign({}, l);
-      }),
-      sourceQuotation: doc.number || doc.id,
+      lines: (q.lines || []).map(l => Object.assign({}, l)),
+      taxRate: 0,
+      tax: 0,
+      amount: q.amount || 0,
+      sourceQuotation: docNo(q),
+      stockMutated: false,
+      [t.party]: q[t.party] || '',
+      [t.partyId]: q[t.partyId] != null ? String(q[t.partyId]) : null,
     };
-
-    if (type === 'SQ') {
-      newDoc.customer = doc.customer || '';
-      newDoc.customerId = doc.customerId || null;
-    } else {
-      newDoc.supplier = doc.supplier || '';
-      newDoc.supplierId = doc.supplierId || null;
+    data[t.targetColl].unshift(order);
+    q.convertedTo = order.id;
+    save();
+    if (window.closeModal) {
+      window.closeModal();
     }
-
-    data[targetColl].push(newDoc);
-    if (window.saveDB) window.saveDB();
     refresh();
-    window.showToast(
-      (doc.number || doc.id) + ' → ' + nextId + ' (' + targetType + ' Draft)',
-      'success'
-    );
+    toast(`${docNo(q)} → ${docNo(order)} (Draft). Lengkapi PPN dan gudang di pesanan.`, 'success');
   }
 
-  // ── View detail ───────────────────────────────────────────────────────────
+  // ── Detail ──────────────────────────────────────────────────────────────────
   function viewQuotation(type, id) {
-    var coll = collFor(type);
-    var doc = (db()[coll] || []).find(function (d) {
-      return d.id === id;
-    });
-    if (!doc || !window.openModal) return;
-
-    var pf = partyField(type);
-    var detailRow =
+    const t = TYPES[type];
+    const q = findQuote(type, id);
+    if (!q || !window.openModal) {
+      return;
+    }
+    const row = (l, v) =>
       typeof window.detailRow === 'function'
-        ? window.detailRow
-        : function (l, v) {
-            return '<div><strong>' + l + ':</strong> ' + v + '</div>';
-          };
-
-    var linesHtml = '';
-    if (doc.lines && doc.lines.length > 0) {
-      linesHtml =
-        '<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">Item (' +
-        doc.lines.length +
-        ')</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">' +
-        '<th style="padding:6px 8px;text-align:left">Item</th><th style="padding:6px 8px;text-align:right">Qty</th>' +
-        '<th style="padding:6px 8px;text-align:right">Harga</th><th style="padding:6px 8px;text-align:right">Subtotal</th>' +
-        '</tr></thead><tbody>';
-      doc.lines.forEach(function (l) {
-        var name = l.itemName || l.itemId;
-        linesHtml +=
-          '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td style="padding:5px 8px">' +
-          esc(name) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right">' +
-          (l.qty || 0) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right">' +
-          money(l.price || 0) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right;font-weight:700">' +
-          money(l.subtotal || 0) +
-          '</td></tr>';
-      });
-      linesHtml += '</tbody></table></div>';
+        ? window.detailRow(l, v)
+        : `<div><strong>${esc(l)}:</strong> ${v}</div>`;
+    const order = convertedOrder(type, q);
+    const orderLink = order
+      ? `<button class="link-btn" data-action="${t.target === 'SO' ? 'viewSO' : 'viewPO'}" data-id="${esc(order.id)}">${esc(docNo(order))}</button>`
+      : '';
+    const buttons = ['<button class="btn-ghost" data-action="closeModal">Tutup</button>'];
+    if (window.DocFlow) {
+      buttons.push(window.DocFlow.button(type, id));
     }
-
-    // Status action buttons
-    var actions = '';
-    if (doc.status === 'Sent') {
-      actions =
-        '<button class="btn" data-action="closeModal" onclick="(function(){var d=(window.DB[\'' +
-        collFor(type) +
-        "']||[]).find(function(x){return x.id==='" +
-        id +
-        "'});if(d){d.status='Accepted';window.saveDB&&window.saveDB();window.closeModal&&window.closeModal();var el=document.getElementById('view-quotations');if(el&&window.renderQuotations)el.innerHTML=window.renderQuotations();window.showToast&&window.showToast('Status → Diterima','success')}})()\" style=\"background:#34C759;margin-right:6px\">Terima</button>" +
-        '<button class="btn" data-action="closeModal" onclick="(function(){var d=(window.DB[\'' +
-        collFor(type) +
-        "']||[]).find(function(x){return x.id==='" +
-        id +
-        "'});if(d){d.status='Rejected';window.saveDB&&window.saveDB();window.closeModal&&window.closeModal();var el=document.getElementById('view-quotations');if(el&&window.renderQuotations)el.innerHTML=window.renderQuotations();window.showToast&&window.showToast('Status → Ditolak','warning')}})()\" style=\"background:#FF3B30;margin-right:6px\">Tolak</button>";
+    if (q.status === 'Draft') {
+      buttons.push(`<button class="btn-ghost btn-danger-text" data-action="qtDelete" data-id="${esc(id)}" data-type="${type}">Hapus</button>`);
+      buttons.push(`<button class="btn-ghost" data-action="qtEdit" data-id="${esc(id)}" data-type="${type}">Ubah</button>`);
+      buttons.push(`<button class="btn" data-action="qtSend" data-id="${esc(id)}" data-type="${type}">Tandai Dikirim</button>`);
+    } else if (q.status === 'Sent') {
+      buttons.push(`<button class="btn-ghost" data-action="qtToDraft" data-id="${esc(id)}" data-type="${type}">Kembalikan ke Draft</button>`);
+      buttons.push(`<button class="btn-ghost btn-danger-text" data-action="qtReject" data-id="${esc(id)}" data-type="${type}">Ditolak</button>`);
+      buttons.push(`<button class="btn" data-action="qtAccept" data-id="${esc(id)}" data-type="${type}">Diterima</button>`);
+    } else if (q.status === 'Accepted' && !order) {
+      buttons.push(`<button class="btn" data-action="qtConvert" data-id="${esc(id)}" data-type="${type}">Buat ${t.targetLabel}</button>`);
     }
-
     window.openModal(
-      TAB_LABELS[type] + ' — ' + esc(doc.number || doc.id),
-      '<div class="detail-grid">' +
-        detailRow('Nomor', esc(doc.number || doc.id)) +
-        detailRow('Status', statusBadge(doc.status)) +
-        '<div class="detail-divider"></div>' +
-        detailRow(partyLabel(type), esc(doc[pf] || '—')) +
-        detailRow('Tanggal', esc(doc.date)) +
-        detailRow('Berlaku s/d', esc(doc.validUntil || '—')) +
-        detailRow('Jumlah', '<strong>' + money(doc.amount || 0) + '</strong>') +
-        (doc.note ? detailRow('Catatan', esc(doc.note)) : '') +
-        '</div>' +
-        linesHtml,
-      actions +
-        (window.DocFlow ? window.DocFlow.button(type, id) : '') +
-        '<button class="btn-ghost" data-action="closeModal">Tutup</button>'
+      `${t.label} ${esc(docNo(q))}`,
+      `<div class="detail-grid">
+        ${row('Nomor', `<span class="doc-no">${esc(docNo(q))}</span>`)}
+        ${row('Status', badge(q.status))}
+        <div class="detail-divider"></div>
+        ${row(t.partyLabel, esc(q[t.party] || '—'))}
+        ${row('Tanggal', esc(q.date || '—'))}
+        ${row('Berlaku s/d', esc(q.validUntil || '—'))}
+        ${order ? row(t.targetLabel, orderLink) : ''}
+        ${q.note ? row('Catatan', esc(q.note)) : ''}
+      </div>
+      ${typeof window.linesDetailHTML === 'function' ? window.linesDetailHTML(q.lines || [], 'Total penawaran', q) : ''}`,
+      buttons.join(''),
+      true
     );
   }
 
-  // ── Wire up ───────────────────────────────────────────────────────────────
+  // ── Wire up ─────────────────────────────────────────────────────────────────
   window.renderQuotations = renderQuotations;
   window.viewQuotation = viewQuotation; // used by doc-flow.js "Jejak" navigation
 
-  function _navToTab(tab) {
+  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
+  const TAB_ENTRY = { SQ: 'Penawaran Penjualan', PQ: 'Penawaran Pembelian' };
+  function syncMenu() {
+    if (TAB_ENTRY[activeTab] && window.NSANav && typeof window.NSANav.markActive === 'function') {
+      window.NSANav.markActive(TAB_ENTRY[activeTab]);
+    }
+  }
+
+  function navToTab(tab) {
     activeTab = tab;
-    if (typeof window.invalidateView === 'function') window.invalidateView('quotations');
-    if (typeof window.navigate === 'function') window.navigate('quotations');
+    if (typeof window.invalidateView === 'function') {
+      window.invalidateView('quotations');
+    }
+    if (typeof window.navigate === 'function') {
+      window.navigate('quotations');
+    }
+    syncMenu();
   }
   window._quotationExtras = {
-    openSalesQuotation:    function () { _navToTab('SQ'); },
-    openPurchaseQuotation: function () { _navToTab('PQ'); },
+    openSalesQuotation: function () {
+      navToTab('SQ');
+    },
+    openPurchaseQuotation: function () {
+      navToTab('PQ');
+    },
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
-    window.ERP.registerAction('qtTab', function (_id, _type, val) {
-      if (val && TAB_LABELS[val]) {
+    const reg = (name, fn) =>
+      window.ERP.registerAction(name, function (id, type, val) {
+        fn(id, type, val);
+        return true;
+      });
+    reg('qtTab', (_id, _type, val) => {
+      if (val && TYPES[val]) {
         activeTab = val;
         refresh();
+        syncMenu();
       }
-      return true;
     });
-    window.ERP.registerAction('qtNew', function () {
-      openNewModal(activeTab);
-      return true;
+    reg('qtNew', () => openFormModal(activeTab));
+    reg('qtView', (id, type) => id && TYPES[type] && viewQuotation(type, id));
+    reg('qtEdit', (id, type) => {
+      const q = id && TYPES[type] ? findQuote(type, id) : null;
+      if (q) {
+        openFormModal(type, q);
+      }
     });
-    window.ERP.registerAction('qtView', function (id, type) {
-      if (id && type) viewQuotation(type, id);
-      return true;
-    });
-    window.ERP.registerAction('qtSend', function (id, type) {
-      if (id && type) sendQuotation(type, id);
-      return true;
-    });
-    window.ERP.registerAction('qtConvert', function (id, type) {
-      if (id && type) convertQuotation(type, id);
-      return true;
-    });
+    reg('qtDelete', (id, type) => id && TYPES[type] && deleteDraft(type, id));
+    reg('qtSend', (id, type) => id && TYPES[type] && setStatus(type, id, 'Sent'));
+    reg('qtToDraft', (id, type) => id && TYPES[type] && setStatus(type, id, 'Draft'));
+    reg('qtAccept', (id, type) => id && TYPES[type] && setStatus(type, id, 'Accepted'));
+    reg('qtReject', (id, type) => id && TYPES[type] && setStatus(type, id, 'Rejected'));
+    reg('qtConvert', (id, type) => id && TYPES[type] && convertQuotation(type, id));
   }
 })();

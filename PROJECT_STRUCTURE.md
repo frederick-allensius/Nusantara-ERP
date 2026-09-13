@@ -1,200 +1,124 @@
-# Nusantara ERP - Project Structure
+# Struktur Proyek
 
-## Overview
+Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 
-Nusantara ERP System - Modern, lightweight ERP built with Firebase and vanilla JavaScript.
+## Root
 
-**Version:** 3.0.0  
-**Last Updated:** June 2026
+| File | Fungsi |
+|---|---|
+| `app.html` | Shell aplikasi: layar login, sidebar, topbar, kontainer halaman `#view-*` |
+| `index.html` | Halaman landing |
+| `style.css` | Token desain (tema terang/gelap) dan komponen |
+| `mobile.css` | Penyesuaian layar kecil |
+| `vite.config.js` | Konfigurasi Vite, termasuk plugin penggabung skrip klasik (`classicAll`) |
+| `vitest.config.ts`, `tsconfig.json` | Tes & type-check |
+| `eslint.config.js` | Aturan lint (dipakai ESLint 10). `.eslintrc.json` dan `.eslintignore` adalah format lama |
+| `.prettierrc.json`, `.prettierignore` | Format kode |
+| `firebase.json`, `.firebaserc` | Hosting (rewrite, header keamanan), functions, emulator, project Firebase |
+| `firestore.rules`, `firestore.indexes.json`, `storage.rules` | Aturan keamanan & indeks |
+| `.env.example` | Contoh konfigurasi Firebase (salin ke `.env`) |
+| `.env.offline` | Konfigurasi mode lokal (dipakai `dev:local` / `build:local`) |
+| `icon.svg` | Ikon sumber |
 
----
+## `public/` — disajikan apa adanya
 
-## Root Directory
+| Path | Fungsi |
+|---|---|
+| `classic/` | Skrip klasik aplikasi (lihat di bawah) |
+| `styles/landing.css`, `landing.js`, `landing-skip.js` | Halaman landing |
+| `theme-init.js` | Menerapkan tema sebelum halaman dirender |
+| `mobile-ui.js` | Drawer sidebar & menu tambahan di layar kecil |
+| `sw.js`, `manifest.json`, `icon-*.png`, `apple-touch-icon.png`, `favicon.svg`, `logo-nusantara-sq.png` | PWA & ikon |
 
-```
-Nusantara ERP/
-├── .claude/              # Claude AI configuration
-├── .github/              # GitHub workflows (CI/CD)
-├── .vscode/              # VS Code settings
-├── docs/                 # Documentation
-├── public/               # Static assets served by Vite (PWA + classic IIFE scripts)
-├── scripts/              # One-off Node.js migration/utility scripts
-├── src/                  # Vite-bundled source (ES modules)
-├── tests/                # Vitest test suite
-├── index.html            # Main HTML entry point
-├── style.css             # Global styles
-├── mobile.css            # Mobile-specific styles
-├── package.json          # Dependencies & scripts
-└── README.md             # Project documentation
-```
+### `public/classic/`
 
----
+| File | Fungsi |
+|---|---|
+| `erp.ns.js` | Namespace `ERP` dan registri aksi (`data-action`) |
+| **Mesin inti** | |
+| `core/schema.js` | Versi skema data & gudang default |
+| `core/doc-engine.js` | Penomoran dokumen, validasi transisi status, total |
+| `core/doc-flow.js` | Jejak dokumen (rantai penawaran → pesanan → surat jalan → faktur → pembayaran) |
+| `core/doc-migrate.js` | Migrasi data dokumen |
+| `core/warehouse.js` | Stok per gudang |
+| `core/cost-ledger.js` | Harga pokok rata-rata bergerak |
+| `core/gl.js` | Buku besar: bagan akun, jurnal otomatis, neraca saldo, jurnal umum |
+| `core/gl-sync.js` | Menyusun ulang jurnal setiap `saveDB` |
+| `core/integrity.js` | Log audit, kunci periode, cek buku besar |
+| `core/trash.js` | Recycle bin |
+| `core/rbac.js` | Hak akses per peran |
+| `core/lazy-views.js` | Memuat chunk halaman saat dibuka |
+| `core/menu-router.js` | Menghubungkan item menu ke fitur (`window.NSAMenu`) |
+| **Halaman & form** | |
+| `core/erp-crud.js` | Form & aksi pesanan, surat jalan, barang, pelanggan, supplier, pengguna, aset, armada; template cetak |
+| `core/erp-view.js` | Renderer halaman utama, filter, paginasi, ekspor, pencarian global |
+| `core/order-summary.js` | Ringkasan pesanan per periode (cetak/PDF) |
+| `core/invoice-view.js` | Faktur penjualan/pembelian, penerimaan, pembayaran |
+| `core/quotation-view.js` | Penawaran penjualan/pembelian |
+| `core/return-view.js` | Retur penjualan/pembelian |
+| `core/adjust-view.js` | Penyesuaian stok |
+| `core/warehouse-view.js` | Gudang, stok per gudang, transfer |
+| `core/gl-view.js` | Neraca saldo, jurnal, bagan akun, jurnal umum |
+| `core/financial-reports.js` | Laba Rugi, Neraca, Arus Kas |
+| `core/excel-import.js` | Impor Excel (termasuk saldo awal & stok awal) |
+| `core/xlsx-export.js` | Penulis file Excel tanpa dependensi (`NSAXlsx`) |
+| **Modul tambahan** | |
+| `core/sales-purchase-extras.js` | Uang muka, target penjualan, penerimaan barang, harga supplier |
+| `core/bank-extras.js` | Kas & bank |
+| `core/budget-gl-extras.js` | Anggaran, riwayat akun, biaya akrual, penggajian, audit jurnal |
+| `core/inventory-extras.js` | Satuan, kategori, merek, permintaan barang, job costing |
+| `core/master-extras.js` | Karyawan, kontak, kategori pelanggan/supplier |
+| `core/asset-extras.js` | Aset tetap |
+| `core/tax-extras.js` | e-Faktur |
+| `core/report-extras.js` | Daftar laporan, SPT PPN, analisis |
+| `core/settings-extras.js` | Termin, pengiriman, kalender, log aktivitas, kategori penjualan, transaksi favorit |
+| `core/*.d.ts` | Deklarasi tipe untuk tes |
+| **Modul & UI** | |
+| `modules/dashboard.js` | Halaman Ringkasan |
+| `modules/master.js` | Data master |
+| `modules/settings.js` | Profil, keamanan akun, 2FA, backup, instal aplikasi, notifikasi |
+| `ui/nav.js` | Sidebar, sub-menu, menu pengguna, notifikasi, tema, `navigate()` |
+| `ui/view-tabs.js`, `ui/doc-tabs.js` | Tab halaman & tab dokumen |
 
-## Documentation (`/docs`)
+## `src/` — ES modules (di-bundle Vite)
 
-| File                     | Description                   |
-| ------------------------ | ----------------------------- |
-| `ARCHITECTURE.md`        | System architecture overview  |
-| `ARCHITECTURE_ERP_V4.md` | ERP v4 architecture details   |
-| `CONTRIBUTING.md`        | Contribution guidelines       |
-| `DEVELOPMENT.md`         | Development guide             |
-| `FIREBASE_AUTH_SETUP.md` | Firebase authentication setup |
-| `IMPROVEMENTS.md`        | Feature improvements log      |
-| `TESTING.md`             | Testing guide                 |
-| `V3_FEATURES.md`         | Version 3 features            |
+| File | Fungsi |
+|---|---|
+| `main.js` | Boot aplikasi |
+| `pwa-register.js` | Registrasi service worker |
+| `mobile-enhancements.js` | Penyempurnaan perangkat sentuh |
+| `config/firebase.js` | Inisialisasi Firebase & deteksi mode lokal/cloud |
+| `classic/core/doc-registry.js` | Registri tipe & status dokumen |
+| `core/auth.js` | Login, logout, 2FA, ganti password |
+| `core/local-users.js` | Akun lokal (hash PBKDF2) |
+| `core/user-role.js` | Peran & label peran, fungsi admin pengguna |
+| `core/totp.js` | Kode verifikasi 2 langkah |
+| `core/db.js` | Muat/simpan data, sinkron Firestore, data contoh, reset, impor |
+| `core/indexeddb.js`, `core/local-store.js` | Penyimpanan IndexedDB |
+| `core/backup.js` | Backup file & cloud |
+| `core/helpers.js` | Format Rupiah, badge status, header, penomoran lama |
+| `core/modal.js` | Modal, toast, dialog konfirmasi |
+| `core/stock.js` | Mutasi & reservasi stok |
+| `core/notifications.js` | Peringatan jatuh tempo, stok minimum, anggaran |
+| `core/i18n.js` | Terjemahan tampilan Indonesia ↔ Inggris |
+| `core/intersection-observer.js`, `core/view-transitions.js`, `core/performance-monitor.js` | Lazy loading, transisi halaman, pemantauan performa |
 
----
+## `functions/` — Firebase Cloud Functions
 
-## Public Assets (`/public`)
+| File | Fungsi |
+|---|---|
+| `index.js` | Ekspor semua function + API `api` |
+| `handler.js`, `firestore.js` | Logika & akses data API |
+| `auth.js`, `auth-users.js`, `totp.js` | Login username, akun, 2FA, admin pengguna |
+| `access-log.js` | Log akses server |
+| `backup.js` | Backup harian terjadwal |
+| `admin.js` | Inisialisasi Admin SDK |
 
-Served verbatim by Vite — not bundled. Contains both PWA assets and the classic
-IIFE script layer that `src/main.js` loads at runtime via `<script>` tags.
+## Folder lain
 
-```
-public/
-├── manifest.json                  # PWA manifest
-├── sw.js                          # Service worker
-└── classic/
-    ├── erp.ns.js                  # Global ERP namespace bootstrap
-    ├── core/
-    │   ├── doc-registry.js        # Document-type registry (SO, PO, DO, …)
-    │   ├── doc-engine.js          # Number generation, totals, status transitions
-    │   ├── doc-migrate.js         # Data migrations (number-field backfills, etc.)
-    │   ├── doc-flow.js            # Multi-step document workflow helpers
-    │   ├── erp-crud.js            # Create/Read/Update/Delete for all doc types
-    │   ├── erp-view.js            # List & detail view renderers
-    │   ├── erp-patch.js           # Additional view patches & modal actions
-    │   ├── gl.js                  # General Ledger: journal building & reconcile
-    │   ├── gl-view.js             # GL report views (trial balance, ledger)
-    │   ├── gl-sync.js             # GL → Firestore sync helpers
-    │   ├── cost-ledger.js         # Moving-average cost / COGS engine
-    │   ├── schema.js              # Firestore collection schemas
-    │   ├── financial-reports.js   # P&L, Balance Sheet
-    │   ├── invoice-view.js        # Sales/purchase invoice renderer
-    │   ├── quotation-view.js      # Quotation renderer
-    │   ├── return-view.js         # Return document renderer
-    │   ├── warehouse-view.js      # Warehouse transfer renderer
-    │   ├── warehouse.js           # Warehouse / location management
-    │   ├── adjust-view.js         # Item adjustment view
-    │   ├── asset-extras.js        # Fixed-asset module extras
-    │   ├── bank-extras.js         # Bank/payment module extras
-    │   ├── budget-gl-extras.js    # Budget & GL extra features
-    │   ├── inventory-extras.js    # Inventory module extras
-    │   ├── master-extras.js       # Master data extras
-    │   ├── menu-router.js         # Client-side menu/route dispatcher
-    │   ├── report-extras.js       # Extra report helpers
-    │   ├── sales-purchase-extras.js # Sales & purchase extras
-    │   ├── settings-extras.js     # Settings module extras
-    │   ├── tax-extras.js          # Tax calculation extras
-    │   └── xlsx-export.js         # Excel export helper
-    ├── modules/
-    │   ├── dashboard.js           # Dashboard charts & KPIs
-    │   ├── master.js              # Master data management
-    │   └── settings.js            # App settings & configuration
-    └── ui/
-        └── nav.js                 # Navigation & sidebar logic
-```
-
----
-
-## Source Code (`/src`)
-
-Vite-bundled ES modules. Only files here go through TypeScript type-checking.
-
-### Core Modules (`/src/core`)
-
-| File                       | Purpose                     | Key exports / globals                 |
-| -------------------------- | --------------------------- | ------------------------------------- |
-| `auth.js`                  | Local-first + Firebase auth | `initAuth()`, `login()`, `logout()`   |
-| `backup.js`                | Cloud backup system         | `createBackup()`, `restoreBackup()`   |
-| `db.js`                    | Firestore database layer    | `loadDB()`, `saveDB()`, `syncData()`  |
-| `helpers.js`               | Utility functions           | `idr()`, `sanitizeInput()`, `badge()` |
-| `indexeddb.js`             | Offline storage (IDB)       | `idb.put()`, `idb.getAll()`           |
-| `intersection-observer.js` | Lazy loading                | `setupLazyLoading()`                  |
-| `modal.js`                 | Modal & toast system        | `openModal()`, `showToast()`          |
-| `performance-monitor.js`   | Performance tracking        | `performanceMonitor.mark()`           |
-| `stock.js`                 | Stock management            | `reserveStock()`, `checkOversell()`   |
-| `view-transitions.js`      | Page transitions            | `transitionView()`                    |
-
-### Feature Modules (`/src/modules`)
-
-> Not yet populated — module stubs live in `public/classic/modules/` for now.
-
-### UI Components (`/src/ui`)
-
-> Not yet populated — UI helpers live in `public/classic/ui/` for now.
-
-### Configuration (`/src/config`)
-
-| File          | Purpose                 |
-| ------------- | ----------------------- |
-| `firebase.js` | Firebase initialization |
-
-### Entry Points
-
-| File                     | Purpose                                                           |
-| ------------------------ | ----------------------------------------------------------------- |
-| `main.js`                | Application bootstrap — loads classic scripts via `<script>` tags |
-| `pwa-register.js`        | PWA registration                                                  |
-| `mobile-enhancements.js` | Mobile optimizations                                              |
-
----
-
-## Scripts (`/scripts`)
-
-One-off Node.js utilities (not bundled, not tested):
-
-| File                | Purpose                                              |
-| ------------------- | ---------------------------------------------------- |
-| `link-do-to-so.cjs` | Re-link Delivery Orders to their source Sales Orders |
-
----
-
-## Tests (`/tests`)
-
-| File                           | Purpose                                          |
-| ------------------------------ | ------------------------------------------------ |
-| `gl.test.ts`                   | General Ledger: journal posting, trial balance   |
-| `cost-ledger.test.ts`          | Moving-average cost / COGS engine                |
-| `doc-engine.test.ts`           | Document number generation, totals, status rules |
-| `auth.test.ts`                 | Local-first authentication logic                 |
-| `data-validation.test.ts`      | Input sanitization, date/currency validation     |
-| `stock-reservation.test.ts`    | Stock availability & reservation                 |
-| `transaction-rollback.test.ts` | Transaction atomicity & rollback                 |
-| `example.test.ts`              | ERP core utility smoke tests                     |
-| `setup.ts`                     | Vitest global setup                              |
-
-Tests that import classic IIFE scripts (gl, cost-ledger, doc-engine) do so from
-`../public/classic/core/` — the IIFE attaches globals to `window` under happy-dom.
-
-**Framework:** Vitest + happy-dom
-
----
-
-## Configuration Files
-
-### Build & Development
-
-| File               | Purpose                   |
-| ------------------ | ------------------------- |
-| `vite.config.js`   | Vite build configuration  |
-| `vitest.config.ts` | Vitest test configuration |
-| `tsconfig.json`    | TypeScript configuration  |
-
-### Code Quality
-
-| File               | Purpose                   |
-| ------------------ | ------------------------- |
-| `eslint.config.js` | ESLint rules              |
-| `.eslintignore`    | ESLint ignore patterns    |
-| `.prettierrc.json` | Prettier formatting rules |
-| `.prettierignore`  | Prettier ignore patterns  |
-
-### Firebase
-
-| File                     | Purpose                  |
-| ------------------------ | ------------------------ |
-| `firebase.json`          | Firebase project config  |
-| `firestore.rules`        | Firestore security rules |
-| `firestore.indexes.json` | Firestore indexes        |
-| `storage.rules`          | Firebase Storage rules   |
+| Folder | Isi |
+|---|---|
+| `tests/` | Tes Vitest (daftar di [docs/ARSITEKTUR.md §11](docs/ARSITEKTUR.md)) |
+| `docs/` | Dokumentasi ([indeks](docs/README.md)) |
+| `docs/pitch/` | Materi presentasi & contoh output |
+| `scripts/generate-pwa-icons.ps1` | Membuat ikon PWA |

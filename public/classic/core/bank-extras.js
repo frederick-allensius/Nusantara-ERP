@@ -65,6 +65,64 @@
   var DEP_CATS = ['Penjualan', 'Penerimaan Lainnya', 'Refund', 'Bunga Bank', 'Lainnya'];
   var PAY_METHODS = ['Transfer Bank', 'Tunai', 'Cek', 'Giro', 'QRIS'];
 
+  // Document number via the shared numbering engine (PREFIX.YYYY.MM.NNNNN).
+  function docNumber(prefix, date) {
+    return window.DocEngine
+      ? window.DocEngine.nextNumber(prefix, date, { sequences: db().numberSequences, commit: true })
+      : prefix + '-' + Date.now();
+  }
+
+  // Ledger account a Kas & Bank record posts against (gl.js): the account chosen
+  // on the form, defaulting by category. The default mapping REQUIRES USER
+  // CONFIRMATION (docs/04-AKUNTANSI.md §6).
+  var ACCOUNT_TYPES = {
+    expense: ['EXPENSE', 'COGS', 'OTHER_EXPENSE'],
+    income: ['REVENUE', 'OTHER_INCOME'],
+  };
+  function defaultAccountFor(kind, category) {
+    if (kind === 'expense') return category === 'Gaji' ? '610301' : '610101';
+    return category === 'Penjualan' ? '400001' : '710101';
+  }
+  function accountOptionsHTML(kind, selected) {
+    if (window.GL && typeof window.GL.ensureChart === 'function') window.GL.ensureChart();
+    var types = ACCOUNT_TYPES[kind];
+    return (db().accountsChart || [])
+      .filter(function (a) {
+        return types.indexOf(a.type) !== -1;
+      })
+      .map(function (a) {
+        return (
+          '<option value="' +
+          esc(a.no) +
+          '"' +
+          (a.no === selected ? ' selected' : '') +
+          '>' +
+          esc(a.no + ' — ' + a.name) +
+          '</option>'
+        );
+      })
+      .join('');
+  }
+  function accountLabel(no) {
+    var a = (db().accountsChart || []).find(function (x) {
+      return x.no === no;
+    });
+    return a ? a.name : no || '';
+  }
+  // Keep the account select in step with the category until the user picks one.
+  function wireCategoryAccount(catId, accountId, kind) {
+    var cat = document.getElementById(catId);
+    var acc = document.getElementById(accountId);
+    if (!cat || !acc) return;
+    var touched = false;
+    acc.addEventListener('change', function () {
+      touched = true;
+    });
+    cat.addEventListener('change', function () {
+      if (!touched) acc.value = defaultAccountFor(kind, cat.value);
+    });
+  }
+
   // ── Bank Accounts (seed) ──────────────────────────────────────────────────
   function getBankAccounts() {
     return ensureSettings('bankAccounts', [
@@ -119,14 +177,16 @@
               esc(p.date) +
               '</td>' +
               '<td class="td-p" style="font-weight:700;font-size:12px">' +
-              esc(p.id) +
+              esc(p.number || p.id) +
               '</td>' +
               '<td class="td-p">' +
               esc(p.payee || '—') +
               '</td>' +
               '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(p.category || '—') +
-              '</span></td>' +
+              '</span><div style="font-size:10px;color:var(--muted);margin-top:2px">' +
+              esc(accountLabel(p.accountNo || defaultAccountFor('expense', p.category))) +
+              '</div></td>' +
               '<td class="td-p" style="font-size:11px">' +
               esc(p.method || '—') +
               '</td>' +
@@ -147,7 +207,7 @@
       : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Belum ada pengeluaran dicatat.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Other Payment</h1><p>Pengeluaran kas/bank di luar Purchase Order</p></div>' +
+      '<div class="sec-hdr"><div><h1>Pengeluaran Lain</h1><p>Biaya dan pengeluaran kas/bank di luar pembelian barang — otomatis dijurnal</p></div>' +
         '<button class="btn" data-action="addOP">+ Catat Pengeluaran</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Pengeluaran</div><div class="stat-val" style="color:#DC2626">' +
@@ -222,6 +282,9 @@
         methOpts +
         '</select></div>' +
         '</div>' +
+        '<div class="form-group"><label class="form-label">Akun Beban</label><select class="form-select" id="op-account">' +
+        accountOptionsHTML('expense', defaultAccountFor('expense', PAY_CATS[0])) +
+        '</select><div class="form-hint">Jurnal: akun ini di debit, kas/bank di kredit.</div></div>' +
         '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="op-ref" placeholder="No. kwitansi, bukti transfer (opsional)"></div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="op-notes" placeholder="Uraian pengeluaran"></div>',
       '<button class="btn" id="saveOP">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
@@ -229,6 +292,7 @@
     setTimeout(function () {
       var btn = document.getElementById('saveOP');
       if (!btn) return;
+      wireCategoryAccount('op-cat', 'op-account', 'expense');
       btn.addEventListener('click', function () {
         var amount = parseFloat(document.getElementById('op-amount').value) || 0;
         var payee = document.getElementById('op-payee').value.trim();
@@ -237,10 +301,13 @@
           return;
         }
         var arr = ensureArr('otherPayments');
-        var num = 'OP.' + new Date().getFullYear() + '.' + String(arr.length + 1).padStart(4, '0');
+        var opDate = document.getElementById('op-date').value || today();
+        var num = docNumber('OP', opDate);
         arr.push({
-          id: num,
-          date: document.getElementById('op-date').value,
+          id: 'OP-' + Date.now(),
+          number: num,
+          accountNo: document.getElementById('op-account').value,
+          date: opDate,
           bankAccountId: document.getElementById('op-bank').value,
           payee: payee,
           category: document.getElementById('op-cat').value,
@@ -276,14 +343,16 @@
               esc(d.date) +
               '</td>' +
               '<td class="td-p" style="font-weight:700;font-size:12px">' +
-              esc(d.id) +
+              esc(d.number || d.id) +
               '</td>' +
               '<td class="td-p">' +
               esc(d.payer || '—') +
               '</td>' +
               '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(d.category || '—') +
-              '</span></td>' +
+              '</span><div style="font-size:10px;color:var(--muted);margin-top:2px">' +
+              esc(accountLabel(d.accountNo || defaultAccountFor('income', d.category))) +
+              '</div></td>' +
               '<td class="td-p" style="font-size:11px">' +
               esc(d.method || '—') +
               '</td>' +
@@ -304,7 +373,7 @@
       : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Belum ada penerimaan dicatat.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Other Deposit</h1><p>Penerimaan kas/bank di luar Sales Order</p></div>' +
+      '<div class="sec-hdr"><div><h1>Penerimaan Lain</h1><p>Uang masuk ke kas/bank di luar penjualan barang — otomatis dijurnal</p></div>' +
         '<button class="btn" data-action="addOD">+ Catat Penerimaan</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Penerimaan</div><div class="stat-val" style="color:#15803D">' +
@@ -379,12 +448,16 @@
         methOpts +
         '</select></div>' +
         '</div>' +
+        '<div class="form-group"><label class="form-label">Akun Pendapatan</label><select class="form-select" id="od-account">' +
+        accountOptionsHTML('income', defaultAccountFor('income', DEP_CATS[0])) +
+        '</select><div class="form-hint">Jurnal: kas/bank di debit, akun ini di kredit.</div></div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="od-notes" placeholder="Uraian penerimaan"></div>',
       '<button class="btn" id="saveOD">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveOD');
       if (!btn) return;
+      wireCategoryAccount('od-cat', 'od-account', 'income');
       btn.addEventListener('click', function () {
         var amount = parseFloat(document.getElementById('od-amount').value) || 0;
         var payer = document.getElementById('od-payer').value.trim();
@@ -393,10 +466,13 @@
           return;
         }
         var arr = ensureArr('otherDeposits');
-        var num = 'OD.' + new Date().getFullYear() + '.' + String(arr.length + 1).padStart(4, '0');
+        var odDate = document.getElementById('od-date').value || today();
+        var num = docNumber('OD', odDate);
         arr.push({
-          id: num,
-          date: document.getElementById('od-date').value,
+          id: 'OD-' + Date.now(),
+          number: num,
+          accountNo: document.getElementById('od-account').value,
+          date: odDate,
           bankAccountId: document.getElementById('od-bank').value,
           payer: payer,
           category: document.getElementById('od-cat').value,
@@ -435,7 +511,7 @@
               esc(t.date) +
               '</td>' +
               '<td class="td-p" style="font-weight:700;font-size:12px">' +
-              esc(t.id) +
+              esc(t.number || t.id) +
               '</td>' +
               '<td class="td-p" style="font-size:12px">' +
               esc(fromAcc ? fromAcc.name : t.fromAccountId) +
@@ -464,7 +540,7 @@
       : '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">Belum ada transfer antar rekening.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Bank Transfer</h1><p>Transfer antar rekening perusahaan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Transfer Antar Rekening</h1><p>Pemindahan dana antar rekening perusahaan — otomatis dijurnal</p></div>' +
         '<button class="btn" data-action="addBT">+ Buat Transfer</button></div>' +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +
@@ -541,10 +617,12 @@
           return;
         }
         var arr = ensureArr('bankTransfers');
-        var num = 'BT.' + new Date().getFullYear() + '.' + String(arr.length + 1).padStart(4, '0');
+        var btDate = document.getElementById('bt-date').value || today();
+        var num = docNumber('BT', btDate);
         arr.push({
-          id: num,
-          date: document.getElementById('bt-date').value,
+          id: 'BT-' + Date.now(),
+          number: num,
+          date: btDate,
           fromAccountId: from,
           toAccountId: to,
           amount: amount,
@@ -820,9 +898,11 @@
     });
 
     (db().paymentLogs || []).forEach(function (p) {
+      // Rows created by applying a down payment moved no cash (the down payment did).
+      if (p.method === 'Down Payment' || p.source === 'DP') return;
       entries.push({
         date: p.date || '',
-        type: p.type === 'SO' ? 'Penerimaan SO' : 'Pembayaran PO',
+        type: p.type === 'SO' ? 'Pembayaran pesanan jual' : 'Pembayaran pesanan beli',
         ref: p.orderId || '',
         amount: p.amount || 0,
         flow: p.type === 'SO' ? 'in' : 'out',
@@ -830,11 +910,57 @@
         note: p.note || '',
       });
     });
+    (db().salesReceipts || []).forEach(function (r) {
+      if (r.status !== 'Posted') return;
+      entries.push({
+        date: r.date || '',
+        type: 'Penerimaan faktur',
+        ref: r.number || r.id,
+        amount: r.amount || 0,
+        flow: 'in',
+        method: r.paymentMethod || '',
+        note: (r.customer || '') + (r.invoiceNumber ? ' — ' + r.invoiceNumber : ''),
+      });
+    });
+    (db().purchasePayments || []).forEach(function (r) {
+      if (r.status !== 'Posted') return;
+      entries.push({
+        date: r.date || '',
+        type: 'Pembayaran faktur',
+        ref: r.number || r.id,
+        amount: r.amount || 0,
+        flow: 'out',
+        method: r.paymentMethod || '',
+        note: (r.supplier || '') + (r.invoiceNumber ? ' — ' + r.invoiceNumber : ''),
+      });
+    });
+    (db().salesDownPayments || []).forEach(function (d) {
+      entries.push({
+        date: d.date || '',
+        type: 'Uang muka penjualan',
+        ref: d.id,
+        amount: d.amount || 0,
+        flow: 'in',
+        method: d.method || 'Tunai',
+        note: d.customerName || '',
+      });
+    });
+    (db().purchaseDownPayments || []).forEach(function (d) {
+      entries.push({
+        date: d.date || '',
+        type: 'Uang muka pembelian',
+        ref: d.id,
+        amount: d.amount || 0,
+        flow: 'out',
+        method: d.method || 'Tunai',
+        note: d.supplierName || '',
+      });
+    });
     (db().otherPayments || []).forEach(function (p) {
       entries.push({
         date: p.date || '',
-        type: 'Other Payment',
-        ref: p.id,
+        type: 'Pengeluaran lain',
+        ref: p.number || p.id,
         amount: p.amount || 0,
         flow: 'out',
         method: p.method || '',
@@ -844,8 +970,8 @@
     (db().otherDeposits || []).forEach(function (d) {
       entries.push({
         date: d.date || '',
-        type: 'Other Deposit',
-        ref: d.id,
+        type: 'Penerimaan lain',
+        ref: d.number || d.id,
         amount: d.amount || 0,
         flow: 'in',
         method: d.method || '',
@@ -855,8 +981,8 @@
     (db().bankTransfers || []).forEach(function (t) {
       entries.push({
         date: t.date || '',
-        type: 'Bank Transfer',
-        ref: t.id,
+        type: 'Transfer rekening',
+        ref: t.number || t.id,
         amount: t.amount || 0,
         flow: 'transfer',
         method: 'Transfer',
@@ -923,16 +1049,16 @@
       '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Belum ada riwayat transaksi bank.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Bank History</h1><p>Riwayat seluruh transaksi kas &amp; bank (' +
+      '<div class="sec-hdr"><div><h1>Riwayat Kas &amp; Bank</h1><p>Riwayat seluruh transaksi kas &amp; bank (' +
         entries.length.toLocaleString('id-ID') +
         ' total)</p></div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val" style="color:#15803D">' +
         money(totalIn) +
-        '</div><div class="stat-sub">SO + Other Deposit</div></div>' +
+        '</div><div class="stat-sub">Pelanggan, uang muka &amp; penerimaan lain</div></div>' +
         '<div class="card stat-card"><div class="stat-label">Total Keluar</div><div class="stat-val" style="color:#DC2626">' +
         money(totalOut) +
-        '</div><div class="stat-sub">PO + Other Payment</div></div>' +
+        '</div><div class="stat-sub">Supplier, uang muka &amp; pengeluaran lain</div></div>' +
         '<div class="card stat-card"><div class="stat-label">Net Posisi</div><div class="stat-val" style="color:' +
         (totalIn - totalOut >= 0 ? '#15803D' : '#DC2626') +
         '">' +
@@ -1092,7 +1218,7 @@
         addOPModal();
         break;
       case 'delOP': {
-        if (!confirm('Hapus pengeluaran ini?')) return;
+        if (!confirm('Hapus pengeluaran ini?\n\nJurnal kas/bank dan beban untuk transaksi ini ikut dihapus.')) return;
         var a1 = ensureArr('otherPayments');
         a1.splice(
           a1.findIndex(function (x) {
@@ -1109,7 +1235,7 @@
         addODModal();
         break;
       case 'delOD': {
-        if (!confirm('Hapus penerimaan ini?')) return;
+        if (!confirm('Hapus penerimaan ini?\n\nJurnal kas/bank dan pendapatan untuk transaksi ini ikut dihapus.')) return;
         var a2 = ensureArr('otherDeposits');
         a2.splice(
           a2.findIndex(function (x) {
@@ -1126,7 +1252,7 @@
         addBTModal();
         break;
       case 'delBT': {
-        if (!confirm('Hapus transfer ini?')) return;
+        if (!confirm('Hapus transfer ini?\n\nJurnal transfer antar rekening ikut dihapus.')) return;
         var a3 = ensureArr('bankTransfers');
         a3.splice(
           a3.findIndex(function (x) {

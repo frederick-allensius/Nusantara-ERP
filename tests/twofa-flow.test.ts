@@ -53,7 +53,7 @@ describe('2FA login flow (local users)', () => {
     logout();
     const step1 = await login('admin', 'admin123');
     expect(step1.ok).toBe(false);
-    expect(step1.twoFactor).toBe(true);
+    expect((step1 as any).twoFactor).toBe(true);
     expect(getCurrentUser()).toBeNull(); // no session until 2FA clears
 
     // 4. A valid TOTP completes the login.

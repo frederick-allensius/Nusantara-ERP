@@ -73,11 +73,11 @@ service cloud.firestore {
 
     // ── Collection → module map ──────────────────────────────────────────────
     function moduleOf(col) {
-      return col in ['salesOrders','salesQuotations','salesInvoices','salesReceipts','salesReturns','deliveryOrders','salesDownPayments'] ? 'sales'
-        : col in ['purchaseOrders','purchaseQuotations','purchaseInvoices','purchasePayments','purchaseReturns','purchaseDownPayments','goodsReceipts'] ? 'purchases'
-        : col in ['inventoryItems','itemAdjustments','itemTransfers','warehouses'] ? 'inventory'
-        : col in ['journals','budgets','budgetTransfers','payrollRuns'] ? 'gl'
-        : col in ['customers','suppliers','employees','fleet','expedition'] ? 'master'
+      return col in ['salesOrders','salesQuotations','salesInvoices','salesReceipts','salesReturns','deliveryOrders','salesDownPayments','salesTargets'] ? 'sales'
+        : col in ['purchaseOrders','purchaseQuotations','purchaseInvoices','purchasePayments','purchaseReturns','purchaseDownPayments','goodsReceipts','supplierPrices'] ? 'purchases'
+        : col in ['inventoryItems','itemAdjustments','itemTransfers','warehouses','itemRequisitions','jobCostings'] ? 'inventory'
+        : col in ['journals','journalVouchers','budgets','budgetTransfers','payrollRuns','expenseAccruals','otherPayments','otherDeposits','bankTransfers','bankStatements'] ? 'gl'
+        : col in ['customers','suppliers','employees','fleet','expedition','contacts'] ? 'master'
         : col in ['assets','faCategories','fiscalFaCategories','assetTransfers','assetDispositions'] ? 'assets'
         // paymentLogs/accounts are GL side-effects of allowed sales/purchase
         // posts (a Penjualan receipt updates cash) → treated as operational so
@@ -85,7 +85,7 @@ service cloud.firestore {
         : col in ['notifications','reservations','numberSequences','auditLog','trash','paymentLogs','accounts','backups'] ? 'operational'
         // The single settings doc bundles admin config + reference data (asset/
         // category/unit lists) managers maintain → 'config' (admin+manajer).
-        : col == 'settings' ? 'config'
+        : col in ['settings','favoriteTransactions'] ? 'config'
         : col == 'users' ? 'users'
         : 'admin'; // unknown/meta → admin-only (safe default)
     }

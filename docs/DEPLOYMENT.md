@@ -1,77 +1,77 @@
-# Deployment & production data runbook
+# Deploy ke Firebase
 
-Two independent surfaces ship this app:
+Seluruh aplikasi berjalan di Firebase. Setiap bagian di-deploy terpisah.
 
-| Surface | What it holds | How it deploys |
-| --- | --- | --- |
-| **Vercel** | the frontend (static `dist/` + `/api` functions) | **automatic on `git push`** to the production branch |
-| **Firebase** | Firestore data + security rules + auth | **manual**, via the scripts below (needs a service-account key) |
+| Bagian | Sumber | Perintah |
+|---|---|---|
+| Hosting (aplikasi web) | `dist/` hasil `npm run build` | `firebase deploy --only hosting` |
+| Cloud Functions | `functions/` | `firebase deploy --only functions` |
+| Aturan & indeks Firestore | `firestore.rules`, `firestore.indexes.json` | `npm run deploy:rules` atau `firebase deploy --only firestore` |
+| Aturan Storage | `storage.rules` | `firebase deploy --only storage` |
 
-Pushing to the production branch redeploys the frontend, but it does **not**
-touch Firestore. Refreshing production data and deploying rules are separate,
-credential-gated steps.
+Project default ada di `.firebaserc`.
 
-## Prerequisites (one-time)
+---
 
-1. Firebase console → Project settings → Service accounts → **Generate new
-   private key**. Save it as `serviceAccount.json` in the repo root (gitignored —
-   never commit it) or point `GOOGLE_APPLICATION_CREDENTIALS` at it.
-2. `npm install` (installs `firebase-admin`).
+## Prasyarat (sekali)
 
-> The named Firestore database this project uses is `default` (ENTERPRISE).
-> Override with `FIRESTORE_DATABASE_ID` if that ever changes.
+1. Firebase CLI terpasang dan login: `firebase login`.
+2. Project memakai paket **Blaze** (Cloud Functions & Cloud Scheduler).
+3. File `.env` berisi konfigurasi Firebase produksi (`VITE_FIREBASE_*`). Nilai ini tertanam saat build.
+4. Variabel lingkungan functions (mis. `functions/.env`, jangan di-commit):
 
-## 1. Refresh production business data (fixes the "stale dashboard")
+| Variabel | Fungsi |
+|---|---|
+| `SEED_ADMIN_PASSWORD` | Password akun awal saat database pengguna masih kosong (opsional; tanpa ini password acak dicatat sekali di Cloud Logging) |
+| `ERP_API_KEY`, `ERP_API_KEY_NEXT`, `ERP_API_ALLOWED_ORIGINS`, `ERP_API_RATE_MAX` | API integrasi — lihat [API.md](API.md) |
 
-The app edits Firestore live and there is **no auto-reseed**, so production keeps
-whatever snapshot it was last given. When a re-scrape / reconciliation produces a
-newer dataset (`accurate-export.json`), push it into the live collections:
+5. Email admin utama di `firestore.rules` dan `src/core/user-role.js` sudah sesuai — **REQUIRES USER CONFIRMATION**.
 
-```bash
-# Re-scrape + reconcile (only if the source data changed)
-node scripts/migrate-from-accurate.cjs      # → accurate-export.json
-node scripts/apply-dataset-fixes.cjs        # dataset (PDF-truth) corrections
-
-# Preview what would be written (no writes)
-npm run seed:firestore
-
-# Apply (upsert). Add --prune to also delete docs not in the dataset so
-# Firestore matches the export exactly (removes the old stale records).
-npm run seed:firestore -- --write
-npm run seed:firestore -- --write --prune
-```
-
-The doc format mirrors `src/core/db.js` exactly (array collections keyed by
-`record.id`; `accounts`/`reservations`/`settings`/`numberSequences` as a single
-`default` doc). `settings` is intentionally left untouched when empty in the
-export, so a reseed never clobbers the live company profile / user identity.
-
-## 2. Refresh the GL seed (P&L journals + chart of accounts)
+## Langkah deploy
 
 ```bash
-npm run seed:gl        # pushes journals + accountsChart → glSeed collection
+npm run test:run
 ```
-
-Run this whenever new journals are scraped; the app reads them from the
-auth-gated `glSeed` collection (`db.js` `loadGlSeed()`).
-
-## 3. Deploy Firestore security rules
-
-Rules live in `firestore.rules` (RBAC: 5 roles, verified-email writes, bootstrap
-admin). Deploy after any change:
 
 ```bash
-npm run deploy:rules   # firebase deploy --only firestore:rules
+npm run build
 ```
 
-## 4. Integration API env (Vercel)
+```bash
+npm --prefix functions ci
+```
 
-The `/api/v1` read API stays closed until its env vars are set on Vercel — see
-[docs/API.md](./API.md). After adding them, redeploy (push or Vercel "Redeploy").
+```bash
+firebase deploy
+```
 
-## Notes on SO/PO status
+`firebase deploy` tanpa `--only` men-deploy semua bagian di tabel atas.
 
-Sales/Purchase order statuses treat Accurate as the authority (Option A). The
-DO-linkage derivation (`window.deriveOrderStatuses`) stays dormant until the
-sync-logged agreement is ≥95% (currently well below). No action needed here;
-this is a deliberate hold, not a bug.
+## Setelah deploy
+
+- Buka domain hosting, pastikan layar login muncul dan status data di topbar menunjukkan **Firebase**.
+- Login dengan akun admin, cek halaman Ringkasan, Penjualan, dan Laporan.
+- `GET /api/v1` membalas `503` bila API sengaja belum diaktifkan, atau daftar resource bila `ERP_API_KEY` sudah diisi.
+- Setelah perubahan daftar koleksi tersinkron (T-27), deploy ulang aturan Firestore dan functions.
+
+## Header keamanan
+
+`firebase.json` memasang Content-Security-Policy ketat (`script-src 'self'` tanpa `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, dan Permissions-Policy. Konsekuensinya: **event handler inline (`onclick="…"`) tidak berjalan di hosting** meskipun berjalan di server pengembangan. Uji fitur baru dengan `npm run build` + `npm run preview` sebelum deploy.
+
+File `.js`/`.css` dan gambar diberi cache 1 tahun; nama file hasil build Vite memakai hash sehingga versi baru langsung terambil. Skrip klasik (`/classic/bundle.js`, `/classic/view-*.js`) tidak memakai hash — service worker memperbarui cache saat versi baru terdeteksi.
+
+## Backup server
+
+Function `nightlyBackup` berjalan setiap hari pukul **20:00 WIB**, menyalin koleksi tersinkron ke koleksi `serverBackups` (tidak bisa diakses dari aplikasi), dan menyimpan **14 hari** terakhir. Pemulihan dilakukan dengan Admin SDK: baca dokumen `<tanggal>__meta`, lalu tulis kembali isi setiap potongan ke koleksi asalnya. Admin juga dapat membuat dan memulihkan backup dari menu pengguna → **Kelola Backup**.
+
+## Emulator lokal
+
+```bash
+firebase emulators:start
+```
+
+Port: Auth 9099, Firestore 8080, Storage 9199, Functions 5001, UI 4000. Atur `VITE_USE_EMULATORS=true` di `.env` untuk mengarahkan aplikasi ke emulator.
+
+## Build tanpa Firebase
+
+`npm run build:local` menghasilkan aplikasi mode lokal yang bisa di-host di server statis mana pun. Data setiap pengguna tersimpan di browser masing-masing.

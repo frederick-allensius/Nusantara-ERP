@@ -1,188 +1,101 @@
-# 🚀 Quick Start Guide - Nusantara ERP
+# Panduan Cepat — Nusantara ERP
 
-Get up and running in **5 minutes**!
+## Prasyarat
 
----
-
-## 📋 Prerequisites
-
-- **Node.js** 20.19.0 or higher
-- **npm** or **yarn**
-- **Firebase Account** (free tier works!)
-- Modern browser (Chrome, Firefox, Safari, Edge)
+- Node.js **20.19** atau lebih baru (npm 10+)
+- Browser modern (Chrome, Edge, Firefox, Safari)
+- Untuk mode cloud: akun Firebase dan Firebase CLI (`npm install -g firebase-tools`)
 
 ---
 
-## ⚡ Quick Setup (5 Minutes)
-
-### Step 1: Clone & Install (1 min)
+## 1. Instal
 
 ```bash
-# Clone repository
-git clone <your-repo-url>
-cd nusantara-erp
-
-# Install dependencies
-npm install
+npm ci
 ```
 
-### Step 2: Firebase Configuration (2 min)
+## 2. Mode lokal (tanpa Firebase)
 
-1. **Create Firebase Project**
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Click "Add project"
-   - Follow the wizard
+Cocok untuk demo, uji coba, dan pemakaian di satu perangkat.
 
-2. **Get Firebase Config**
-   - In Firebase Console, click ⚙️ (Settings) → Project settings
-   - Scroll to "Your apps" → Click Web icon (</>)
-   - Copy the `firebaseConfig` object
+```bash
+npm run dev:local
+```
 
-3. **Update Config File**
+1. Buka `http://localhost:8088/app.html` (browser biasanya terbuka otomatis).
+2. Login dengan akun lokal **`admin` / `admin123`**. Anda diminta mengganti password pada login pertama.
+3. Data contoh dimuat otomatis saat database masih kosong.
+
+Catatan mode lokal:
+- Data tersimpan di **browser dan perangkat itu saja** (IndexedDB). Membersihkan data situs di browser akan menghapus data.
+- Buat backup lewat menu pengguna → **Kelola Backup** → Ekspor.
+- Akun lokal lain untuk uji coba: `firna`, `richard`, `lisa` (password `<nama>123`, semuanya peran Admin).
+
+## 3. Mode cloud (Firebase)
+
+Dibutuhkan bila data harus diakses dari beberapa perangkat/pengguna.
+
+1. **Buat project Firebase** dan gunakan paket Blaze (dibutuhkan Cloud Functions).
+2. Aktifkan **Firestore** dan **Authentication**. Login memakai username melalui Cloud Function, sehingga tidak perlu mengaktifkan provider email.
+3. Salin konfigurasi:
    ```bash
-   # Edit src/config/firebase.js
-   # Replace firebaseConfig with your config
+   cp .env.example .env
    ```
+   Isi `VITE_FIREBASE_*` dari Firebase Console → Project settings → Your apps (Web).
+4. Sesuaikan ID project di `.firebaserc`.
+5. Sesuaikan email **admin utama** yang tertulis di `firestore.rules` dan `src/core/user-role.js` — **REQUIRES USER CONFIRMATION** (email pemilik akun).
+6. Deploy aturan dan functions:
+   ```bash
+   npm run deploy:rules
+   ```
+   ```bash
+   npm --prefix functions ci
+   ```
+   ```bash
+   firebase deploy --only functions
+   ```
+7. Jalankan aplikasi:
+   ```bash
+   npm run dev
+   ```
+8. **Akun pertama:** saat login pertama kali dan belum ada pengguna, server membuat akun awal berperan Admin. Passwordnya diambil dari variabel `SEED_ADMIN_PASSWORD` (di `functions/.env`) atau, bila tidak diisi, password acak yang dicatat **satu kali** di Cloud Logging. Semua akun awal wajib ganti password.
 
-### Step 3: Enable Firebase Services (1 min)
+Detail deploy produksi: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-In Firebase Console:
-
-1. **Authentication**
-   - Click "Authentication" → "Get started"
-   - Go to "Sign-in method" tab
-   - Enable "Email/Password"
-   - Click "Save"
-
-2. **Firestore Database**
-   - Click "Firestore Database" → "Create database"
-   - Choose "Start in test mode"
-   - Select location (closest to you)
-   - Click "Enable"
-
-3. **Storage**
-   - Click "Storage" → "Get started"
-   - Choose "Start in test mode"
-   - Click "Done"
-
-### Step 4: Create First User (1 min)
-
-In Firebase Console → Authentication → Users:
-
-1. Click "Add user"
-2. Enter:
-   - **Email**: `admin@example.com` (or your email)
-   - **Password**: `Admin123!` (or your password)
-3. Click "Add user"
-
-**📖 Detailed guide:** [Firebase Auth Setup](./docs/FIREBASE_AUTH_SETUP.md)
-
-### Step 5: Deploy Security Rules & Run
+## 4. Build
 
 ```bash
-# Deploy Firestore and Storage rules
-firebase deploy --only firestore:rules,storage:rules
-
-# Start development server
-npm run dev
-```
-
-Open browser at `http://localhost:5173` and login with your credentials!
-
----
-
-## 🎯 What's Next?
-
-### Explore the System
-
-1. **Dashboard** - View real-time metrics
-2. **Master Data** - Add customers, suppliers, products
-3. **Sales** - Create your first sales order
-4. **Inventory** - Track stock levels
-5. **Finance** - Monitor cash flow
-
-### Customize
-
-- **Change Password**: Click user menu → Change Password
-- **Settings**: Configure company info, preferences
-- **Master Data**: Add your business data
-
-### Deploy to Production
-
-```bash
-# Build for production
 npm run build
-
-# Deploy to Firebase Hosting
-firebase deploy
 ```
-
----
-
-## 🔧 Troubleshooting
-
-### "Firebase: Error (auth/user-not-found)"
-
-**Solution**: Create user first in Firebase Console (Step 4)
-
-### "Permission denied" errors
-
-**Solution**: Deploy security rules:
 
 ```bash
-firebase deploy --only firestore:rules,storage:rules
+npm run preview
 ```
 
-### Port 5173 already in use
+`npm run build:local` menghasilkan build mode lokal (tanpa Firebase).
 
-**Solution**: Kill the process or use different port:
+## 5. Pemeriksaan kode
 
 ```bash
-npm run dev -- --port 3000
+npm run test:run
 ```
 
-### Firebase config not found
+```bash
+npm run type-check
+```
 
-**Solution**: Make sure you updated `src/config/firebase.js` with your Firebase config
-
----
-
-## 📚 Documentation
-
-- **[Firebase Auth Setup](./docs/FIREBASE_AUTH_SETUP.md)** - Detailed authentication guide
-- **[README.md](./README.md)** - Full documentation
-- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture
-- **[DEVELOPMENT.md](./docs/DEVELOPMENT.md)** - Development guide
+```bash
+npm run lint
+```
 
 ---
 
-## 🆘 Need Help?
+## Masalah umum
 
-1. Check [Firebase Auth Setup Guide](./docs/FIREBASE_AUTH_SETUP.md)
-2. Check browser console (F12) for errors
-3. Verify Firebase Console → Authentication → Users
-4. Check Firebase Console → Firestore → Data
-
----
-
-## ✅ Setup Checklist
-
-- [ ] Node.js 20.19.0+ installed
-- [ ] Dependencies installed (`npm install`)
-- [ ] Firebase project created
-- [ ] Firebase config updated in `src/config/firebase.js`
-- [ ] Email/Password authentication enabled
-- [ ] Firestore database created
-- [ ] Storage enabled
-- [ ] First user created
-- [ ] Security rules deployed
-- [ ] App running (`npm run dev`)
-- [ ] Successfully logged in
-
----
-
-**Ready to go!** 🎉
-
-Start building your Nusantara business with this modern ERP system.
-
-**Last Updated**: 2026-05-04
+| Gejala | Penyebab & solusi |
+|---|---|
+| Port 8088 sudah dipakai | Jalankan dengan port lain: `npm run dev:local -- --port 8090` |
+| Jendela cetak tidak muncul | Browser memblokir pop-up — izinkan pop-up untuk alamat aplikasi |
+| Login cloud gagal dengan pesan terkait IAM/signBlob | Service account Cloud Functions perlu peran *Service Account Token Creator* untuk membuat token login |
+| Status data di topbar menampilkan "Lokal" padahal `.env` terisi | Periksa semua nilai `VITE_FIREBASE_*` lalu jalankan ulang `npm run dev` |
+| Sebagian data hilang setelah reload di mode cloud | Koleksi tertentu belum tersinkron — lihat T-27 di [docs/08-TEMUAN-TEKNIS.md](docs/08-TEMUAN-TEKNIS.md) |

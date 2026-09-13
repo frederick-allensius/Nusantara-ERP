@@ -1,16 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NUSANTARA ERP — Navigation with Flyout Menus
-// ═══════════════════════════════════════════════════════════════════════════════
+// NUSANTARA ERP — Navigation  (ui/nav.js)
+//
+// • Sidebar: one labeled menu whose groups follow daily work
+//   (docs/02-PETA-MODUL-DAN-NAVIGASI.md §4). A group opens like an accordion; the
+//   sidebar can collapse to icons, where a group opens as a popover instead.
+// • Page context: the active group and page in the topbar and document title.
+// • window.navigate(id): renders #view-<id> (cached until invalidateView).
+// • User menu, notification panel, theme toggle and connection chip.
+//
 // Wrapped in an IIFE so its top-level declarations stay local. As classic
-// scripts share one global scope, names like `charts`, `getRenderer`,
-// `_filterCloseCtrl`, etc. are already declared by erp-view.js — redeclaring
-// them at global scope is a SyntaxError that would silently kill this whole
-// file (breaking all sidebar navigation + the theme toggle).
+// scripts share one global scope, names like `charts`, `getRenderer`, etc. are
+// already declared by erp-view.js — redeclaring them at global scope is a
+// SyntaxError that would silently kill this whole file.
+// ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   const _renderedViews = new Set();
 
   // Bridge to the renderer/chart functions defined in erp-view.js (globals).
-  let _filterCloseCtrl = null;
   let destroyCharts = () => {
     if (typeof window.destroyCharts === 'function') {
       window.destroyCharts();
@@ -24,20 +30,12 @@
   let getRenderer = id =>
     typeof window.getRenderer === 'function' ? window.getRenderer(id) : null;
 
-  // Helper functions (use global if available, otherwise provide fallback)
   const escapeHtml =
     window.escapeHtml ||
     (text =>
       String(text).replace(
         /[&<>"']/g,
-        m =>
-          ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;',
-          })[m]
+        m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
       ));
 
   const showToast = window.showToast || (msg => console.log('Toast:', msg));
@@ -58,474 +56,535 @@
     }
   };
 
-  // Menu definitions matching Accurate Online structure
+  // ── Menu structure ──────────────────────────────────────────────────────────
+  // `label` doubles as the key in core/menu-router.js ROUTES; entries without a
+  // route open `view` directly. `view` is the #view-* container the entry renders
+  // into, which keeps the highlight on the entry that was opened. `module` (RBAC)
+  // defaults to the group's module; entries that moved between groups keep the
+  // visibility they had. `modal` entries open a dialog without leaving the page;
+  // `home` marks the entry shown when a shared view is opened programmatically.
   const MENU_CONFIG = {
     dashboard: {
-      title: 'Dashboard',
-      color: '#2563EB',
+      title: 'Ringkasan',
+      icon: 'grid',
       view: 'dashboard',
+      module: 'dashboard',
       items: [],
     },
-    company: {
-      title: 'Company',
-      color: '#3B82F6',
-      items: [
-        { icon: 'home', label: 'Profil Perusahaan', view: 'settings' },
-        { icon: 'percent', label: 'Tax', view: 'tax' },
-        { icon: 'clock', label: 'Payment Term', view: 'settings' },
-        { icon: 'truck', label: 'Shipment', view: 'settings' },
-        { icon: 'users', label: 'Employee', view: 'master' },
-        { icon: 'user', label: 'Contact', view: 'master' },
-        { icon: 'calendar', label: 'Calendar', view: 'settings' },
-        { icon: 'activity', label: 'Activity Log', view: 'settings' },
-        { icon: 'trash-2', label: 'Recycle Bin', view: 'settings' },
-        { icon: 'download', label: 'Import dari Excel', view: 'excelImport' },
-      ],
-    },
-    ledger: {
-      title: 'General Ledger',
-      color: '#10B981',
-      items: [
-        { icon: 'list', label: 'Chart of Accounts', view: 'ledger' },
-        { icon: 'book', label: 'Trial Balance', view: 'ledger' },
-        { icon: 'pie-chart', label: 'Laporan Keuangan', view: 'financials' },
-        { icon: 'file-text', label: 'Expense Accrual', view: 'finance' },
-        { icon: 'users', label: 'Employee Payroll', view: 'finance' },
-        { icon: 'edit-3', label: 'Journal Voucher', view: 'ledger' },
-        { icon: 'bar-chart-2', label: 'Budget Monitor', view: 'finance' },
-        { icon: 'repeat', label: 'Budget Transfer', view: 'finance' },
-        { icon: 'pie-chart', label: 'Budget', view: 'finance' },
-        { icon: 'clock', label: 'Account History', view: 'finance' },
-        { icon: 'search', label: 'Audit Journal', view: 'finance' },
-      ],
-    },
-    cashbank: {
-      title: 'Cash & Bank',
-      color: '#0EA5E9',
-      items: [
-        { icon: 'arrow-up-right', label: 'Other Payment', view: 'finance' },
-        { icon: 'arrow-down-left', label: 'Other Deposit', view: 'finance' },
-        { icon: 'repeat', label: 'Bank Transfer', view: 'finance' },
-        { icon: 'file-text', label: 'Bank Statement', view: 'finance' },
-        { icon: 'clock', label: 'Bank History', view: 'finance' },
-        { icon: 'check-square', label: 'Bank Reconcile', view: 'finance' },
-      ],
-    },
     sales: {
-      title: 'Sales',
-      color: '#10B981',
+      title: 'Penjualan',
+      icon: 'trending-up',
+      module: 'sales',
       items: [
-        { icon: 'file-text', label: 'Sales Quotation', view: 'quotations' },
-        { icon: 'shopping-bag', label: 'Sales Order', view: 'sales' },
-        { icon: 'truck', label: 'Delivery Order', view: 'logistics' },
-        { icon: 'credit-card', label: 'Sales Down Payment', view: 'sales' },
-        { icon: 'file', label: 'Sales Invoice', view: 'invoices' },
-        { icon: 'check-circle', label: 'Sales Receipt', view: 'invoices' },
-        { icon: 'rotate-ccw', label: 'Sales Return', view: 'returns' },
-        { icon: 'tag', label: 'Customer Category', view: 'master' },
-        { icon: 'tag', label: 'Sales Category', view: 'sales' },
-        { icon: 'user', label: 'Customer', view: 'master' },
+        { label: 'Penawaran Penjualan', view: 'quotations' },
+        { label: 'Pesanan Penjualan', view: 'sales' },
+        { label: 'Surat Jalan', view: 'logistics' },
+        { label: 'Faktur Penjualan', view: 'invoices' },
+        { label: 'Penerimaan Pembayaran', view: 'invoices' },
+        { label: 'Uang Muka Penjualan', view: 'sales' },
+        { label: 'Retur Penjualan', view: 'returns' },
+        { label: 'Target Penjualan', view: 'sales' },
+        { label: 'Pelanggan', view: 'master' },
       ],
     },
     purchases: {
-      title: 'Purchases',
-      color: '#F59E0B',
+      title: 'Pembelian',
+      icon: 'shopping-cart',
+      module: 'purchases',
       items: [
-        { icon: 'file-text', label: 'Purchase Quotation', view: 'quotations' },
-        { icon: 'file-text', label: 'Purchase Order', view: 'purchase' },
-        { icon: 'download', label: 'Receive Item', view: 'purchase' },
-        { icon: 'credit-card', label: 'Purchase Down Payment', view: 'purchase' },
-        { icon: 'file', label: 'Purchase Invoice', view: 'invoices' },
-        { icon: 'check-circle', label: 'Purchase Payment', view: 'invoices' },
-        { icon: 'rotate-ccw', label: 'Purchase Return', view: 'returns' },
-        { icon: 'dollar-sign', label: 'Supplier Price', view: 'purchase' },
-        { icon: 'tag', label: 'Supplier Category', view: 'master' },
-        { icon: 'user', label: 'Supplier', view: 'master' },
+        { label: 'Penawaran Pembelian', view: 'quotations' },
+        { label: 'Pesanan Pembelian', view: 'purchase' },
+        { label: 'Penerimaan Barang', view: 'purchase' },
+        { label: 'Faktur Pembelian', view: 'invoices' },
+        { label: 'Pembayaran ke Supplier', view: 'invoices' },
+        { label: 'Uang Muka Pembelian', view: 'purchase' },
+        { label: 'Retur Pembelian', view: 'returns' },
+        { label: 'Harga Supplier', view: 'purchase' },
+        { label: 'Supplier', view: 'master' },
       ],
     },
     inventory: {
-      title: 'Inventory',
-      color: '#0EA5E9',
+      title: 'Persediaan',
+      icon: 'package',
+      module: 'inventory',
       items: [
-        { icon: 'clipboard', label: 'Item Requisition', view: 'inventory' },
-        { icon: 'shuffle', label: 'Item Transfer', view: 'warehouse' },
-        { icon: 'sliders', label: 'Item Adjustment', view: 'adjustments' },
-        { icon: 'tool', label: 'Job Costing', view: 'inventory' },
-        { icon: 'package', label: 'Item', view: 'inventory' },
-        { icon: 'home', label: 'Warehouse', view: 'warehouse' },
-        { icon: 'hash', label: 'Item Unit', view: 'inventory' },
-        { icon: 'folder', label: 'Item Category', view: 'inventory' },
-        { icon: 'award', label: 'Item Brand', view: 'inventory' },
-        { icon: 'download', label: 'Import dari Excel', view: 'excelImport' },
+        { label: 'Barang & Stok', view: 'inventory' },
+        { label: 'Gudang', view: 'warehouse' },
+        { label: 'Transfer Antar Gudang', view: 'warehouse' },
+        { label: 'Penyesuaian Stok', view: 'adjustments' },
+        { label: 'Permintaan Barang', view: 'inventory' },
+        { label: 'Job Costing', view: 'inventory' },
+      ],
+    },
+    cashbank: {
+      title: 'Kas & Bank',
+      icon: 'credit-card',
+      module: 'gl',
+      items: [
+        { label: 'Pengeluaran Lain', view: 'finance' },
+        { label: 'Penerimaan Lain', view: 'finance' },
+        { label: 'Transfer Antar Rekening', view: 'finance' },
+        { label: 'Rekening Koran', view: 'finance' },
+        { label: 'Riwayat Kas & Bank', view: 'finance' },
+        { label: 'Rekonsiliasi Bank', view: 'finance' },
+      ],
+    },
+    accounting: {
+      title: 'Akuntansi',
+      icon: 'book',
+      module: 'gl',
+      items: [
+        { label: 'Ringkasan Keuangan', view: 'finance', home: true },
+        { heading: 'Buku Besar' },
+        { label: 'Neraca Saldo', view: 'ledger' },
+        { label: 'Jurnal', view: 'ledger' },
+        { label: 'Jurnal Umum', view: 'ledger' },
+        { label: 'Bagan Akun', view: 'ledger' },
+        { label: 'Riwayat Akun', view: 'finance' },
+        { label: 'Audit Jurnal', view: 'finance' },
+        { heading: 'Biaya & Anggaran' },
+        { label: 'Biaya Akrual', view: 'finance' },
+        { label: 'Penggajian', view: 'finance' },
+        { label: 'Anggaran', view: 'finance' },
+        { label: 'Realisasi Anggaran', view: 'finance' },
+        { label: 'Transfer Anggaran', view: 'finance' },
+        { heading: 'Pajak' },
+        { label: 'Pajak & PPN', view: 'tax', module: 'tax' },
+        { label: 'Ekspor e-Faktur', view: 'tax', module: 'tax' },
       ],
     },
     assets: {
-      title: 'Fixed Asset',
-      color: '#8B5CF6',
+      title: 'Aset Tetap',
+      icon: 'briefcase',
+      module: 'assets',
       items: [
-        { icon: 'hard-drive', label: 'Fixed Asset', view: 'assets' },
-        { icon: 'folder', label: 'Fixed Asset Category', view: 'assets' },
-        { icon: 'percent', label: 'Fiscal FA Category', view: 'assets' },
-        { icon: 'edit', label: 'Fixed Asset Edited', view: 'assets' },
-        { icon: 'trash-2', label: 'FA Disposition', view: 'assets' },
-        { icon: 'shuffle', label: 'Asset Transfer', view: 'assets' },
-        { icon: 'map-pin', label: 'Asset per Location', view: 'assets' },
+        { label: 'Daftar Aset', view: 'assets' },
+        { label: 'Kategori Aset', view: 'assets' },
+        { label: 'Golongan Aset Fiskal', view: 'assets' },
+        { label: 'Riwayat Perubahan Aset', view: 'assets' },
+        { label: 'Mutasi Aset', view: 'assets' },
+        { label: 'Pelepasan Aset', view: 'assets' },
+        { label: 'Aset per Lokasi', view: 'assets' },
       ],
     },
     reports: {
-      title: 'Reports',
-      color: '#F97316',
+      title: 'Laporan',
+      icon: 'bar-chart-2',
+      module: 'reports',
       items: [
-        { icon: 'file-text', label: 'Report List', view: 'reports' },
-        { icon: 'pie-chart', label: 'Laba Rugi (P/L)', view: 'financials' },
-        { icon: 'bar-chart-2', label: 'Neraca (Balance Sheet)', view: 'financials' },
-        { icon: 'activity', label: 'Arus Kas (Cash Flow)', view: 'financials' },
+        { label: 'Daftar Laporan', view: 'reports' },
+        { label: 'Laba Rugi', view: 'financials' },
+        { label: 'Neraca', view: 'financials' },
+        { label: 'Arus Kas', view: 'financials' },
+        { label: 'Rekap PPN', view: 'reports' },
+      ],
+    },
+    master: {
+      title: 'Data Master',
+      icon: 'database',
+      module: 'master',
+      items: [
+        { label: 'Karyawan', view: 'master', module: 'admin' },
+        { label: 'Kontak', view: 'master', module: 'admin' },
+        { label: 'Kategori Pelanggan', view: 'master', module: 'sales' },
+        { label: 'Kategori Supplier', view: 'master', module: 'purchases' },
+        { label: 'Kategori Penjualan', view: 'settings', module: 'sales' },
+        { label: 'Satuan Barang', view: 'inventory', module: 'inventory' },
+        { label: 'Kategori Barang', view: 'inventory', module: 'inventory' },
+        { label: 'Merek Barang', view: 'inventory', module: 'inventory' },
+      ],
+    },
+    settings: {
+      title: 'Pengaturan',
+      icon: 'settings',
+      module: 'admin',
+      items: [
+        { label: 'Pengaturan Umum', view: 'settings' },
+        { label: 'Profil Perusahaan', view: 'settings', modal: true },
+        { label: 'Termin Pembayaran', view: 'settings' },
+        { label: 'Metode Pengiriman', view: 'settings' },
+        { label: 'Kalender', view: 'settings' },
+        { label: 'Transaksi Favorit', view: 'settings' },
+        { label: 'Log Aktivitas', view: 'settings' },
+        { label: 'Recycle Bin', view: 'settings' },
+        { label: 'Import dari Excel', view: 'excelImport', module: ['admin', 'inventory'] },
       ],
     },
   };
 
-  // Simple feather-style icon SVG generator
-  function _menuIcon(name, color) {
-    const icons = {
-      'dollar-sign':
-        '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-      percent:
-        '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
-      clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-      truck:
-        '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
-      users:
-        '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-      user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-      star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-      calendar:
-        '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-      activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-      list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
-      'file-text':
-        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
-      'edit-3':
-        '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
-      'bar-chart-2':
-        '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-      repeat:
-        '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
-      'pie-chart':
-        '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
-      search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
-      'arrow-up-right': '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
-      'arrow-down-left': '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/>',
-      smartphone:
-        '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
-      'check-square':
-        '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-      'shopping-bag':
-        '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>',
-      'credit-card':
-        '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
-      file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>',
-      'check-circle':
-        '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-      'rotate-ccw':
-        '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
-      tag: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
-      'trending-up':
-        '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-      download:
-        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
-      clipboard:
-        '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
-      shuffle:
-        '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
-      sliders:
-        '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
-      tool: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
-      package:
-        '<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-      home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-      hash: '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
-      folder:
-        '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
-      award:
-        '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
-      'hard-drive':
-        '<line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/>',
-      edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
-      'trash-2':
-        '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
-      'map-pin':
-        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
-      mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
-      cpu: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>',
-    };
-    const path = icons[name] || icons['file'];
-    return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  // Feather-style icon paths (24×24 viewBox, stroke = currentColor).
+  const ICONS = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+    'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+    'shopping-cart':
+      '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+    package:
+      '<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+    'credit-card': '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    briefcase:
+      '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+    'bar-chart-2':
+      '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    database:
+      '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+    settings:
+      '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+    'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    users:
+      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>',
+    download:
+      '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    install:
+      '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><polyline points="9 9 12 12 15 9"/><line x1="12" y1="12" x2="12" y2="5"/>',
+    globe:
+      '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    'log-out':
+      '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    'alert-triangle':
+      '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    'alert-circle':
+      '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+    bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    dollar:
+      '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    refresh:
+      '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  };
+
+  function _svg(name, size, cls) {
+    return (
+      `<svg${cls ? ` class="${cls}"` : ''} width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" ` +
+      `stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+      `${ICONS[name] || ICONS.info}</svg>`
+    );
   }
 
-  // Current sub-nav state. `_activeFlyout` holds the menu group whose items are
-  // currently shown in the contextual sub-nav panel (second tier).
-  let _activeFlyout = null;
-  // Label of the flyout item the user actually clicked, so navigate() highlights
-  // that exact item — not every item that happens to share the same data-view
-  // (many menu items route to the same view, e.g. several → 'settings').
-  let _pendingItemLabel = null;
+  // ── Sidebar ─────────────────────────────────────────────────────────────────
+  const NAV_COLLAPSED_KEY = 'nsa_nav_collapsed';
+  const COMPACT_WIDTH = 1100; // up to this width the sidebar starts as icons
+  const DRAWER_WIDTH = 768; // up to this width it is a drawer (mobile.css, mobile-ui.js)
+  const PENDING_TTL = 4000; // ms an opened entry waits for its navigate()
 
-  // True when the viewport is narrow enough that the sub-nav is an overlay flyout
-  // rather than a docked column (must match the <=900px CSS breakpoint).
-  function _isOverlay() {
-    return window.innerWidth <= 900;
+  let _activeEntry = null; // { group, label } of the page on screen
+  let _pendingEntry = null; // entry just opened, until its view renders
+  let _popoverGroup = null;
+
+  function _modulesOf(item, group) {
+    const m = item.module || group.module;
+    return Array.isArray(m) ? m.join(' ') : m || '';
   }
 
-  function _showSubnav() {
-    document.body.classList.remove('subnav-hidden');
-  }
-  function _hideSubnav() {
-    document.body.classList.add('subnav-hidden');
-  }
-
-  // Fill the sub-nav panel with a group's items. Returns false if the group or
-  // the panel DOM is missing.
-  function _renderSubnav(menuId) {
-    const config = MENU_CONFIG[menuId];
-    const title = document.getElementById('flyout-title');
-    const sep = document.getElementById('flyout-separator');
-    const grid = document.getElementById('flyout-grid');
-    if (!config || !grid) {
+  function _renderSidebar() {
+    const nav = document.getElementById('nav');
+    if (!nav) {
       return false;
     }
-    if (title) title.textContent = config.title;
-    if (sep) sep.style.background = config.color;
-
-    const bgColor = config.color + '22';
-    grid.innerHTML = config.items
-      .map(
-        item =>
-          `<button class="flyout-item" data-view="${item.view}" data-label="${escapeHtml(item.label)}">
-      <div class="flyout-item-icon" style="background:${bgColor}">
-        ${_menuIcon(item.icon, config.color)}
-      </div>
-      <span>${escapeHtml(item.label)}</span>
-    </button>`
-      )
+    nav.innerHTML = Object.keys(MENU_CONFIG)
+      .map(key => {
+        const g = MENU_CONFIG[key];
+        const title = escapeHtml(g.title);
+        if (!g.items.length) {
+          return (
+            `<div class="nav-section" data-group="${key}">` +
+            `<button type="button" class="rail-item nav-group-head" data-menu="${key}" data-view="${g.view}" title="${title}">` +
+            `${_svg(g.icon, 17, 'nav-icon')}<span class="nav-label">${title}</span></button></div>`
+          );
+        }
+        const items = g.items
+          .map(it =>
+            it.heading
+              ? `<div class="nav-subhead">${escapeHtml(it.heading)}</div>`
+              : `<button type="button" class="nav-item" data-group="${key}" data-view="${it.view}" ` +
+                `data-label="${escapeHtml(it.label)}" data-module="${_modulesOf(it, g)}">${escapeHtml(it.label)}</button>`
+          )
+          .join('');
+        return (
+          `<div class="nav-section" data-group="${key}">` +
+          `<button type="button" class="rail-item nav-group-head" data-menu="${key}" aria-expanded="false" ` +
+          `aria-controls="nav-items-${key}" title="${title}">${_svg(g.icon, 17, 'nav-icon')}` +
+          `<span class="nav-label">${title}</span>${_svg('chevron-down', 14, 'nav-chevron')}</button>` +
+          `<div class="nav-group-items" id="nav-items-${key}" role="group" aria-label="${title}">${items}</div></div>`
+        );
+      })
       .join('');
+    if (window.RBAC && typeof window.RBAC.applyNavGating === 'function') {
+      window.RBAC.applyNavGating();
+    }
     return true;
   }
 
-  function openFlyout(menuId) {
-    const config = MENU_CONFIG[menuId];
-    if (!config) {
-      return;
-    }
-    const overlay = _isOverlay();
-
-    // Groups with no children (Dashboard) have no sub-nav: hide the panel and
-    // navigate straight to the view so it gets the full content width.
-    if (!config.items || config.items.length === 0) {
-      closeFlyout();
-      _hideSubnav();
-      _updateRailActive(menuId);
-      _activeFlyout = menuId;
-      if (config.view) {
-        window.navigate(config.view);
+  // Accordion: opening a group closes the others.
+  function _setGroupOpen(key, open) {
+    document.querySelectorAll('#nav .nav-section').forEach(sec => {
+      if (!sec.querySelector('.nav-group-items')) {
+        return;
       }
+      const next = sec.dataset.group === key ? open : false;
+      sec.classList.toggle('open', next);
+      const head = sec.querySelector('.nav-group-head');
+      if (head) {
+        head.setAttribute('aria-expanded', String(next));
+      }
+    });
+  }
+
+  function _isDrawer() {
+    return window.innerWidth <= DRAWER_WIDTH;
+  }
+
+  function _isCollapsed() {
+    return document.body.classList.contains('nav-collapsed');
+  }
+
+  function _applyCollapsed() {
+    let pref = null;
+    try {
+      const v = localStorage.getItem(NAV_COLLAPSED_KEY);
+      pref = v === null ? null : v === '1';
+    } catch (_) {
+      /* storage unavailable */
+    }
+    const collapsed = (pref === null ? window.innerWidth <= COMPACT_WIDTH : pref) && !_isDrawer();
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    const btn = document.getElementById('sidebar-collapse');
+    if (btn) {
+      const label = collapsed ? 'Lebarkan menu' : 'Ciutkan menu';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+    }
+  }
+
+  function toggleCollapsed() {
+    try {
+      localStorage.setItem(NAV_COLLAPSED_KEY, _isCollapsed() ? '0' : '1');
+    } catch (_) {
+      /* storage unavailable */
+    }
+    _closePopover();
+    _applyCollapsed();
+  }
+
+  function _openPopover(key, head, focusFirst) {
+    const list = head.closest('.nav-section')?.querySelector('.nav-group-items');
+    if (!list) {
       return;
     }
+    let el = document.getElementById('nav-popover');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'nav-popover';
+      el.className = 'nav-popover';
+      document.body.appendChild(el);
+    }
+    el.innerHTML = `<div class="nav-popover-title">${escapeHtml(MENU_CONFIG[key].title)}</div>${list.innerHTML}`;
+    el.hidden = false;
+    const sidebar = document.getElementById('sidebar');
+    const r = head.getBoundingClientRect();
+    const left = (sidebar ? sidebar.getBoundingClientRect().right : r.right) + 8;
+    const top = Math.max(8, Math.min(r.top, window.innerHeight - el.offsetHeight - 8));
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    _popoverGroup = key;
+    if (focusFirst) {
+      const first = Array.from(el.querySelectorAll('.nav-item')).find(b => b.style.display !== 'none');
+      if (first) {
+        first.focus();
+      }
+    }
+  }
 
-    // Re-click on the active group toggles the panel.
-    if (_activeFlyout === menuId) {
-      if (overlay) {
-        closeFlyout();
-      } else if (document.body.classList.contains('subnav-hidden')) {
-        _showSubnav();
+  function _closePopover() {
+    const el = document.getElementById('nav-popover');
+    if (el) {
+      el.hidden = true;
+    }
+    _popoverGroup = null;
+  }
+
+  function _itemView(entry) {
+    const g = entry && MENU_CONFIG[entry.group];
+    if (!g) {
+      return null;
+    }
+    if (!entry.label) {
+      return g.view;
+    }
+    const it = g.items.find(i => i.label === entry.label);
+    return it ? it.view : null;
+  }
+
+  // Which entry represents `viewId`: the one just opened, else the current one
+  // while it still shows this view, else the view's home entry.
+  function _resolveEntry(viewId) {
+    const pending = _pendingEntry;
+    _pendingEntry = null;
+    if (pending && (_itemView(pending) === viewId || Date.now() - pending.ts < PENDING_TTL)) {
+      return { group: pending.group, label: pending.label };
+    }
+    if (_activeEntry && _itemView(_activeEntry) === viewId) {
+      return _activeEntry;
+    }
+    let first = null;
+    for (const key of Object.keys(MENU_CONFIG)) {
+      const g = MENU_CONFIG[key];
+      if (g.view === viewId) {
+        return { group: key, label: null };
+      }
+      for (const it of g.items) {
+        if (it.view !== viewId || it.modal) {
+          continue;
+        }
+        if (it.home) {
+          return { group: key, label: it.label };
+        }
+        if (!first) {
+          first = { group: key, label: it.label };
+        }
+      }
+    }
+    return first;
+  }
+
+  function _markActive(entry) {
+    const prevGroup = _activeEntry && _activeEntry.group;
+    _activeEntry = entry;
+    document.querySelectorAll('#nav .nav-item, #nav-popover .nav-item').forEach(b => {
+      const on = !!entry && b.dataset.group === entry.group && b.dataset.label === entry.label;
+      b.classList.toggle('active', on);
+      if (on) {
+        b.setAttribute('aria-current', 'page');
       } else {
-        _hideSubnav();
+        b.removeAttribute('aria-current');
       }
-      return;
-    }
-
-    // On mobile the sidebar is an overlay drawer — close it before opening flyout
-    // so the sidebar (z-index:300) doesn't sit on top of the flyout panel.
-    if (window.innerWidth <= 768) {
-      const sb = document.getElementById('sidebar');
-      const sbBackdrop = document.getElementById('sidebar-backdrop');
-      const hb = document.getElementById('hamburger');
-      if (sb) sb.classList.remove('open');
-      if (sbBackdrop) sbBackdrop.classList.remove('open');
-      if (hb) { hb.classList.remove('open'); hb.setAttribute('aria-expanded', 'false'); }
-      document.body.classList.remove('sidebar-open');
-    }
-
-    if (!_renderSubnav(menuId)) {
-      return;
-    }
-    _showSubnav();
-
-    if (overlay) {
-      const panel = document.getElementById('flyout-panel');
-      const backdrop = document.getElementById('flyout-backdrop');
-      if (panel) panel.classList.add('open');
-      if (backdrop) backdrop.classList.add('open');
-    }
-    _activeFlyout = menuId;
-    _updateRailActive(menuId);
-  }
-
-  // Collapse handle (desktop docked mode) / close button (overlay mode).
-  function toggleSubnav() {
-    if (_isOverlay()) {
-      closeFlyout();
-      return;
-    }
-    if (document.body.classList.contains('subnav-hidden')) {
-      if (_activeFlyout && MENU_CONFIG[_activeFlyout] && MENU_CONFIG[_activeFlyout].items) {
-        _renderSubnav(_activeFlyout);
-      }
-      _showSubnav();
-    } else {
-      _hideSubnav();
-    }
-  }
-
-  // Reflect the active view's group in the sub-nav on first paint.
-  function _initSubnavState() {
-    const active = window.activeView || 'dashboard';
-    let group = null;
-    for (const [mid, cfg] of Object.entries(MENU_CONFIG)) {
-      if (cfg.view === active || (cfg.items && cfg.items.some(i => i.view === active))) {
-        group = mid;
-        break;
-      }
-    }
-    if (group && MENU_CONFIG[group].items && MENU_CONFIG[group].items.length) {
-      _renderSubnav(group);
-      _showSubnav();
-      _activeFlyout = group;
-      _updateRailActive(group);
-    } else {
-      _hideSubnav();
-      _activeFlyout = group || 'dashboard';
-      _updateRailActive(_activeFlyout);
-    }
-  }
-
-  function closeFlyout() {
-    const panel = document.getElementById('flyout-panel');
-    const backdrop = document.getElementById('flyout-backdrop');
-    if (panel) {
-      panel.classList.remove('open');
-    }
-    if (backdrop) {
-      backdrop.classList.remove('open');
-    }
-    _activeFlyout = null;
-  }
-
-  function _updateRailActive(menuId) {
-    document.querySelectorAll('.rail-item').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.menu === menuId);
     });
+    document.querySelectorAll('#nav .nav-group-head').forEach(h => {
+      const inGroup = !!entry && h.dataset.menu === entry.group;
+      const direct = !h.hasAttribute('aria-expanded');
+      h.classList.toggle('active', inGroup && direct);
+      h.classList.toggle('has-active', inGroup && !direct);
+      if (inGroup && direct) {
+        h.setAttribute('aria-current', 'page');
+      } else {
+        h.removeAttribute('aria-current');
+      }
+    });
+    if (entry && entry.group !== prevGroup && MENU_CONFIG[entry.group].items.length) {
+      _setGroupOpen(entry.group, true);
+      const btn = document.querySelector('#nav .nav-item.active');
+      if (btn && typeof btn.scrollIntoView === 'function') {
+        btn.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    _renderPageContext(entry);
   }
 
-  // Initialize sidebar event listeners
+  function _renderPageContext(entry) {
+    const g = entry && MENU_CONFIG[entry.group];
+    const group = g ? g.title : '';
+    const page = entry && entry.label ? entry.label : '';
+    const el = document.getElementById('page-context');
+    if (el) {
+      el.innerHTML = page
+        ? `<span class="ctx-group">${escapeHtml(group)}</span>${_svg('chevron-right', 12, 'ctx-sep')}` +
+          `<span class="ctx-page">${escapeHtml(page)}</span>`
+        : `<span class="ctx-page">${escapeHtml(group)}</span>`;
+    }
+    document.title = `${page || group ? `${page || group} · ` : ''}Nusantara ERP`;
+  }
+
+  // Open a menu entry exactly as a click would (also used by notification and
+  // dashboard links through window.NSANav.open).
+  function _openEntry(group, label) {
+    const g = MENU_CONFIG[group];
+    const item = g && g.items.find(i => i.label === label);
+    if (!item) {
+      return false;
+    }
+    if (!item.modal) {
+      _pendingEntry = { group, label, ts: Date.now() };
+    }
+    const handled =
+      window.NSAMenu &&
+      typeof window.NSAMenu.handle === 'function' &&
+      window.NSAMenu.handle(item.view, label);
+    if (!handled && !item.modal) {
+      window.navigate(item.view);
+    }
+    return true;
+  }
+
+  function _onNavClick(e) {
+    if (e.target.closest('#sidebar-collapse')) {
+      e.preventDefault();
+      toggleCollapsed();
+      return;
+    }
+
+    const item = e.target.closest('#nav .nav-item, #nav-popover .nav-item');
+    if (item) {
+      e.preventDefault();
+      _closePopover();
+      _openEntry(item.dataset.group, item.dataset.label);
+      return;
+    }
+
+    const head = e.target.closest('#nav .nav-group-head');
+    if (head) {
+      e.preventDefault();
+      const key = head.dataset.menu;
+      const g = MENU_CONFIG[key];
+      if (!g) {
+        return;
+      }
+      if (!g.items.length) {
+        _closePopover();
+        _pendingEntry = { group: key, label: null, ts: Date.now() };
+        window.navigate(g.view);
+      } else if (_isCollapsed()) {
+        if (_popoverGroup === key) {
+          _closePopover();
+        } else {
+          // detail 0 = activated from the keyboard → move focus into the popover
+          _openPopover(key, head, e.detail === 0);
+        }
+      } else {
+        _setGroupOpen(key, !head.closest('.nav-section').classList.contains('open'));
+      }
+      return;
+    }
+
+    if (_popoverGroup && !e.target.closest('#nav-popover')) {
+      _closePopover();
+    }
+  }
+
   function initSidebarNav() {
-    console.log('[NAV] Initializing sidebar navigation...');
+    _renderSidebar();
+    _applyCollapsed();
 
-    // Direct binding to each rail item for maximum reliability
-    const railItems = document.querySelectorAll('.rail-item');
-    console.log('[NAV] Found', railItems.length, 'rail items');
-
-    railItems.forEach(btn => {
-      // RBAC: hide whole menu groups the current role may not view (e.g. a
-      // Penjualan role never sees General Ledger / Cash & Bank / Tax / Admin).
-      const menuId = btn.dataset.menu;
-      if (
-        menuId &&
-        window.RBAC &&
-        typeof window.RBAC.canViewGroup === 'function' &&
-        !window.RBAC.canViewGroup(menuId)
-      ) {
-        btn.style.display = 'none';
-        return;
-      }
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const mid = this.dataset.menu;
-        console.log('[NAV] Rail item clicked:', mid);
-        if (mid) {
-          openFlyout(mid);
+    document.addEventListener('click', _onNavClick);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && _popoverGroup) {
+        const head = document.querySelector(`#nav .nav-group-head[data-menu="${_popoverGroup}"]`);
+        _closePopover();
+        if (head) {
+          head.focus();
         }
-      });
-    });
-
-    // Flyout item clicks (delegated since they're dynamic)
-    document.addEventListener('click', function (e) {
-      const flyoutItem = e.target.closest('.flyout-item');
-      if (flyoutItem) {
-        e.preventDefault();
-        const viewId = flyoutItem.dataset.view;
-        const itemLabel = flyoutItem.dataset.label || '';
-        // Docked sub-nav stays open on desktop; only the overlay flyout closes.
-        if (_isOverlay()) {
-          closeFlyout();
-        }
-        // Highlight the chosen item within the panel.
-        document.querySelectorAll('.flyout-item').forEach(b => {
-          b.classList.toggle('active', b === flyoutItem);
-        });
-        // Remember exactly which item was clicked so the navigate() sync below
-        // doesn't fall back to highlighting every item with the same view.
-        _pendingItemLabel = itemLabel;
-        if (viewId) {
-          // Menu-coverage may fully handle the click (real feature route, or an
-          // honest "in development" placeholder). Otherwise navigate normally.
-          const handled =
-            window.NSAMenu &&
-            typeof window.NSAMenu.handle === 'function' &&
-            window.NSAMenu.handle(viewId, itemLabel);
-          if (!handled) {
-            // Go through window.navigate (not the local `navigate` binding):
-            // this IIFE's own `navigate` is the pristine, unwrapped original —
-            // view-tabs/doc-tabs/rbac/lazy-views all layer wraps onto
-            // window.navigate only, so calling it directly here silently
-            // bypassed all of them (most importantly the lazy-chunk loader
-            // for General Ledger / Financial Reports / Quotations / Returns /
-            // Warehouse / Adjustments / Invoices).
-            window.navigate(viewId);
-          }
-          for (const [menuId, config] of Object.entries(MENU_CONFIG)) {
-            if (config.items && config.items.some(i => i.view === viewId)) {
-              _updateRailActive(menuId);
-              break;
-            }
-          }
-        }
-        return;
-      }
-
-      const backdrop = e.target.closest('.flyout-backdrop');
-      if (backdrop) {
-        closeFlyout();
-        return;
-      }
-
-      // On mobile the flyout-panel is a full-screen overlay, so the backdrop
-      // underneath it is never reachable. Tapping any empty area of the panel
-      // itself (anything that isn't a menu-item button) closes it — giving the
-      // expected "tap outside a button = back" gesture. Desktop docked mode keeps
-      // the panel persistent, so this gesture only applies in overlay mode.
-      const panel = e.target.closest('.flyout-panel');
-      if (_isOverlay() && panel && !e.target.closest('.flyout-item')) {
-        closeFlyout();
-        return;
       }
     });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && _activeFlyout) {
-        closeFlyout();
-      }
+    window.addEventListener('resize', () => {
+      _closePopover();
+      _applyCollapsed();
     });
+    document.getElementById('nav')?.addEventListener('scroll', _closePopover, { passive: true });
 
     // User menu button — dropdown with profile / password / backup / logout
     const userMenuBtn = document.getElementById('user-menu-btn');
@@ -537,7 +596,6 @@
       });
     }
 
-    // ── Notification bell ─────────────────────────────────────────────────────
     const notifBtn = document.getElementById('notif-btn');
     if (notifBtn) {
       notifBtn.addEventListener('click', function (e) {
@@ -546,42 +604,31 @@
       });
     }
 
-    // Hamburger + sidebar backdrop are wired by the inline script in index.html
-    // (which also handles Escape, swipe-to-close, resize, and nav-item close).
-    // Adding a second toggle handler here causes the two toggles to cancel each
-    // other out on tap, so the sidebar never opens on mobile.
+    // Hamburger + sidebar backdrop are wired by public/mobile-ui.js (which also
+    // handles Escape, swipe-to-close and resize). A second toggle handler here
+    // would cancel it out on tap.
 
-    // Sub-nav collapse handle.
-    const subnavCollapse = document.getElementById('subnav-collapse');
-    if (subnavCollapse) {
-      subnavCollapse.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleSubnav();
-      });
-    }
-
-    // Render the sub-nav for the initially active view (Dashboard hides it).
-    _initSubnavState();
+    _markActive(_resolveEntry(window.activeView || 'dashboard'));
 
     initTheme();
     initSearchToggle();
     initDbStatusIndicator();
-
-    console.log('[NAV] Sidebar navigation initialized successfully');
   }
 
-  // ── Firebase / DB connection status indicator ──────────────────────────────
+  // ── Connection status chip ──────────────────────────────────────────────────
   function initDbStatusIndicator() {
     const chip = document.getElementById('db-status-chip');
     const dot = document.getElementById('db-status-dot');
     const label = document.getElementById('db-status-label');
-    if (!chip || !dot || !label) return;
+    if (!chip || !dot || !label) {
+      return;
+    }
 
     function _fmt(ts) {
-      if (!ts) return '';
-      const d = new Date(ts);
-      return d.toLocaleTimeString('id-ID', {
+      if (!ts) {
+        return '';
+      }
+      return new Date(ts).toLocaleTimeString('id-ID', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -593,33 +640,34 @@
       if (mode === 'firestore') {
         dot.className = 'db-status-dot online';
         label.className = 'db-status-label online';
-        label.textContent = 'Firebase';
-        const sync = window.__nsaLastSync ? ' · ' + _fmt(window.__nsaLastSync) : '';
-        chip.title = 'Terhubung ke Firebase Firestore' + sync;
+        label.textContent = 'Cloud';
+        const sync = window.__nsaLastSync ? ' · sinkron ' + _fmt(window.__nsaLastSync) : '';
+        chip.title = 'Data tersimpan di cloud (Firebase)' + sync;
       } else if (mode === 'local') {
         dot.className = 'db-status-dot offline';
         label.className = 'db-status-label offline';
         label.textContent = 'Lokal';
-        chip.title = 'Mode offline — data disimpan di perangkat ini';
+        chip.title = 'Mode lokal — data disimpan di perangkat ini';
       } else {
         dot.className = 'db-status-dot';
         label.className = 'db-status-label';
         label.textContent = '…';
-        chip.title = 'Memuat...';
+        chip.title = 'Memuat…';
       }
     }
 
     _update();
-    // Poll every 3s so the indicator reflects changes (e.g. after migration or reconnect)
+    // Poll so the chip reflects changes (e.g. after migration or reconnect)
     setInterval(_update, 3000);
   }
 
   // ── Search focus shortcut ───────────────────────────────────────────────────
   function initSearchToggle() {
     const input = document.getElementById('search-input');
-    if (!input) return;
-
-    // "/" shortcut focuses the search bar from anywhere
+    if (!input) {
+      return;
+    }
+    // "/" focuses the search field from anywhere
     document.addEventListener('keydown', function (e) {
       if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
         const tag = document.activeElement?.tagName?.toLowerCase();
@@ -632,7 +680,7 @@
     });
   }
 
-  // ── User menu dropdown ──────────────────────────────────────────────────────
+  // ── User menu ───────────────────────────────────────────────────────────────
   let _userMenuOpen = false;
 
   function _toggleUserMenu() {
@@ -645,79 +693,43 @@
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'user-menu-panel';
-      // On <body>, NOT inside the topbar: the topbar's backdrop-filter makes it
-      // the containing block for position:fixed, so the mobile bottom-sheet
-      // rules would anchor to the topbar and strand the panel above the
-      // viewport. Sizing lives in CSS (220px dropdown on desktop, full-width
-      // sheet on mobile) — inline width here would override the mobile rule.
-      panel.className = 'notif-panel';
+      // On <body>, not inside the topbar, so position:fixed anchors to the
+      // viewport (the mobile bottom-sheet rules in mobile.css rely on it).
+      panel.className = 'notif-panel user-menu-panel';
       document.body.appendChild(panel);
     }
 
     const u = (typeof DB !== 'undefined' && DB.settings && DB.settings.user) || {};
-    const me = (typeof window !== 'undefined' && window.__ERP_USER) || {};
+    const me = window.__ERP_USER || {};
     const roleLabels = (window.erpUsers && window.erpUsers.roleLabels) || {};
     const displayName = u.name || me.displayName || 'Pengguna';
-    const role = roleLabels[me.role] || me.role || u.role || 'Administrator';
+    const role = roleLabels[me.role] || me.role || u.role || 'Pengguna';
     const canManageUsers =
       window.RBAC && typeof window.RBAC.canManageUsers === 'function' && window.RBAC.canManageUsers();
+    const langEn = window.I18N && window.I18N.getLang && window.I18N.getLang() === 'en';
+
+    const item = (action, icon, label, meta) =>
+      `<button type="button" class="user-menu-item${action === 'logout' ? ' danger' : ''}" data-user-action="${action}">` +
+      `${_svg(icon, 15)}<span>${label}</span>${meta ? `<span class="user-menu-meta">${meta}</span>` : ''}</button>`;
 
     panel.innerHTML =
-      '<div class="notif-panel-hdr">' +
-      '<div style="font-weight:700;font-size:13px">' +
-      escapeHtml(displayName) +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--muted)">' +
-      escapeHtml(role) +
-      '</div>' +
-      '</div>' +
-      '<div style="padding:4px">' +
-      '<button class="user-menu-item" data-user-action="editIdentity">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
-      'Edit Profil' +
-      '</button>' +
-      (canManageUsers
-        ? '<button class="user-menu-item" data-user-action="manageUsers">' +
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
-          'Manajemen Pengguna' +
-          '</button>'
-        : '') +
-      '<button class="user-menu-item" data-user-action="changePassword">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-      'Ganti Password' +
-      '</button>' +
-      '<button class="user-menu-item" data-user-action="manage2FA">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>' +
-      'Verifikasi 2 Langkah' +
-      '</button>' +
-      '<button class="user-menu-item" data-user-action="manageBackup">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-      'Kelola Backup' +
-      '</button>' +
-      // Install entry lives here (not only in Pengaturan) so every user can
-      // install the PWA — Pengaturan is admin/manajer-only via RBAC, which
-      // otherwise hides the only install entry point from non-admins.
-      '<button class="user-menu-item" data-user-action="installPwaApp">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><polyline points="9 9 12 12 15 9"/><line x1="12" y1="12" x2="12" y2="5"/></svg>' +
-      'Install Aplikasi' +
-      '</button>' +
-      '<button class="user-menu-item" data-user-action="toggleLang">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
-      'Bahasa' +
-      '<span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--muted)">' +
-      (window.I18N && window.I18N.getLang && window.I18N.getLang() === 'en' ? 'EN' : 'ID') +
-      '</span>' +
-      '</button>' +
-      '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
-      '<button class="user-menu-item" data-user-action="logout" style="color:#EF4444">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' +
-      'Logout' +
-      '</button>' +
+      `<div class="notif-panel-hdr user-menu-hdr"><div class="user-menu-name">${escapeHtml(displayName)}</div>` +
+      `<div class="user-menu-role">${escapeHtml(role)}</div></div>` +
+      '<div class="user-menu-list">' +
+      item('editIdentity', 'user', 'Profil & Perusahaan') +
+      (canManageUsers ? item('manageUsers', 'users', 'Manajemen Pengguna') : '') +
+      item('changePassword', 'lock', 'Ganti Password') +
+      item('manage2FA', 'shield', 'Verifikasi 2 Langkah') +
+      item('manageBackup', 'download', 'Kelola Backup') +
+      // Here (not only in Pengaturan) so every role can install the PWA.
+      item('installPwaApp', 'install', 'Instal Aplikasi') +
+      item('toggleLang', 'globe', 'Bahasa', langEn ? 'EN' : 'ID') +
+      '<div class="user-menu-sep"></div>' +
+      item('logout', 'log-out', 'Keluar') +
       '</div>';
 
     panel.style.display = 'block';
     _userMenuOpen = true;
-
     setTimeout(function () {
       document.addEventListener('click', _closeUserMenuOnOutside);
     }, 0);
@@ -733,143 +745,132 @@
   }
 
   function _closeUserMenuOnOutside(e) {
-    if (!e.target.closest('#user-menu-panel') && !e.target.closest('#user-menu-btn')) {
+    const path = e.composedPath ? e.composedPath() : [];
+    const panel = document.getElementById('user-menu-panel');
+    const btn = document.getElementById('user-menu-btn');
+    if (!path.includes(panel) && !path.includes(btn)) {
       _closeUserMenu();
     }
   }
 
-  // ── Notification panel ────────────────────────────────────────────────────
-  var _notifPanelOpen = false;
+  document.addEventListener('click', function (e) {
+    const item = e.target.closest('[data-user-action]');
+    if (!item) {
+      return;
+    }
+    e.preventDefault();
+    _closeUserMenu();
+    const action = item.dataset.userAction;
+    const actions = window.ERP && ERP.registry && ERP.registry.actions;
+    const run = name => {
+      if (actions && actions.has(name)) {
+        actions.get(name)();
+        return true;
+      }
+      return false;
+    };
+    if (action === 'toggleLang') {
+      if (window.I18N && window.I18N.toggleLang) {
+        window.I18N.toggleLang();
+      }
+    } else if (action === 'manageUsers') {
+      if (typeof window.showUserManagement === 'function') {
+        window.showUserManagement();
+      }
+    } else if (action === 'logout') {
+      if (window.erpAuth && window.erpAuth.logout) {
+        window.erpAuth.logout();
+      }
+    } else {
+      run(action);
+    }
+  });
 
-  // Accent per alert type. Only tints the icon chip and count badge; text uses
-  // the theme tokens so the panel reads well in both light and dark mode
-  // (the old hardcoded pastel boxes clashed with dark mode).
-  var NOTIF_ACCENT = {
-    warning: '#F59E0B',
-    danger: '#EF4444',
-    info: '#3B82F6',
-    success: '#34C759',
+  // ── Notification panel ──────────────────────────────────────────────────────
+  let _notifPanelOpen = false;
+  const NOTIF_TYPES = ['warning', 'danger', 'info', 'success'];
+  // alert.icon (src/core/notifications.js) → icon; falls back to the alert type.
+  const NOTIF_ICON = {
+    receivable: 'clock',
+    payable: 'credit-card',
+    stock: 'package',
+    budget: 'dollar',
+    warning: 'alert-triangle',
+    danger: 'alert-circle',
+    info: 'info',
+    success: 'info',
   };
-
-  // Feather-style icon paths (24×24 viewBox, stroke = currentColor). Keyed by
-  // alert.icon (set in src/core/notifications.js) with per-type fallbacks.
-  var NOTIF_ICON_PATHS = {
-    receivable: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-    payable:
-      '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
-    stock:
-      '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-    warning:
-      '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-    danger:
-      '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
-    info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
-    bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
-    budget: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  };
-
-  function _notifSvg(pathKey, color, size) {
-    var d = NOTIF_ICON_PATHS[pathKey] || NOTIF_ICON_PATHS.info;
-    return (
-      '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' +
-      color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      d + '</svg>'
-    );
-  }
 
   function _renderNotifPanel(panel) {
-    var notif = window.NSANotif;
-    var alerts = notif ? notif.getAlerts() : [];
-    if (notif) notif.markAllRead();
-
-    var rows = '';
-    if (alerts.length === 0) {
-      rows =
-        '<div style="padding:28px 16px;text-align:center">' +
-        '<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-hover);display:flex;align-items:center;justify-content:center;margin:0 auto 10px">' +
-        _notifSvg('bell', 'var(--text-secondary)', 20) +
-        '</div>' +
-        '<div style="font-size:13px;font-weight:600;color:var(--text)">Semua beres</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:3px">Tidak ada notifikasi saat ini</div>' +
-        '</div>';
-    } else {
-      alerts.forEach(function (a) {
-        var accent = NOTIF_ACCENT[a.type] || NOTIF_ACCENT.info;
-        var iconKey = NOTIF_ICON_PATHS[a.icon] ? a.icon : a.type;
-        rows +=
-          '<div class="notif-item" data-notif-link="' + escapeHtml(a.link || '') + '">' +
-          // "1f" = ~12% alpha hex suffix → subtle tinted chip from the accent
-          '<div style="width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' +
-          accent + '1f">' + _notifSvg(iconKey, accent, 16) + '</div>' +
-          '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.35">' + escapeHtml(a.title) +
-          (a.count
-            ? '<span style="margin-left:6px;font-size:10px;font-weight:800;color:' + accent + ';background:' + accent + '1f;border-radius:99px;padding:1px 7px;vertical-align:1px">' + a.count + '</span>'
-            : '') +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">' + escapeHtml(a.body) + '</div>' +
-          '</div>' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;align-self:center;opacity:.6" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
-          '</div>';
-      });
+    const notif = window.NSANotif;
+    const alerts = notif ? notif.getAlerts() : [];
+    if (notif) {
+      notif.markAllRead();
     }
 
-    var permHtml = '';
-    if ('Notification' in window && Notification.permission === 'default') {
-      permHtml =
-        '<div style="margin:8px;padding:11px 12px;background:var(--surface-hover);border:1px solid var(--border);border-radius:10px;font-size:12px;display:flex;gap:10px;align-items:flex-start">' +
-        '<div style="width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' +
-        NOTIF_ACCENT.info + '1f">' + _notifSvg('bell', NOTIF_ACCENT.info, 14) + '</div>' +
-        '<div style="flex:1">' +
-        '<div style="font-weight:700;color:var(--text);margin-bottom:2px">Aktifkan notifikasi perangkat</div>' +
-        '<div style="color:var(--muted);margin-bottom:8px;line-height:1.4">Terima peringatan meskipun tab tidak aktif.</div>' +
-        '<button id="notif-allow-btn" class="btn" style="font-size:11px;padding:4px 12px">Izinkan</button>' +
-        '</div></div>';
-    }
+    const rows = alerts.length
+      ? alerts
+          .map(a => {
+            const type = NOTIF_TYPES.indexOf(a.type) === -1 ? 'info' : a.type;
+            return (
+              `<button type="button" class="notif-item" data-type="${type}" data-notif-link="${escapeHtml(a.link || '')}">` +
+              `<span class="notif-ico">${_svg(NOTIF_ICON[a.icon] || NOTIF_ICON[type], 16)}</span>` +
+              `<span class="notif-body"><span class="notif-title">${escapeHtml(a.title)}` +
+              `${a.count ? `<span class="notif-count">${a.count}</span>` : ''}</span>` +
+              `<span class="notif-text">${escapeHtml(a.body)}</span></span>` +
+              `${_svg('chevron-right', 14, 'notif-chevron')}</button>`
+            );
+          })
+          .join('')
+      : `<div class="notif-empty">${_svg('bell', 20)}` +
+        '<div class="notif-empty-title">Tidak ada yang perlu ditindaklanjuti</div>' +
+        '<div class="notif-empty-text">Piutang dan hutang jatuh tempo, stok menipis, dan anggaran terlampaui akan muncul di sini.</div></div>';
+
+    const perm =
+      'Notification' in window && Notification.permission === 'default'
+        ? `<div class="notif-perm">${_svg('bell', 14)}<div>` +
+          '<div class="notif-perm-title">Aktifkan notifikasi perangkat</div>' +
+          '<div class="notif-perm-text">Terima peringatan meskipun tab aplikasi tidak aktif.</div>' +
+          '<button type="button" id="notif-allow-btn" class="btn btn-sm">Izinkan</button></div></div>'
+        : '';
 
     panel.innerHTML =
-      '<div class="notif-panel-hdr" style="display:flex;align-items:center;justify-content:space-between">' +
-      '<span style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px">Notifikasi' +
-      (alerts.length
-        ? '<span style="font-size:10px;font-weight:800;background:var(--primary);color:#fff;border-radius:99px;padding:1px 7px">' + alerts.length + '</span>'
-        : '') +
-      '</span>' +
-      '<button id="notif-check-btn" title="Periksa ulang" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--primary);background:none;border:none;cursor:pointer;padding:2px 0">' +
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
-      'Perbarui</button>' +
-      '</div>' +
-      '<div style="padding:4px 0">' + rows + '</div>' +
-      permHtml;
+      '<div class="notif-panel-hdr">' +
+      `<span class="notif-hdr-title">Notifikasi${alerts.length ? `<span class="notif-hdr-badge">${alerts.length}</span>` : ''}</span>` +
+      `<button type="button" id="notif-check-btn" class="notif-refresh" title="Periksa ulang">${_svg('refresh', 12)}Perbarui</button>` +
+      `</div><div class="notif-list">${rows}</div>${perm}`;
 
-    setTimeout(function () {
-      var allowBtn = panel.querySelector('#notif-allow-btn');
-      if (allowBtn) {
-        allowBtn.addEventListener('click', function () {
-          window.NSANotif && window.NSANotif.requestPermission().then(function (result) {
-            if (result === 'granted') {
-              window.showToast && window.showToast('Notifikasi diaktifkan', 'success');
-              _renderNotifPanel(panel);
-            }
-          });
-        });
+    panel.querySelector('#notif-allow-btn')?.addEventListener('click', function () {
+      if (!window.NSANotif) {
+        return;
       }
-      var checkBtn = panel.querySelector('#notif-check-btn');
-      if (checkBtn) {
-        checkBtn.addEventListener('click', function () {
-          window.NSANotif && window.NSANotif.checkAlerts();
+      window.NSANotif.requestPermission().then(function (result) {
+        if (result === 'granted') {
+          showToast('Notifikasi perangkat diaktifkan', 'success');
           _renderNotifPanel(panel);
-        });
-      }
-      panel.querySelectorAll('[data-notif-link]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          var link = el.dataset.notifLink;
-          if (link && window.navigate) {
-            window.navigate(link);
-            _closeNotifPanel();
-          }
-        });
+        }
       });
-    }, 0);
+    });
+    panel.querySelector('#notif-check-btn')?.addEventListener('click', function () {
+      if (window.NSANotif) {
+        window.NSANotif.checkAlerts();
+      }
+      _renderNotifPanel(panel);
+    });
+    panel.querySelectorAll('[data-notif-link]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const link = el.dataset.notifLink;
+        _closeNotifPanel();
+        if (!link) {
+          return;
+        }
+        if (link.indexOf('menu:') === 0) {
+          window.NSANav.open(link.slice(5));
+        } else if (window.navigate) {
+          window.navigate(link);
+        }
+      });
+    });
   }
 
   function _toggleNotifPanel() {
@@ -877,16 +878,11 @@
       _closeNotifPanel();
       return;
     }
-    var panel = document.getElementById('notif-alerts-panel');
+    let panel = document.getElementById('notif-alerts-panel');
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'notif-alerts-panel';
-      // Sizing lives in CSS only: style.css gives the 300px dropdown, and
-      // mobile.css turns it into a full-width bottom sheet — inline width
-      // here would override that and strand a 300px box at the left edge.
-      // On <body>, NOT inside the topbar: its backdrop-filter makes the topbar
-      // the containing block for position:fixed, anchoring the mobile bottom
-      // sheet to the topbar instead of the viewport (panel hangs off-screen).
+      // Sizing lives in CSS (dropdown on desktop, bottom sheet in mobile.css).
       panel.className = 'notif-panel';
       document.body.appendChild(panel);
     }
@@ -899,71 +895,66 @@
   }
 
   function _closeNotifPanel() {
-    var panel = document.getElementById('notif-alerts-panel');
-    if (panel) panel.style.display = 'none';
+    const panel = document.getElementById('notif-alerts-panel');
+    if (panel) {
+      panel.style.display = 'none';
+    }
     _notifPanelOpen = false;
     document.removeEventListener('click', _closeNotifPanelOnOutside);
   }
 
+  // composedPath() is captured at dispatch, so a click on a control that
+  // re-renders the panel (e.g. "Perbarui") still counts as inside.
   function _closeNotifPanelOnOutside(e) {
-    if (!e.target.closest('#notif-alerts-panel') && !e.target.closest('#notif-btn')) {
+    const path = e.composedPath ? e.composedPath() : [];
+    const panel = document.getElementById('notif-alerts-panel');
+    const btn = document.getElementById('notif-btn');
+    if (!path.includes(panel) && !path.includes(btn)) {
       _closeNotifPanel();
     }
   }
 
-  document.addEventListener('click', function (e) {
-    const item = e.target.closest('[data-user-action]');
-    if (!item) return;
-    e.preventDefault();
-    _closeUserMenu();
-    const action = item.dataset.userAction;
-    if (action === 'editIdentity' && ERP.registry.actions.has('editIdentity')) {
-      ERP.registry.actions.get('editIdentity')();
-    } else if (action === 'changePassword' && ERP.registry.actions.has('changePassword')) {
-      ERP.registry.actions.get('changePassword')();
-    } else if (action === 'manage2FA' && ERP.registry.actions.has('manage2FA')) {
-      ERP.registry.actions.get('manage2FA')();
-    } else if (action === 'toggleLang' && window.I18N && window.I18N.toggleLang) {
-      window.I18N.toggleLang();
-    } else if (action === 'manageBackup' && ERP.registry.actions.has('manageBackup')) {
-      ERP.registry.actions.get('manageBackup')();
-    } else if (action === 'installPwaApp' && ERP.registry.actions.has('installPwaApp')) {
-      ERP.registry.actions.get('installPwaApp')();
-    } else if (action === 'manageUsers' && typeof window.showUserManagement === 'function') {
-      window.showUserManagement();
-    } else if (action === 'logout' && window.erpAuth && window.erpAuth.logout) {
-      window.erpAuth.logout();
-    }
-  });
-
-  // ── Theme toggle (light/dark) ───────────────────────────────────────────────
+  // ── Theme (light / dark) ────────────────────────────────────────────────────
+  // public/theme-init.js applies the saved theme (or the system theme) before
+  // first paint; the toggle stores an explicit choice.
   const THEME_KEY = 'erp_theme';
+
+  function _savedTheme() {
+    try {
+      return localStorage.getItem(THEME_KEY);
+    } catch (_) {
+      return null;
+    }
+  }
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    window.dispatchEvent(new CustomEvent('nsa:themechange', { detail: { theme } }));
   }
 
   function initTheme() {
-    // Apply the saved theme (falls back to the data-theme already on <html>).
-    let saved = null;
-    try {
-      saved = localStorage.getItem(THEME_KEY);
-    } catch (_) {
-      /* ignore */
-    }
+    const saved = _savedTheme();
     if (saved) {
       applyTheme(saved);
+    }
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const follow = () => {
+        if (!_savedTheme()) {
+          applyTheme(mq.matches ? 'dark' : 'light');
+        }
+      };
+      if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', follow);
+      }
     }
 
     const toggle = document.getElementById('theme-toggle');
     if (!toggle) {
-      console.warn('[NAV] Theme toggle button not found');
       return;
     }
     toggle.addEventListener('click', function () {
-      const current =
-        document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      const next = current === 'dark' ? 'light' : 'dark';
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       try {
         localStorage.setItem(THEME_KEY, next);
@@ -973,23 +964,18 @@
     });
   }
 
-  // Run init when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSidebarNav);
-  } else {
-    // DOM already loaded
-    initSidebarNav();
-  }
-
-  // Navigate function (works with new sidebar)
-  function navigate(id) {
-    var sameView = id === window.activeView;
-    window.activeView = id;
-
-    if (typeof _filterCloseCtrl !== 'undefined' && _filterCloseCtrl) {
-      _filterCloseCtrl.abort();
-      _filterCloseCtrl = null;
+  // Charts read theme colors when they are created — rebuild them on a switch.
+  window.addEventListener('nsa:themechange', function () {
+    if (window.activeView === 'dashboard' && _renderedViews.has('dashboard')) {
+      destroyCharts();
+      requestAnimationFrame(() => requestAnimationFrame(initCharts));
     }
+  });
+
+  // ── Views ───────────────────────────────────────────────────────────────────
+  function navigate(id) {
+    const sameView = id === window.activeView;
+    window.activeView = id;
 
     // Drop any filter sheet parked on <body> for the mobile bottom-sheet, so it
     // doesn't survive the re-render and collide on id with the fresh in-card drop.
@@ -997,58 +983,10 @@
       _cleanupParkedFilters();
     }
 
-    // Update rail items
-    let parentMenu = id;
-    for (const [menuId, config] of Object.entries(MENU_CONFIG)) {
-      if (config.view === id || (config.items && config.items.some(i => i.view === id))) {
-        parentMenu = menuId;
-        break;
-      }
-    }
-    _updateRailActive(parentMenu);
+    _closePopover();
+    _markActive(_resolveEntry(id));
 
-    // Keep the contextual sub-nav in sync with programmatic navigation (search,
-    // notification links, menu-router) — re-render only when the group changes so
-    // a user's manual collapse within a group is respected.
-    try {
-      const grpCfg = MENU_CONFIG[parentMenu];
-      if (grpCfg && grpCfg.items && grpCfg.items.length) {
-        if (parentMenu !== _activeFlyout) {
-          _renderSubnav(parentMenu);
-          _activeFlyout = parentMenu;
-          if (!_isOverlay()) {
-            _showSubnav();
-          }
-        }
-        // Highlight a SINGLE item: the one the user clicked (matched by label),
-        // else the first item routing to this view (for programmatic navigation
-        // from search / notifications / menu-router). Without this, every item
-        // sharing the view lights up at once.
-        const lbl = _pendingItemLabel;
-        _pendingItemLabel = null;
-        const items = Array.from(document.querySelectorAll('.flyout-item'));
-        let chosen = null;
-        if (lbl) {
-          chosen = items.find(b => b.dataset.view === id && b.dataset.label === lbl);
-        }
-        if (!chosen) {
-          chosen = items.find(b => b.dataset.view === id);
-        }
-        items.forEach(b => b.classList.toggle('active', b === chosen));
-      } else {
-        _hideSubnav();
-        _activeFlyout = parentMenu;
-      }
-    } catch (_) {
-      /* non-fatal: sub-nav sync is cosmetic */
-    }
-
-    // Backwards compatibility with old nav-btn
-    document
-      .querySelectorAll('.nav-btn')
-      .forEach(b => b.classList.toggle('active', b.dataset.view === id));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-
     const el = document.getElementById(`view-${id}`);
     if (!el) {
       return;
@@ -1063,21 +1001,12 @@
       destroyCharts();
       try {
         const renderer = getRenderer(id);
-        if (renderer) {
-          el.innerHTML = renderer();
-          _renderedViews.add(id);
-        } else {
-          el.innerHTML = `<div style="padding:40px;text-align:center">
-          <div style="font-size:48px;margin-bottom:16px">🚧</div>
-          <h2 style="font-size:18px;font-weight:800;margin-bottom:8px">${escapeHtml(id.charAt(0).toUpperCase() + id.slice(1))}</h2>
-          <p style="color:var(--muted);font-size:13px">Halaman ini sedang dalam pengembangan.</p>
-        </div>`;
-          _renderedViews.add(id);
-        }
+        el.innerHTML = renderer ? renderer() : _placeholderHTML();
+        _renderedViews.add(id);
       } catch (err) {
         el.innerHTML = _renderErrorFallback(id, err);
         console.error(`[ERP] Renderer "${id}" threw:`, err);
-        showToast(`Gagal memuat tampilan "${id}"`, 'danger');
+        showToast('Halaman gagal dimuat', 'danger');
         _renderedViews.delete(id);
       }
       if (id === 'dashboard') {
@@ -1088,47 +1017,67 @@
     el.classList.add('active');
   }
 
-  // Export navigate function (overrides erp-view.js's, adding flyout rail-active
-  // state + a placeholder for views that don't have a renderer yet).
+  function _placeholderHTML() {
+    return (
+      '<div class="state-block"><div class="state-title">Halaman tidak tersedia</div>' +
+      '<div class="state-text">Pilih menu di sidebar untuk melanjutkan.</div></div>'
+    );
+  }
+
+  function _renderErrorFallback(viewId, err) {
+    const msg = err && err.message ? escapeHtml(err.message) : 'Kesalahan tidak diketahui';
+    return (
+      '<div class="state-block state-error" role="alert">' +
+      `<div class="state-ico">${_svg('alert-circle', 22)}</div>` +
+      '<div class="state-title">Halaman gagal dimuat</div>' +
+      '<div class="state-text">Terjadi kesalahan saat menampilkan halaman ini; data tidak berubah. ' +
+      'Coba lagi, dan bila masih terjadi sampaikan detail teknis di bawah ke admin.</div>' +
+      `<details class="state-detail"><summary>Detail teknis</summary><code>${msg}</code></details>` +
+      `<button type="button" class="btn-ghost" data-action="retryView" data-id="${escapeHtml(viewId)}">Coba Lagi</button>` +
+      '</div>'
+    );
+  }
+
   window.navigate = navigate;
-  // Expose the menu config so menu-coverage.js can produce a coverage report.
   window.__NSA_MENU_CONFIG = MENU_CONFIG;
   window.activeView = 'dashboard';
 
-  // Allow other modules to force a full re-render of a view (clears cache).
+  // Force a full re-render of a view on its next navigate (clears the cache).
   window.invalidateView = function (id) {
     _renderedViews.delete(id || window.activeView);
   };
 
-  function _renderErrorFallback(viewId, err) {
-    const msg = err && err.message ? escapeHtml(err.message) : 'Unknown error';
-    const name = escapeHtml(viewId.charAt(0).toUpperCase() + viewId.slice(1));
-    return `
-  <div style="padding:40px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
-    <div style="width:56px;height:56px;border-radius:50%;background:#FFF1F0;display:flex;align-items:center;justify-content:center">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-    </div>
-    <div style="text-align:center;max-width:480px">
-      <div style="font-size:16px;font-weight:800;margin-bottom:6px">Halaman ${name} gagal dimuat</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Terjadi kesalahan saat merender tampilan ini.</div>
-      <code style="display:block;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:11px;color:#FF3B30;text-align:left;word-break:break-all;max-height:100px;overflow:auto">
-        ${msg}
-      </code>
-    </div>
-    <button class="btn-ghost" data-action="retryView" data-id="${escapeHtml(viewId)}" style="margin-top:4px">
-      Coba Lagi
-    </button>
-  </div>`;
-  }
+  window.NSANav = {
+    // Open an entry by its menu label, as a sidebar click would.
+    open(label) {
+      const group = Object.keys(MENU_CONFIG).find(k =>
+        MENU_CONFIG[k].items.some(i => i.label === label)
+      );
+      return group ? _openEntry(group, label) : false;
+    },
+    // Highlight an entry of the current view without navigating (in-page tabs).
+    markActive(label) {
+      const group = Object.keys(MENU_CONFIG).find(k =>
+        MENU_CONFIG[k].items.some(i => i.label === label && i.view === window.activeView)
+      );
+      if (group) {
+        _markActive({ group, label });
+      }
+    },
+    toggleCollapsed,
+  };
 
-  // Register retry action if ERP is available
   if (typeof window.ERP !== 'undefined' && window.ERP.registerAction) {
     window.ERP.registerAction('retryView', function retryView(id) {
       _renderedViews.delete(id || window.activeView);
       window.navigate(id || window.activeView);
       return true;
     });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebarNav);
+  } else {
+    initSidebarNav();
   }
 })();

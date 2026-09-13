@@ -779,11 +779,25 @@
     }
   });
 
+  // Pelanggan / Supplier: the master page lists one of them at a time
+  // (modules/master.js reads window._masterSection).
+  function openMasterList(section) {
+    window._masterSection = section;
+    window.invalidateView && window.invalidateView('master');
+    window.navigate && window.navigate('master');
+  }
+
   window._masterExtras = {
     openEmployee: openEmployee,
     openContact: openContact,
     openCustomerCategory: openCustomerCategory,
     openSupplierCategory: openSupplierCategory,
+    openCustomers: function () {
+      openMasterList('customers');
+    },
+    openSuppliers: function () {
+      openMasterList('suppliers');
+    },
   };
   console.log('[MasterExtras] Master extras ready');
 })();

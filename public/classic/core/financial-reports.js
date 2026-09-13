@@ -72,18 +72,21 @@
   // ── Period-filtered trial balance ─────────────────────────────────────────
   // When a date range is set, recompute the trial balance from only the
   // journals within that range.
-  function filteredTrialBalance() {
+  // `cumulative` (balance sheet): every journal up to the end date, ignoring the
+  // start date — a position report is always a running total. Without it
+  // (income statement) only journals inside the range count.
+  function filteredTrialBalance(cumulative) {
     if (!window.GL) {
       return { rows: [], totalDebit: 0, totalCredit: 0, balanced: true };
     }
-    if (!periodFrom && !periodTo) {
+    if ((cumulative || !periodFrom) && !periodTo) {
       return window.GL.trialBalance();
     }
 
     window.GL.ensureChart();
     const chart = db().accountsChart || [];
     const journals = db().journals || [];
-    const fromMs = periodFrom ? Date.parse(periodFrom) : -Infinity;
+    const fromMs = !cumulative && periodFrom ? Date.parse(periodFrom) : -Infinity;
     const toMs = periodTo ? Date.parse(periodTo) : Infinity;
 
     const sums = new Map();
@@ -200,8 +203,10 @@
         '<td style="padding:7px 10px;font-size:12px">' +
         esc(r.name) +
         '</td>' +
-        '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600">' +
-        money(Math.abs(val)) +
+        '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600' +
+        (val < 0 ? ';color:var(--danger,#DC2626)' : '') +
+        '">' +
+        money(val) +
         '</td>' +
         '</tr>';
     });
@@ -226,7 +231,7 @@
       '<td style="padding:8px 10px;font-size:13px;font-weight:800;text-align:right;color:' +
       totalColor +
       '">' +
-      money(Math.abs(total)) +
+      money(total) +
       '</td>' +
       '</tr></tfoot>' +
       '</table>' +
@@ -381,7 +386,7 @@
 
   // ── Balance Sheet (Neraca) ────────────────────────────────────────────────
   function bsTab() {
-    var tb = filteredTrialBalance();
+    var tb = filteredTrialBalance(true);
 
     var cashRows = [];
     var receivableRows = [];
@@ -483,7 +488,12 @@
     return (
       stats +
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Neraca (Balance Sheet)</div>' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:4px">Neraca (Balance Sheet)</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Posisi per ' +
+      esc(periodTo || 'hari ini') +
+      ' · saldo kumulatif sejak awal pencatatan' +
+      (periodFrom ? ' (tanggal mulai tidak dipakai untuk neraca)' : '') +
+      '</div>' +
       '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px">ASET</div>' +
       (currentAssetRows.length > 0 ? sectionBlock('Aset Lancar', currentAssetRows) : '') +
       (nonCurrentAssetRows.length > 0
@@ -844,10 +854,19 @@
   // ── Wire up ───────────────────────────────────────────────────────────────
   window.renderFinancials = renderFinancials;
 
+  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
+  var TAB_ENTRY = { pl: 'Laba Rugi', bs: 'Neraca', cf: 'Arus Kas' };
+  function syncMenu() {
+    if (TAB_ENTRY[activeTab] && window.NSANav && typeof window.NSANav.markActive === 'function') {
+      window.NSANav.markActive(TAB_ENTRY[activeTab]);
+    }
+  }
+
   function _navToTab(tab) {
     activeTab = tab;
     if (typeof window.invalidateView === 'function') window.invalidateView('financials');
     if (typeof window.navigate === 'function') window.navigate('financials');
+    syncMenu();
   }
   window._financialExtras = {
     openPL:        function () { _navToTab('pl'); },
@@ -860,6 +879,7 @@
       if (val) {
         activeTab = val;
         refresh();
+        syncMenu();
       }
       return true;
     });

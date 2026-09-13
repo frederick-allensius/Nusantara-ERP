@@ -501,7 +501,7 @@
             number: head.number || _docNumber(prefix, head.date) || undefined,
             date: head.date,
             status:
-              head.status || (prefix === 'DO' ? 'Delivered' : prefix === 'SI' ? 'Unpaid' : 'Draft'),
+              head.status || (prefix === 'DO' ? 'Delivered' : prefix === 'SI' ? 'Outstanding' : 'Draft'),
             lines,
             amount: dpp + tax,
             taxRate,
@@ -587,10 +587,17 @@
             return;
           }
           const id = _nextNumericId('paymentLogs');
+          // Payment logs are keyed by order type ('SO' | 'PO') and the order's id;
+          // the sheet may reference the order by id or by document number.
+          const payType = /pur|beli|pemb/i.test(r.type) ? 'PO' : 'SO';
+          const ref = String(r.orderId || '').trim();
+          const order = (payType === 'PO' ? DB.purchaseOrders : DB.salesOrders || []).find(
+            o => String(o.id) === ref || String(o.number || '') === ref
+          );
           (DB.paymentLogs || (DB.paymentLogs = [])).push({
             id,
-            type: /pur|beli|pemb/i.test(r.type) ? 'Purchase' : 'Sales',
-            orderId: r.orderId || '',
+            type: payType,
+            orderId: order ? order.id : ref,
             date: r.date,
             amount: Number(r.amount) || 0,
             method: r.method || 'Transfer',

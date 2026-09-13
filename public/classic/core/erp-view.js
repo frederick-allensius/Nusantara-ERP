@@ -867,137 +867,130 @@ function renderInventory() {
   </div>`;
 }
 
-// ── View: Finance ─────────────────────────────────────────────────────────────
+// "Bagan Akun": the chart of accounts lives in the ledger module (Buku Besar).
+function editAccounts() {
+  if (window.NSANav && window.NSANav.open('Bagan Akun')) {
+    return;
+  }
+  const openChart = () => {
+    if (window._ledgerExtras && typeof window._ledgerExtras.openTab === 'function') {
+      window._ledgerExtras.openTab('chart');
+    } else if (typeof window.navigate === 'function') {
+      window.navigate('ledger');
+    }
+  };
+  if (typeof window.ensureView === 'function') {
+    window.ensureView('ledger').then(openChart, openChart);
+  } else {
+    openChart();
+  }
+}
+
+// ── View: Ringkasan Keuangan ──────────────────────────────────────────────────
+// Every figure comes from the ledger (GL) or from Balances, so it matches the
+// financial statements, invoices and aging.
 function renderFinance() {
-  const acc = DB.accounts || { cash: 0, bca: 0, mandiri: 0 };
-  const totalSaldo = (acc.cash || 0) + (acc.bca || 0) + (acc.mandiri || 0);
-  // FIX: Add null checks to prevent crashes if stock or cost is null/undefined
-  const stokVal = DB.inventoryItems.reduce((s, i) => s + (i.stock || 0) * (i.cost || 0), 0);
+  const gl = window.GL;
+  const tb = gl ? gl.trialBalance() : { rows: [] };
+  const chart = DB.accountsChart || [];
+  const typeOf = no => (chart.find(a => a.no === no) || {}).type;
+  const balance = r => (Number(r.debit) || 0) - (Number(r.credit) || 0);
 
-  // Rebuild finance reports dynamically
-  _financeReports = [
-    {
-      title: 'Laporan Laba Rugi',
-      sub: 'Pendapatan vs pengeluaran periode ini',
-      value: 'Lihat',
-      color: '#3B82F6',
-      icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-      items: (() => {
-        const _si = DB.salesOrders.filter(o => (!o._type || o._type === 'invoice') && o.status !== 'Draft' && o.status !== 'Cancelled');
-        const _pi = DB.purchaseOrders.filter(o => (!o._type || o._type === 'invoice') && o.status !== 'Draft' && o.status !== 'Cancelled');
-        const _siTotal = _si.reduce((s, o) => s + (o.amount || 0), 0);
-        const _piTotal = _pi.reduce((s, o) => s + (o.amount || 0), 0);
-        return [
-          `✓ Total penjualan: ${idrFull(_siTotal)}`,
-          `✓ Total pembelian: ${idrFull(_piTotal)}`,
-          `✓ Laba kotor: ${idrFull(_siTotal - _piTotal)}`,
-        ];
-      })(),
-    },
-    {
-      title: 'Neraca Keuangan',
-      sub: 'Aset, liabilitas, dan ekuitas',
-      value: 'Lihat',
-      color: '#34C759',
-      icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>',
-      items: (() => {
-        const _ow = o => o.owing != null ? o.owing : Math.max(0, (o.amount || 0) - (o.paid || 0));
-        const _si = DB.salesOrders.filter(o => (!o._type || o._type === 'invoice') && o.status !== 'Draft' && o.status !== 'Cancelled');
-        const _pi = DB.purchaseOrders.filter(o => (!o._type || o._type === 'invoice') && o.status !== 'Draft' && o.status !== 'Cancelled');
-        return [
-          `✓ Total kas & bank: ${idrFull(totalSaldo)}`,
-          `✓ Total nilai stok inventori: ${idrFull(stokVal)}`,
-          `✓ Piutang: ${idrFull(_si.reduce((s, o) => s + _ow(o), 0))}`,
-          `✓ Hutang: ${idrFull(_pi.reduce((s, o) => s + _ow(o), 0))}`,
-        ];
-      })(),
-    },
-    {
-      title: 'Arus Kas',
-      sub: 'Pemasukan dan pengeluaran kas',
-      value: 'Lihat',
-      color: '#FF9F0A',
-      icon: '<line x1="12" y1="1" x2="12" y2="23"/><polyline points="17 5 12 1 7 5"/><polyline points="7 19 12 23 17 19"/>',
-      items: (() => {
-        const _si = DB.salesOrders.filter(o => (!o._type || o._type === 'invoice') && (o.status === 'Paid' || o.status === 'Delivered'));
-        const _pi = DB.purchaseOrders.filter(o => (!o._type || o._type === 'invoice') && (o.status === 'Paid' || o.status === 'Received'));
-        return [
-          `✓ Kas masuk (penjualan): ${idrFull(_si.reduce((s, o) => s + (o.paid || 0), 0))}`,
-          `✓ Kas keluar (pembelian): ${idrFull(_pi.reduce((s, o) => s + (o.paid || 0), 0))}`,
-          `✓ Saldo akhir: ${idrFull(totalSaldo)}`,
-        ];
-      })(),
-    },
-  ];
+  // Cash & bank: one figure per cash/bank account in the ledger.
+  const cashRows = tb.rows.filter(r => r.type === 'CASH_BANK');
+  const cashTotal = cashRows.reduce((s, r) => s + balance(r), 0);
+  const cashStats = cashRows
+    .slice(0, 3)
+    .map(r => ({ label: r.name, value: idr(balance(r)), sub: `Akun ${r.no}` }));
+  cashStats.push({
+    label: 'Total kas & bank',
+    value: idr(cashTotal),
+    sub: cashRows.length ? 'Saldo buku besar' : 'Belum ada transaksi kas',
+    color: 'var(--primary)',
+  });
 
-  // Real values from settings — no hardcoded compliance claims.
+  // This month's profit from ledger lines.
+  const month = today().slice(0, 7);
+  let revenue = 0;
+  let cogs = 0;
+  let expense = 0;
+  (DB.journals || []).forEach(j => {
+    if (!j || String(j.date || '').slice(0, 7) !== month) {
+      return;
+    }
+    (j.lines || []).forEach(l => {
+      const t = typeOf(l.accountNo);
+      const credit = (Number(l.credit) || 0) - (Number(l.debit) || 0);
+      if (t === 'REVENUE' || t === 'OTHER_INCOME') {
+        revenue += credit;
+      } else if (t === 'COGS') {
+        cogs -= credit;
+      } else if (t === 'EXPENSE' || t === 'OTHER_EXPENSE') {
+        expense -= credit;
+      }
+    });
+  });
+  const netProfit = revenue - cogs - expense;
+
+  const B = window.Balances;
+  const ar = B ? B.summary('sales') : { total: 0, overdue: 0, count: 0, overdueCount: 0, dueSoon: 0 };
+  const ap = B ? B.summary('purchases') : { total: 0, overdue: 0, count: 0, overdueCount: 0, dueSoon: 0 };
+
+  // Inventory: moving-average valuation vs. the ledger's inventory accounts.
+  const costOf = item =>
+    window.CostLedger ? window.CostLedger.costOf(item.id) : Number(item.cost) || 0;
+  const stockValue = (DB.inventoryItems || []).reduce(
+    (s, i) => s + (Number(i.stock) || 0) * costOf(i),
+    0
+  );
+  const inventoryGL = tb.rows.filter(r => r.type === 'INVENTORY').reduce((s, r) => s + balance(r), 0);
+  const inventoryGap = Math.round(stockValue - inventoryGL);
+
+  const metric = (label, value, cls) =>
+    `<div class="metric-row"><span>${escapeHtml(label)}</span><strong class="${cls || ''}">${value}</strong></div>`;
   const taxCfg = (DB.settings && DB.settings.tax) || {};
-  const finItems = [
-    {
-      title: 'Kepatuhan Pajak',
-      items: [
-        `Status PKP: ${taxCfg.pkp ? 'Terdaftar (PKP)' : 'Non-PKP'}`,
-        `NPWP: ${taxCfg.npwp || 'Belum diisi'}`,
-        `Tarif PPN: ${Math.round((taxCfg.ppnRate || 0) * 100)}%`,
-      ],
-    },
-    {
-      title: 'Rekonsiliasi Bank',
-      items: [
-        `Saldo tercatat BCA: ${idr(acc.bca || 0)}`,
-        `Saldo tercatat Mandiri: ${idr(acc.mandiri || 0)}`,
-        'Cocokkan dengan mutasi: menu Kas & Bank › Bank Reconcile',
-      ],
-    },
-  ];
-
-  // Real audit trail + period lock + ledger check panel (integrity.js).
   const integrityPanel =
     typeof window.Integrity !== 'undefined' && typeof window.Integrity.statusCardHTML === 'function'
       ? window.Integrity.statusCardHTML()
       : '';
 
   return `
-  ${secHdr('Keuangan & Pajak', 'Laporan keuangan, kas & bank, dan kepatuhan pajak')}
-  <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn-ghost" data-action="editAccounts" style="font-size:12px;display:flex;align-items:center;gap:5px">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Edit Saldo Kas & Bank
-    </button>
-  </div>
-  ${statRow([
-    { label: 'Kas Tunai', value: idr(acc.cash || 0), sub: 'Saldo saat ini' },
-    { label: 'Bank BCA', value: idr(acc.bca || 0), sub: 'Saldo saat ini' },
-    { label: 'Bank Mandiri', value: idr(acc.mandiri || 0), sub: 'Saldo saat ini' },
-    { label: 'Total Saldo', value: idr(totalSaldo), sub: 'Semua akun', color: '#3B82F6' },
-  ])}
-  <div class="fin-2col">
-    ${_financeReports
-      .map(
-        (r, idx) => `
-      <div class="card fin-card-row" data-action="openFinance" data-idx="${idx}" style="cursor:pointer">
-        <div class="fin-ico" style="background:${r.color}20">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${r.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.icon}</svg>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${escapeHtml(r.title)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml(r.sub)}</div>
-        </div>
-        <div style="font-size:14px;font-weight:800;color:${r.color};flex-shrink:0">${escapeHtml(r.value)}</div>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`
-      )
-      .join('')}
-  </div>
-  <div class="fin-3col">
-    ${finItems
-      .map(
-        s => `<div class="card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:12px">${escapeHtml(s.title)}</div>
-      ${s.items.map(item => `<div style="font-size:11px;color:var(--muted);padding:7px 0;border-bottom:1px solid var(--border);line-height:1.4">${escapeHtml(item)}</div>`).join('')}
-    </div>`
-      )
-      .join('')}
+  ${secHdr('Ringkasan Keuangan', 'Kas, piutang, hutang, dan laba — dihitung dari buku besar')}
+  ${statRow(cashStats)}
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-title">Laba rugi bulan ini</div>
+      ${metric('Pendapatan', idr(revenue))}
+      ${metric('Harga pokok penjualan', idr(cogs))}
+      ${metric('Beban', idr(expense))}
+      ${metric('Laba bersih', idr(netProfit), netProfit < 0 ? 't-danger' : 't-success')}
+      <button class="action-ghost" data-action="openFinPL">Buka Laporan Laba Rugi</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Piutang & hutang</div>
+      ${metric('Piutang belum dibayar', idr(ar.total))}
+      ${metric('Piutang lewat jatuh tempo', idr(ar.overdue), ar.overdue > 0 ? 't-danger' : '')}
+      ${metric('Hutang belum dibayar', idr(ap.total))}
+      ${metric('Hutang jatuh tempo 7 hari', idr(ap.dueSoon), ap.dueSoon > 0 ? 't-warning' : '')}
+      <button class="action-ghost" data-action="openFinBS">Buka Neraca</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Persediaan</div>
+      ${metric('Nilai stok (harga pokok rata-rata)', idr(stockValue))}
+      ${metric('Saldo akun persediaan', idr(inventoryGL))}
+      ${
+        Math.abs(inventoryGap) >= 1
+          ? `<div class="notice notice-warning">Selisih ${idr(inventoryGap)}. Biasanya karena saldo awal persediaan belum dijurnal — catat lewat Import Excel (Opening Balances) atau Jurnal Umum.</div>`
+          : '<div class="notice notice-success">Nilai stok sama dengan buku besar.</div>'
+      }
+    </div>
+    <div class="card">
+      <div class="card-title">Pajak</div>
+      ${metric('Status', taxCfg.pkp ? 'PKP' : 'Non-PKP')}
+      ${metric('NPWP', escapeHtml(taxCfg.npwp || 'Belum diisi'))}
+      ${metric('Tarif PPN', `${Math.round((taxCfg.ppnRate || 0) * 100)}%`)}
+      <button class="action-ghost" data-action="editTaxSettings">Pengaturan Pajak</button>
+    </div>
   </div>
   ${integrityPanel}
   ${_piutangAgingSection()}
@@ -2169,6 +2162,13 @@ document.addEventListener('click', async e => {
     case 'viewSO':
       viewSO(id);
       break;
+    // Invoice documents open through the lazy invoice module; before it has
+    // loaded, window.viewInvoiceDoc is a stub that loads it first.
+    case 'invView':
+      if (typeof window.viewInvoiceDoc === 'function' && type) {
+        window.viewInvoiceDoc(type, id);
+      }
+      break;
     case 'editSO':
       editSO(id);
       break;
@@ -3070,222 +3070,90 @@ function renderSales() {
 // § 12  HUTANG AGING — append to Finance view
 // ════════════════════════════════════════════════════════════════════════════════
 
-function _hutangAgingSection() {
-  const hutangList = DB.purchaseOrders.filter(o => o.status === 'Confirmed');
-  const hutangTotal = hutangList.reduce((s, o) => s + (o.amount || 0), 0);
-  const todayMs = Date.now();
-  const buckets = { b0: [], b30: [], b60: [] };
-  hutangList.forEach(o => {
-    const days = Math.floor((todayMs - new Date(o.date).getTime()) / 86400000);
-    if (days <= 30) {
-      buckets.b0.push({ ...o, days });
-    } else if (days <= 60) {
-      buckets.b30.push({ ...o, days });
-    } else {
-      buckets.b60.push({ ...o, days });
-    }
+// Receivable (sales) / payable (purchases) aging from Balances — the same open
+// items and balances as invoices, party statements and the dashboard: active
+// invoices plus delivered/received orders that are not invoiced yet, bucketed by
+// days past the due date.
+function _agingSection(side) {
+  const B = window.Balances;
+  if (!B) {
+    return '';
+  }
+  const isSales = side === 'sales';
+  const s = B.summary(side);
+  const bucketOf = it =>
+    !it.overdue
+      ? 'current'
+      : it.daysOverdue <= 30
+        ? 'd1_30'
+        : it.daysOverdue <= 60
+          ? 'd31_60'
+          : it.daysOverdue <= 90
+            ? 'd61_90'
+            : 'd90plus';
+  const counts = { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 };
+  s.items.forEach(it => {
+    counts[bucketOf(it)]++;
   });
-
-  const bucketCards = [
-    { label: '0–30 Hari', list: buckets.b0, color: '#34C759' },
-    { label: '31–60 Hari', list: buckets.b30, color: '#FF9F0A' },
-    { label: '>60 Hari (Prioritas)', list: buckets.b60, color: '#FF3B30' },
+  const BUCKETS = [
+    ['current', 'Belum jatuh tempo'],
+    ['d1_30', 'Terlambat 1–30 hari'],
+    ['d31_60', 'Terlambat 31–60 hari'],
+    ['d61_90', 'Terlambat 61–90 hari'],
+    ['d90plus', 'Terlambat > 90 hari'],
   ];
-
-  const agingGrid = `
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-    ${bucketCards
-      .map(b => {
-        const val = b.list.reduce((s, o) => s + (o.amount || 0), 0);
-        const active = b.list.length > 0;
-        return `<div style="background:var(--bg);border-radius:8px;padding:12px;
-                border:1.5px solid ${active ? b.color : 'var(--border)'}">
-        <div style="font-size:11px;font-weight:700;color:${b.color};margin-bottom:6px">${escapeHtml(b.label)}</div>
-        <div style="font-size:22px;font-weight:800;color:${active ? b.color : 'var(--muted)'}">${b.list.length}<span style="font-size:13px;font-weight:500"> PO</span></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">${idr(val)}</div>
-      </div>`;
-      })
-      .join('')}
-  </div>`;
-
-  const tableHtml =
-    hutangList.length === 0
-      ? `<div style="text-align:center;font-size:13px;color:var(--muted);padding:20px 0">
-         ✓ Semua PO ke supplier sudah lunas
-       </div>`
-      : `<div class="table-wrap"><table>
-        <thead><tr>
-          <th>No. PO</th>
-          <th>Supplier</th>
-          <th>Tanggal</th>
-          <th style="text-align:right">Total</th>
-          <th style="text-align:center">Umur</th>
-          <th>Aksi</th>
-        </tr></thead>
-        <tbody>
-          ${[...buckets.b60, ...buckets.b30, ...buckets.b0]
-            .map(o => {
-              const ageColor = o.days > 60 ? '#FF3B30' : o.days > 30 ? '#FF9F0A' : '#34C759';
-              return `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}">
-              <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
-              <td class="td-p" style="font-size:13px;font-weight:600">${escapeHtml(o.supplier)}</td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(o.date)}</td>
-              <td class="td-p" style="font-size:13px;font-weight:800;text-align:right">${idr(o.amount)}</td>
-              <td class="td-p" style="text-align:center">
-                <span style="font-weight:700;color:${ageColor};font-size:12px">${o.days}h</span>
-              </td>
-              <td class="td-p">${actionBtns('PO', o.id)}</td>
-            </tr>`;
-            })
-            .join('')}
-        </tbody>
-      </table></div>`;
-
-  return `
-  <div class="card" style="margin-top:0">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+  const bucketsHtml = BUCKETS.map(
+    ([key, label]) => `<div class="aging-bucket${key !== 'current' && s.buckets[key] > 0 ? ' is-late' : ''}">
+      <div class="aging-label">${label}</div>
+      <div class="aging-value">${idr(s.buckets[key])}</div>
+      <div class="aging-count">${counts[key]} dokumen</div>
+    </div>`
+  ).join('');
+  const sorted = s.items
+    .slice()
+    .sort((a, b) => b.daysOverdue - a.daysOverdue || String(a.dueDate).localeCompare(String(b.dueDate)));
+  const rowsHtml = sorted
+    .map(it => {
+      const open =
+        it.docType === 'SI' || it.docType === 'PI'
+          ? `data-action="invView" data-type="${it.docType}"`
+          : `data-action="${it.docType === 'SO' ? 'viewSO' : 'viewPO'}"`;
+      return `<tr class="row-link" ${open} data-id="${escapeHtml(it.id)}">
+        <td class="doc-no">${escapeHtml(docNum(it.number, it.id))}</td>
+        <td class="t-strong">${escapeHtml(it.party || '—')}</td>
+        <td class="t-muted">${escapeHtml(it.date)}</td>
+        <td class="${it.overdue ? 't-danger' : 't-muted'}">${escapeHtml(it.dueDate || '—')}</td>
+        <td class="t-num">${idr(it.outstanding)}</td>
+        <td>${it.overdue ? `<span class="chip chip-danger">${it.daysOverdue} hari</span>` : '<span class="t-muted">—</span>'}</td>
+      </tr>`;
+    })
+    .join('');
+  return `<div class="card">
+    <div class="card-head">
       <div>
-        <div style="font-size:14px;font-weight:700">Hutang ke Supplier — Aging Analysis</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">
-          ${hutangList.length} PO status <em>Confirmed</em> belum dilunasi · Total hutang: ${idr(hutangTotal)}
-        </div>
+        <div class="card-title">${isSales ? 'Piutang pelanggan' : 'Hutang ke supplier'}</div>
+        <div class="card-sub">${s.count} dokumen belum lunas · ${s.overdueCount} lewat jatuh tempo</div>
       </div>
-      ${
-        hutangTotal > 0
-          ? `<div style="font-size:16px;font-weight:800;color:#FF9F0A">${idr(hutangTotal)}</div>`
-          : ''
-      }
+      <div class="card-figure">${idr(s.total)}</div>
     </div>
-    ${agingGrid}
-    ${tableHtml}
+    <div class="aging-grid">${bucketsHtml}</div>
+    ${
+      s.items.length
+        ? `<div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Dokumen</th><th>${isSales ? 'Pelanggan' : 'Supplier'}</th><th>Tanggal</th><th>Jatuh tempo</th><th class="t-num">Sisa</th><th>Terlambat</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table></div>`
+        : `<div class="empty-inline">Tidak ada ${isSales ? 'piutang' : 'hutang'} yang belum lunas.</div>`
+    }
   </div>`;
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// § 12b  PIUTANG AGING (AR) — receivables by age, the counterpart to hutang aging
-// ────────────────────────────────────────────────────────────────────────────────
-// Based on Faktur Penjualan (salesInvoices) that aren't yet fully paid, netting any
-// receipts (salesReceipts) and using the grand total (DPP + PPN). Bucketed by the
-// faktur's age into 0–30 / 31–60 / 61–90 / >90 days.
-// ════════════════════════════════════════════════════════════════════════════════
+function _hutangAgingSection() {
+  return _agingSection('purchases');
+}
 
 function _piutangAgingSection() {
-  const PAID = new Set(['Paid', 'Lunas', 'Cancelled', 'Void']);
-  const receipts = DB.salesReceipts || [];
-  const grand = i => {
-    const amt = Number(i.amount) || 0;
-    return i.taxInclusive ? amt : amt + (Number(i.tax) || 0);
-  };
-  const paidOf = i =>
-    receipts
-      .filter(r => r.invoiceId === i.id && (r.status === 'Posted' || !r.status))
-      .reduce((s, r) => s + (Number(r.amount) || 0), 0);
-
-  const todayMs = Date.now();
-  const rows = (DB.salesInvoices || [])
-    .filter(i => !PAID.has(i.status))
-    .map(i => {
-      const bal = Math.max(0, grand(i) - paidOf(i));
-      const days = Math.floor((todayMs - new Date(i.date).getTime()) / 86400000);
-      return { ...i, bal, days };
-    })
-    .filter(r => r.bal > 0.5);
-
-  const piutangTotal = rows.reduce((s, r) => s + r.bal, 0);
-  const buckets = { b0: [], b30: [], b60: [], b90: [] };
-  rows.forEach(r => {
-    if (r.days <= 30) {
-      buckets.b0.push(r);
-    } else if (r.days <= 60) {
-      buckets.b30.push(r);
-    } else if (r.days <= 90) {
-      buckets.b60.push(r);
-    } else {
-      buckets.b90.push(r);
-    }
-  });
-
-  const bucketCards = [
-    { label: '0–30 Hari', list: buckets.b0, color: '#34C759' },
-    { label: '31–60 Hari', list: buckets.b30, color: '#FFCC00' },
-    { label: '61–90 Hari', list: buckets.b60, color: '#FF9F0A' },
-    { label: '>90 Hari (Prioritas)', list: buckets.b90, color: '#FF3B30' },
-  ];
-
-  const agingGrid = `
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
-    ${bucketCards
-      .map(b => {
-        const val = b.list.reduce((s, r) => s + r.bal, 0);
-        const active = b.list.length > 0;
-        return `<div style="background:var(--bg);border-radius:8px;padding:12px;
-                border:1.5px solid ${active ? b.color : 'var(--border)'}">
-        <div style="font-size:11px;font-weight:700;color:${b.color};margin-bottom:6px">${escapeHtml(b.label)}</div>
-        <div style="font-size:22px;font-weight:800;color:${active ? b.color : 'var(--muted)'}">${b.list.length}<span style="font-size:13px;font-weight:500"> Faktur</span></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">${idr(val)}</div>
-      </div>`;
-      })
-      .join('')}
-  </div>`;
-
-  const tableHtml =
-    rows.length === 0
-      ? `<div style="text-align:center;font-size:13px;color:var(--muted);padding:20px 0">
-         ✓ Tidak ada piutang Faktur Penjualan yang belum lunas
-       </div>`
-      : `<div class="table-wrap"><table>
-        <thead><tr>
-          <th>No. Faktur</th>
-          <th>Pelanggan</th>
-          <th>Tanggal</th>
-          <th style="text-align:right">Sisa Tagihan</th>
-          <th style="text-align:center">Umur</th>
-          <th>Aksi</th>
-        </tr></thead>
-        <tbody>
-          ${[...buckets.b90, ...buckets.b60, ...buckets.b30, ...buckets.b0]
-            .map(r => {
-              const ageColor =
-                r.days > 90
-                  ? '#FF3B30'
-                  : r.days > 60
-                    ? '#FF9F0A'
-                    : r.days > 30
-                      ? '#FFCC00'
-                      : '#34C759';
-              const viewBtn =
-                typeof window.rowActionBtn === 'function'
-                  ? window.rowActionBtn('view', 'invView', r.id, 'SI')
-                  : '';
-              return `<tr data-action="invView" data-id="${escapeHtml(r.id)}" data-type="SI" style="cursor:pointer">
-              <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(r.number, r.id))}</td>
-              <td class="td-p" style="font-size:13px;font-weight:600">${escapeHtml(r.customer || '—')}</td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(r.date)}</td>
-              <td class="td-p" style="font-size:13px;font-weight:800;text-align:right">${idr(r.bal)}</td>
-              <td class="td-p" style="text-align:center">
-                <span style="font-weight:700;color:${ageColor};font-size:12px">${r.days}h</span>
-              </td>
-              <td class="td-p">${viewBtn}</td>
-            </tr>`;
-            })
-            .join('')}
-        </tbody>
-      </table></div>`;
-
-  return `
-  <div class="card" style="margin-top:0">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-      <div>
-        <div style="font-size:14px;font-weight:700">Piutang Pelanggan — Aging Analysis</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">
-          ${rows.length} Faktur Penjualan belum lunas · Total piutang: ${idr(piutangTotal)}
-        </div>
-      </div>
-      ${piutangTotal > 0 ? `<div style="font-size:16px;font-weight:800;color:#0A84FF">${idr(piutangTotal)}</div>` : ''}
-    </div>
-    ${agingGrid}
-    ${tableHtml}
-  </div>`;
+  return _agingSection('sales');
 }
 
 // Wrap the original renderFinance to inject the hutang aging section at the end.

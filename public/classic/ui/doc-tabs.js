@@ -1,16 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Nusantara ERP — Nested Document Tabs  (doc-tabs.js)
+// Nusantara ERP — Document Tabs  (doc-tabs.js)
 //
-// Accurate Online-style SECOND-LEVEL tabs. The top bar (view-tabs.js) gives one
-// tab per open module (Purchase Order, Sales Order, …). This adds a strip INSIDE
-// each transaction module:
+// Inside a transaction module, each opened document becomes a tab beside the
+// module's list, so a few documents can stay open while returning to the list:
 //
-//   [ Daftar ] [ + Data Baru ] [ PO.2026.06.00066 ✕ ] [ PO.2026.06.00071 ✕ ]
+//   Pesanan Penjualan                                  [ + Buat SO Baru ]
+//   [ Daftar ] [ SO.2026.06.00066 × ] [ SO.2026.06.00071 × ]
 //
-// • "Daftar" (pinned) = the module's own list — the DOM the renderer produced.
-// • "+ Data Baru"     = opens the module's create form (existing modal).
-// • one tab per opened document = the detail that USED to appear in a pop-up,
-//   now rendered inline as a closable sub-tab.
+// • The module header (title + create button) stays above the tabs.
+// • "Daftar" = the module's own list — the DOM the renderer produced.
+// • One tab per opened document (at most MAX_DOC_TABS; the oldest closes first).
+// • The strip is hidden while no document is open.
 //
 // How the doc capture works: every module's "view a document" entry point is a
 // global function (viewPO/viewSO/viewDO/viewItem/viewAsset/viewCustomer/
@@ -24,26 +24,25 @@
 // re-wraps the fresh list back into the "Daftar" panel and restores open doc
 // tabs from in-memory state, so the sub-tab strip survives those re-renders.
 //
-// Load order (vite.config.js classicOrder): after ui/view-tabs.js (so the top
-// bar wrap is already in place) and before core/rbac.js (rbac's navigate wrap
-// stays outermost).
+// Load order (vite.config.js classicOrder): after ui/nav.js and before
+// core/rbac.js (rbac's navigate wrap stays outermost). Styles live in style.css.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
-  // module view-id → config. `viewFns` are the global doc-open functions to
-  // wrap; `newFn` is the global that opens the create form ("Data Baru").
+  // module view-id → config. `viewFns` are the global doc-open functions to wrap.
   var MODULES = {
-    purchase: { viewFns: ['viewPO'], newFn: 'showAddPO', listLabel: 'Daftar' },
-    sales: { viewFns: ['viewSO'], newFn: 'showAddSO', listLabel: 'Daftar' },
-    logistics: { viewFns: ['viewDO'], newFn: 'showAddDO', listLabel: 'Daftar' },
-    inventory: { viewFns: ['viewItem'], newFn: 'showAddItem', listLabel: 'Daftar' },
-    assets: { viewFns: ['viewAsset'], newFn: 'showAddAsset', listLabel: 'Daftar' },
-    master: { viewFns: ['viewCustomer', 'viewSupplier'], newFn: null, listLabel: 'Daftar' },
-    invoices: { viewFns: ['viewInvoiceDoc'], newFn: null, listLabel: 'Daftar' },
+    purchase: { viewFns: ['viewPO'], listLabel: 'Daftar' },
+    sales: { viewFns: ['viewSO'], listLabel: 'Daftar' },
+    logistics: { viewFns: ['viewDO'], listLabel: 'Daftar' },
+    inventory: { viewFns: ['viewItem'], listLabel: 'Daftar' },
+    assets: { viewFns: ['viewAsset'], listLabel: 'Daftar' },
+    master: { viewFns: ['viewCustomer', 'viewSupplier'], listLabel: 'Daftar' },
+    invoices: { viewFns: ['viewInvoiceDoc'], listLabel: 'Daftar' },
   };
 
   var LIST = '__list__';
+  var MAX_DOC_TABS = 5;
 
   // viewFn name → module view-id (built from MODULES above).
   var FN_TO_MODULE = {};
@@ -97,38 +96,6 @@
     return document.getElementById('view-' + mod);
   }
 
-  // ── Styles ───────────────────────────────────────────────────────────────────
-  function injectStyles() {
-    if (document.getElementById('doc-tabs-style')) {
-      return;
-    }
-    var s = document.createElement('style');
-    s.id = 'doc-tabs-style';
-    s.textContent =
-      '.doctabs-bar{display:flex;align-items:flex-end;gap:4px;padding:8px 4px 0;margin-bottom:14px;' +
-      'border-bottom:1px solid var(--border);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}' +
-      '.doctabs-bar::-webkit-scrollbar{height:4px}' +
-      '.doctabs-bar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}' +
-      '.doctab{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--border);' +
-      'border-bottom:none;border-radius:8px 8px 0 0;background:var(--bg);color:var(--muted);' +
-      'font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;user-select:none;max-width:220px;' +
-      'transition:background .15s,color .15s}' +
-      '.doctab:hover{color:var(--text)}' +
-      '.doctab.active{background:var(--primary);border-color:var(--primary);color:#fff}' +
-      '.doctab-label{overflow:hidden;text-overflow:ellipsis}' +
-      '.doctab-new{color:var(--success,#34C759);border-style:dashed}' +
-      '.doctab-new:hover{background:color-mix(in srgb,var(--success,#34C759) 12%,transparent);color:var(--success,#34C759)}' +
-      '.doctab-x{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;' +
-      'border-radius:50%;font-size:13px;line-height:1;opacity:.65;flex-shrink:0}' +
-      '.doctab-x:hover{opacity:1;background:rgba(255,255,255,.25)}' +
-      '.doctab:not(.active) .doctab-x:hover{background:var(--border)}' +
-      '.doctabs-panel[hidden]{display:none}' +
-      '.doctab-docbody{padding:0}' +
-      '.doctab-docfoot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center;' +
-      'margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}';
-    document.head.appendChild(s);
-  }
-
   // ── Rendering ──────────────────────────────────────────────────────────────
   function barHtml(mod) {
     var s = st(mod);
@@ -141,12 +108,6 @@
       '"><span class="doctab-label">' +
       esc(cfg.listLabel) +
       '</span></button>';
-
-    if (cfg.newFn && typeof window[cfg.newFn] === 'function') {
-      html +=
-        '<button class="doctab doctab-new" data-doctab-new="1" title="Buat data baru">' +
-        '<span aria-hidden="true">+</span><span class="doctab-label">Data Baru</span></button>';
-    }
 
     s.tabs.forEach(function (t) {
       var on = s.active === t.id;
@@ -176,6 +137,7 @@
     busy = true;
     try {
       var body = el.querySelector(':scope > .doctabs-body');
+      var header = el.querySelector(':scope > .sec-hdr');
       var listPanel;
 
       if (body) {
@@ -188,6 +150,11 @@
         listPanel.setAttribute('data-panel', LIST);
         while (el.firstChild) {
           listPanel.appendChild(el.firstChild);
+        }
+        // The module header stays above the tabs.
+        var first = listPanel.firstElementChild;
+        if (first && first.classList.contains('sec-hdr')) {
+          header = first;
         }
         body = document.createElement('div');
         body.className = 'doctabs-body';
@@ -229,11 +196,15 @@
         }
       });
 
-      // Assemble in order: bar, then body.
-      el.insertBefore(bar, el.firstChild);
+      // Assemble in order: module header, bar, body.
+      if (header) {
+        el.insertBefore(header, el.firstChild);
+      }
+      el.insertBefore(bar, header ? header.nextSibling : el.firstChild);
       if (bar.nextSibling !== body) {
         el.insertBefore(body, bar.nextSibling);
       }
+      bar.hidden = s.tabs.length === 0;
 
       applyActive(mod);
     } finally {
@@ -289,6 +260,9 @@
       existing.footer = footerHtml || '';
     } else {
       s.tabs.push({ id: id, title: title, body: bodyHtml, footer: footerHtml || '' });
+      if (s.tabs.length > MAX_DOC_TABS) {
+        s.tabs.shift();
+      }
     }
     s.active = id;
     enhance(mod);
@@ -414,15 +388,6 @@
           closeDocTab(mod, closeTab.getAttribute('data-doctab-close'));
           return;
         }
-        var newTab = e.target.closest('[data-doctab-new]');
-        if (newTab) {
-          e.preventDefault();
-          var fn = MODULES[mod].newFn;
-          if (fn && typeof window[fn] === 'function') {
-            window[fn]();
-          }
-          return;
-        }
         var tab = e.target.closest('[data-doctab]');
         if (tab) {
           e.preventDefault();
@@ -452,7 +417,6 @@
   }
 
   function init() {
-    injectStyles();
     wrapOpenModal();
     wrapViewFns();
     wireDelegation();

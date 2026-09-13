@@ -1,138 +1,170 @@
 // ══════════════════════════════════════════════════════════════════════════════
 //  MENU ROUTER  (window.NSAMenu)
 //  ----------------------------------------------------------------------------
-//  Bridges sidebar flyout menu clicks (nav.js) to the specialised feature
-//  renderers exposed by the *-extras modules. Without this glue, those 11
-//  features were coded but unreachable: nav.js called `window.NSAMenu.handle()`,
-//  but nothing ever defined NSAMenu, so every click fell back to the generic
-//  host view (Sales / Purchase / Finance) instead of the real feature.
+//  Maps sidebar entries (ui/nav.js MENU_CONFIG, keyed by label) to the feature
+//  openers exposed by the *-extras and view modules. Entries without a route
+//  simply open their view.
 //
-//  Each menu item is keyed by its (unique) label, mapping to:
-//    [ <window global holding the extras object>, <open function name> ]
-//  The open*() functions handle their own navigation via injectView(), so the
-//  router just needs to invoke the right one.
+//  ROUTES: label → [ <window global holding the opener>, <method>, ...args ]
+//  The openers handle their own navigation, so the router only invokes them.
+//  Openers that live in a lazily-loaded view chunk (lazy-views.js) are invoked
+//  once the chunk has loaded.
 // ══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
-  // label → [ extras-global, method ]
   var ROUTES = {
-    // ── Budget & General Ledger extras ──────────────────────────────────────
-    Budget: ['_budgetGLExtras', 'openBudget'],
-    'Budget Monitor': ['_budgetGLExtras', 'openBudgetMonitor'],
-    'Budget Transfer': ['_budgetGLExtras', 'openBudgetTransfer'],
-    'Account History': ['_budgetGLExtras', 'openAccountHistory'],
-    'Expense Accrual': ['_budgetGLExtras', 'openExpenseAccrual'],
-    'Employee Payroll': ['_budgetGLExtras', 'openPayroll'],
-    'Audit Journal': ['_budgetGLExtras', 'openAuditJournal'],
+    // ── Penjualan ────────────────────────────────────────────────────────────
+    'Penawaran Penjualan': ['_quotationExtras', 'openSalesQuotation'],
+    'Faktur Penjualan': ['_invoiceExtras', 'openSalesInvoice'],
+    'Penerimaan Pembayaran': ['_invoiceExtras', 'openSalesReceipt'],
+    'Uang Muka Penjualan': ['_salesPurchaseExtras', 'openSalesDP'],
+    'Retur Penjualan': ['_returnExtras', 'openSalesReturn'],
+    'Target Penjualan': ['_salesPurchaseExtras', 'openSalesTarget'],
+    Pelanggan: ['_masterExtras', 'openCustomers'],
 
-    // ── Sales & Purchase extras ─────────────────────────────────────────────
-    'Sales Down Payment': ['_salesPurchaseExtras', 'openSalesDP'],
-    'Purchase Down Payment': ['_salesPurchaseExtras', 'openPurchaseDP'],
-    'Sales Target': ['_salesPurchaseExtras', 'openSalesTarget'],
-    'Receive Item': ['_salesPurchaseExtras', 'openReceiveItem'],
-    'Supplier Price': ['_salesPurchaseExtras', 'openSupplierPrice'],
+    // ── Pembelian ────────────────────────────────────────────────────────────
+    'Penawaran Pembelian': ['_quotationExtras', 'openPurchaseQuotation'],
+    'Penerimaan Barang': ['_salesPurchaseExtras', 'openReceiveItem'],
+    'Faktur Pembelian': ['_invoiceExtras', 'openPurchaseInvoice'],
+    'Pembayaran ke Supplier': ['_invoiceExtras', 'openPurchasePayment'],
+    'Uang Muka Pembelian': ['_salesPurchaseExtras', 'openPurchaseDP'],
+    'Retur Pembelian': ['_returnExtras', 'openPurchaseReturn'],
+    'Harga Supplier': ['_salesPurchaseExtras', 'openSupplierPrice'],
+    Supplier: ['_masterExtras', 'openSuppliers'],
 
-    // ── Company profile ──────────────────────────────────────────────────────
-    'Profil Perusahaan': ['_companyProfile', 'open'],
-
-    // ── Settings extras ─────────────────────────────────────────────────────
-    Currency: ['_settingsExtras', 'openCurrency'],
-    'Payment Term': ['_settingsExtras', 'openPaymentTerm'],
-    Shipment: ['_settingsExtras', 'openShipment'],
-    Calendar: ['_settingsExtras', 'openCalendar'],
-    'Activity Log': ['_settingsExtras', 'openActivityLog'],
-    'Favorite Transaction': ['_settingsExtras', 'openFavTransaction'],
-    'Recycle Bin': ['_trashExtras', 'openRecycleBin'],
-
-    // ── Inventory extras ────────────────────────────────────────────────────
-    'Item Unit': ['_inventoryExtras', 'openItemUnit'],
-    'Item Category': ['_inventoryExtras', 'openItemCategory'],
-    'Item Brand': ['_inventoryExtras', 'openItemBrand'],
-    'Item Requisition': ['_inventoryExtras', 'openItemRequisition'],
+    // ── Persediaan ───────────────────────────────────────────────────────────
+    Gudang: ['_warehouseExtras', 'openTab', 'warehouses'],
+    'Transfer Antar Gudang': ['_warehouseExtras', 'openTab', 'transfers'],
+    'Permintaan Barang': ['_inventoryExtras', 'openItemRequisition'],
     'Job Costing': ['_inventoryExtras', 'openJobCosting'],
 
-    // ── Master extras ────────────────────────────────────────────────────────
-    Employee: ['_masterExtras', 'openEmployee'],
-    Contact: ['_masterExtras', 'openContact'],
-    'Customer Category': ['_masterExtras', 'openCustomerCategory'],
-    'Supplier Category': ['_masterExtras', 'openSupplierCategory'],
+    // ── Kas & Bank ───────────────────────────────────────────────────────────
+    'Pengeluaran Lain': ['_bankExtras', 'openOtherPayment'],
+    'Penerimaan Lain': ['_bankExtras', 'openOtherDeposit'],
+    'Transfer Antar Rekening': ['_bankExtras', 'openBankTransfer'],
+    'Rekening Koran': ['_bankExtras', 'openBankStatement'],
+    'Riwayat Kas & Bank': ['_bankExtras', 'openBankHistory'],
+    'Rekonsiliasi Bank': ['_bankExtras', 'openBankReconcile'],
 
-    // ── Settings extras (extended) ──────────────────────────────────────────
-    'Sales Category': ['_settingsExtras', 'openSalesCategory'],
+    // ── Akuntansi ────────────────────────────────────────────────────────────
+    'Neraca Saldo': ['_ledgerExtras', 'openTab', 'trial'],
+    Jurnal: ['_ledgerExtras', 'openTab', 'journals', 'all'],
+    'Jurnal Umum': ['_ledgerExtras', 'openTab', 'journals', 'manual'],
+    'Bagan Akun': ['_ledgerExtras', 'openTab', 'chart'],
+    'Riwayat Akun': ['_budgetGLExtras', 'openAccountHistory'],
+    'Audit Jurnal': ['_budgetGLExtras', 'openAuditJournal'],
+    'Biaya Akrual': ['_budgetGLExtras', 'openExpenseAccrual'],
+    Penggajian: ['_budgetGLExtras', 'openPayroll'],
+    Anggaran: ['_budgetGLExtras', 'openBudget'],
+    'Realisasi Anggaran': ['_budgetGLExtras', 'openBudgetMonitor'],
+    'Transfer Anggaran': ['_budgetGLExtras', 'openBudgetTransfer'],
+    'Ekspor e-Faktur': ['_taxExtras', 'openEFakturCTAS'],
 
-    // ── Asset extras ────────────────────────────────────────────────────────
-    'Asset per Location': ['_assetExtras', 'openAssetPerLocation'],
-    'Fixed Asset Category': ['_assetExtras', 'openAssetCategory'],
-    'Fiscal FA Category': ['_assetExtras', 'openFiscalCategory'],
-    'Fixed Asset Edited': ['_assetExtras', 'openAssetEdited'],
-    'FA Disposition': ['_assetExtras', 'openFADisposition'],
-    'Asset Transfer': ['_assetExtras', 'openAssetTransfer'],
+    // ── Aset Tetap ───────────────────────────────────────────────────────────
+    'Kategori Aset': ['_assetExtras', 'openAssetCategory'],
+    'Golongan Aset Fiskal': ['_assetExtras', 'openFiscalCategory'],
+    'Riwayat Perubahan Aset': ['_assetExtras', 'openAssetEdited'],
+    'Mutasi Aset': ['_assetExtras', 'openAssetTransfer'],
+    'Pelepasan Aset': ['_assetExtras', 'openFADisposition'],
+    'Aset per Lokasi': ['_assetExtras', 'openAssetPerLocation'],
 
-    // ── Bank extras ─────────────────────────────────────────────────────────
-    'Other Payment': ['_bankExtras', 'openOtherPayment'],
-    'Other Deposit': ['_bankExtras', 'openOtherDeposit'],
-    'Bank Transfer': ['_bankExtras', 'openBankTransfer'],
+    // ── Laporan ──────────────────────────────────────────────────────────────
+    'Daftar Laporan': ['_reportExtras', 'openReportList'],
+    'Laba Rugi': ['_financialExtras', 'openPL'],
+    Neraca: ['_financialExtras', 'openBS'],
+    'Arus Kas': ['_financialExtras', 'openCF'],
+    'Rekap PPN': ['_reportExtras', 'openSPTPPN'],
+
+    // ── Data Master ──────────────────────────────────────────────────────────
+    Karyawan: ['_masterExtras', 'openEmployee'],
+    Kontak: ['_masterExtras', 'openContact'],
+    'Kategori Pelanggan': ['_masterExtras', 'openCustomerCategory'],
+    'Kategori Supplier': ['_masterExtras', 'openSupplierCategory'],
+    'Kategori Penjualan': ['_settingsExtras', 'openSalesCategory'],
+    'Satuan Barang': ['_inventoryExtras', 'openItemUnit'],
+    'Kategori Barang': ['_inventoryExtras', 'openItemCategory'],
+    'Merek Barang': ['_inventoryExtras', 'openItemBrand'],
+
+    // ── Pengaturan ───────────────────────────────────────────────────────────
+    'Profil Perusahaan': ['_companyProfile', 'open'],
+    'Termin Pembayaran': ['_settingsExtras', 'openPaymentTerm'],
+    'Metode Pengiriman': ['_settingsExtras', 'openShipment'],
+    Kalender: ['_settingsExtras', 'openCalendar'],
+    'Transaksi Favorit': ['_settingsExtras', 'openFavTransaction'],
+    'Log Aktivitas': ['_settingsExtras', 'openActivityLog'],
+    'Recycle Bin': ['_trashExtras', 'openRecycleBin'],
+
+    // ── Not in the sidebar (docs/02-PETA-MODUL-DAN-NAVIGASI.md §2) ────────────
+    'Mata Uang': ['_settingsExtras', 'openCurrency'],
     'SmartLink e-Banking': ['_bankExtras', 'openSmartLink'],
-    'Bank Statement': ['_bankExtras', 'openBankStatement'],
-    'Bank History': ['_bankExtras', 'openBankHistory'],
-    'Bank Reconcile': ['_bankExtras', 'openBankReconcile'],
-
-    // ── Tax extras ──────────────────────────────────────────────────────────
-    'e-Faktur CTAS': ['_taxExtras', 'openEFakturCTAS'],
-    'Tax Invoice Email': ['_taxExtras', 'openTaxInvoiceEmail'],
-    'e-Faktur Legacy': ['_taxExtras', 'openEFakturLegacy'],
-
-    // ── Report extras ───────────────────────────────────────────────────────
-    'Report List': ['_reportExtras', 'openReportList'],
-    'SPT PPN / PPNBM': ['_reportExtras', 'openSPTPPN'],
-    'AI Analysis': ['_reportExtras', 'openAIAnalysis'],
-
-    // ── Invoice / Receipt / Payment tab routing ──────────────────────────────
-    'Sales Invoice':    ['_invoiceExtras', 'openSalesInvoice'],
-    'Purchase Invoice': ['_invoiceExtras', 'openPurchaseInvoice'],
-    'Sales Receipt':    ['_invoiceExtras', 'openSalesReceipt'],
-    'Purchase Payment': ['_invoiceExtras', 'openPurchasePayment'],
-
-    // ── Quotation tab routing ────────────────────────────────────────────────
-    'Sales Quotation':    ['_quotationExtras', 'openSalesQuotation'],
-    'Purchase Quotation': ['_quotationExtras', 'openPurchaseQuotation'],
-
-    // ── Return tab routing ───────────────────────────────────────────────────
-    'Sales Return':    ['_returnExtras', 'openSalesReturn'],
-    'Purchase Return': ['_returnExtras', 'openPurchaseReturn'],
-
-    // ── Financial report tab routing ─────────────────────────────────────────
-    'Laba Rugi (P/L)':          ['_financialExtras', 'openPL'],
-    'Neraca (Balance Sheet)':   ['_financialExtras', 'openBS'],
-    'Arus Kas (Cash Flow)':     ['_financialExtras', 'openCF'],
+    'Kirim Faktur Pajak via Email': ['_taxExtras', 'openTaxInvoiceEmail'],
+    'e-Faktur Format Lama': ['_taxExtras', 'openEFakturLegacy'],
+    'Analisis Bisnis': ['_reportExtras', 'openAIAnalysis'],
   };
 
-  // handle(viewId, label) → true if the click was fully handled, false to let
-  // nav.js fall back to a plain navigate(viewId).
-  function handle(viewId, label) {
-    var route = ROUTES[label];
-    if (!route) return false;
+  // Opener globals defined inside a lazily-loaded view chunk → that view id.
+  var LAZY_GLOBALS = {
+    _ledgerExtras: 'ledger',
+    _financialExtras: 'financials',
+    _quotationExtras: 'quotations',
+    _returnExtras: 'returns',
+    _warehouseExtras: 'warehouse',
+    _invoiceExtras: 'invoices',
+  };
 
-    var extras = window[route[0]];
-    var fn = extras && extras[route[1]];
+  // → 'missing' when the opener isn't defined (yet), otherwise whether it ran.
+  function invoke(label, route) {
+    var target = window[route[0]];
+    var fn = target && target[route[1]];
     if (typeof fn !== 'function') {
-      // Extras module not loaded yet — let nav.js navigate normally.
-      console.warn(
-        '[NSAMenu] handler not ready for "' + label + '" (' + route[0] + '.' + route[1] + ')'
-      );
-      return false;
+      return 'missing';
     }
-
     try {
-      fn();
+      fn.apply(target, route.slice(2));
       return true;
     } catch (e) {
-      console.error('[NSAMenu] error rendering "' + label + '":', e);
+      console.error('[NSAMenu] error opening "' + label + '":', e);
       return false;
     }
   }
 
+  // handle(viewId, label) → true when the entry was handled, false to let nav.js
+  // fall back to a plain navigate(viewId).
+  function handle(viewId, label) {
+    var route = ROUTES[label];
+    if (!route) {
+      return false;
+    }
+    var result = invoke(label, route);
+    if (result !== 'missing') {
+      return result;
+    }
+
+    var lazyView = LAZY_GLOBALS[route[0]];
+    if (lazyView && typeof window.ensureView === 'function') {
+      // Show the view's loading state, then open the entry once the chunk is in.
+      // Both callbacks settle in the same microtask run, so the view's default
+      // screen is never painted in between.
+      if (typeof window.navigate === 'function') {
+        window.navigate(lazyView);
+      }
+      window
+        .ensureView(lazyView)
+        .then(function () {
+          if (invoke(label, route) === 'missing') {
+            console.warn('[NSAMenu] opener missing for "' + label + '"');
+          }
+        })
+        .catch(function (err) {
+          console.error('[NSAMenu] could not load "' + label + '":', err);
+        });
+      return true;
+    }
+
+    console.warn('[NSAMenu] opener not ready for "' + label + '" (' + route[0] + '.' + route[1] + ')');
+    return false;
+  }
+
   window.NSAMenu = { handle: handle, routes: ROUTES };
-  console.log('[NSAMenu] Menu router ready (' + Object.keys(ROUTES).length + ' routed features)');
 })();

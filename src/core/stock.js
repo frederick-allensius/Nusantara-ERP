@@ -17,24 +17,7 @@ export function applyStockMutation(order, direction) {
 
   // Validate stock availability before applying mutations
   if (direction === 'out') {
-    const problems = [];
-    order.lines.forEach(line => {
-      if (line.itemId === 'custom') {
-        return;
-      }
-      const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-      if (!item) {
-        return;
-      }
-      if (item.stock < line.qty) {
-        problems.push({
-          itemName: item.name,
-          needed: line.qty,
-          available: item.stock,
-        });
-      }
-    });
-
+    const problems = stockShortages(order.lines, order.warehouseId);
     if (problems.length > 0) {
       const msg = problems
         .map(p => `${p.itemName}: butuh ${p.needed} tapi hanya tersedia ${p.available}`)
@@ -44,35 +27,81 @@ export function applyStockMutation(order, direction) {
     }
   }
 
-  // Apply mutations — route through Warehouse module when available
-  const wh = window.Warehouse;
-  const whId = order.warehouseId || (wh ? wh.DEFAULT_WH_ID : null);
+  moveStockLines(order.lines, direction, order.warehouseId);
+  order.stockMutated = true;
+  return true;
+}
 
-  order.lines.forEach(line => {
-    if (line.itemId === 'custom') {
+/**
+ * Undo a previously applied stock mutation (edited, cancelled or deleted SO/PO).
+ * `direction` is the direction originally applied ('out' for SO, 'in' for PO).
+ */
+export function reverseStockMutation(order, direction) {
+  if (!order || !order.lines || !order.stockMutated) {
+    return false;
+  }
+  moveStockLines(order.lines, direction === 'out' ? 'in' : 'out', order.warehouseId);
+  order.stockMutated = false;
+  return true;
+}
+
+/**
+ * Lines whose quantity exceeds the stock available in the warehouse
+ * (item total when the warehouse module is absent). Returns [{itemName, needed, available}].
+ */
+export function stockShortages(lines, warehouseId) {
+  const wh = window.Warehouse;
+  const whId = warehouseId || (wh ? wh.DEFAULT_WH_ID : null);
+  const needed = new Map();
+  (lines || []).forEach(line => {
+    if (!line || line.itemId === 'custom') {
+      return;
+    }
+    const key = String(line.itemId);
+    needed.set(key, (needed.get(key) || 0) + (Number(line.qty) || 0));
+  });
+  const problems = [];
+  needed.forEach((qty, itemId) => {
+    const item = DB.inventoryItems.find(i => String(i.id) === itemId);
+    if (!item) {
+      return;
+    }
+    const available = wh && whId ? wh.stockAt(item, whId) : Number(item.stock) || 0;
+    if (available + 1e-9 < qty) {
+      problems.push({ itemName: item.name, needed: qty, available });
+    }
+  });
+  return problems;
+}
+
+/**
+ * Move stock for a set of lines without validation. Routes through the Warehouse
+ * module so item.warehouseStock and the item.stock total stay in sync.
+ */
+export function moveStockLines(lines, direction, warehouseId) {
+  const wh = window.Warehouse;
+  const whId = warehouseId || (wh ? wh.DEFAULT_WH_ID : null);
+  (lines || []).forEach(line => {
+    if (!line || line.itemId === 'custom') {
       return;
     }
     const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-    if (!item) {
+    const qty = Number(line.qty) || 0;
+    if (!item || qty <= 0) {
       return;
     }
     if (wh && whId) {
       if (direction === 'out') {
-        wh.removeStock(item, whId, line.qty);
+        wh.removeStock(item, whId, qty);
       } else if (direction === 'in') {
-        wh.addStock(item, whId, line.qty);
+        wh.addStock(item, whId, qty);
       }
-    } else {
-      if (direction === 'out') {
-        item.stock = Math.max(0, item.stock - line.qty);
-      } else if (direction === 'in') {
-        item.stock += line.qty;
-      }
+    } else if (direction === 'out') {
+      item.stock = Math.max(0, (Number(item.stock) || 0) - qty);
+    } else if (direction === 'in') {
+      item.stock = (Number(item.stock) || 0) + qty;
     }
   });
-
-  order.stockMutated = true;
-  return true;
 }
 
 /**
@@ -84,9 +113,9 @@ export function getReservedQty(itemId) {
   }
   let total = 0;
   Object.values(DB.reservations).forEach(lines => {
-    lines.forEach(l => {
-      if (l.itemId === itemId) {
-        total += l.qty;
+    (lines || []).forEach(l => {
+      if (String(l.itemId) === String(itemId)) {
+        total += Number(l.qty) || 0;
       }
     });
   });
@@ -136,7 +165,7 @@ export function checkOversell(lines, excludeOrderId) {
     // Exclude current order's reservation if editing
     if (excludeOrderId && DB.reservations && DB.reservations[excludeOrderId]) {
       const currentReservation = DB.reservations[excludeOrderId].find(
-        r => r.itemId === line.itemId
+        r => String(r.itemId) === String(line.itemId)
       );
       if (currentReservation) {
         reserved -= currentReservation.qty;
@@ -175,6 +204,9 @@ export function getAvailableStock(itemId, warehouseId) {
 
 // Make functions globally available
 window.applyStockMutation = applyStockMutation;
+window.reverseStockMutation = reverseStockMutation;
+window.stockShortages = stockShortages;
+window.moveStockLines = moveStockLines;
 window.getReservedQty = getReservedQty;
 window.reserveStock = reserveStock;
 window.releaseReservation = releaseReservation;

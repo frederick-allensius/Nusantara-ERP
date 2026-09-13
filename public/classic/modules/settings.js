@@ -50,7 +50,7 @@ function _applyUserIdentity() {
     }
   });
 
-  const userChip = document.querySelector('.user-chip span');
+  const userChip = document.getElementById('topbar-username');
   if (userChip) {
     const first = name.split(' ')[0] || name;
     const restInitials = name.includes(' ')

@@ -3,10 +3,205 @@
 // SO, PO (with line items), Inventory, DO, Customer, Supplier
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ── Pesanan Penjualan (Sales Order) — Accurate-style print template ───────────
-// Builds the inner HTML for a Sales Order that visually matches the Accurate
-// "Pesanan Penjualan" PDF: company header + logo, customer box, line table with
-// the dark header bar, and the totals box (Sub Total / Diskon / PPN / Total).
+// ── Company letterhead for printed documents ─────────────────────────────────
+// Everything comes from the company profile (Pengaturan → Profil Perusahaan);
+// empty fields are simply left out of the print.
+function _companyLetterhead() {
+  const c = (DB.settings && DB.settings.company) || {};
+  const addr = String(c.address || '').trim();
+  return {
+    name: String(c.name || '').trim() || 'Nama Perusahaan',
+    addressLines: addr && addr !== '-' ? addr.split(/\r?\n/).map(s => s.trim()).filter(Boolean) : [],
+    phone: c.phone && c.phone !== '-' ? String(c.phone) : '',
+    npwp: (DB.settings && DB.settings.tax && DB.settings.tax.npwp) || c.npwp || '',
+  };
+}
+
+// Progressive disclosure of a document's ledger impact: collapsed by default,
+// it lists the journal lines the GL engine derived from the document.
+function accountingEffectHTML(docType, docId) {
+  const gl = window.GL;
+  if (!gl || typeof gl.journalsForDoc !== 'function') {
+    return '';
+  }
+  const journals = gl.journalsForDoc(docType, docId);
+  const fmt = v => (v ? idrFull(v) : '');
+  let body;
+  if (journals.length === 0) {
+    body = `<div class="acct-effect-empty">Dokumen ini belum memengaruhi buku besar pada status saat ini.</div>`;
+  } else {
+    let debit = 0;
+    let credit = 0;
+    const rows = journals
+      .map(j =>
+        (j.lines || [])
+          .map(l => {
+            debit += Number(l.debit) || 0;
+            credit += Number(l.credit) || 0;
+            return `<tr>
+              <td class="t-muted">${escapeHtml(j.date || '')}</td>
+              <td><span class="acct-no">${escapeHtml(l.accountNo)}</span> ${escapeHtml(l.accountName || '')}</td>
+              <td class="t-num">${fmt(l.debit)}</td>
+              <td class="t-num">${fmt(l.credit)}</td>
+            </tr>`;
+          })
+          .join('')
+      )
+      .join('');
+    body = `<table class="data-table compact">
+      <thead><tr><th>Tanggal</th><th>Akun</th><th class="t-num">Debit</th><th class="t-num">Kredit</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="t-num">${idrFull(debit)}</td><td class="t-num">${idrFull(credit)}</td></tr></tfoot>
+    </table>`;
+  }
+  return `<details class="acct-effect">
+    <summary>Dampak akuntansi <span class="t-muted">(${journals.length} jurnal)</span></summary>
+    ${body}
+  </details>`;
+}
+
+// ── Faktur Penjualan / Pembelian — print template ─────────────────────────────
+function buildInvoiceDoc(type, data) {
+  const isSales = type === 'SI';
+  const num = v => Math.round(Math.abs(v || 0)).toLocaleString('id-ID');
+  const qtyFmt = v => (Number(v) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 });
+  const ID_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const fmtDate = iso => {
+    if (!iso) return '—';
+    const d = new Date(String(iso).slice(0, 10) + 'T00:00:00');
+    if (isNaN(d)) return escapeHtml(String(iso));
+    return `${String(d.getDate()).padStart(2, '0')} ${ID_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  const lh = _companyLetterhead();
+  const partyName = isSales ? data.customer : data.supplier;
+  const partyId = isSales ? data.customerId : data.supplierId;
+  const partyRec =
+    ((isSales ? DB.customers : DB.suppliers) || []).find(
+      p => (partyId != null && String(p.id) === String(partyId)) || p.name === partyName
+    ) || {};
+  const items = Array.isArray(DB.inventoryItems) ? DB.inventoryItems : [];
+  const lines = data.lines || [];
+  let gross = 0;
+  let discount = 0;
+  const rowsHtml = lines
+    .map(l => {
+      const it = items.find(x => String(x.id) === String(l.itemId)) || {};
+      const g = (Number(l.qty) || 0) * (Number(l.price) || 0);
+      const d = Number(l.lineDiscount) || 0;
+      gross += g;
+      discount += d;
+      const sub = l.subtotal != null ? Number(l.subtotal) : g - d;
+      return `<tr>
+        <td>${escapeHtml(l.itemName || it.name || '')}</td>
+        <td class="r">${qtyFmt(l.qty)}</td>
+        <td class="c">${escapeHtml(l.unit || it.unit || '')}</td>
+        <td class="r">${num(l.price)}</td>
+        <td class="r">${d ? num(d) : '—'}</td>
+        <td class="r">${num(sub)}</td>
+      </tr>`;
+    })
+    .join('');
+  const net = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+  const rate = Number(data.taxRate) || 0;
+  const incl = rate > 0 && !!data.taxInclusive;
+  const tax = rate
+    ? typeof data.tax === 'number'
+      ? data.tax
+      : Math.round(incl ? (net * rate) / (1 + rate) : net * rate)
+    : 0;
+  const dpp = incl ? net - tax : net;
+  const total = incl ? net : net + tax;
+  const side = isSales ? 'sales' : 'purchases';
+  const due = window.Balances ? window.Balances.dueDateFor(side, data) : data.dueDate;
+  const bal =
+    window.Balances && window.Balances.isActiveInvoice(data)
+      ? window.Balances.invoiceBalance(side, data)
+      : null;
+  const notesHtml = data.note ? escapeHtml(data.note).replace(/\r?\n/g, '<br>') : '';
+
+  return `<style>
+    .inv-doc { font-family: Arial, sans-serif; color:#1a1a1a; font-size:12px; }
+    .inv-doc table { border-collapse:collapse; }
+    .inv-doc td, .inv-doc th { padding:0; }
+    .inv-head { width:100%; }
+    .inv-head td { vertical-align:top; }
+    .inv-coname { font-size:22px; font-weight:bold; margin:0 0 4px; }
+    .inv-coaddr { color:#333; line-height:1.5; }
+    .inv-title { font-size:22px; color:#1b3a5b; text-align:right; margin:0 0 6px; letter-spacing:.5px; }
+    .inv-meta { width:100%; margin-top:18px; }
+    .inv-label { color:#555; padding:2px 0; }
+    .inv-box { background:#eef1f4; padding:8px 10px; line-height:1.5; }
+    .inv-info td { padding:3px 0; }
+    .inv-info td:first-child { color:#555; width:110px; }
+    .inv-items { width:100%; margin-top:16px; }
+    .inv-items thead th { background:#1b3a5b; color:#fff; font-weight:bold; text-align:left; padding:8px; }
+    .inv-items tbody td { padding:7px 8px; border-bottom:1px solid #d8dde3; }
+    .inv-items .r { text-align:right; } .inv-items .c { text-align:center; }
+    .inv-bottom { width:100%; margin-top:10px; }
+    .inv-bottom > td { vertical-align:top; }
+    .inv-tot { width:100%; }
+    .inv-tot td { padding:6px 10px; background:#eef1f4; }
+    .inv-tot td:last-child { text-align:right; }
+    .inv-tot tr.grand td { background:#1b3a5b; color:#fff; font-weight:bold; }
+    .inv-sign { margin-top:36px; width:100%; }
+    .inv-sign td { width:50%; text-align:center; }
+    .inv-sign .line { border-top:1px solid #000; width:180px; margin:64px auto 4px; }
+  </style>
+  <div class="inv-doc">
+    <table class="inv-head"><tr>
+      <td>
+        <div class="inv-coname">${escapeHtml(lh.name)}</div>
+        <div class="inv-coaddr">${lh.addressLines.map(escapeHtml).join('<br>')}${lh.phone ? `<br>Telp. ${escapeHtml(lh.phone)}` : ''}${lh.npwp ? `<br>NPWP ${escapeHtml(lh.npwp)}` : ''}</div>
+      </td>
+      <td style="width:45%">
+        <div class="inv-title">${isSales ? 'FAKTUR PENJUALAN' : 'FAKTUR PEMBELIAN'}</div>
+        <table class="inv-info" style="margin-left:auto">
+          <tr><td>Nomor</td><td>: ${escapeHtml(data.number || data.id || '')}</td></tr>
+          <tr><td>Tanggal</td><td>: ${fmtDate(data.date)}</td></tr>
+          <tr><td>Jatuh Tempo</td><td>: ${fmtDate(due)}</td></tr>
+          ${data.sourceNumber || data.sourceId ? `<tr><td>No. Pesanan</td><td>: ${escapeHtml(data.sourceNumber || data.sourceId)}</td></tr>` : ''}
+        </table>
+      </td>
+    </tr></table>
+
+    <table class="inv-meta"><tr>
+      <td style="width:55%;padding-right:24px">
+        <div class="inv-label">${isSales ? 'Ditagihkan kepada' : 'Dari supplier'}</div>
+        <div class="inv-box"><strong>${escapeHtml(partyName || '')}</strong>${partyRec.address ? '<br>' + escapeHtml(partyRec.address).replace(/\r?\n/g, '<br>') : ''}${partyRec.npwp ? '<br>NPWP ' + escapeHtml(partyRec.npwp) : ''}</div>
+      </td>
+      <td></td>
+    </tr></table>
+
+    <table class="inv-items">
+      <thead><tr><th>Barang / Jasa</th><th class="r">Qty</th><th class="c">Satuan</th><th class="r">Harga</th><th class="r">Diskon</th><th class="r">Jumlah</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+
+    <table class="inv-bottom"><tr>
+      <td style="width:55%;padding-right:24px">
+        ${notesHtml ? `<div class="inv-label">Keterangan</div><div>${notesHtml}</div>` : ''}
+        ${bal && bal.outstanding > 0.5 && bal.outstanding < total ? `<div class="inv-label" style="margin-top:10px">Sisa tagihan per hari ini: <strong>Rp ${num(bal.outstanding)}</strong></div>` : ''}
+      </td>
+      <td style="width:45%">
+        <table class="inv-tot">
+          <tr><td>Sub Total</td><td>${num(gross)}</td></tr>
+          ${discount ? `<tr><td>Diskon</td><td>− ${num(discount)}</td></tr>` : ''}
+          ${rate ? `<tr><td>DPP</td><td>${num(dpp)}</td></tr><tr><td>PPN ${Math.round(rate * 100)}%${incl ? ' (termasuk)' : ''}</td><td>${num(tax)}</td></tr>` : ''}
+          <tr class="grand"><td>Total</td><td>${num(total)}</td></tr>
+        </table>
+      </td>
+    </tr></table>
+
+    <table class="inv-sign"><tr>
+      <td>${isSales ? 'Penerima' : 'Diterima oleh'}<div class="line"></div></td>
+      <td>Hormat kami,<div class="line"></div>${escapeHtml(lh.name)}</td>
+    </tr></table>
+  </div>`;
+}
+
+// ── Pesanan Penjualan (Sales Order) — print template ─────────────────────────
+// Company header, customer box, line table with a dark header bar, and the
+// totals box (Sub Total / Diskon / PPN / Total).
 function buildSalesOrderDoc(data) {
   const num = v => Math.round(Math.abs(v || 0)).toLocaleString('id-ID');
   const ID_MONTHS = [
@@ -31,19 +226,9 @@ function buildSalesOrderDoc(data) {
   };
 
   const company = (DB.settings && DB.settings.company) || {};
-  // Match the official letterhead, which omits the "PT" legal prefix.
-  const companyName = (company.name || 'Nusantara').replace(/^PT\.?\s+/i, '');
-  // The DB only stores a placeholder address ("-"); fall back to the real
-  // company address so the printed document matches the official letterhead.
-  const defaultAddress = [
-    'Ruko Graha Boulevard Summarecon Serpong Blok GBVB 10',
-    'Jl. Gading Serpong Boulevard, Curug Sangereng',
-    'Kecamatan Kelapa Dua',
-    'Kab. Tangerang Banten 15810',
-    'Indonesia',
-  ];
-  const addrRaw = (company.address || '').trim();
-  const addressLines = addrRaw && addrRaw !== '-' ? addrRaw.split(/\r?\n/) : defaultAddress;
+  const letterhead = _companyLetterhead();
+  const companyName = letterhead.name;
+  const addressLines = letterhead.addressLines;
 
   const items = Array.isArray(DB.inventoryItems) ? DB.inventoryItems : [];
   const itemByName = {};
@@ -58,7 +243,7 @@ function buildSalesOrderDoc(data) {
       const it = items.find(x => String(x.id) === String(l.itemId)) || itemByName[l.itemName] || {};
       const code = l.itemCode || it.sku || '';
       const unit = l.unit || it.unit || '';
-      const disc = l.discount || 0;
+      const disc = l.lineDiscount || l.discount || 0;
       lineDiscountTotal += disc;
       const lineTotal = (l.qty || 0) * (l.price || 0) - disc;
       return `<tr>
@@ -216,16 +401,9 @@ function buildPurchaseOrderDoc(data) {
   };
 
   const company = (DB.settings && DB.settings.company) || {};
-  const companyName = (company.name || 'Nusantara').replace(/^PT\.?\s+/i, '');
-  const defaultAddress = [
-    'Ruko Graha Boulevard Summarecon Serpong Blok GBVB 10',
-    'Jl. Gading Serpong Boulevard, Curug Sangereng',
-    'Kecamatan Kelapa Dua',
-    'Kab. Tangerang Banten 15810',
-    'Indonesia',
-  ];
-  const addrRaw = (company.address || '').trim();
-  const addressLines = addrRaw && addrRaw !== '-' ? addrRaw.split(/\r?\n/) : defaultAddress;
+  const letterhead = _companyLetterhead();
+  const companyName = letterhead.name;
+  const addressLines = letterhead.addressLines;
 
   const items = Array.isArray(DB.inventoryItems) ? DB.inventoryItems : [];
   const itemByName = {};
@@ -260,10 +438,16 @@ function buildPurchaseOrderDoc(data) {
       ? data.subtotal
       : lines.reduce((s, l) => s + (l.qty || 0) * (l.price || 0), 0);
   const discount = data.discount != null ? data.discount : lineDiscountTotal;
-  const ppnRate = data.taxRate != null ? data.taxRate : 0;
-  const tax = data.tax != null ? data.tax : Math.round(((subtotal - discount) * ppnRate) / 100);
-  // PPH 23 = 2% withholding tax (informational, not added to total)
-  const pph23 = Math.round((subtotal - discount) * 0.02);
+  // taxRate is a fraction (0.11 = 11%).
+  const ppnRate = Number(data.taxRate) || 0;
+  const tax = data.tax != null ? data.tax : Math.round((subtotal - discount) * ppnRate);
+  // PPh 23 (2%) applies to services, not goods: shown for information only, on
+  // non-inventory (jasa/manual) lines, and never added to the total.
+  // REQUIRES USER CONFIRMATION whether this withholding is relevant.
+  const serviceBase = lines
+    .filter(l => l.itemId === 'custom' || !items.some(x => String(x.id) === String(l.itemId)))
+    .reduce((s, l) => s + (l.qty || 0) * (l.price || 0) - (l.lineDiscount || l.discount || 0), 0);
+  const pph23 = Math.round(serviceBase * 0.02);
   const total = data.total != null ? data.total : subtotal - discount + tax;
 
   const notesHtml = data.notes ? escapeHtml(data.notes).replace(/\r?\n/g, '<br>') : '';
@@ -337,7 +521,7 @@ function buildPurchaseOrderDoc(data) {
       <td style="width:48%;vertical-align:top">
         <div class="po-title">Pesanan Pembelian</div>
         <table class="po-info">
-          <tr><td>Nomor</td><td>: ${escapeHtml(data.id || '')}</td></tr>
+          <tr><td>Nomor</td><td>: ${escapeHtml(data.number || data.id || '')}</td></tr>
           <tr><td>Tanggal</td><td>: ${fmtDate(data.date)}</td></tr>
           <tr><td>Tanggal Kirim</td><td>: ${fmtDate(data.shipDate || data.date)}</td></tr>
           ${termRow}
@@ -361,8 +545,8 @@ function buildPurchaseOrderDoc(data) {
         <table class="po-tot">
           <tr><td>Sub Total</td><td>${num(subtotal)}</td></tr>
           <tr><td>Diskon</td><td>${num(discount)}</td></tr>
-          <tr><td>PPN (${ppnRate}%)</td><td>${num(tax)}</td></tr>
-          <tr><td>PPH 23 - 2%</td><td>${num(pph23)}</td></tr>
+          <tr><td>PPN (${Math.round(ppnRate * 100)}%)</td><td>${num(tax)}</td></tr>
+          ${pph23 > 0 ? `<tr><td>PPh 23 2% atas jasa (informasi)</td><td>${num(pph23)}</td></tr>` : ''}
           <tr class="grand"><td>Total</td><td>${num(total)}</td></tr>
         </table>
       </td>
@@ -387,12 +571,11 @@ function buildDeliveryOrderDoc(data) {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
 
-  const company = (DB.settings && DB.settings.company) || {};
-  const companyName = 'NUSANTARA';
-  const addr1 = 'Ruko Graha Boulevard Summarecon Serpong Blok GBVB 10';
-  const addr2 = 'Jl. Gading Serpong Boulevard, Kel. Curug Sangereng, Kec. Klp. Dua';
-  const addr3 = 'Tangerang - Banten 15810';
-  const phone = company.phone || '+62-811-844-2779';
+  const letterhead = _companyLetterhead();
+  const companyName = letterhead.name.toUpperCase();
+  const [addr1 = '', addr2 = '', ...addrRest] = letterhead.addressLines;
+  const addr3 = addrRest.join(', ');
+  const phone = letterhead.phone;
 
   const linkedSO = data.soId ? (DB.salesOrders || []).find(s => s.id === data.soId) : null;
   const linkedPO = data.poId ? (DB.purchaseOrders || []).find(p => p.id === data.poId) : null;
@@ -504,7 +687,7 @@ function buildDeliveryOrderDoc(data) {
     <!-- ROW 5: Address line 3 + phone -->
     <tr>
       <td colspan="4" style="font-size:10px;padding:1px 0">${escapeHtml(addr3)}</td>
-      <td colspan="6" style="font-size:10px;padding:1px 0">Telp: ${escapeHtml(phone)}</td>
+      <td colspan="6" style="font-size:10px;padding:1px 0">${phone ? `Telp: ${escapeHtml(phone)}` : ''}</td>
     </tr>
 
     <!-- ROW 6: SURAT JALAN title -->
@@ -587,28 +770,34 @@ function buildDeliveryOrderDoc(data) {
     <tr>
       <td colspan="4" style="text-align:center;padding:4px 0;border-top:1px solid #000">(..........................)</td>
       <td colspan="4" style="text-align:center;padding:4px 0;border-top:1px solid #000">(..........................)</td>
-      <td colspan="3" style="text-align:center;padding:4px 0;font-weight:bold">NUSANTARA</td>
+      <td colspan="3" style="text-align:center;padding:4px 0;font-weight:bold">${escapeHtml(companyName)}</td>
     </tr>
   </table>`;
 }
 
 // ── Print / Cetak Dokumen ─────────────────────────────────────────────────────
-// Opens a new browser window with a print-ready version of SO, PO, or DO.
+// Opens a new browser window with a print-ready SO, PO, DO or invoice (SI/PI).
 function printDocument(type, data) {
   let title, body;
 
   if (type === 'SO') {
-    // ── Pesanan Penjualan — replica of the Accurate Sales Order layout ──────────
     body = buildSalesOrderDoc(data);
-    title = `Pesanan Penjualan ${escapeHtml(data.number || data.id || '')}`;
+    title = `Pesanan Penjualan ${data.number || data.id || ''}`;
   } else if (type === 'PO') {
     body = buildPurchaseOrderDoc(data);
-    title = `Pesanan Pembelian ${escapeHtml(data.id || '')}`;
+    title = `Pesanan Pembelian ${data.number || data.id || ''}`;
   } else if (type === 'DO') {
     const doDisplayNum =
       typeof docNum === 'function' ? docNum(data.number, data.id) : data.number || data.id;
     body = buildDeliveryOrderDoc(data);
-    title = `Surat Jalan ${escapeHtml(doDisplayNum)}`;
+    title = `Surat Jalan ${doDisplayNum}`;
+  } else if (type === 'SI' || type === 'PI') {
+    body = buildInvoiceDoc(type, data);
+    title = `${type === 'SI' ? 'Faktur Penjualan' : 'Faktur Pembelian'} ${data.number || data.id || ''}`;
+  }
+  if (!body) {
+    showToast('Dokumen ini belum memiliki format cetak', 'warning');
+    return;
   }
 
   const win = window.open('', '_blank', 'width=780,height=900');
@@ -708,6 +897,223 @@ function warehouseSelectHTML(selectedId) {
   </div>`;
 }
 
+// Status choices for a document form: the current status plus the moves DocEngine
+// allows from it (new documents offer `initial` only). 'Cancelled' is never offered
+// in a form — cancelling goes through cancelOrder() and its checks.
+function statusOptionsFor(docType, list, current, initial) {
+  const engine = window.DocEngine;
+  const allowed = list.filter(([v]) => {
+    if (v === current) {
+      return true;
+    }
+    if (v === 'Cancelled') {
+      return false;
+    }
+    if (initial) {
+      return initial.includes(v);
+    }
+    return !engine || engine.canTransition(docType, current, v);
+  });
+  return statusOptions(allowed, current);
+}
+
+// Stock-relevant signature of order lines (item + quantity).
+function _linesSignature(lines) {
+  return JSON.stringify((lines || []).map(l => [String(l.itemId), Number(l.qty) || 0]));
+}
+
+// Per-item quantity reductions when an order's lines change from old → new.
+function _qtyReductions(oldLines, newLines) {
+  const sum = lines => {
+    const m = new Map();
+    (lines || []).forEach(l => m.set(String(l.itemId), (m.get(String(l.itemId)) || 0) + (Number(l.qty) || 0)));
+    return m;
+  };
+  const prev = sum(oldLines);
+  const next = sum(newLines);
+  const out = [];
+  prev.forEach((qty, itemId) => {
+    const cut = qty - (next.get(itemId) || 0);
+    if (cut > 0) {
+      out.push({ itemId, qty: cut });
+    }
+  });
+  return out;
+}
+
+// Quantities already received into stock through posted goods receipts of a PO.
+function _receivedByGoodsReceipts(poId) {
+  const got = new Map();
+  (DB.goodsReceipts || []).forEach(g => {
+    if (!g.posted || String(g.poId) !== String(poId)) {
+      return;
+    }
+    (g.items || []).forEach(it => {
+      const key = String(it.itemId);
+      got.set(key, (got.get(key) || 0) + (Number(it.qty) || 0));
+    });
+  });
+  return got;
+}
+
+function _currentUserName() {
+  try {
+    const u = window.erpAuth && window.erpAuth.getCurrentUser && window.erpAuth.getCurrentUser();
+    return (u && (u.username || u.displayName || u.email)) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+// Why an order cannot be cancelled or deleted right now (null when it can).
+// Downstream documents are undone first so the document chain stays consistent.
+function orderLockReason(type, o) {
+  const isSO = type === 'SO';
+  const B = window.Balances;
+  const inv = B ? B.activeInvoiceFor(isSO ? 'sales' : 'purchases', o.id) : null;
+  if (inv) {
+    return `sudah difakturkan (${docNum(inv.number, inv.id)}). Batalkan fakturnya terlebih dahulu.`;
+  }
+  const pays = (DB.paymentLogs || []).filter(
+    p => p.type === type && String(p.orderId) === String(o.id)
+  );
+  if (pays.length) {
+    return `memiliki ${pays.length} catatan pembayaran. Hapus pembayarannya terlebih dahulu.`;
+  }
+  const dps = (DB[isSO ? 'salesDownPayments' : 'purchaseDownPayments'] || []).filter(
+    d => String(d.orderId) === String(o.id)
+  );
+  if (dps.length) {
+    return 'memiliki uang muka. Hapus uang mukanya terlebih dahulu.';
+  }
+  const rets = (DB[isSO ? 'salesReturns' : 'purchaseReturns'] || []).filter(
+    r => r.status !== 'Cancelled' && r.sourceType === type && String(r.sourceId) === String(o.id)
+  );
+  if (rets.length) {
+    return 'memiliki retur.';
+  }
+  if (!isSO) {
+    const grs = (DB.goodsReceipts || []).filter(g => String(g.poId) === String(o.id) && g.posted);
+    if (grs.length) {
+      return `memiliki ${grs.length} penerimaan barang. Hapus penerimaannya terlebih dahulu.`;
+    }
+  }
+  return null;
+}
+
+// Cancel a SO/PO. The document stays (status Dibatalkan); reservations and
+// delivered/received stock are reversed and its journals stop being derived.
+function cancelOrder(type, id) {
+  const isSO = type === 'SO';
+  const o = (isSO ? DB.salesOrders : DB.purchaseOrders).find(x => String(x.id) === String(id));
+  if (!o || o.status === 'Cancelled') {
+    return;
+  }
+  const label = docNum(o.number, o.id);
+  if (window.DocEngine && !window.DocEngine.canTransition(type, o.status, 'Cancelled')) {
+    showToast(`${label} tidak bisa dibatalkan dari status saat ini`, 'warning');
+    return;
+  }
+  const reason = orderLockReason(type, o);
+  if (reason) {
+    showToast(`${label} ${reason}`, 'warning');
+    return;
+  }
+  if (!isSO && o.stockMutated && typeof stockShortages === 'function') {
+    if (stockShortages(o.lines, o.warehouseId).length) {
+      showToast(
+        `Sebagian barang dari ${label} sudah terpakai sehingga stok tidak bisa dikurangi. Gunakan Retur Pembelian.`,
+        'warning'
+      );
+      return;
+    }
+  }
+  const dos = (DB.deliveryOrders || []).filter(d => String(isSO ? d.soId : d.poId) === String(o.id));
+  const effects = [];
+  if (o.stockMutated) {
+    effects.push(isSO ? '• Stok barang dikembalikan ke gudang.' : '• Stok barang dikurangi kembali.');
+  }
+  if (isSO && o.status === 'Confirmed') {
+    effects.push('• Reservasi stok dilepas.');
+  }
+  if (o.status === (isSO ? 'Delivered' : 'Received')) {
+    effects.push('• Jurnal pesanan ini tidak lagi dibentuk.');
+  }
+  if (dos.length) {
+    effects.push(`• ${dos.length} surat jalan terkait tidak ikut dibatalkan.`);
+  }
+  if (
+    !confirm(
+      `Batalkan ${label}?\n\n${effects.length ? effects.join('\n') + '\n' : ''}Dokumen tetap tersimpan dengan status Dibatalkan.`
+    )
+  ) {
+    return;
+  }
+  if (isSO) {
+    releaseReservation(o.id);
+  }
+  if (o.stockMutated) {
+    reverseStockMutation(o, isSO ? 'out' : 'in');
+  }
+  o.status = 'Cancelled';
+  o.cancelledAt = new Date().toISOString();
+  o.cancelledBy = _currentUserName();
+  saveDB();
+  closeModal();
+  navigate(activeView);
+  showToast(`${label} dibatalkan`, 'success');
+}
+
+// Remove a payment logged on a SO/PO (corrects a wrongly recorded payment).
+function deletePaymentLog(type, logId) {
+  const logs = DB.paymentLogs || [];
+  const idx = logs.findIndex(p => p.type === type && String(p.id) === String(logId));
+  if (idx === -1) {
+    return;
+  }
+  const p = logs[idx];
+  if (p.method === 'Down Payment' || p.source === 'DP') {
+    showToast('Pembayaran dari uang muka dikelola di menu Uang Muka', 'info');
+    return;
+  }
+  if (
+    !confirm(
+      `Hapus pembayaran ${idrFull(p.amount || 0)} tanggal ${p.date}?\n\nJurnal kas/bank untuk pembayaran ini ikut dihapus.`
+    )
+  ) {
+    return;
+  }
+  logs.splice(idx, 1);
+  const side = type === 'SO' ? 'sales' : 'purchases';
+  const order = (type === 'SO' ? DB.salesOrders : DB.purchaseOrders).find(
+    o => String(o.id) === String(p.orderId)
+  );
+  const B = window.Balances;
+  if (order && B) {
+    // An order marked Paid before delivery goes back to Confirmed once it is
+    // no longer fully paid.
+    if (order.status === 'Paid' && B.orderBalance(side, order).outstanding > B.EPS) {
+      order.status = 'Confirmed';
+      if (type === 'SO') {
+        reserveStock(order.id, order.lines || []);
+      }
+    }
+    const inv = B.activeInvoiceFor(side, order.id);
+    if (inv) {
+      B.recalcInvoiceStatus(side, inv);
+    }
+  }
+  saveDB();
+  showToast('Pembayaran dihapus', 'success');
+  if (order) {
+    if (type === 'SO') {
+      viewSO(order.id);
+    } else {
+      viewPO(order.id);
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LINE ITEMS — shared helper used by SO and PO forms
 // priceField: "sell" for SO, "cost" for PO
@@ -782,7 +1188,7 @@ function initLineItems(priceField, existingLines) {
     let t = 0;
     body.querySelectorAll('tr').forEach(tr => {
       const lineGross =
-        (parseInt(tr.querySelector('.ln-qty')?.value) || 0) *
+        (parseFloat(tr.querySelector('.ln-qty')?.value) || 0) *
         (parseFloat(tr.querySelector('.ln-price')?.value) || 0);
       const disc = Math.max(0, parseFloat(tr.querySelector('.ln-disc')?.value) || 0);
       t += Math.max(0, lineGross - disc);
@@ -820,8 +1226,8 @@ function initLineItems(priceField, existingLines) {
                style="display:${isCustom ? 'block' : 'none'};font-size:12px;padding:5px 8px;margin-top:4px">
       </td>
       <td style="padding:5px 8px">
-        <input class="form-input ln-qty" type="number" min="1" step="1" value="${line.qty || 1}"
-               style="width:62px;font-size:12px;padding:5px 8px">
+        <input class="form-input ln-qty" type="number" min="0" step="any" value="${line.qty || 1}"
+               style="width:76px;font-size:12px;padding:5px 8px">
       </td>
       <td style="padding:5px 8px;font-size:11px;color:var(--muted);white-space:nowrap" class="ln-unit">${escapeHtml(line.unit || '')}</td>
       <td style="padding:5px 8px">
@@ -847,7 +1253,8 @@ function initLineItems(priceField, existingLines) {
     const subTd = tr.querySelector('.ln-sub');
 
     function recalcRow() {
-      const qty = Math.max(0, parseInt(tr.querySelector('.ln-qty').value) || 0);
+      // Quantities may be decimal (e.g. 12,5 Ton).
+      const qty = Math.max(0, parseFloat(tr.querySelector('.ln-qty').value) || 0);
       // FIX #4: Use parseFloat for prices to preserve decimal values
       const price = Math.max(0, parseFloat(priceInp.value) || 0);
       // Phase 1b: per-line discount (Rp), clamped so the line never goes negative.
@@ -872,8 +1279,8 @@ function initLineItems(priceField, existingLines) {
           if (supplierName && DB.supplierPrices) {
             const sp = DB.supplierPrices.find(
               p =>
-                p.itemId === sel.value &&
-                p.supplierName.toLowerCase() === supplierName.toLowerCase()
+                String(p.itemId) === String(sel.value) &&
+                String(p.supplierName || '').toLowerCase() === supplierName.toLowerCase()
             );
             if (sp) priceInp.value = sp.price;
           }
@@ -913,7 +1320,11 @@ function initLineItems(priceField, existingLines) {
       if (!sel?.value) {
         return;
       }
-      const qty = Math.max(1, parseInt(tr.querySelector('.ln-qty').value) || 1);
+      let qty = parseFloat(tr.querySelector('.ln-qty').value);
+      if (!(qty > 0)) {
+        qty = 1;
+      }
+      qty = Math.round(qty * 10000) / 10000;
       // FIX #4: Use parseFloat for prices to preserve decimal values
       const price = Math.max(0, parseFloat(tr.querySelector('.ln-price').value) || 0);
       // Phase 1b: per-line discount (Rp), clamped to [0, qty*price] so a line's
@@ -932,7 +1343,8 @@ function initLineItems(priceField, existingLines) {
         itemId = 'custom';
         unit = 'ls';
       } else {
-        itemId = parseInt(sel.value);
+        // Item ids are strings everywhere else (see db.js _coerceIdsToString).
+        itemId = String(sel.value);
         itemName = sel.options[sel.selectedIndex]?.text || '';
         unit = unitTd?.textContent.trim() || '';
       }
@@ -943,7 +1355,7 @@ function initLineItems(priceField, existingLines) {
         qty,
         price,
         lineDiscount,
-        subtotal: qty * price - lineDiscount,
+        subtotal: Math.round(qty * price - lineDiscount),
       });
     });
     return lines;
@@ -995,7 +1407,7 @@ function linesDetailHTML(lines, totalLabel, doc) {
             .map(
               l => `<tr style="border-bottom:1px solid var(--border)">
             <td style="padding:7px 10px;font-size:12px;font-weight:600">${escapeHtml(l.itemName)}</td>
-            <td style="padding:7px 10px;font-size:12px;text-align:right">${l.qty}</td>
+            <td style="padding:7px 10px;font-size:12px;text-align:right">${(Number(l.qty) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })}</td>
             <td style="padding:7px 10px;font-size:11px;color:var(--muted)">${escapeHtml(l.unit)}</td>
             <td style="padding:7px 10px;font-size:12px;text-align:right;color:var(--muted)">${idrFull(l.price)}</td>
             ${showDisc ? `<td style="padding:7px 10px;font-size:12px;text-align:right;color:var(--muted)">${(l.lineDiscount || 0) > 0 ? '−' + idrFull(l.lineDiscount) : '—'}</td>` : ''}
@@ -1038,22 +1450,19 @@ function deleteSO(id) {
     return;
   }
   const o = DB.salesOrders[idx];
-  // FIX: Release stock reservation if SO was Confirmed
-  if (o.status === 'Confirmed') {
-    releaseReservation(id);
+  // Orders that already moved stock or have downstream documents are cancelled,
+  // not deleted, so their history stays traceable.
+  const reason = o.stockMutated
+    ? 'sudah mengurangi stok. Gunakan Batalkan.'
+    : orderLockReason('SO', o) ||
+      ((DB.deliveryOrders || []).some(d => String(d.soId) === String(o.id))
+        ? 'memiliki surat jalan. Hapus surat jalannya terlebih dahulu.'
+        : null);
+  if (reason) {
+    showToast(`${docNum(o.number, o.id)} ${reason}`, 'warning');
+    return;
   }
-  // FIX: Reverse stock mutation if SO was Delivered
-  if (o.status === 'Delivered' && o.stockMutated) {
-    (o.lines || []).forEach(l => {
-      if (l.itemId === 'custom') {
-        return;
-      }
-      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
-      if (item) {
-        item.stock = Math.max(0, item.stock + l.qty);
-      }
-    });
-  }
+  releaseReservation(id);
   const deleted = DB.salesOrders.splice(idx, 1)[0];
   saveDB();
   closeModal();
@@ -1117,7 +1526,7 @@ function showAddPO() {
       </div>
       <div class="form-group">
         <label class="form-label">Status</label>
-        <select class="form-select" id="po-status">${statusOptions(PO_STATUSES, 'Draft')}</select>
+        <select class="form-select" id="po-status">${statusOptionsFor('PO', PO_STATUSES, 'Draft', ['Draft', 'Confirmed', 'Received'])}</select>
       </div>
       ${warehouseSelectHTML()}
     </div>
@@ -1157,12 +1566,14 @@ function showAddPO() {
         ? window.DocEngine.nextNumber('PO', date, { commit: true })
         : null;
       const whSelPO = document.getElementById('order-warehouse');
+      const poDueDate = sanitizeInput(document.getElementById('po-due-date')?.value || '', 'date');
       const newPO = {
         id: nextId('PO', DB.purchaseOrders),
         number: poNumber || undefined,
         supplier,
         supplierId: window.DocEngine?.resolvePartyId('PO', supplier) ?? null,
         date,
+        dueDate: poDueDate || null,
         amount,
         taxRate: poTaxRate,
         tax: poTax,
@@ -1191,9 +1602,17 @@ function editPO(id) {
     showToast('PO tidak ditemukan', 'danger');
     return;
   }
+  const lockedInvoice = window.Balances && window.Balances.activeInvoiceFor('purchases', o.id);
+  if (lockedInvoice) {
+    showToast(
+      `${docNum(o.number, o.id)} sudah difakturkan (${docNum(lockedInvoice.number, lockedInvoice.id)}). Batalkan fakturnya untuk mengubah pesanan.`,
+      'warning'
+    );
+    return;
+  }
   const suppOpts = DB.suppliers.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
   openModal(
-    `Edit PO — ${escapeHtml(id)}`,
+    `Ubah Purchase Order — ${escapeHtml(docNum(o.number, o.id))}`,
     `
     <div class="form-row">
       <div class="form-group">
@@ -1206,8 +1625,12 @@ function editPO(id) {
         <input class="form-input" id="po-date" type="date" value="${escapeHtml(o.date)}">
       </div>
       <div class="form-group">
+        <label class="form-label">Jatuh Tempo <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <input class="form-input" id="po-due-date" type="date" value="${escapeHtml(o.dueDate || '')}">
+      </div>
+      <div class="form-group">
         <label class="form-label">Status</label>
-        <select class="form-select" id="po-status">${statusOptions(PO_STATUSES, o.status)}</select>
+        <select class="form-select" id="po-status">${statusOptionsFor('PO', PO_STATUSES, o.status)}</select>
       </div>
       ${warehouseSelectHTML(o.warehouseId)}
     </div>
@@ -1241,22 +1664,38 @@ function editPO(id) {
         return;
       }
 
-      const wasReceived = o.status === 'Received';
+      if (
+        status !== o.status &&
+        window.DocEngine &&
+        !window.DocEngine.canTransition('PO', o.status, status)
+      ) {
+        showToast('Perubahan status ini tidak diizinkan', 'warning');
+        return;
+      }
+      const whSelPOEdit = document.getElementById('order-warehouse');
+      const warehouseId = whSelPOEdit ? whSelPOEdit.value : o.warehouseId;
+      const sameWarehouse = String(warehouseId || '') === String(o.warehouseId || '');
+      const wasReceived = o.status === 'Received' && !!o.stockMutated;
       const nowReceived = status === 'Received';
+      const stockChanged = !sameWarehouse || _linesSignature(o.lines) !== _linesSignature(lines);
+      const received = _receivedByGoodsReceipts(id);
 
-      // FIX #1: If PO was Received and lines changed, reverse old stock first
-      // FIX: Guard against negative inventory with Math.max(0, ...)
-      if (wasReceived && o.stockMutated) {
-        (o.lines || []).forEach(l => {
-          if (l.itemId === 'custom') {
-            return;
-          }
-          const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
-          if (item) {
-            item.stock = Math.max(0, item.stock - l.qty);
-          }
-        });
-        o.stockMutated = false;
+      // A received PO whose quantities change: take the old stock back out first,
+      // but never below what is physically left (sold goods can't be un-received).
+      if (wasReceived && stockChanged) {
+        if (received.size) {
+          showToast('PO ini memiliki penerimaan barang. Ubah jumlah lewat menu Penerimaan Barang.', 'warning');
+          return;
+        }
+        const cuts = sameWarehouse ? _qtyReductions(o.lines, lines) : o.lines;
+        if (stockShortages(cuts, o.warehouseId).length) {
+          showToast(
+            'Sebagian barang dari PO ini sudah terpakai sehingga jumlahnya tidak bisa dikurangi. Gunakan Retur Pembelian.',
+            'warning'
+          );
+          return;
+        }
+        reverseStockMutation(o, 'in');
       }
 
       const dpp = lines.reduce((s, l) => s + l.subtotal, 0);
@@ -1272,28 +1711,34 @@ function editPO(id) {
         ? Math.round(poIncl ? (dpp * poTaxRate) / (1 + poTaxRate) : dpp * poTaxRate)
         : 0;
 
-      const whSelPOEdit = document.getElementById('order-warehouse');
+      const poDueDate = sanitizeInput(document.getElementById('po-due-date')?.value || '', 'date');
       o.supplier = supplier;
       o.supplierId = window.DocEngine?.resolvePartyId('PO', supplier) ?? null;
       o.date = date;
+      o.dueDate = poDueDate || null;
       o.status = status;
       o.lines = lines;
       o.taxRate = poTaxRate;
       o.taxInclusive = poIncl;
       o.tax = poTax;
       o.amount = poIncl ? dpp : dpp + poTax;
-      if (whSelPOEdit) o.warehouseId = whSelPOEdit.value;
+      o.warehouseId = warehouseId;
 
-      // Apply new stock mutation if status is Received
-      if (nowReceived && !o.stockMutated) {
-        applyStockMutation(o, 'in');
-        showToast('Stok inventori diperbarui sesuai item baru', 'success');
+      if (nowReceived && (!wasReceived || stockChanged)) {
+        // Quantities already booked through goods receipts are in stock: add the rest.
+        const remaining = lines.map(l =>
+          Object.assign({}, l, {
+            qty: Math.max(0, (Number(l.qty) || 0) - (received.get(String(l.itemId)) || 0)),
+          })
+        );
+        moveStockLines(remaining, 'in', warehouseId);
+        o.stockMutated = true;
       }
 
       saveDB();
       closeModal();
       navigate(activeView);
-      showToast(`${id} berhasil diperbarui`, 'success');
+      showToast(`${docNum(o.number, o.id)} diperbarui`, 'success');
     });
   }, 50);
 }
@@ -1304,17 +1749,17 @@ function deletePO(id) {
     return;
   }
   const o = DB.purchaseOrders[idx];
-  // FIX: Reverse stock mutation if PO was Received
-  if (o.stockMutated) {
-    (o.lines || []).forEach(l => {
-      if (l.itemId === 'custom') {
-        return;
-      }
-      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
-      if (item) {
-        item.stock = Math.max(0, item.stock - l.qty);
-      }
-    });
+  // Orders that already moved stock or have downstream documents are cancelled,
+  // not deleted, so their history stays traceable.
+  const reason = o.stockMutated
+    ? 'sudah menambah stok. Gunakan Batalkan.'
+    : orderLockReason('PO', o) ||
+      ((DB.deliveryOrders || []).some(d => String(d.poId) === String(o.id))
+        ? 'memiliki surat jalan. Hapus surat jalannya terlebih dahulu.'
+        : null);
+  if (reason) {
+    showToast(`${docNum(o.number, o.id)} ${reason}`, 'warning');
+    return;
   }
   const deleted = DB.purchaseOrders.splice(idx, 1)[0];
   saveDB();
@@ -1344,15 +1789,54 @@ function deletePO(id) {
 // INVENTORY ITEMS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Item categories: the configured list plus any category already used by an item.
+function _itemCategoryList() {
+  const configured =
+    DB.settings && Array.isArray(DB.settings.itemCategories) ? DB.settings.itemCategories : [];
+  return [...new Set([...configured, ...DB.inventoryItems.map(i => i.category).filter(Boolean)])];
+}
+
+// Record a stock change made from the item form as a stock adjustment, so the
+// per-warehouse breakdown, stock card and ledger follow the new quantity.
+// Returns the adjustment number, or '' when the change cannot be applied.
+function _recordStockCorrection(item, diff, note) {
+  const wh = window.Warehouse;
+  const whId = wh ? wh.DEFAULT_WH_ID : null;
+  if (diff < 0 && wh && wh.stockAt(item, whId) < -diff) {
+    showToast(
+      `Stok di ${wh.warehouseName(whId)} hanya ${wh.stockAt(item, whId)}. Kurangi stok per gudang lewat Penyesuaian Stok.`,
+      'warning'
+    );
+    return '';
+  }
+  const date = today();
+  const number = window.DocEngine
+    ? window.DocEngine.nextNumber('ADJ', date, { sequences: DB.numberSequences, commit: true })
+    : `ADJ-${Date.now()}`;
+  const line = {
+    itemId: String(item.id),
+    itemName: item.name,
+    unit: item.unit,
+    type: diff > 0 ? 'in' : 'out',
+    qty: Math.abs(diff),
+  };
+  moveStockLines([line], line.type, whId);
+  if (!Array.isArray(DB.itemAdjustments)) {
+    DB.itemAdjustments = [];
+  }
+  DB.itemAdjustments.push({ id: `ADJ-${Date.now()}`, number, date, warehouseId: whId, lines: [line], note });
+  return number;
+}
+
 function showAddItem() {
-  const allCats = [...new Set([...ITEM_CATEGORIES, ...DB.inventoryItems.map(i => i.category)])];
+  const allCats = _itemCategoryList();
   openModal(
-    'Tambah Item Baru',
+    'Tambah Barang',
     `
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Nama Item</label>
-        <input class="form-input" id="item-name" type="text" placeholder="Contoh: Granit Alam Hitam">
+        <label class="form-label">Nama Barang</label>
+        <input class="form-input" id="item-name" type="text" placeholder="Nama barang atau jasa">
       </div>
       <div class="form-group">
         <label class="form-label">Kategori</label>
@@ -1363,11 +1847,11 @@ function showAddItem() {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Satuan</label>
-        <input class="form-input" id="item-unit" type="text" value="m²" placeholder="m², ton, pcs…">
+        <input class="form-input" id="item-unit" type="text" placeholder="Ton, M3, pcs…">
       </div>
       <div class="form-group">
         <label class="form-label">Stok Awal</label>
-        <input class="form-input" id="item-stock" type="number" min="0" placeholder="0">
+        <input class="form-input" id="item-stock" type="number" min="0" step="any" placeholder="0">
       </div>
     </div>
     <div class="form-row">
@@ -1395,13 +1879,13 @@ function showAddItem() {
     document.getElementById('saveItem')?.addEventListener('click', () => {
       const name = sanitizeInput(document.getElementById('item-name').value);
       const category = sanitizeInput(document.getElementById('item-category').value) || 'Lainnya';
-      const unit = sanitizeInput(document.getElementById('item-unit').value) || 'm²';
-      const stock = sanitizeInput(document.getElementById('item-stock').value, 'number');
+      const unit = sanitizeInput(document.getElementById('item-unit').value) || 'unit';
+      const stock = Math.max(0, parseFloat(document.getElementById('item-stock').value) || 0);
       const min = sanitizeInput(document.getElementById('item-min').value, 'number');
       const cost = sanitizeInput(document.getElementById('item-cost').value, 'number');
       const sell = sanitizeInput(document.getElementById('item-sell').value, 'number');
       if (!name) {
-        showToast('Nama item harus diisi', 'warning');
+        showToast('Nama barang harus diisi', 'warning');
         return;
       }
       // FIX: Prevent ID collision after deletion — use max(existing IDs, _nextIdCounter) + 1
@@ -1414,7 +1898,16 @@ function showAddItem() {
       );
       const newId = Math.max(maxId, DB._nextItemId) + 1;
       DB._nextItemId = newId;
-      DB.inventoryItems.push({ id: newId, name, category, unit, stock, min, cost, sell });
+      const newItem = { id: String(newId), name, category, unit, stock: 0, min, cost, sell };
+      DB.inventoryItems.push(newItem);
+      // Opening stock goes into the default warehouse so the breakdown matches.
+      if (stock > 0) {
+        if (window.Warehouse) {
+          window.Warehouse.addStock(newItem, window.Warehouse.DEFAULT_WH_ID, stock);
+        } else {
+          newItem.stock = stock;
+        }
+      }
       saveDB();
       closeModal();
       navigate(activeView);
@@ -1622,9 +2115,9 @@ function editItem(id) {
     showToast('Item tidak ditemukan', 'danger');
     return;
   }
-  const allCats = [...new Set([...ITEM_CATEGORIES, ...DB.inventoryItems.map(i => i.category)])];
+  const allCats = _itemCategoryList();
   openModal(
-    `Edit Item — ${escapeHtml(item.name)}`,
+    `Ubah Barang — ${escapeHtml(item.name)}`,
     `
     <div class="form-row">
       <div class="form-group">
@@ -1644,7 +2137,8 @@ function editItem(id) {
       </div>
       <div class="form-group">
         <label class="form-label">Stok Saat Ini</label>
-        <input class="form-input" id="item-stock" type="number" min="0" value="${item.stock}">
+        <input class="form-input" id="item-stock" type="number" min="0" step="any" value="${item.stock}">
+        <div class="form-hint">Perubahan stok dicatat otomatis sebagai Penyesuaian Stok di gudang utama.</div>
       </div>
     </div>
     <div class="form-row">
@@ -1673,26 +2167,36 @@ function editItem(id) {
     document.getElementById('updateItem')?.addEventListener('click', () => {
       const name = sanitizeInput(document.getElementById('item-name').value);
       const category = sanitizeInput(document.getElementById('item-category').value) || 'Lainnya';
-      const unit = sanitizeInput(document.getElementById('item-unit').value) || 'm²';
-      const stock = sanitizeInput(document.getElementById('item-stock').value, 'number');
+      const unit = sanitizeInput(document.getElementById('item-unit').value) || item.unit || 'unit';
+      const stock = Math.max(0, parseFloat(document.getElementById('item-stock').value) || 0);
       const min = sanitizeInput(document.getElementById('item-min').value, 'number');
       const cost = sanitizeInput(document.getElementById('item-cost').value, 'number');
       const sell = sanitizeInput(document.getElementById('item-sell').value, 'number');
       if (!name) {
-        showToast('Nama item harus diisi', 'warning');
+        showToast('Nama barang harus diisi', 'warning');
         return;
+      }
+      const diff = Math.round((stock - (Number(item.stock) || 0)) * 10000) / 10000;
+      let adjNumber = '';
+      if (diff !== 0) {
+        adjNumber = _recordStockCorrection(item, diff, 'Koreksi stok dari data barang');
+        if (!adjNumber) {
+          return;
+        }
       }
       item.name = name;
       item.category = category;
       item.unit = unit;
-      item.stock = stock;
       item.min = min;
       item.cost = cost;
       item.sell = sell;
       saveDB();
       closeModal();
       navigate(activeView);
-      showToast(`${name} berhasil diperbarui`, 'success');
+      showToast(
+        adjNumber ? `${name} diperbarui · stok dikoreksi lewat ${adjNumber}` : `${name} berhasil diperbarui`,
+        'success'
+      );
     });
   }, 50);
 }
@@ -1704,25 +2208,39 @@ function deleteItem(id) {
   }
   const item = DB.inventoryItems[idx];
 
-  // FIX: id arrives as a string from data-id; l.itemId is stored as a number.
-  // Use loose equality (==) so "3" == 3 is true. Alternatively: Number(id).
-  const numericId = Number(id);
-  const usedInSO = DB.salesOrders.some(o => (o.lines || []).some(l => l.itemId === numericId));
-  const usedInPO = DB.purchaseOrders.some(o => (o.lines || []).some(l => l.itemId === numericId));
+  // Ids may be numbers (older data) or strings: compare as strings.
+  const same = v => String(v) === String(id);
+  const USED_IN = [
+    ['salesOrders', 'Sales Order'],
+    ['purchaseOrders', 'Purchase Order'],
+    ['deliveryOrders', 'Surat Jalan'],
+    ['salesInvoices', 'Faktur Penjualan'],
+    ['purchaseInvoices', 'Faktur Pembelian'],
+    ['salesQuotations', 'Penawaran Penjualan'],
+    ['purchaseQuotations', 'Penawaran Pembelian'],
+    ['salesReturns', 'Retur Penjualan'],
+    ['purchaseReturns', 'Retur Pembelian'],
+    ['itemAdjustments', 'Penyesuaian Stok'],
+    ['itemTransfers', 'Transfer Gudang'],
+  ];
+  const usedIn = USED_IN.filter(([coll]) =>
+    (DB[coll] || []).some(d => (d.lines || d.items || []).some(l => l && same(l.itemId)))
+  ).map(([, label]) => label);
   const isReserved =
     DB.reservations &&
-    Object.values(DB.reservations).some(lines => lines.some(l => l.itemId === numericId));
+    Object.values(DB.reservations).some(lines => (lines || []).some(l => l && same(l.itemId)));
+  const hasStock = (Number(item.stock) || 0) > 0;
 
-  if (usedInSO || usedInPO || isReserved) {
+  if (usedIn.length || isReserved || hasStock) {
     const reasons = [];
-    if (usedInSO) {
-      reasons.push('digunakan dalam Sales Order');
-    }
-    if (usedInPO) {
-      reasons.push('digunakan dalam Purchase Order');
+    if (usedIn.length) {
+      reasons.push(`digunakan dalam ${usedIn.join(', ')}`);
     }
     if (isReserved) {
       reasons.push('memiliki stok yang direservasi');
+    }
+    if (hasStock) {
+      reasons.push(`masih memiliki stok ${item.stock} ${item.unit || ''} (kosongkan lewat Penyesuaian Stok)`);
     }
 
     showToast(
@@ -2115,74 +2633,82 @@ function showPartyStatement(kind, id) {
     showToast(isCust ? 'Pelanggan tidak ditemukan' : 'Supplier tidak ditemukan', 'danger');
     return;
   }
-  const invColl = isCust ? 'salesInvoices' : 'purchaseInvoices';
-  const payColl = isCust ? 'salesReceipts' : 'purchasePayments';
-  const idField = isCust ? 'customerId' : 'supplierId';
-  const nameField = isCust ? 'customer' : 'supplier';
-  const DROP = new Set(['Cancelled', 'Void']);
-  const grand = i => {
-    const amt = Number(i.amount) || 0;
-    return i.taxInclusive ? amt : amt + (Number(i.tax) || 0);
+  // Same balance rules as invoices, aging and the dashboard (balances.js):
+  // invoices and uninvoiced deliveries/receipts are charges; payments logged on
+  // orders, receipts/payments on invoices and posted returns are credits.
+  const B = window.Balances;
+  if (!B) {
+    showToast('Modul saldo belum siap', 'warning');
+    return;
+  }
+  const statement = B.partyStatement(isCust ? 'sales' : 'purchases', id, party.name);
+  const orderType = isCust ? 'SO' : 'PO';
+  const orderNo = orderId => {
+    const o = ((isCust ? DB.salesOrders : DB.purchaseOrders) || []).find(
+      x => String(x.id) === String(orderId)
+    );
+    return o ? docNum(o.number, o.id) : orderId;
   };
-  const matchesParty = d =>
-    String(d[idField]) === String(id) || (d[nameField] && d[nameField] === party.name);
-
-  const invoices = (DB[invColl] || []).filter(i => matchesParty(i) && !DROP.has(i.status));
-  const invIds = new Set(invoices.map(i => i.id));
-  const payments = (DB[payColl] || []).filter(
-    p => matchesParty(p) || (p.invoiceId && invIds.has(p.invoiceId))
-  );
-
-  const entries = [];
-  invoices.forEach(i =>
-    entries.push({
-      date: i.date || '',
-      ref: docNum(i.number, i.id),
-      refId: i.id,
-      type: isCust ? 'SI' : 'PI',
-      label: isCust ? 'Faktur Penjualan' : 'Faktur Pembelian',
-      debit: grand(i),
-      credit: 0,
-    })
-  );
-  payments.forEach(p =>
-    entries.push({
-      date: p.date || '',
-      ref: docNum(p.number, p.id),
-      refId: p.id,
-      type: isCust ? 'SR' : 'PP',
-      label: isCust ? 'Penerimaan Pembayaran' : 'Pembayaran',
-      debit: 0,
-      credit: Number(p.amount) || 0,
-    })
-  );
-  // Oldest first; on the same date a faktur (debit) precedes its settlement.
-  entries.sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : b.debit - a.debit));
-
-  const totalDebit = entries.reduce((s, e) => s + e.debit, 0);
-  const totalCredit = entries.reduce((s, e) => s + e.credit, 0);
-  const outstanding = totalDebit - totalCredit;
+  const LABELS = isCust
+    ? {
+        SI: 'Faktur Penjualan',
+        SO: 'Pengiriman belum difakturkan',
+        SR: 'Penerimaan Pembayaran',
+        SRN: 'Retur Penjualan',
+      }
+    : {
+        PI: 'Faktur Pembelian',
+        PO: 'Penerimaan barang belum difakturkan',
+        PP: 'Pembayaran ke Supplier',
+        PRN: 'Retur Pembelian',
+      };
+  const entries = statement.entries.map(e => {
+    const isPay = e.docType === 'PAY';
+    return {
+      date: e.date || '',
+      label: isPay
+        ? e.downPayment
+          ? 'Uang muka diterapkan'
+          : `Pembayaran pesanan${e.method ? ' · ' + e.method : ''}`
+        : LABELS[e.docType] || e.docType,
+      ref: isPay || e.docType === orderType ? orderNo(e.id) : docNum(e.number, e.id),
+      refType: isPay ? orderType : e.docType,
+      refId: e.id,
+      debit: e.debit,
+      credit: e.credit,
+      balance: e.balance,
+    };
+  });
+  const totalDebit = statement.totalDebit;
+  const totalCredit = statement.totalCredit;
+  const outstanding = statement.balance;
   const m = v => idrFull(Math.round(v));
   const cell = (v, color) =>
     v
       ? `<span style="font-weight:700;color:${color}">${m(v)}</span>`
       : '<span style="color:var(--border)">—</span>';
 
-  let bal = 0;
+  const refLink = e => {
+    const txt = escapeHtml(e.ref);
+    if (['SI', 'PI', 'SR', 'PP'].includes(e.refType)) {
+      return `<a class="link-btn" data-action="invView" data-id="${escapeHtml(e.refId)}" data-type="${e.refType}">${txt}</a>`;
+    }
+    if (e.refType === 'SO' || e.refType === 'PO') {
+      return `<a class="link-btn" data-action="${e.refType === 'SO' ? 'viewSO' : 'viewPO'}" data-id="${escapeHtml(e.refId)}">${txt}</a>`;
+    }
+    return txt;
+  };
   const rows = entries
-    .map(e => {
-      bal += e.debit - e.credit;
-      return `<tr style="border-bottom:1px solid var(--border)">
+    .map(
+      e => `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:6px 10px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(e.date)}</td>
         <td style="padding:6px 10px;font-size:12px">${escapeHtml(e.label)}</td>
-        <td style="padding:6px 10px;font-size:11px">
-          <a data-action="invView" data-id="${escapeHtml(e.refId)}" data-type="${e.type}"
-             style="color:var(--primary);cursor:pointer;text-decoration:underline">${escapeHtml(e.ref)}</a></td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.debit, '#FF3B30')}</td>
+        <td style="padding:6px 10px;font-size:11px">${refLink(e)}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.debit, 'var(--text)')}</td>
         <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.credit, '#34C759')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${m(bal)}</td>
-      </tr>`;
-    })
+        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${m(e.balance)}</td>
+      </tr>`
+    )
     .join('');
 
   const debitHdr = isCust ? 'Tagihan' : 'Hutang';
@@ -4051,63 +4577,76 @@ function deleteExpedition(id) {
 // DB.paymentLogs = [{ id, type:"SO"|"PO", orderId, date, amount, method, note }]
 
 function paymentLogHTML(type, orderId, order) {
-  const logs = (DB.paymentLogs || []).filter(p => p.type === type && p.orderId === orderId);
-  const totalPaid = logs.reduce((s, p) => s + (p.amount || 0), 0);
-  const orderTotal = order ? order.amount || 0 : 0;
-  const remaining = orderTotal - totalPaid;
+  const logs = (DB.paymentLogs || []).filter(
+    p => p.type === type && String(p.orderId) === String(orderId)
+  );
+  const B = window.Balances;
+  const bal = B && order ? B.orderBalance(type === 'SO' ? 'sales' : 'purchases', order) : null;
+  const invoice = bal && bal.invoice;
+  const totalPaid = logs.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const remaining = bal ? bal.outstanding : Math.max(0, (order ? order.amount || 0 : 0) - totalPaid);
+  const settled = remaining <= (B ? B.EPS : 0.5);
 
   const logsHtml =
     logs.length === 0
-      ? `<div style="font-size:12px;color:var(--muted);padding:12px 0;text-align:center">
-         Belum ada log pembayaran — klik <strong>+ Catat Pembayaran</strong> untuk menambah.
-       </div>`
-      : `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-        <table style="width:100%;border-collapse:collapse">
-          <thead style="background:var(--bg)">
-            <tr>
-              <th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
-              <th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Metode</th>
-              <th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Jumlah</th>
-              <th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Catatan</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${logs
-              .map(
-                p => `<tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:6px 10px;font-size:12px">${escapeHtml(p.date)}</td>
-              <td style="padding:6px 10px;font-size:12px">${escapeHtml(p.method)}</td>
-              <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:right;color:#34C759">${idrFull(p.amount)}</td>
-              <td style="padding:6px 10px;font-size:12px;color:var(--muted)">${escapeHtml(p.note || '—')}</td>
-            </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;
-                    border-top:1px solid var(--border);font-size:12px">
-          <span style="color:var(--muted)">Total Dibayar: <strong>${idrFull(totalPaid)}</strong></span>
-          ${
-            remaining > 0
-              ? `<span style="color:#FF3B30;font-weight:700">Sisa: ${idrFull(remaining)}</span>`
-              : `<span style="color:#34C759;font-weight:700">✓ Lunas</span>`
-          }
-        </div>
-       </div>`;
+      ? '<div class="empty-inline">Belum ada pembayaran yang dicatat pada pesanan ini.</div>'
+      : `<table class="data-table compact">
+          <thead><tr><th>Tanggal</th><th>Metode</th><th class="t-num">Jumlah</th><th>Catatan</th><th></th></tr></thead>
+          <tbody>${logs
+            .map(p => {
+              const fromDP = p.method === 'Down Payment' || p.source === 'DP';
+              return `<tr>
+                <td class="t-muted">${escapeHtml(p.date || '')}</td>
+                <td>${fromDP ? 'Uang muka diterapkan' : escapeHtml(p.method || '')}</td>
+                <td class="t-num">${idrFull(p.amount || 0)}</td>
+                <td class="t-muted">${escapeHtml(p.note || '—')}</td>
+                <td class="t-actions">${
+                  fromDP
+                    ? ''
+                    : `<button class="icon-btn" data-action="deletePaymentLog" data-type="${type}" data-id="${escapeHtml(String(p.id))}" title="Hapus pembayaran" aria-label="Hapus pembayaran">✕</button>`
+                }</td>
+              </tr>`;
+            })
+            .join('')}</tbody>
+        </table>`;
 
-  return `
-  <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="detail-label" style="margin:0;font-size:12px;font-weight:700">Log Pembayaran</div>
-      <button class="action-ghost" data-action="addPayment"
-        data-type="${type}" data-id="${escapeHtml(orderId)}"
-        style="font-size:11px;padding:3px 10px">+ Catat Pembayaran</button>
-    </div>
+  const summaryHtml = bal
+    ? `<div class="balance-panel">
+        <div><span>Total pesanan</span><strong>${idrFull(bal.total)}</strong></div>
+        ${bal.paid ? `<div><span>Sudah dibayar</span><strong>− ${idrFull(bal.paid)}</strong></div>` : ''}
+        ${bal.returns ? `<div><span>Retur</span><strong>− ${idrFull(bal.returns)}</strong></div>` : ''}
+        <div class="balance-total${settled ? ' is-settled' : ''}"><span>${settled ? 'Lunas' : 'Sisa tagihan'}</span><strong>${idrFull(remaining)}</strong></div>
+      </div>`
+    : '';
+
+  // Once invoiced, new payments are recorded on the invoice (the balance counts both).
+  const action =
+    !order || order.status === 'Cancelled' || settled
+      ? ''
+      : invoice
+        ? `<button class="action-ghost" data-action="settleInvoice" data-type="${type === 'SO' ? 'SI' : 'PI'}" data-id="${escapeHtml(invoice.id)}">+ Catat ${type === 'SO' ? 'Penerimaan' : 'Pembayaran'}</button>`
+        : `<button class="action-ghost" data-action="addPayment" data-type="${type}" data-id="${escapeHtml(orderId)}">+ Catat Pembayaran</button>`;
+  const invoiceNote = invoice
+    ? `<div class="notice notice-info">Sudah difakturkan (${escapeHtml(docNum(invoice.number, invoice.id))}). Sisa tagihan dihitung dari faktur, termasuk pembayaran di bawah ini.</div>`
+    : '';
+
+  return `<div class="detail-section">
+    <div class="detail-section-head"><div class="detail-section-title">Pembayaran</div>${action}</div>
+    ${invoiceNote}
     ${logsHtml}
+    ${summaryHtml}
   </div>`;
 }
 
 function showAddPayment(type, orderId) {
+  const ord = (type === 'SO' ? DB.salesOrders : DB.purchaseOrders).find(
+    o => String(o.id) === String(orderId)
+  );
+  const ordBalance =
+    ord && window.Balances
+      ? window.Balances.orderBalance(type === 'SO' ? 'sales' : 'purchases', ord)
+      : null;
+  const suggested = ordBalance && ordBalance.outstanding > 0 ? Math.round(ordBalance.outstanding) : '';
   openModal(
     'Catat Pembayaran',
     `
@@ -4118,7 +4657,7 @@ function showAddPayment(type, orderId) {
       </div>
       <div class="form-group">
         <label class="form-label">Jumlah (Rp)</label>
-        <input class="form-input" id="pay-amount" type="number" min="1" placeholder="0">
+        <input class="form-input" id="pay-amount" type="number" min="0" step="any" placeholder="0" value="${suggested}">
       </div>
     </div>
     <div class="form-row">
@@ -4186,6 +4725,14 @@ function showAddPayment(type, orderId) {
           order.status = 'Paid';
         }
       }
+      // An invoice drawn from this order follows the new balance.
+      if (order && window.Balances) {
+        const side = type === 'SO' ? 'sales' : 'purchases';
+        const inv = window.Balances.activeInvoiceFor(side, order.id);
+        if (inv) {
+          window.Balances.recalcInvoiceStatus(side, inv);
+        }
+      }
 
       saveDB();
       closeModal();
@@ -4211,7 +4758,13 @@ function duplicateSO(id) {
     return;
   }
   const lines = (o.lines || []).map(l => ({ ...l }));
-  const amount = lines.reduce((s, l) => s + (l.subtotal || 0), 0);
+  // Keep the original's PPN setting so the copy totals the same way.
+  const dpp = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+  const taxRate = Number(o.taxRate) || 0;
+  const taxInclusive = taxRate > 0 && !!o.taxInclusive;
+  const tax =
+    taxRate > 0 ? Math.round(taxInclusive ? (dpp * taxRate) / (1 + taxRate) : dpp * taxRate) : 0;
+  const amount = taxInclusive ? dpp : dpp + tax;
   const soNumber = window.DocEngine
     ? window.DocEngine.nextNumber('SO', today(), { commit: true })
     : null;
@@ -4223,7 +4776,11 @@ function duplicateSO(id) {
     date: today(),
     status: 'Draft',
     lines,
+    taxRate,
+    taxInclusive,
+    tax,
     amount,
+    warehouseId: o.warehouseId,
     stockMutated: false,
   };
   DB.salesOrders.unshift(newSO);
@@ -4243,7 +4800,13 @@ function duplicatePO(id) {
     return;
   }
   const lines = (o.lines || []).map(l => ({ ...l }));
-  const amount = lines.reduce((s, l) => s + (l.subtotal || 0), 0);
+  // Keep the original's PPN setting so the copy totals the same way.
+  const dpp = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+  const taxRate = Number(o.taxRate) || 0;
+  const taxInclusive = taxRate > 0 && !!o.taxInclusive;
+  const tax =
+    taxRate > 0 ? Math.round(taxInclusive ? (dpp * taxRate) / (1 + taxRate) : dpp * taxRate) : 0;
+  const amount = taxInclusive ? dpp : dpp + tax;
   const poNumber = window.DocEngine
     ? window.DocEngine.nextNumber('PO', today(), { commit: true })
     : null;
@@ -4255,7 +4818,11 @@ function duplicatePO(id) {
     date: today(),
     status: 'Draft',
     lines,
+    taxRate,
+    taxInclusive,
+    tax,
     amount,
+    warehouseId: o.warehouseId,
     stockMutated: false,
   };
   DB.purchaseOrders.unshift(newPO);
@@ -4278,7 +4845,6 @@ function dpSummaryHTML(type, orderId, orderTotal) {
   const totalDP = dps.reduce((s, d) => s + (d.amount || 0), 0);
   const applied = dps.filter(d => d.status === 'Applied').reduce((s, d) => s + (d.amount || 0), 0);
   const unapplied = totalDP - applied;
-  const remaining = orderTotal - totalDP;
   const fmt = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 
   return `
@@ -4289,7 +4855,6 @@ function dpSummaryHTML(type, orderId, orderTotal) {
       ${detailRow('Total DP', `<strong>${fmt(totalDP)}</strong>`)}
       ${detailRow('Sudah Diterapkan', fmt(applied))}
       ${unapplied > 0 ? detailRow('Belum Diterapkan', `<span style="color:#FF9500">${fmt(unapplied)}</span>`) : ''}
-      ${detailRow('Sisa Tagihan', `<span style="font-weight:700;color:${remaining > 0 ? '#FF3B30' : '#34C759'}">${fmt(remaining)}</span>`)}
     </div>
     <div style="margin-top:6px;font-size:11px;color:var(--muted)">
       ${dps.map(d => `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0">
@@ -4343,66 +4908,53 @@ function viewSO(id) {
        </div>`
       : '';
 
+  const soCancelled = o.status === 'Cancelled';
+  const soInvoice = window.Balances ? window.Balances.activeInvoiceFor('sales', id) : null;
+  const soBalance = window.Balances ? window.Balances.orderBalance('sales', o) : null;
+  const soOverdue =
+    !!o.dueDate &&
+    o.dueDate < today() &&
+    !soCancelled &&
+    (!soBalance || soBalance.outstanding > window.Balances.EPS);
+  const soCanCancel =
+    !soCancelled && (!window.DocEngine || window.DocEngine.canTransition('SO', o.status, 'Cancelled'));
   openModal(
-    `Detail SO — ${escapeHtml(docNum(o.number, o.id))}`,
+    `Sales Order ${escapeHtml(docNum(o.number, o.id))}`,
     `
     <div class="detail-grid">
-      ${detailRow('No. SO', escapeHtml(docNum(o.number, o.id)))}
+      ${detailRow('No. SO', `<span class="doc-no">${escapeHtml(docNum(o.number, o.id))}</span>`)}
       ${detailRow('Status', badge(o.status))}
       <div class="detail-divider"></div>
-      ${detailRow('Pelanggan', escapeHtml(o.customer))}
-      ${detailRow('Tanggal', escapeHtml(o.date))}
-      ${o.dueDate ? detailRow('Jatuh Tempo', `<span style="font-weight:700;color:${o.dueDate < new Date().toISOString().slice(0, 10) && o.status !== 'Paid' && o.status !== 'Delivered' ? '#FF3B30' : 'var(--text)'}">${escapeHtml(o.dueDate)}</span>`) : ''}
+      ${detailRow('Pelanggan', escapeHtml(o.customer || '—'))}
+      ${detailRow('Tanggal', escapeHtml(o.date || '—'))}
+      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${soOverdue ? 't-danger' : ''}">${escapeHtml(o.dueDate)}${soOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
       ${o.warehouseId && window.Warehouse ? detailRow('Gudang', escapeHtml(window.Warehouse.warehouseName(o.warehouseId))) : ''}
+      ${o.sourceQuotation ? detailRow('Dari Penawaran', escapeHtml(o.sourceQuotation)) : ''}
+      ${soCancelled && o.cancelledAt ? detailRow('Dibatalkan', escapeHtml(String(o.cancelledAt).slice(0, 10)) + (o.cancelledBy ? ' · ' + escapeHtml(o.cancelledBy) : '')) : ''}
     </div>
     ${doLinksHtml}
     ${siLinksHtml}
     ${linesDetailHTML(o.lines, 'Total Penjualan', o)}
     ${dpSummaryHTML('SO', id, o.amount || 0)}
     ${paymentLogHTML('SO', id, o)}
+    ${accountingEffectHTML('SO', id)}
   `,
-    `<button class="btn-ghost" data-action="closeModal">Tutup</button>
-   ${window.DocFlow ? window.DocFlow.button('SO', id) : ''}
-   <button class="btn-ghost" data-action="createDOFromSO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <rect x="1" y="3" width="15" height="13"/>
-       <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-       <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-     </svg>
-     Buat DO
-   </button>
-   <button class="btn-ghost" data-action="createSIFromSO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-       <polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/>
-       <line x1="9" y1="14" x2="15" y2="14"/>
-     </svg>
-     Buat Faktur
-   </button>
-   <button class="btn-ghost" data-action="duplicateSO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-     </svg>
-     Duplikat
-   </button>
-   <button class="btn-ghost" data-action="printSO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <polyline points="6 9 6 2 18 2 18 9"/>
-       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-       <rect x="6" y="14" width="12" height="8"/>
-     </svg>
-     Cetak
-   </button>
-   <button class="btn" data-action="editSO" data-id="${escapeHtml(id)}">Edit</button>`,
+    [
+      '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
+      window.DocFlow ? window.DocFlow.button('SO', id) : '',
+      `<button class="btn-ghost" data-action="printSO" data-id="${escapeHtml(id)}">Cetak</button>`,
+      `<button class="btn-ghost" data-action="duplicateSO" data-id="${escapeHtml(id)}">Duplikat</button>`,
+      soCanCancel
+        ? `<button class="btn-ghost btn-danger-text" data-action="cancelSO" data-id="${escapeHtml(id)}">Batalkan</button>`
+        : '',
+      soCancelled
+        ? ''
+        : `<button class="btn-ghost" data-action="createDOFromSO" data-id="${escapeHtml(id)}">Buat Surat Jalan</button>`,
+      !soCancelled && !soInvoice && o.status !== 'Draft'
+        ? `<button class="btn-ghost" data-action="createSIFromSO" data-id="${escapeHtml(id)}">Buat Faktur</button>`
+        : '',
+      `<button class="btn" data-action="editSO" data-id="${escapeHtml(id)}">Ubah</button>`,
+    ].join(''),
     true
   );
 }
@@ -4451,66 +5003,53 @@ function viewPO(id) {
        </div>`
       : '';
 
+  const poCancelled = o.status === 'Cancelled';
+  const poInvoice = window.Balances ? window.Balances.activeInvoiceFor('purchases', id) : null;
+  const poBalance = window.Balances ? window.Balances.orderBalance('purchases', o) : null;
+  const poOverdue =
+    !!o.dueDate &&
+    o.dueDate < today() &&
+    !poCancelled &&
+    (!poBalance || poBalance.outstanding > window.Balances.EPS);
+  const poCanCancel =
+    !poCancelled && (!window.DocEngine || window.DocEngine.canTransition('PO', o.status, 'Cancelled'));
   openModal(
-    `Detail PO — ${escapeHtml(docNum(o.number, o.id))}`,
+    `Purchase Order ${escapeHtml(docNum(o.number, o.id))}`,
     `
     <div class="detail-grid">
-      ${detailRow('No. PO', escapeHtml(docNum(o.number, o.id)))}
+      ${detailRow('No. PO', `<span class="doc-no">${escapeHtml(docNum(o.number, o.id))}</span>`)}
       ${detailRow('Status', badge(o.status))}
       <div class="detail-divider"></div>
-      ${detailRow('Supplier', escapeHtml(o.supplier))}
-      ${detailRow('Tanggal', escapeHtml(o.date))}
-      ${o.dueDate ? detailRow('Jatuh Tempo', `<span style="font-weight:700;color:${o.dueDate < new Date().toISOString().slice(0, 10) && o.status !== 'Paid' && o.status !== 'Received' ? '#FF3B30' : 'var(--text)'}">${escapeHtml(o.dueDate)}</span>`) : ''}
+      ${detailRow('Supplier', escapeHtml(o.supplier || '—'))}
+      ${detailRow('Tanggal', escapeHtml(o.date || '—'))}
+      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${poOverdue ? 't-danger' : ''}">${escapeHtml(o.dueDate)}${poOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
       ${o.warehouseId && window.Warehouse ? detailRow('Gudang', escapeHtml(window.Warehouse.warehouseName(o.warehouseId))) : ''}
+      ${o.sourceQuotation ? detailRow('Dari Penawaran', escapeHtml(o.sourceQuotation)) : ''}
+      ${poCancelled && o.cancelledAt ? detailRow('Dibatalkan', escapeHtml(String(o.cancelledAt).slice(0, 10)) + (o.cancelledBy ? ' · ' + escapeHtml(o.cancelledBy) : '')) : ''}
     </div>
     ${doLinksHtml}
     ${piLinksHtml}
     ${linesDetailHTML(o.lines, 'Total Pembelian', o)}
     ${dpSummaryHTML('PO', id, o.amount || 0)}
     ${paymentLogHTML('PO', id, o)}
+    ${accountingEffectHTML('PO', id)}
   `,
-    `<button class="btn-ghost" data-action="closeModal">Tutup</button>
-   ${window.DocFlow ? window.DocFlow.button('PO', id) : ''}
-   <button class="btn-ghost" data-action="createDOFromPO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <rect x="1" y="3" width="15" height="13"/>
-       <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-       <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-     </svg>
-     Buat DO
-   </button>
-   <button class="btn-ghost" data-action="createPIFromPO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-       <polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/>
-       <line x1="9" y1="14" x2="15" y2="14"/>
-     </svg>
-     Buat Faktur
-   </button>
-   <button class="btn-ghost" data-action="duplicatePO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-     </svg>
-     Duplikat
-   </button>
-   <button class="btn-ghost" data-action="printPO" data-id="${escapeHtml(id)}"
-     style="display:flex;align-items:center;gap:5px">
-     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <polyline points="6 9 6 2 18 2 18 9"/>
-       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-       <rect x="6" y="14" width="12" height="8"/>
-     </svg>
-     Cetak
-   </button>
-   <button class="btn" data-action="editPO" data-id="${escapeHtml(id)}">Edit</button>`,
+    [
+      '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
+      window.DocFlow ? window.DocFlow.button('PO', id) : '',
+      `<button class="btn-ghost" data-action="printPO" data-id="${escapeHtml(id)}">Cetak</button>`,
+      `<button class="btn-ghost" data-action="duplicatePO" data-id="${escapeHtml(id)}">Duplikat</button>`,
+      poCanCancel
+        ? `<button class="btn-ghost btn-danger-text" data-action="cancelPO" data-id="${escapeHtml(id)}">Batalkan</button>`
+        : '',
+      poCancelled
+        ? ''
+        : `<button class="btn-ghost" data-action="createDOFromPO" data-id="${escapeHtml(id)}">Buat Surat Jalan</button>`,
+      !poCancelled && !poInvoice && o.status !== 'Draft'
+        ? `<button class="btn-ghost" data-action="createPIFromPO" data-id="${escapeHtml(id)}">Buat Faktur</button>`
+        : '',
+      `<button class="btn" data-action="editPO" data-id="${escapeHtml(id)}">Ubah</button>`,
+    ].join(''),
     true
   );
 }
@@ -5645,7 +6184,7 @@ function showAddSO() {
       <div class="form-group">
         <label class="form-label">Status</label>
         <select class="form-select" id="so-status">
-          ${statusOptions(SO_STATUSES, 'Draft')}
+          ${statusOptionsFor('SO', SO_STATUSES, 'Draft', ['Draft', 'Confirmed', 'Delivered'])}
         </select>
       </div>
       ${warehouseSelectHTML()}
@@ -5731,8 +6270,8 @@ function showAddSO() {
         }
         reserveStock(newSO.id, lines);
       }
-      if (status === 'Delivered') {
-        applyStockMutation(newSO, 'out');
+      if (status === 'Delivered' && !applyStockMutation(newSO, 'out')) {
+        return; // not enough stock — the toast explains it and nothing is saved
       }
       DB.salesOrders.unshift(newSO);
       saveDB();
@@ -5753,9 +6292,17 @@ function editSO(id) {
     showToast('SO tidak ditemukan', 'danger');
     return;
   }
+  const lockedInvoice = window.Balances && window.Balances.activeInvoiceFor('sales', o.id);
+  if (lockedInvoice) {
+    showToast(
+      `${docNum(o.number, o.id)} sudah difakturkan (${docNum(lockedInvoice.number, lockedInvoice.id)}). Batalkan fakturnya untuk mengubah pesanan.`,
+      'warning'
+    );
+    return;
+  }
   const custOpts = (DB.customers || []).map(c => `<option value="${escapeHtml(c.name)}">`).join('');
   openModal(
-    `Edit SO — ${escapeHtml(id)}`,
+    `Ubah Sales Order — ${escapeHtml(docNum(o.number, o.id))}`,
     `
     <div class="form-row">
       <div class="form-group">
@@ -5776,7 +6323,7 @@ function editSO(id) {
       <div class="form-group">
         <label class="form-label">Status</label>
         <select class="form-select" id="so-status">
-          ${statusOptions(SO_STATUSES, o.status)}
+          ${statusOptionsFor('SO', SO_STATUSES, o.status)}
         </select>
       </div>
       ${warehouseSelectHTML(o.warehouseId)}
@@ -5828,14 +6375,44 @@ function editSO(id) {
         return;
       }
 
-      const wasDelivered = o.status === 'Delivered';
+      if (
+        status !== o.status &&
+        window.DocEngine &&
+        !window.DocEngine.canTransition('SO', o.status, status)
+      ) {
+        showToast('Perubahan status ini tidak diizinkan', 'warning');
+        return;
+      }
+      const whSelect = document.getElementById('order-warehouse');
+      const warehouseId = whSelect ? whSelect.value : o.warehouseId;
+      const wasDelivered = o.status === 'Delivered' && !!o.stockMutated;
       const nowDelivered = status === 'Delivered';
-      const wasConfirmed = o.status === 'Confirmed';
-      const nowConfirmed = status === 'Confirmed';
+      const stockChanged =
+        String(warehouseId || '') !== String(o.warehouseId || '') ||
+        _linesSignature(o.lines) !== _linesSignature(lines);
+      const needsStockOut = nowDelivered && (!wasDelivered || stockChanged);
+      if (needsStockOut) {
+        // Check availability with this order's own delivered stock put back first;
+        // restore it if the new quantities can't be delivered.
+        if (wasDelivered) {
+          reverseStockMutation(o, 'out');
+        }
+        const short = stockShortages(lines, warehouseId);
+        if (short.length) {
+          if (wasDelivered) {
+            moveStockLines(o.lines, 'out', o.warehouseId);
+            o.stockMutated = true;
+          }
+          showToast(
+            'Stok tidak mencukupi: ' +
+              short.map(p => `${p.itemName} (butuh ${p.needed}, tersedia ${p.available})`).join('; '),
+            'danger'
+          );
+          return;
+        }
+      }
 
       const dueDate = sanitizeInput(document.getElementById('so-due-date')?.value || '', 'date');
-      // ── Stock mutation (same logic as original editSO) ─────────────────────
-      const oldLines = wasDelivered && o.stockMutated ? o.lines || [] : [];
       const dpp = lines.reduce((s, l) => s + l.subtotal, 0);
       const ppnChk = document.getElementById('ppnToggle');
       const taxCfg2 = (DB.settings && DB.settings.tax) || {};
@@ -5849,7 +6426,6 @@ function editSO(id) {
         ? Math.round(soIncl ? (dpp * soTaxRate) / (1 + soTaxRate) : dpp * soTaxRate)
         : 0;
 
-      const whSelEdit = document.getElementById('order-warehouse');
       o.customer = customer;
       o.customerId = window.DocEngine?.resolvePartyId('SO', customer) ?? null;
       o.date = date;
@@ -5860,44 +6436,15 @@ function editSO(id) {
       o.taxInclusive = soIncl;
       o.tax = soTax;
       o.amount = soIncl ? dpp : dpp + soTax;
-      if (whSelEdit) o.warehouseId = whSelEdit.value;
+      o.warehouseId = warehouseId;
 
-      if (!wasDelivered && nowDelivered && !o.stockMutated) {
-        applyStockMutation(o, 'out');
-        releaseReservation(id);
-        showToast('Stok inventori diperbarui otomatis', 'info');
-      } else if (wasDelivered && nowDelivered && o.stockMutated) {
-        oldLines.forEach(line => {
-          if (line.itemId === 'custom') {
-            return;
-          }
-          const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-          // FIX: Guard against negative inventory with Math.max(0, ...)
-          if (item) {
-            item.stock = Math.max(0, item.stock + line.qty);
-          }
-        });
-        o.stockMutated = false;
-        applyStockMutation(o, 'out');
-        showToast('Stok diperbarui sesuai perubahan item', 'info');
-      } else if (wasDelivered && !nowDelivered && o.stockMutated) {
-        oldLines.forEach(line => {
-          if (line.itemId === 'custom') {
-            return;
-          }
-          const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-          // FIX: Guard against negative inventory with Math.max(0, ...)
-          if (item) {
-            item.stock = Math.max(0, item.stock + line.qty);
-          }
-        });
-        o.stockMutated = false;
-        showToast('Stok dikembalikan karena status berubah dari Terkirim', 'info');
+      if (needsStockOut) {
+        moveStockLines(lines, 'out', warehouseId);
+        o.stockMutated = true;
       }
 
-      // ── Reservation transitions ────────────────────────────────────────────
-      if (nowConfirmed) {
-        // Always refresh reservation when Confirmed (covers new + line changes)
+      // The stock reservation follows the Confirmed status.
+      if (status === 'Confirmed') {
         const problems = checkOversell(lines, id);
         if (problems.length > 0) {
           showToast(
@@ -5907,14 +6454,14 @@ function editSO(id) {
           );
         }
         reserveStock(id, lines);
-      } else if (wasConfirmed && !nowConfirmed && !nowDelivered) {
+      } else {
         releaseReservation(id);
       }
 
       saveDB();
       closeModal();
       navigate(activeView);
-      showToast(`${id} berhasil diperbarui`, 'success');
+      showToast(`${docNum(o.number, o.id)} diperbarui`, 'success');
     });
   }, 50);
 }
@@ -5940,22 +6487,19 @@ function inlineSOStatus(id, newStatus) {
     return;
   }
 
-  // Stock deduction
+  // Cancelling runs its own checks and confirmation.
+  if (newStatus === 'Cancelled') {
+    navigate(activeView); // reset the inline select; cancelOrder re-renders on success
+    cancelOrder('SO', id);
+    return;
+  }
+  // Stock leaves the warehouse when the order is delivered.
   if (old !== 'Delivered' && newStatus === 'Delivered' && !o.stockMutated) {
-    applyStockMutation(o, 'out');
+    if (!applyStockMutation(o, 'out')) {
+      navigate(activeView);
+      return;
+    }
     releaseReservation(id);
-  } else if (old === 'Delivered' && newStatus !== 'Delivered' && o.stockMutated) {
-    (o.lines || []).forEach(l => {
-      if (l.itemId === 'custom') {
-        return;
-      }
-      const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
-      // FIX: Guard against negative inventory with Math.max(0, ...)
-      if (item) {
-        item.stock = Math.max(0, item.stock + l.qty);
-      }
-    });
-    o.stockMutated = false;
   }
 
   // FIX 4.1: Release reservation for ANY transition away from Confirmed —
@@ -6005,6 +6549,14 @@ window.updateBulkBar = function updateBulkBar() {
 
 function bulkSOStatus(newStatus) {
   if (soSelection.size === 0) {
+    return;
+  }
+  if (
+    newStatus === 'Cancelled' &&
+    !confirm(
+      `Batalkan ${soSelection.size} Sales Order terpilih?\n\nPesanan yang sudah difakturkan, memiliki pembayaran, uang muka atau retur dilewati. Stok dan reservasi dari pesanan yang dibatalkan dikembalikan.`
+    )
+  ) {
     return;
   }
 
@@ -6099,26 +6651,30 @@ function bulkSOStatus(newStatus) {
       skipped++;
       return;
     }
-    // FIX 4.2: Use independent `if` blocks instead of if/else so that
-    // stock-mutation reversal for Delivered orders is always evaluated,
-    // even when another condition (e.g. new→Delivered) would otherwise
-    // be matched first in an if/else chain.
-    if (old !== 'Delivered' && newStatus === 'Delivered' && !o.stockMutated) {
-      applyStockMutation(o, 'out');
+    // Bulk cancel only applies to orders without downstream documents; their
+    // delivered stock and reservation are reversed like a single cancel.
+    if (newStatus === 'Cancelled') {
+      if (old === 'Cancelled' || orderLockReason('SO', o)) {
+        skipped++;
+        return;
+      }
       releaseReservation(id);
+      if (o.stockMutated) {
+        reverseStockMutation(o, 'out');
+      }
+      o.status = 'Cancelled';
+      o.cancelledAt = new Date().toISOString();
+      o.cancelledBy = _currentUserName();
+      count++;
+      return;
     }
-    if (old === 'Delivered' && newStatus !== 'Delivered' && o.stockMutated) {
-      (o.lines || []).forEach(l => {
-        if (l.itemId === 'custom') {
-          return;
-        }
-        const item = DB.inventoryItems.find(i => String(i.id) === String(l.itemId));
-        // FIX: Guard against negative inventory with Math.max(0, ...)
-        if (item) {
-          item.stock = Math.max(0, item.stock + l.qty);
-        }
-      });
-      o.stockMutated = false;
+    // Stock leaves the warehouse on delivery; orders short on stock are skipped.
+    if (old !== 'Delivered' && newStatus === 'Delivered' && !o.stockMutated) {
+      if (!applyStockMutation(o, 'out')) {
+        skipped++;
+        return;
+      }
+      releaseReservation(id);
     }
     // FIX 4.1: Release reservation for ANY transition away from Confirmed
     // (including → Delivered).  Idempotent, so double-release is safe.
@@ -6154,6 +6710,25 @@ function bulkSOStatus(newStatus) {
 // The handlers (inlineSOStatus, toggleSOCheck, checkAllSO) are now called
 // from the unified change listener in erp-view.js.
 
+// The invoice module is a lazy view chunk: load it before using its API.
+function _withInvoiceModule(fn) {
+  const run = () => {
+    if (window._invoiceExtras) {
+      fn(window._invoiceExtras);
+    } else {
+      showToast('Modul faktur belum siap', 'warning');
+    }
+  };
+  if (window._invoiceExtras || typeof window.ensureView !== 'function') {
+    run();
+    return;
+  }
+  window
+    .ensureView('invoices')
+    .then(run)
+    .catch(() => showToast('Gagal memuat modul faktur. Periksa koneksi lalu coba lagi.', 'danger'));
+}
+
 // ── click events ──────────────────────────────────────────────────────────────
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
@@ -6171,6 +6746,25 @@ document.addEventListener('click', e => {
     case 'duplicatePO':
       duplicatePO(id);
       break;
+
+    case 'cancelSO':
+      cancelOrder('SO', id);
+      break;
+
+    case 'cancelPO':
+      cancelOrder('PO', id);
+      break;
+
+    case 'deletePaymentLog':
+      deletePaymentLog(btn.dataset.type, id);
+      break;
+
+    case 'settleInvoice': {
+      const invType = btn.dataset.type;
+      closeModal();
+      setTimeout(() => _withInvoiceModule(ext => ext.settle(invType, id)), 300);
+      break;
+    }
 
     case 'addPayment':
       showAddPayment(btn.dataset.type, id);
@@ -6207,24 +6801,12 @@ document.addEventListener('click', e => {
 
     case 'createSIFromSO':
       closeModal();
-      setTimeout(() => {
-        if (window._invoiceExtras && window._invoiceExtras.createFromSource) {
-          window._invoiceExtras.createFromSource('SI', id);
-        } else {
-          showToast('Modul faktur belum siap', 'warning');
-        }
-      }, 300);
+      setTimeout(() => _withInvoiceModule(ext => ext.createFromSource('SI', id)), 300);
       break;
 
     case 'createPIFromPO':
       closeModal();
-      setTimeout(() => {
-        if (window._invoiceExtras && window._invoiceExtras.createFromSource) {
-          window._invoiceExtras.createFromSource('PI', id);
-        } else {
-          showToast('Modul faktur belum siap', 'warning');
-        }
-      }, 300);
+      setTimeout(() => _withInvoiceModule(ext => ext.createFromSource('PI', id)), 300);
       break;
 
     case 'viewSI':

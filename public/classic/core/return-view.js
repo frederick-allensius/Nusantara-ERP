@@ -1,19 +1,61 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Nusantara ERP — Returns View  (return-view.js)
-// Phase 5: Sales Return (SRN) and Purchase Return (PRN).
+// Nusantara ERP — Returns  (return-view.js)
 //
-// Two-tab view at #view-returns. Each return is created from a source SO
-// (for SRN) or PO/PI (for PRN). Posting reverses inventory and GL entries.
-// Stock adjustment on post: returned qty is added back (SRN) or subtracted
-// (PRN) from inventory.
+// Sales Return (SRN) and Purchase Return (PRN) at #view-returns.
+//   • A return is drawn from a delivered SO / active sales invoice (SRN) or a
+//     received PO / active purchase invoice (PRN). Quantities are capped at what
+//     was sold/bought minus what was already returned against the same order or
+//     its invoice.
+//   • Lines keep the source's price and a prorated line discount; PPN follows the
+//     source document.
+//   • Draft → Posted moves stock (back into / out of the source warehouse) and the
+//     ledger derives the reversal journal. Drafts can be cancelled; posted returns
+//     are final (correct with a new document).
 //
-// Global-scope rule: classic <script>, IIFE-wrapped, exposes only
-// window.renderReturns (+ ERP action registrations).
+// Global-scope rule: classic <script>, IIFE-wrapped; exposes window.renderReturns
+// and window._returnExtras (+ ERP action registrations).
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   let activeTab = 'SRN'; // 'SRN' | 'PRN'
+
+  const TYPES = {
+    SRN: {
+      label: 'Retur Penjualan',
+      sub: 'Barang yang dikembalikan pelanggan',
+      coll: 'salesReturns',
+      party: 'customer',
+      partyId: 'customerId',
+      partyLabel: 'Pelanggan',
+      side: 'sales',
+      orderType: 'SO',
+      orderColl: 'salesOrders',
+      orderStatus: 'Delivered',
+      orderLabel: 'Sales Order',
+      invType: 'SI',
+      invColl: 'salesInvoices',
+      invLabel: 'Faktur Penjualan',
+      stockDir: 'in',
+    },
+    PRN: {
+      label: 'Retur Pembelian',
+      sub: 'Barang yang dikembalikan ke supplier',
+      coll: 'purchaseReturns',
+      party: 'supplier',
+      partyId: 'supplierId',
+      partyLabel: 'Supplier',
+      side: 'purchases',
+      orderType: 'PO',
+      orderColl: 'purchaseOrders',
+      orderStatus: 'Received',
+      orderLabel: 'Purchase Order',
+      invType: 'PI',
+      invColl: 'purchaseInvoices',
+      invLabel: 'Faktur Pembelian',
+      stockDir: 'out',
+    },
+  };
 
   function esc(s) {
     return typeof window.escapeHtml === 'function'
@@ -26,560 +68,526 @@
   function db() {
     return window.DB || {};
   }
-
-  var TAB_LABELS = { SRN: 'Retur Penjualan', PRN: 'Retur Pembelian' };
-
-  function tabBtn(id) {
-    var on = activeTab === id;
-    return (
-      '<button class="btn-ghost" data-action="rtTab" data-val="' +
-      id +
-      '"' +
-      ' style="font-size:12px;padding:6px 14px;border-radius:8px;font-weight:700;' +
-      (on ? 'background:var(--primary);color:#fff' : 'color:var(--muted)') +
-      '">' +
-      esc(TAB_LABELS[id]) +
-      '</button>'
-    );
+  function toast(msg, type) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, type);
+    }
   }
-
-  function statusBadge(s) {
+  function badge(s) {
     return typeof window.badge === 'function' ? window.badge(s) : esc(s);
   }
-
-  function collFor(t) {
-    return t === 'PRN' ? 'purchaseReturns' : 'salesReturns';
+  function same(a, b) {
+    return a !== null && a !== undefined && String(a) === String(b);
   }
-  function partyField(t) {
-    return t === 'PRN' ? 'supplier' : 'customer';
+  function docNo(d) {
+    return d ? d.number || d.id : '';
   }
-  function partyIdField(t) {
-    return t === 'PRN' ? 'supplierId' : 'customerId';
+  function qtyFmt(v) {
+    return (Number(v) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 });
   }
-  function partyLabel(t) {
-    return t === 'PRN' ? 'Supplier' : 'Pelanggan';
-  }
-
-  // ── List rendering ──────────────────────────────────────────────────────────
-  function listTab(type) {
-    var coll = collFor(type);
-    var docs = (db()[coll] || []).slice().reverse();
-    if (docs.length === 0) {
-      return (
-        '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">' +
-        'Belum ada ' +
-        TAB_LABELS[type].toLowerCase() +
-        '. Klik <strong>Buat Retur</strong>.' +
-        '</div></div>'
-      );
+  function save() {
+    if (typeof window.saveDB === 'function') {
+      window.saveDB();
     }
-    var pf = partyField(type);
-    var rows = docs
-      .map(function (d) {
-        return (
-          '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">' +
-          esc(d.number || d.id) +
-          '</td>' +
-          '<td class="td-p" style="font-size:13px;font-weight:600">' +
-          esc(d[pf] || '—') +
-          '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
-          esc(d.sourceId || '—') +
-          '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
-          esc(d.date) +
-          '</td>' +
-          '<td class="td-p" style="font-size:13px;font-weight:800;text-align:right">' +
-          money(d.amount || 0) +
-          '</td>' +
-          '<td class="td-p">' +
-          statusBadge(d.status) +
-          '</td>' +
-          '<td class="td-p">' +
-          '<button class="action-ghost" data-action="rtView" data-id="' +
-          esc(d.id) +
-          '" data-type="' +
-          type +
-          '">Lihat</button>' +
-          (d.status === 'Draft'
-            ? ' <button class="action-primary" data-action="rtPost" data-id="' +
-              esc(d.id) +
-              '" data-type="' +
-              type +
-              '">Post</button>'
-            : '') +
-          '</td>' +
-          '</tr>'
-        );
-      })
-      .join('');
+  }
+  function currentUser() {
+    try {
+      const u = window.erpAuth && window.erpAuth.getCurrentUser && window.erpAuth.getCurrentUser();
+      return (u && (u.username || u.displayName || u.email)) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+  function findReturn(type, id) {
+    return (db()[TYPES[type].coll] || []).find(d => same(d.id, id)) || null;
+  }
 
+  // ── Sources ─────────────────────────────────────────────────────────────────
+  function sources(type) {
+    const t = TYPES[type];
+    const B = window.Balances;
+    const out = [];
+    (db()[t.orderColl] || []).forEach(o => {
+      if (o.status === t.orderStatus) {
+        out.push({ srcType: t.orderType, doc: o });
+      }
+    });
+    (db()[t.invColl] || []).forEach(inv => {
+      const active = B ? B.isActiveInvoice(inv) : inv.status === 'Outstanding' || inv.status === 'Paid';
+      if (active) {
+        out.push({ srcType: t.invType, doc: inv });
+      }
+    });
+    return out;
+  }
+
+  // An order and its active invoice describe the same goods: returns against
+  // either count toward the quantity already returned.
+  function relatedKeys(type, srcType, doc) {
+    const t = TYPES[type];
+    const B = window.Balances;
+    const keys = [[srcType, doc.id]];
+    if (B) {
+      if (srcType === t.orderType) {
+        const inv = B.activeInvoiceFor(t.side, doc.id);
+        if (inv) {
+          keys.push([t.invType, inv.id]);
+        }
+      } else {
+        const order = B.sourceOrder(t.side, doc);
+        if (order) {
+          keys.push([t.orderType, order.id]);
+        }
+      }
+    }
+    return keys;
+  }
+
+  function lineKey(l) {
+    return String(l.itemId) + '|' + (l.itemId === 'custom' ? l.itemName || '' : '');
+  }
+
+  function returnedQty(type, srcType, doc, excludeId) {
+    const keys = relatedKeys(type, srcType, doc);
+    const map = new Map();
+    (db()[TYPES[type].coll] || []).forEach(r => {
+      if (r.status === 'Cancelled' || same(r.id, excludeId)) {
+        return;
+      }
+      if (!keys.some(([st, sid]) => r.sourceType === st && same(r.sourceId, sid))) {
+        return;
+      }
+      (r.lines || []).forEach(l => {
+        const k = lineKey(l);
+        map.set(k, (map.get(k) || 0) + (Number(l.qty) || 0));
+      });
+    });
+    return map;
+  }
+
+  function warehouseFor(type, srcType, doc) {
+    const t = TYPES[type];
+    if (srcType === t.orderType) {
+      return doc.warehouseId || null;
+    }
+    const order = window.Balances ? window.Balances.sourceOrder(t.side, doc) : null;
+    return (order && order.warehouseId) || null;
+  }
+
+  // ── List ────────────────────────────────────────────────────────────────────
+  function tabsHTML() {
     return (
-      '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:10px">' +
-      TAB_LABELS[type] +
-      ' (' +
-      docs.length +
-      ')</div>' +
-      '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">No.</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">' +
-      partyLabel(type) +
-      '</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Sumber</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Tanggal</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Jumlah</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Aksi</th>' +
-      '</tr></thead>' +
-      '<tbody>' +
-      rows +
-      '</tbody>' +
-      '</table></div></div>'
+      '<div class="seg-tabs" role="tablist">' +
+      ['SRN', 'PRN']
+        .map(
+          t =>
+            `<button class="seg-tab${t === activeTab ? ' active' : ''}" role="tab" aria-selected="${t === activeTab}" data-action="rtTab" data-val="${t}">${esc(TYPES[t].label)}</button>`
+        )
+        .join('') +
+      '</div>'
     );
   }
 
-  // ── Main renderer ─────────────────────────────────────────────────────────
+  function listHTML(type) {
+    const t = TYPES[type];
+    const docs = (db()[t.coll] || []).slice().sort((a, b) => ((a.date || '') < (b.date || '') ? 1 : -1));
+    if (docs.length === 0) {
+      return `<div class="card"><div class="empty-state">
+        <div class="empty-title">Belum ada ${esc(t.label.toLowerCase())}</div>
+        <div class="empty-text">Retur dibuat dari ${esc(t.orderLabel)} yang sudah ${type === 'SRN' ? 'terkirim' : 'diterima'} atau dari fakturnya.</div>
+        <button class="btn" data-action="rtNew">Buat Retur</button>
+      </div></div>`;
+    }
+    const rows = docs
+      .map(
+        d => `<tr class="row-link" data-action="rtView" data-id="${esc(d.id)}" data-type="${type}">
+          <td class="doc-no">${esc(docNo(d))}</td>
+          <td class="t-strong">${esc(d[t.party] || '—')}</td>
+          <td class="t-muted">${esc(d.sourceNumber || d.sourceId || '—')}</td>
+          <td class="t-muted">${esc(d.date || '')}</td>
+          <td class="t-num">${money(d.amount || 0)}</td>
+          <td>${badge(d.status)}</td>
+          <td class="t-actions">${
+            d.status === 'Draft'
+              ? `<button class="action-primary" data-action="rtPost" data-id="${esc(d.id)}" data-type="${type}">Posting</button>`
+              : `<button class="action-ghost" data-action="rtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`
+          }</td>
+        </tr>`
+      )
+      .join('');
+    return `<div class="card card-flush"><div class="table-wrap"><table class="data-table">
+      <thead><tr><th>No. Retur</th><th>${t.partyLabel}</th><th>Sumber</th><th>Tanggal</th><th class="t-num">Jumlah</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>`;
+  }
+
   function renderReturns() {
-    var header =
+    const t = TYPES[activeTab];
+    const header =
       typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Retur',
-            'Retur penjualan & pembelian — reverse inventory + GL',
-            'Buat Retur',
-            'rtNew'
-          )
-        : '<h1>Retur</h1>';
-    return (
-      header +
-      '<div style="display:flex;gap:6px;margin-bottom:14px">' +
-      tabBtn('SRN') +
-      tabBtn('PRN') +
-      '</div>' +
-      listTab(activeTab)
-    );
+        ? window.secHdr(t.label, t.sub, 'Buat Retur', 'rtNew')
+        : `<h1>${esc(t.label)}</h1>`;
+    return header + tabsHTML() + listHTML(activeTab);
   }
 
   function refresh() {
-    var el = document.getElementById('view-returns');
-    if (el) el.innerHTML = renderReturns();
+    const el = document.getElementById('view-returns');
+    if (el && window.activeView === 'returns') {
+      el.innerHTML = renderReturns();
+    } else if (typeof window.invalidateView === 'function') {
+      window.invalidateView('returns');
+    }
   }
 
-  // ── Source options ────────────────────────────────────────────────────────
-  function sourceOptions(type) {
-    if (type === 'SRN') {
-      // Can return from Delivered SOs or Outstanding/Paid SIs
-      var opts = '';
-      (db().salesOrders || [])
-        .filter(function (o) {
-          return o.status === 'Delivered';
-        })
-        .forEach(function (o) {
-          opts +=
-            '<option value="' +
-            esc(o.id) +
-            '" data-party="' +
-            esc(o.customer) +
-            '" data-partyid="' +
-            (o.customerId || '') +
-            '" data-type="SO">' +
-            esc(o.id) +
-            ' (SO) · ' +
-            esc(o.customer) +
-            ' · ' +
-            money(o.amount || 0) +
-            '</option>';
-        });
-      (db().salesInvoices || [])
-        .filter(function (i) {
-          return i.status === 'Outstanding' || i.status === 'Paid';
-        })
-        .forEach(function (i) {
-          opts +=
-            '<option value="' +
-            esc(i.id) +
-            '" data-party="' +
-            esc(i.customer) +
-            '" data-partyid="' +
-            (i.customerId || '') +
-            '" data-type="SO">' +
-            esc(i.number || i.id) +
-            ' (SO) · ' +
-            esc(i.customer) +
-            ' · ' +
-            money(i.amount || 0) +
-            '</option>';
-        });
-      return opts;
-    }
-    if (type === 'PRN') {
-      var opts2 = '';
-      (db().purchaseOrders || [])
-        .filter(function (o) {
-          return o.status === 'Received';
-        })
-        .forEach(function (o) {
-          opts2 +=
-            '<option value="' +
-            esc(o.id) +
-            '" data-party="' +
-            esc(o.supplier) +
-            '" data-partyid="' +
-            (o.supplierId || '') +
-            '" data-type="PO">' +
-            esc(o.id) +
-            ' (PO) · ' +
-            esc(o.supplier) +
-            ' · ' +
-            money(o.amount || 0) +
-            '</option>';
-        });
-      (db().purchaseInvoices || [])
-        .filter(function (i) {
-          return i.status === 'Outstanding' || i.status === 'Paid';
-        })
-        .forEach(function (i) {
-          opts2 +=
-            '<option value="' +
-            esc(i.id) +
-            '" data-party="' +
-            esc(i.supplier) +
-            '" data-partyid="' +
-            (i.supplierId || '') +
-            '" data-type="PI">' +
-            esc(i.number || i.id) +
-            ' (PI) · ' +
-            esc(i.supplier) +
-            ' · ' +
-            money(i.amount || 0) +
-            '</option>';
-        });
-      return opts2;
-    }
-    return '';
-  }
-
-  // ── Create modal ──────────────────────────────────────────────────────────
+  // ── Create ──────────────────────────────────────────────────────────────────
   function openNewModal(type) {
-    if (!window.openModal) return;
-    var today =
+    const t = TYPES[type];
+    if (!window.openModal) {
+      return;
+    }
+    const today =
       typeof window.today === 'function' ? window.today() : new Date().toISOString().slice(0, 10);
-    var srcLabel = type === 'SRN' ? 'SO/Faktur Penjualan' : 'PO/Faktur Pembelian';
+    const list = sources(type);
+    const opts = list
+      .map(
+        (s, i) =>
+          `<option value="${i}">${esc(docNo(s.doc))} · ${esc(s.srcType === t.orderType ? t.orderLabel : t.invLabel)} · ${esc(s.doc[t.party] || '—')}</option>`
+      )
+      .join('');
 
     window.openModal(
-      'Buat ' + TAB_LABELS[type],
-      '<div class="form-row">' +
-        '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Ambil dari ' +
-        srcLabel +
-        '</label>' +
-        '<select class="form-select" id="rt-src"><option value="">— Pilih —</option>' +
-        sourceOptions(type) +
-        '</select></div>' +
-        '</div>' +
-        '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">' +
-        partyLabel(type) +
-        '</label>' +
-        '<input class="form-input" id="rt-party" type="text" readonly style="background:var(--bg)"></div>' +
-        '<div class="form-group"><label class="form-label">Tanggal Retur</label>' +
-        '<input class="form-input" id="rt-date" type="date" value="' +
-        today +
-        '"></div>' +
-        '</div>' +
-        '<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">Item yang diretur</div>' +
-        '<div id="rt-lines-wrap" style="font-size:12px;color:var(--muted)">Pilih dokumen sumber di atas</div></div>' +
-        '<div class="form-row" style="margin-top:10px"><div class="form-group"><label class="form-label">Alasan Retur</label>' +
-        '<input class="form-input" id="rt-reason" type="text" placeholder="Barang rusak / tidak sesuai"></div></div>',
-      '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
-        ' <button class="btn" id="rt-save">Simpan Retur</button>',
+      `Buat ${t.label}`,
+      list.length === 0
+        ? `<div class="empty-state compact">
+            <div class="empty-title">Belum ada dokumen yang bisa diretur</div>
+            <div class="empty-text">Retur dibuat dari ${esc(t.orderLabel)} berstatus ${type === 'SRN' ? 'Terkirim' : 'Diterima'} atau dari ${esc(t.invLabel.toLowerCase())} yang aktif.</div>
+          </div>`
+        : `<div class="form-row">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label" for="rt-src">Dokumen sumber <span class="req">*</span></label>
+              <select class="form-select" id="rt-src"><option value="">Pilih dokumen…</option>${opts}</select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="rt-party">${t.partyLabel}</label>
+              <input class="form-input" id="rt-party" type="text" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rt-date">Tanggal retur</label>
+              <input class="form-input" id="rt-date" type="date" value="${today}">
+            </div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-title">Barang yang diretur</div>
+            <div id="rt-lines-wrap" class="empty-inline">Pilih dokumen sumber terlebih dahulu.</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label" for="rt-reason">Alasan retur</label>
+              <input class="form-input" id="rt-reason" type="text" placeholder="Contoh: barang rusak, tidak sesuai pesanan">
+            </div>
+          </div>`,
+      list.length === 0
+        ? '<button class="btn-ghost" data-action="closeModal">Tutup</button>'
+        : `<button class="btn-ghost" data-action="closeModal">Batal</button>
+           <button class="btn" id="rt-save">Simpan sebagai Draft</button>`,
       true
     );
+    if (list.length === 0) {
+      return;
+    }
 
-    setTimeout(function () {
-      var srcSel = document.getElementById('rt-src');
-      var partyInp = document.getElementById('rt-party');
-      var linesWrap = document.getElementById('rt-lines-wrap');
-      var _srcId = null;
-      var _srcType = null;
-      var _partyId = null;
-      var _srcLines = [];
+    setTimeout(() => {
+      const srcSel = document.getElementById('rt-src');
+      const partyInp = document.getElementById('rt-party');
+      const wrap = document.getElementById('rt-lines-wrap');
+      let current = null;
+      let rows = [];
 
-      srcSel.addEventListener('change', function () {
-        var opt = srcSel.options[srcSel.selectedIndex];
-        _srcId = opt.value || null;
-        _srcType = opt.dataset ? opt.dataset.type : null;
-        _partyId = opt.dataset ? Number(opt.dataset.partyid) || null : null;
-        partyInp.value = opt.dataset ? opt.dataset.party || '' : '';
+      function totals() {
+        const net = rows.reduce((s, r) => s + r.subtotal(), 0);
+        const src = current ? current.doc : {};
+        const rate = Number(src.taxRate) || 0;
+        const incl = rate > 0 && !!src.taxInclusive;
+        const tax = rate > 0 ? Math.round(incl ? (net * rate) / (1 + rate) : net * rate) : 0;
+        return { net, rate, incl, tax, amount: incl ? net : net + tax };
+      }
+      function renderTotals() {
+        const el = document.getElementById('rt-total');
+        if (!el) {
+          return;
+        }
+        const tot = totals();
+        el.innerHTML = `${tot.rate ? `PPN ${Math.round(tot.rate * 100)}%: ${money(tot.tax)} · ` : ''}<strong>Total retur ${money(tot.amount)}</strong>`;
+      }
 
-        // Load lines from source
-        _srcLines = [];
-        if (_srcId && _srcType) {
-          var collMap = {
-            SO: 'salesOrders',
-            PO: 'purchaseOrders',
-            SI: 'salesInvoices',
-            PI: 'purchaseInvoices',
+      srcSel.addEventListener('change', () => {
+        current = srcSel.value === '' ? null : list[Number(srcSel.value)];
+        rows = [];
+        if (!current) {
+          partyInp.value = '';
+          wrap.className = 'empty-inline';
+          wrap.innerHTML = 'Pilih dokumen sumber terlebih dahulu.';
+          return;
+        }
+        partyInp.value = current.doc[t.party] || '';
+        const already = returnedQty(type, current.srcType, current.doc);
+        rows = (current.doc.lines || []).map(l => {
+          const origQty = Number(l.qty) || 0;
+          const done = already.get(lineKey(l)) || 0;
+          const r = { line: l, origQty, done, max: Math.max(0, origQty - done), qty: 0 };
+          r.subtotal = function () {
+            const price = Number(l.price) || 0;
+            const disc = origQty > 0 ? Math.round(((Number(l.lineDiscount) || 0) * r.qty) / origQty) : 0;
+            return Math.round(r.qty * price - disc);
           };
-          var srcDoc = (db()[collMap[_srcType]] || []).find(function (d) {
-            return d.id === _srcId;
-          });
-          if (srcDoc && srcDoc.lines) {
-            _srcLines = srcDoc.lines.map(function (l) {
-              return Object.assign({}, l, { returnQty: l.qty || 0 });
-            });
-          }
+          return r;
+        });
+        if (rows.length === 0) {
+          wrap.className = 'empty-inline';
+          wrap.innerHTML = 'Dokumen ini tidak memiliki baris barang.';
+          return;
         }
-
-        // Render editable return lines
-        if (_srcLines.length > 0) {
-          var html =
-            '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">' +
-            '<th style="padding:6px 8px;text-align:left">Item</th>' +
-            '<th style="padding:6px 8px;text-align:right">Qty Asli</th>' +
-            '<th style="padding:6px 8px;text-align:right">Qty Retur</th>' +
-            '<th style="padding:6px 8px;text-align:right">Harga</th>' +
-            '<th style="padding:6px 8px;text-align:right">Subtotal</th>' +
-            '</tr></thead><tbody>';
-          _srcLines.forEach(function (l, i) {
-            var name = l.itemName || l.itemId || 'Item';
-            html +=
-              '<tr style="border-bottom:1px solid var(--border)">' +
-              '<td style="padding:5px 8px">' +
-              esc(name) +
-              '</td>' +
-              '<td style="padding:5px 8px;text-align:right">' +
-              (l.qty || 0) +
-              '</td>' +
-              '<td style="padding:5px 8px;text-align:right"><input class="form-input rt-rqty" data-idx="' +
-              i +
-              '" type="number" min="0" max="' +
-              (l.qty || 0) +
-              '" value="' +
-              (l.qty || 0) +
-              '" style="width:70px;font-size:12px;padding:3px 6px;text-align:right"></td>' +
-              '<td style="padding:5px 8px;text-align:right">' +
-              money(l.price || 0) +
-              '</td>' +
-              '<td style="padding:5px 8px;text-align:right;font-weight:700" class="rt-sub" data-idx="' +
-              i +
-              '">' +
-              money((l.qty || 0) * (l.price || 0)) +
-              '</td>' +
-              '</tr>';
+        wrap.className = '';
+        wrap.innerHTML = `<table class="data-table compact">
+          <thead><tr><th>Barang</th><th class="t-num">Qty asal</th><th class="t-num">Sudah diretur</th><th class="t-num">Qty retur</th><th class="t-num">Harga</th><th class="t-num">Subtotal</th></tr></thead>
+          <tbody>${rows
+            .map(
+              (r, i) => `<tr>
+              <td>${esc(r.line.itemName || r.line.itemId || 'Barang')}</td>
+              <td class="t-num">${qtyFmt(r.origQty)} ${esc(r.line.unit || '')}</td>
+              <td class="t-num t-muted">${r.done ? qtyFmt(r.done) : '—'}</td>
+              <td class="t-num"><input class="form-input t-num rt-qty" data-idx="${i}" type="number" min="0" step="any" max="${r.max}" value="0" ${r.max <= 0 ? 'disabled' : ''} style="width:90px"></td>
+              <td class="t-num">${money(r.line.price || 0)}</td>
+              <td class="t-num rt-sub" data-idx="${i}">${money(0)}</td>
+            </tr>`
+            )
+            .join('')}</tbody>
+          </table>
+          <div class="inline-total" id="rt-total"></div>`;
+        wrap.querySelectorAll('.rt-qty').forEach(inp => {
+          inp.addEventListener('input', () => {
+            const r = rows[Number(inp.dataset.idx)];
+            let q = parseFloat(inp.value) || 0;
+            if (q > r.max) {
+              q = r.max;
+              inp.value = String(r.max);
+            }
+            r.qty = Math.max(0, q);
+            const subEl = wrap.querySelector(`.rt-sub[data-idx="${inp.dataset.idx}"]`);
+            if (subEl) {
+              subEl.textContent = money(r.subtotal());
+            }
+            renderTotals();
           });
-          html +=
-            '</tbody><tfoot><tr style="border-top:2px solid var(--border)">' +
-            '<td colspan="4" style="padding:6px 8px;text-align:right;font-weight:800">Total Retur</td>' +
-            '<td style="padding:6px 8px;text-align:right;font-weight:800" id="rt-total">' +
-            money(
-              _srcLines.reduce(function (s, l) {
-                return s + (l.qty || 0) * (l.price || 0);
-              }, 0)
-            ) +
-            '</td>' +
-            '</tr></tfoot></table>';
-          linesWrap.innerHTML = html;
-
-          // Wire qty change
-          linesWrap.querySelectorAll('.rt-rqty').forEach(function (inp) {
-            inp.addEventListener('input', function () {
-              var idx = parseInt(inp.dataset.idx);
-              var q = Math.max(0, Math.min(parseFloat(inp.value) || 0, _srcLines[idx].qty || 0));
-              _srcLines[idx].returnQty = q;
-              var sub = Math.round(q * (_srcLines[idx].price || 0));
-              var subEl = linesWrap.querySelector('.rt-sub[data-idx="' + idx + '"]');
-              if (subEl) subEl.textContent = money(sub);
-              var total = _srcLines.reduce(function (s, l) {
-                return s + Math.round((l.returnQty || 0) * (l.price || 0));
-              }, 0);
-              var totalEl = document.getElementById('rt-total');
-              if (totalEl) totalEl.textContent = money(total);
-            });
-          });
-        } else {
-          linesWrap.innerHTML =
-            '<div style="color:var(--muted)">Tidak ada item pada dokumen sumber.</div>';
-        }
+        });
+        renderTotals();
       });
 
-      document.getElementById('rt-save').addEventListener('click', function () {
-        if (!_srcId) {
-          window.showToast('Pilih dokumen sumber', 'warning');
+      document.getElementById('rt-save').addEventListener('click', () => {
+        if (!current) {
+          toast('Pilih dokumen sumber', 'warning');
           return;
         }
-
-        var returnLines = _srcLines
-          .filter(function (l) {
-            return (l.returnQty || 0) > 0;
-          })
-          .map(function (l) {
-            return {
-              itemId: l.itemId,
-              itemName: l.itemName || l.itemId,
-              qty: l.returnQty,
-              price: l.price,
-              subtotal: Math.round((l.returnQty || 0) * (l.price || 0)),
-            };
-          });
-        if (returnLines.length === 0) {
-          window.showToast('Tidak ada item yang diretur', 'warning');
+        const chosen = rows.filter(r => r.qty > 0);
+        if (chosen.length === 0) {
+          toast('Isi jumlah barang yang diretur', 'warning');
           return;
         }
-
-        var data = db();
-        var coll = collFor(type);
-        if (!Array.isArray(data[coll])) data[coll] = [];
-        var date = document.getElementById('rt-date').value;
-        var reason = (document.getElementById('rt-reason').value || '').trim();
-        var number = window.DocEngine
-          ? window.DocEngine.nextNumber(type, date, {
-              sequences: data.numberSequences,
-              commit: true,
-            })
-          : type + '-' + Date.now();
-        var id = type + '-' + Date.now();
-        var amount = returnLines.reduce(function (s, l) {
-          return s + l.subtotal;
-        }, 0);
-
-        var doc = {
-          id: id,
-          number: number,
-          date: date,
+        const data = db();
+        if (!Array.isArray(data[t.coll])) {
+          data[t.coll] = [];
+        }
+        const date = document.getElementById('rt-date').value || today;
+        const number = window.DocEngine
+          ? window.DocEngine.nextNumber(type, date, { sequences: data.numberSequences, commit: true })
+          : `${type}-${Date.now()}`;
+        const lines = chosen.map(r => {
+          const disc =
+            r.origQty > 0 ? Math.round(((Number(r.line.lineDiscount) || 0) * r.qty) / r.origQty) : 0;
+          return {
+            itemId: r.line.itemId,
+            itemName: r.line.itemName || r.line.itemId,
+            unit: r.line.unit || '',
+            qty: r.qty,
+            price: Number(r.line.price) || 0,
+            lineDiscount: disc,
+            subtotal: r.subtotal(),
+          };
+        });
+        const tot = totals();
+        const src = current.doc;
+        data[t.coll].push({
+          id: `${type}-${Date.now()}`,
+          number,
+          date,
           status: 'Draft',
-          sourceId: _srcId,
-          sourceType: _srcType,
-          amount: amount,
-          lines: returnLines,
-          reason: reason,
-        };
-        doc[partyField(type)] = partyInp.value;
-        doc[partyIdField(type)] = _partyId;
-
-        data[coll].push(doc);
-        if (window.saveDB) window.saveDB();
-        if (window.closeModal) window.closeModal();
+          sourceId: src.id,
+          sourceType: current.srcType,
+          sourceNumber: docNo(src),
+          warehouseId: warehouseFor(type, current.srcType, src),
+          [t.party]: src[t.party] || '',
+          [t.partyId]: src[t.partyId] != null ? String(src[t.partyId]) : null,
+          lines,
+          taxRate: tot.rate,
+          taxInclusive: tot.incl,
+          tax: tot.tax,
+          amount: tot.amount,
+          reason: (document.getElementById('rt-reason').value || '').trim(),
+          createdBy: currentUser(),
+        });
+        save();
+        if (window.closeModal) {
+          window.closeModal();
+        }
         refresh();
-        window.showToast(number + ' berhasil dibuat (Draft)', 'success');
+        toast(`${number} disimpan sebagai Draft. Posting untuk memperbarui stok dan jurnal.`, 'success');
       });
     }, 50);
   }
 
-  // ── Post return (Draft → Posted) — reverse inventory + GL ─────────────────
+  // ── Post / cancel ───────────────────────────────────────────────────────────
   function postReturn(type, id) {
-    var coll = collFor(type);
-    var doc = (db()[coll] || []).find(function (d) {
-      return d.id === id;
-    });
-    if (!doc || (doc.status !== 'Posted' && doc.status !== 'Draft')) return;
-    if (doc.status === 'Posted') return; // already posted
-
-    doc.status = 'Posted';
-
-    // Reverse inventory: SRN adds stock back, PRN subtracts stock
-    var items = db().inventoryItems || [];
-    (doc.lines || []).forEach(function (l) {
-      if (l.itemId === 'custom') return;
-      var item = items.find(function (i) {
-        return String(i.id) === String(l.itemId);
-      });
-      if (!item) return;
-      var qty = Number(l.qty) || 0;
-      if (type === 'SRN') {
-        item.stock = (item.stock || 0) + qty; // returned from customer → add back
-      } else {
-        item.stock = Math.max(0, (item.stock || 0) - qty); // returned to supplier → subtract
+    const t = TYPES[type];
+    const doc = findReturn(type, id);
+    if (!doc || doc.status !== 'Draft') {
+      return;
+    }
+    if (t.stockDir === 'out' && typeof window.stockShortages === 'function') {
+      const short = window.stockShortages(doc.lines, doc.warehouseId);
+      if (short.length) {
+        toast(
+          'Stok tidak cukup untuk dikembalikan: ' +
+            short.map(p => `${p.itemName} (tersedia ${p.available})`).join('; '),
+          'danger'
+        );
+        return;
       }
-    });
-
-    // GL posting happens via reconcileAll in the saveDB hook
-    if (window.saveDB) window.saveDB();
+    }
+    if (
+      !window.confirm(
+        `Posting ${docNo(doc)}?\n\nStok ${type === 'SRN' ? 'bertambah' : 'berkurang'} dan jurnal retur dibentuk. Retur yang sudah diposting tidak bisa dibatalkan.`
+      )
+    ) {
+      return;
+    }
+    if (typeof window.moveStockLines === 'function') {
+      window.moveStockLines(doc.lines, t.stockDir, doc.warehouseId);
+    }
+    doc.status = 'Posted';
+    doc.postedAt = new Date().toISOString();
+    doc.postedBy = currentUser();
+    const B = window.Balances;
+    if (B) {
+      const inv =
+        doc.sourceType === t.invType
+          ? (db()[t.invColl] || []).find(i => same(i.id, doc.sourceId))
+          : B.activeInvoiceFor(t.side, doc.sourceId);
+      if (inv) {
+        B.recalcInvoiceStatus(t.side, inv);
+      }
+    }
+    save();
+    if (window.closeModal) {
+      window.closeModal();
+    }
     refresh();
-    window.showToast((doc.number || doc.id) + ' → Diposting (stok & GL updated)', 'success');
+    toast(`${docNo(doc)} diposting`, 'success');
   }
 
-  // ── View detail ───────────────────────────────────────────────────────────
-  function viewReturn(type, id) {
-    var coll = collFor(type);
-    var doc = (db()[coll] || []).find(function (d) {
-      return d.id === id;
-    });
-    if (!doc || !window.openModal) return;
-
-    var pf = partyField(type);
-    var detailRow =
-      typeof window.detailRow === 'function'
-        ? window.detailRow
-        : function (l, v) {
-            return '<div><strong>' + l + ':</strong> ' + v + '</div>';
-          };
-
-    var linesHtml = '';
-    if (doc.lines && doc.lines.length > 0) {
-      linesHtml =
-        '<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">Item Diretur (' +
-        doc.lines.length +
-        ')</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">' +
-        '<th style="padding:6px 8px;text-align:left">Item</th><th style="padding:6px 8px;text-align:right">Qty</th>' +
-        '<th style="padding:6px 8px;text-align:right">Harga</th><th style="padding:6px 8px;text-align:right">Subtotal</th>' +
-        '</tr></thead><tbody>';
-      doc.lines.forEach(function (l) {
-        linesHtml +=
-          '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td style="padding:5px 8px">' +
-          esc(l.itemName || l.itemId) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right">' +
-          (l.qty || 0) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right">' +
-          money(l.price || 0) +
-          '</td>' +
-          '<td style="padding:5px 8px;text-align:right;font-weight:700">' +
-          money(l.subtotal || 0) +
-          '</td></tr>';
-      });
-      linesHtml += '</tbody></table></div>';
+  function cancelDraft(type, id) {
+    const doc = findReturn(type, id);
+    if (!doc || doc.status !== 'Draft') {
+      return;
     }
+    if (!window.confirm(`Batalkan draft ${docNo(doc)}?`)) {
+      return;
+    }
+    doc.status = 'Cancelled';
+    doc.cancelledAt = new Date().toISOString();
+    doc.cancelledBy = currentUser();
+    save();
+    if (window.closeModal) {
+      window.closeModal();
+    }
+    refresh();
+    toast(`${docNo(doc)} dibatalkan`, 'success');
+  }
 
+  // ── Detail ──────────────────────────────────────────────────────────────────
+  function viewReturn(type, id) {
+    const t = TYPES[type];
+    const doc = findReturn(type, id);
+    if (!doc || !window.openModal) {
+      return;
+    }
+    const row = (l, v) =>
+      typeof window.detailRow === 'function'
+        ? window.detailRow(l, v)
+        : `<div><strong>${esc(l)}:</strong> ${v}</div>`;
+    const srcLabel = doc.sourceType === t.orderType ? t.orderLabel : doc.sourceType === t.invType ? t.invLabel : 'Sumber';
     window.openModal(
-      TAB_LABELS[type] + ' — ' + esc(doc.number || doc.id),
-      '<div class="detail-grid">' +
-        detailRow('Nomor', esc(doc.number || doc.id)) +
-        detailRow('Status', statusBadge(doc.status)) +
-        '<div class="detail-divider"></div>' +
-        detailRow(partyLabel(type), esc(doc[pf] || '—')) +
-        detailRow('Tanggal', esc(doc.date)) +
-        detailRow('Sumber', esc((doc.sourceType || '') + ' ' + (doc.sourceId || '—'))) +
-        detailRow('Jumlah', '<strong>' + money(doc.amount || 0) + '</strong>') +
-        (doc.reason ? detailRow('Alasan', esc(doc.reason)) : '') +
-        '</div>' +
-        linesHtml,
-      '<button class="btn-ghost" data-action="closeModal">Tutup</button>'
+      `${t.label} ${esc(docNo(doc))}`,
+      `<div class="detail-grid">
+        ${row('Nomor', `<span class="doc-no">${esc(docNo(doc))}</span>`)}
+        ${row('Status', badge(doc.status))}
+        <div class="detail-divider"></div>
+        ${row(t.partyLabel, esc(doc[t.party] || '—'))}
+        ${row('Tanggal', esc(doc.date || '—'))}
+        ${row(srcLabel, esc(doc.sourceNumber || doc.sourceId || '—'))}
+        ${doc.warehouseId && window.Warehouse ? row('Gudang', esc(window.Warehouse.warehouseName(doc.warehouseId))) : ''}
+        ${doc.reason ? row('Alasan', esc(doc.reason)) : ''}
+      </div>
+      ${typeof window.linesDetailHTML === 'function' ? window.linesDetailHTML(doc.lines || [], 'Total retur', doc) : ''}
+      ${typeof window.accountingEffectHTML === 'function' ? window.accountingEffectHTML(type, doc.id) : ''}`,
+      [
+        '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
+        doc.status === 'Draft'
+          ? `<button class="btn-ghost btn-danger-text" data-action="rtCancel" data-id="${esc(doc.id)}" data-type="${type}">Batalkan Draft</button>
+             <button class="btn" data-action="rtPost" data-id="${esc(doc.id)}" data-type="${type}">Posting</button>`
+          : '',
+      ].join(''),
+      true
     );
   }
 
-  // ── Wire up ───────────────────────────────────────────────────────────────
+  // ── Wire up ─────────────────────────────────────────────────────────────────
   window.renderReturns = renderReturns;
 
-  function _navToTab(tab) {
+  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
+  const TAB_ENTRY = { SRN: 'Retur Penjualan', PRN: 'Retur Pembelian' };
+  function syncMenu() {
+    if (TAB_ENTRY[activeTab] && window.NSANav && typeof window.NSANav.markActive === 'function') {
+      window.NSANav.markActive(TAB_ENTRY[activeTab]);
+    }
+  }
+
+  function navToTab(tab) {
     activeTab = tab;
-    if (typeof window.invalidateView === 'function') window.invalidateView('returns');
-    if (typeof window.navigate === 'function') window.navigate('returns');
+    if (typeof window.invalidateView === 'function') {
+      window.invalidateView('returns');
+    }
+    if (typeof window.navigate === 'function') {
+      window.navigate('returns');
+    }
+    syncMenu();
   }
   window._returnExtras = {
-    openSalesReturn:    function () { _navToTab('SRN'); },
-    openPurchaseReturn: function () { _navToTab('PRN'); },
+    openSalesReturn: function () {
+      navToTab('SRN');
+    },
+    openPurchaseReturn: function () {
+      navToTab('PRN');
+    },
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
     window.ERP.registerAction('rtTab', function (_id, _type, val) {
-      if (val && TAB_LABELS[val]) {
+      if (val && TYPES[val]) {
         activeTab = val;
         refresh();
+        syncMenu();
       }
       return true;
     });
@@ -588,11 +596,21 @@
       return true;
     });
     window.ERP.registerAction('rtView', function (id, type) {
-      if (id && type) viewReturn(type, id);
+      if (id && TYPES[type]) {
+        viewReturn(type, id);
+      }
       return true;
     });
     window.ERP.registerAction('rtPost', function (id, type) {
-      if (id && type) postReturn(type, id);
+      if (id && TYPES[type]) {
+        postReturn(type, id);
+      }
+      return true;
+    });
+    window.ERP.registerAction('rtCancel', function (id, type) {
+      if (id && TYPES[type]) {
+        cancelDraft(type, id);
+      }
       return true;
     });
   }

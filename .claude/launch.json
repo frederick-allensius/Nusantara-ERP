@@ -16,6 +16,13 @@
       "autoPort": true
     },
     {
+      "name": "dev-local-quiet",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-Command", "$env:BROWSER='none'; npm run dev:local -- --port 8088 --strictPort"],
+      "port": 8088,
+      "autoPort": false
+    },
+    {
       "name": "preview-dist",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview", "--", "--port", "4173"],

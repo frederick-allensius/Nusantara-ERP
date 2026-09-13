@@ -69,6 +69,28 @@ const COLLECTIONS = {
   AUDIT_LOG: 'auditLog',
   // Recycle bin (trash.js): deleted records held for one-click restore.
   TRASH: 'trash',
+  // Manual journal vouchers (Jurnal Umum, posted accruals, salary payments, opening
+  // balances). Derived journals are rebuilt per device; vouchers are user data and
+  // must sync. gl.js keeps DB.journals and this store merged.
+  JOURNAL_VOUCHERS: 'journalVouchers',
+  // Records from the extras modules. Without these entries they only lived in
+  // local memory in cloud mode and disappeared on reload / another device.
+  SALES_DOWN_PAYMENTS: 'salesDownPayments',
+  PURCHASE_DOWN_PAYMENTS: 'purchaseDownPayments',
+  SALES_TARGETS: 'salesTargets',
+  SUPPLIER_PRICES: 'supplierPrices',
+  BUDGETS: 'budgets',
+  BUDGET_TRANSFERS: 'budgetTransfers',
+  EXPENSE_ACCRUALS: 'expenseAccruals',
+  PAYROLL_RUNS: 'payrollRuns',
+  OTHER_PAYMENTS: 'otherPayments',
+  OTHER_DEPOSITS: 'otherDeposits',
+  BANK_TRANSFERS: 'bankTransfers',
+  BANK_STATEMENTS: 'bankStatements',
+  ITEM_REQUISITIONS: 'itemRequisitions',
+  JOB_COSTINGS: 'jobCostings',
+  CONTACTS: 'contacts',
+  FAVORITE_TRANSACTIONS: 'favoriteTransactions',
 };
 
 // Collections stored as a single object document ('default'), not an array.
@@ -920,6 +942,21 @@ function setupRealtimeListeners() {
         // re-derive from DO linkage here (see applyDefaults note + _deriveOrderStatuses).
         syncDBGlobal();
 
+        // Vouchers synced from another device must reach DB.journals before the
+        // integrity/RBAC snapshots re-baseline below; otherwise the next local
+        // save would treat them as local additions.
+        if (
+          dataKey === 'journalVouchers' &&
+          window.GL &&
+          typeof window.GL.reconcileAll === 'function'
+        ) {
+          try {
+            window.GL.reconcileAll();
+          } catch (e) {
+            console.warn('[DB] ledger merge after voucher sync failed:', e);
+          }
+        }
+
         // A remote snapshot just replaced a local collection. Re-baseline the
         // data-integrity snapshot (integrity.js) so the next local save diffs
         // against the synced state — otherwise audit/period-lock would misfire
@@ -1287,6 +1324,22 @@ function applyDefaults() {
   if (!Array.isArray(DB.supplierPrices)) {
     DB.supplierPrices = [];
   }
+  // Kas & Bank, inventory/master extras and the synced manual-voucher store.
+  [
+    'otherPayments',
+    'otherDeposits',
+    'bankTransfers',
+    'bankStatements',
+    'itemRequisitions',
+    'jobCostings',
+    'contacts',
+    'favoriteTransactions',
+    'journalVouchers',
+  ].forEach(key => {
+    if (!Array.isArray(DB[key])) {
+      DB[key] = [];
+    }
+  });
 
   if (DB.settings.users.length === 0 && DB.settings.user && DB.settings.user.name) {
     DB.settings.users = [
@@ -1547,6 +1600,9 @@ function _coerceIdsToString(data) {
     'paymentLogs',
     'itemTransfers',
     'itemAdjustments',
+    'goodsReceipts',
+    'salesDownPayments',
+    'purchaseDownPayments',
   ];
   COLLS.forEach(c => {
     const arr = data[c];

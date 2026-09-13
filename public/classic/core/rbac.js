@@ -68,12 +68,16 @@
   const COLLECTION_MODULE = {
     salesOrders: 'sales', salesQuotations: 'sales', salesInvoices: 'sales',
     salesReceipts: 'sales', salesReturns: 'sales', deliveryOrders: 'sales',
-    salesDownPayments: 'sales',
+    salesDownPayments: 'sales', salesTargets: 'sales',
     purchaseOrders: 'purchases', purchaseQuotations: 'purchases', purchaseInvoices: 'purchases',
     purchasePayments: 'purchases', purchaseReturns: 'purchases', purchaseDownPayments: 'purchases',
-    goodsReceipts: 'purchases',
+    goodsReceipts: 'purchases', supplierPrices: 'purchases',
     inventoryItems: 'inventory', itemAdjustments: 'inventory', itemTransfers: 'inventory',
-    warehouses: 'inventory',
+    warehouses: 'inventory', itemRequisitions: 'inventory', jobCostings: 'inventory',
+    // Kas & Bank records post to the ledger → module 'gl'.
+    otherPayments: 'gl', otherDeposits: 'gl', bankTransfers: 'gl', bankStatements: 'gl',
+    expenseAccruals: 'gl',
+    contacts: 'master',
     // NOTE: journals/paymentLogs/accounts are NOT listed here. They are auto-
     // maintained side-effects of allowed sales/purchase activity (GL reconcile
     // runs inside saveDB), so gating them would block legitimate transactions.
@@ -97,11 +101,12 @@
     'paymentLogs', 'accounts',
   ]);
 
-  // Sidebar menu group key → module (nav.js gating).
+  // Sidebar group key → module (ui/nav.js). Entries inside a group are gated by
+  // their own data-module; this map gates groups without entries (Ringkasan).
   const GROUP_MODULE = {
-    dashboard: 'dashboard', company: 'admin', ledger: 'gl', cashbank: 'gl',
-    sales: 'sales', purchases: 'purchases', inventory: 'inventory',
-    assets: 'assets', tax: 'tax', reports: 'reports',
+    dashboard: 'dashboard', sales: 'sales', purchases: 'purchases', inventory: 'inventory',
+    cashbank: 'gl', accounting: 'gl', assets: 'assets', reports: 'reports',
+    master: 'master', settings: 'admin', tax: 'tax',
   };
 
   // View id → module (click-guard / button gating). Ambiguous shared views
@@ -454,26 +459,37 @@
     }
   }
 
-  // Hide whole sidebar menu groups the current role can't view. Applied from
-  // rbac.js boot (which loads LAST) because nav.js's own gating runs during its
-  // earlier eval, before window.RBAC exists. Idempotent.
+  // Hide sidebar entries the current role can't view: an entry lists its
+  // module(s) in data-module, a sub-heading goes when none of its entries is
+  // left, and a group goes when it has no visible entry (a group without entries
+  // is gated by GROUP_MODULE). Called by nav.js after it renders the menu and
+  // from rbac.js boot (which loads after nav.js). Idempotent.
   function applyNavGating() {
     try {
-      document.querySelectorAll('.rail-item').forEach(btn => {
-        const menuId = btn.dataset.menu;
-        if (menuId && !canViewGroup(menuId)) {
-          btn.style.display = 'none';
-        }
+      document.querySelectorAll('.nav-item[data-module]').forEach(item => {
+        const mods = (item.getAttribute('data-module') || '').split(/\s+/).filter(Boolean);
+        item.style.display = mods.length && !mods.some(m => canView(m)) ? 'none' : '';
       });
-      // Hide a whole section header (Overview/Accounting/…) once all its rails
-      // are gated out, so a restricted role doesn't see empty labelled groups.
-      document.querySelectorAll('.nav-section').forEach(sec => {
-        const rails = sec.querySelectorAll('.rail-item');
-        if (!rails.length) {
-          return;
+      document.querySelectorAll('.nav-subhead').forEach(head => {
+        let next = head.nextElementSibling;
+        let any = false;
+        while (next && !next.classList.contains('nav-subhead')) {
+          if (next.classList.contains('nav-item') && next.style.display !== 'none') {
+            any = true;
+            break;
+          }
+          next = next.nextElementSibling;
         }
-        const anyVisible = [...rails].some(b => b.style.display !== 'none');
-        sec.style.display = anyVisible ? '' : 'none';
+        head.style.display = any ? '' : 'none';
+      });
+      document.querySelectorAll('.nav-section').forEach(sec => {
+        const items = sec.querySelectorAll('.nav-item');
+        const head = sec.querySelector('.rail-item');
+        const menuId = head && head.dataset.menu;
+        const visible = items.length
+          ? [...items].some(i => i.style.display !== 'none')
+          : !menuId || canViewGroup(menuId);
+        sec.style.display = visible ? '' : 'none';
       });
     } catch (e) {
       console.warn('[RBAC] applyNavGating failed:', e);

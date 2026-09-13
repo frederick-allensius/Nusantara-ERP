@@ -111,7 +111,7 @@
         </select>
       </td>
       <td style="padding:4px 6px">
-        <input class="form-input adj-qty" type="number" min="1" value="1" style="font-size:12px;padding:5px 8px;width:80px">
+        <input class="form-input adj-qty" type="number" min="0" step="any" value="1" style="font-size:12px;padding:5px 8px;width:90px">
       </td>
       <td style="padding:4px 6px;font-size:11px;color:var(--muted)" class="adj-unit"></td>
       <td style="padding:4px 6px;text-align:center">
@@ -119,6 +119,49 @@
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button>
       </td>
     </tr>`;
+  }
+
+  // Warehouse picker, shown only when more than one warehouse exists.
+  function warehouseSelectHTML() {
+    const wh = window.Warehouse;
+    if (!wh) {
+      return '';
+    }
+    const list = wh.getWarehouses();
+    if (list.length <= 1) {
+      return '';
+    }
+    return `<div class="form-group">
+      <label class="form-label">Gudang</label>
+      <select class="form-select" id="adj-wh">${list
+        .map(
+          w =>
+            `<option value="${esc(w.id)}"${w.id === wh.DEFAULT_WH_ID ? ' selected' : ''}>${esc(w.name)}</option>`
+        )
+        .join('')}</select>
+    </div>`;
+  }
+
+  // Move stock through the warehouse module (keeps the per-warehouse breakdown and
+  // item totals in sync); plain item totals only when the module is absent.
+  function moveLines(lines, direction, warehouseId) {
+    if (!lines.length) {
+      return;
+    }
+    if (typeof window.moveStockLines === 'function') {
+      window.moveStockLines(lines, direction, warehouseId);
+      return;
+    }
+    lines.forEach(l => {
+      const item = (db().inventoryItems || []).find(i => String(i.id) === String(l.itemId));
+      if (!item) {
+        return;
+      }
+      item.stock =
+        direction === 'out'
+          ? Math.max(0, (Number(item.stock) || 0) - l.qty)
+          : (Number(item.stock) || 0) + l.qty;
+    });
   }
 
   function openAdjModal() {
@@ -139,6 +182,7 @@
           <label class="form-label">Keterangan</label>
           <input class="form-input" id="adj-note" type="text" placeholder="Stock opname, kerusakan, dll. (opsional)">
         </div>
+        ${warehouseSelectHTML()}
       </div>
       <div style="margin-top:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -191,28 +235,47 @@
         const lines = [];
         body.querySelectorAll('tr').forEach(tr => {
           const sel = tr.querySelector('.adj-item');
-          const itemId = sel?.value ? Number(sel.value) : null;
+          const itemId = sel && sel.value ? String(sel.value) : '';
           if (!itemId) {
             return;
           }
-          const item = (db().inventoryItems || []).find(i => String(i.id) === String(itemId));
+          const item = (db().inventoryItems || []).find(i => String(i.id) === itemId);
           if (!item) {
             return;
           }
           const type = tr.querySelector('.adj-type').value === 'out' ? 'out' : 'in';
-          const qty = Math.max(1, parseInt(tr.querySelector('.adj-qty').value, 10) || 1);
+          // Decimal quantities are allowed (e.g. 2,5 Ton).
+          const qty = Math.round((parseFloat(tr.querySelector('.adj-qty').value) || 0) * 10000) / 10000;
+          if (qty <= 0) {
+            return;
+          }
           lines.push({ itemId, itemName: item.name, unit: item.unit, type, qty });
         });
         if (lines.length === 0) {
-          window.showToast?.('Tambahkan minimal 1 baris item', 'warning');
+          window.showToast?.('Tambahkan minimal 1 baris barang dengan jumlah lebih dari 0', 'warning');
           return;
         }
-        saveAdjustment(date, lines, note);
+        const warehouseId =
+          document.getElementById('adj-wh')?.value ||
+          (window.Warehouse ? window.Warehouse.DEFAULT_WH_ID : null);
+        const outs = lines.filter(l => l.type === 'out');
+        if (outs.length && typeof window.stockShortages === 'function') {
+          const short = window.stockShortages(outs, warehouseId);
+          if (short.length) {
+            window.showToast?.(
+              'Stok tidak cukup untuk dikurangi: ' +
+                short.map(p => `${p.itemName} (tersedia ${p.available})`).join('; '),
+              'danger'
+            );
+            return;
+          }
+        }
+        saveAdjustment(date, lines, note, warehouseId);
       });
     }, 50);
   }
 
-  function saveAdjustment(date, lines, note) {
+  function saveAdjustment(date, lines, note, warehouseId) {
     const data = db();
     if (!Array.isArray(data.itemAdjustments)) {
       data.itemAdjustments = [];
@@ -226,20 +289,11 @@
         : `ADJ-${Date.now()}`;
     const id = `ADJ-${Date.now()}`;
 
-    // Mutate stock immediately (the cost ledger + GL derive from current stock).
-    lines.forEach(l => {
-      const item = data.inventoryItems.find(i => String(i.id) === String(l.itemId));
-      if (!item) {
-        return;
-      }
-      if (l.type === 'out') {
-        item.stock = Math.max(0, (Number(item.stock) || 0) - l.qty);
-      } else {
-        item.stock = (Number(item.stock) || 0) + l.qty;
-      }
-    });
+    // Move stock immediately (the cost ledger + GL derive from current stock).
+    moveLines(lines.filter(l => l.type !== 'out'), 'in', warehouseId);
+    moveLines(lines.filter(l => l.type === 'out'), 'out', warehouseId);
 
-    data.itemAdjustments.push({ id, number, date, lines, note });
+    data.itemAdjustments.push({ id, number, date, warehouseId: warehouseId || null, lines, note });
     window.saveDB?.(); // triggers GL reconcile via gl-sync
     window.closeModal?.();
     refresh();
@@ -253,18 +307,29 @@
       return;
     }
     const adj = data.itemAdjustments[idx];
-    // Reverse the stock mutation.
-    (adj.lines || []).forEach(l => {
-      const item = data.inventoryItems.find(i => String(i.id) === String(l.itemId));
-      if (!item) {
-        return;
-      }
-      if (l.type === 'out') {
-        item.stock = (Number(item.stock) || 0) + l.qty;
-      } else {
-        item.stock = Math.max(0, (Number(item.stock) || 0) - l.qty);
-      }
-    });
+    const ins = (adj.lines || []).filter(l => l.type !== 'out');
+    const outs = (adj.lines || []).filter(l => l.type === 'out');
+    // Stock added by this adjustment may already be sold: it can't be taken back.
+    if (
+      ins.length &&
+      typeof window.stockShortages === 'function' &&
+      window.stockShortages(ins, adj.warehouseId).length
+    ) {
+      window.showToast?.(
+        'Stok dari penyesuaian ini sudah terpakai, jadi tidak bisa dihapus. Buat penyesuaian pengurangan.',
+        'warning'
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        `Hapus ${adj.number || adj.id}?\n\nStok dikembalikan seperti sebelum penyesuaian dan jurnalnya ikut dihapus.`
+      )
+    ) {
+      return;
+    }
+    moveLines(ins, 'out', adj.warehouseId);
+    moveLines(outs, 'in', adj.warehouseId);
     data.itemAdjustments.splice(idx, 1);
     window.saveDB?.();
     refresh();

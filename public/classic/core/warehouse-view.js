@@ -421,7 +421,7 @@
         itemOpts +
         '</select></td>' +
         '<td style="padding:4px 6px"><span class="it-avail" style="font-size:11px;color:var(--muted)">—</span></td>' +
-        '<td style="padding:4px 6px"><input class="form-input it-qty" type="number" min="1" value="1" style="font-size:12px;padding:5px 8px;width:80px"></td>' +
+        '<td style="padding:4px 6px"><input class="form-input it-qty" type="number" min="0" step="any" value="1" style="font-size:12px;padding:5px 8px;width:90px"></td>' +
         '<td style="padding:4px 6px;text-align:center"><button type="button" class="it-del" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button></td>' +
         '</tr>'
       );
@@ -524,10 +524,10 @@
           var itemSel = tr.querySelector('.it-item');
           var itemId = itemSel.value;
           if (!itemId) return;
-          var qty = Math.max(0, parseInt(tr.querySelector('.it-qty').value) || 0);
+          var qty = Math.round(Math.max(0, parseFloat(tr.querySelector('.it-qty').value) || 0) * 10000) / 10000;
           if (qty <= 0) return;
           var item = (db().inventoryItems || []).find(function (i) {
-            return i.id === itemId;
+            return String(i.id) === String(itemId);
           });
           if (!item) return;
           var avail = WH().stockAt(item, fromWh);
@@ -560,7 +560,7 @@
 
         lines.forEach(function (l) {
           var item = (data.inventoryItems || []).find(function (i) {
-            return i.id === l.itemId;
+            return String(i.id) === String(l.itemId);
           });
           if (item) WH().transferStock(item, fromWh, toWh, l.qty);
         });
@@ -645,11 +645,30 @@
   // ── Wire up ───────────────────────────────────────────────────────────────
   window.renderWarehouse = renderWarehouse;
 
+  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
+  var TAB_ENTRY = { warehouses: 'Gudang', transfers: 'Transfer Antar Gudang' };
+  function syncMenu() {
+    if (TAB_ENTRY[activeTab] && window.NSANav && typeof window.NSANav.markActive === 'function') {
+      window.NSANav.markActive(TAB_ENTRY[activeTab]);
+    }
+  }
+
+  window._warehouseExtras = {
+    // Open a tab from the sidebar.
+    openTab: function (tab) {
+      activeTab = tab || 'warehouses';
+      if (typeof window.invalidateView === 'function') window.invalidateView('warehouse');
+      if (typeof window.navigate === 'function') window.navigate('warehouse');
+      syncMenu();
+    },
+  };
+
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
     window.ERP.registerAction('whTab', function (_id, _type, val) {
       if (val) {
         activeTab = val;
         refresh();
+        syncMenu();
       }
       return true;
     });

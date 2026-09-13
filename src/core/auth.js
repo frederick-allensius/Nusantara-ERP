@@ -82,11 +82,6 @@ const SESSION_KEY = 'erp_session';
 // After that, the untouched default local account is a backdoor and is refused.
 const FB_SEEN_KEY = 'erp_fb_login_seen';
 
-// First-run default login (username-based local auth). Each seeded user's
-// password is "<username>123" (see local-users.js). Shown as a hint on the
-// login screen until the password is changed.
-const DEFAULT_USERNAME = 'admin';
-
 let sessionTimer = null;
 let currentUser = null;
 
@@ -629,7 +624,6 @@ export function setupLoginScreen() {
 
   const form = document.getElementById('login-form');
   const errorBox = document.getElementById('login-error');
-  const emailInput = document.getElementById('login-email');
 
   const pwInput = document.getElementById('login-password');
   const pwToggle = document.getElementById('login-toggle-pw');
@@ -656,11 +650,6 @@ export function setupLoginScreen() {
     errorBox.style.borderColor = 'var(--danger)';
     errorBox.textContent = msg;
   };
-
-  // Prefill the default username for convenience.
-  if (emailInput && !emailInput.value) {
-    emailInput.value = DEFAULT_USERNAME;
-  }
 
   if (!form) {
     return;

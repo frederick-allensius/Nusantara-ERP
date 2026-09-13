@@ -60,6 +60,158 @@
     return db()[key];
   }
 
+  // Cash/bank account a down payment moves through (gl.js maps it to Kas/Bank).
+  var DP_METHODS = ['Transfer BCA', 'Transfer Mandiri', 'Tunai'];
+  function methodSelectHTML(id, label) {
+    return (
+      '<label style="font-size:12px;font-weight:700">' +
+      esc(label) +
+      '<select id="' +
+      id +
+      '" class="form-select" style="width:100%;margin-top:4px">' +
+      DP_METHODS.map(function (m) {
+        return '<option>' + esc(m) + '</option>';
+      }).join('') +
+      '</select></label>'
+    );
+  }
+
+  // Delete a down payment together with the payment-log row created when it was
+  // applied; the order/invoice status then follows the remaining balance.
+  function removeDownPayment(coll, orderType, side, id) {
+    var arr = ensureArr(coll);
+    var idx = arr.findIndex(function (x) {
+      return x.id === id;
+    });
+    if (idx < 0) return;
+    var dp = arr.splice(idx, 1)[0];
+    var logs = db().paymentLogs || [];
+    for (var i = logs.length - 1; i >= 0; i--) {
+      var p = logs[i];
+      if (p && p.type === orderType && (p.dpId === dp.id || p.note === 'DP: ' + dp.id)) {
+        logs.splice(i, 1);
+      }
+    }
+    var orders = db()[orderType === 'SO' ? 'salesOrders' : 'purchaseOrders'] || [];
+    var order = orders.find(function (o) {
+      return String(o.id) === String(dp.orderId);
+    });
+    var B = window.Balances;
+    if (order && B) {
+      if (order.status === 'Paid' && B.orderBalance(side, order).outstanding > B.EPS) {
+        order.status = 'Confirmed';
+        if (orderType === 'SO' && typeof window.reserveStock === 'function') {
+          window.reserveStock(order.id, order.lines || []);
+        }
+      }
+      var inv = B.activeInvoiceFor(side, order.id);
+      if (inv) B.recalcInvoiceStatus(side, inv);
+    }
+    save();
+  }
+
+  // Applying a down payment records it as a payment on the order. An order that
+  // becomes fully paid before delivery is marked Lunas; a delivered/received
+  // order keeps its status (payment progress is shown from the balance).
+  function applyDownPayment(coll, orderType, side, id) {
+    var dp = ensureArr(coll).find(function (x) {
+      return x.id === id;
+    });
+    if (!dp || dp.status === 'Applied') return false;
+    if (!window.DB.paymentLogs) window.DB.paymentLogs = [];
+    var maxPL = window.DB.paymentLogs.reduce(function (m, p) {
+      return Math.max(m, Number(p.id) || 0);
+    }, 0);
+    window.DB.paymentLogs.push({
+      id: maxPL + 1,
+      type: orderType,
+      orderId: dp.orderId,
+      date: dp.date,
+      amount: dp.amount,
+      method: 'Down Payment',
+      source: 'DP',
+      dpId: dp.id,
+      note: 'DP: ' + dp.id,
+    });
+    var orders = db()[orderType === 'SO' ? 'salesOrders' : 'purchaseOrders'] || [];
+    var order = orders.find(function (o) {
+      return String(o.id) === String(dp.orderId);
+    });
+    var B = window.Balances;
+    if (order && B) {
+      if (order.status === 'Draft' || order.status === 'Confirmed') {
+        var bal = B.orderBalance(side, order);
+        if (bal.total > 0 && bal.outstanding <= B.EPS) {
+          if (order.status === 'Confirmed' && orderType === 'SO' && typeof window.releaseReservation === 'function') {
+            window.releaseReservation(order.id);
+          }
+          order.status = 'Paid';
+        }
+      }
+      var inv = B.activeInvoiceFor(side, order.id);
+      if (inv) B.recalcInvoiceStatus(side, inv);
+    }
+    dp.status = 'Applied';
+    dp.appliedDate = today();
+    save();
+    return true;
+  }
+
+  // Goods-receipt lines as stock lines (older receipts may lack an item id).
+  function receiptLines(receipt) {
+    var items = db().inventoryItems || [];
+    return (receipt.items || []).map(function (ri) {
+      var itemId = ri.itemId;
+      if (!itemId || itemId === 'undefined') {
+        var byName = items.find(function (i) {
+          return i.name === ri.itemName;
+        });
+        itemId = byName ? byName.id : 'custom';
+      }
+      return { itemId: String(itemId), itemName: ri.itemName, qty: Number(ri.qty) || 0 };
+    });
+  }
+
+  function receivedQtyMap(poId) {
+    var got = {};
+    ensureArr('goodsReceipts').forEach(function (g) {
+      if (!g.posted || String(g.poId) !== String(poId)) return;
+      receiptLines(g).forEach(function (l) {
+        got[l.itemId] = (got[l.itemId] || 0) + l.qty;
+      });
+    });
+    return got;
+  }
+
+  // Once everything ordered has been received, the PO becomes Received. Its stock
+  // is already counted through the receipts, so it is marked as mutated.
+  function completePOIfReceived(po, date) {
+    if (!po || po.status === 'Received' || po.status === 'Cancelled') return false;
+    var got = receivedQtyMap(po.id);
+    var stockLines = (po.lines || []).filter(function (l) {
+      return l.itemId !== 'custom';
+    });
+    if (stockLines.length === 0) return false;
+    var complete = stockLines.every(function (l) {
+      return (got[String(l.itemId)] || 0) + 1e-9 >= (Number(l.qty) || 0);
+    });
+    if (!complete) return false;
+    if (typeof window.releaseReservation === 'function') window.releaseReservation(po.id);
+    po.status = 'Received';
+    po.stockMutated = true;
+    po.receivedAt = date || today();
+    return true;
+  }
+
+  function receiveIntoStock(po, receipt) {
+    var warehouseId = receipt.warehouseId || (po && po.warehouseId) || null;
+    if (typeof window.moveStockLines === 'function') {
+      window.moveStockLines(receiptLines(receipt), 'in', warehouseId);
+    }
+    receipt.posted = true;
+    return completePOIfReceived(po, receipt.date);
+  }
+
   function injectView(hostView, html) {
     if (window.activeView !== hostView) nav(hostView);
     var el = document.getElementById('view-' + hostView);
@@ -184,7 +336,7 @@
 
   function addSalesDPModal() {
     var sos = (db().salesOrders || []).filter(function (o) {
-      return o.status !== 'Paid';
+      return o.status !== 'Paid' && o.status !== 'Cancelled';
     });
     var opts = sos
       .map(function (o) {
@@ -215,6 +367,7 @@
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
       '<label style="font-size:12px;font-weight:700">Jumlah DP<input id="sdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      methodSelectHTML('sdp-method', 'Diterima di') +
       '<label style="font-size:12px;font-weight:700">Catatan<input id="sdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
@@ -250,6 +403,7 @@
           customerName: customer,
           date: date,
           amount: amount,
+          method: document.getElementById('sdp-method').value,
           notes: notes,
           status: 'Received',
           createdAt: today(),
@@ -367,7 +521,7 @@
 
   function addPurchaseDPModal() {
     var pos = (db().purchaseOrders || []).filter(function (o) {
-      return o.status !== 'Paid' && o.status !== 'Received';
+      return o.status !== 'Paid' && o.status !== 'Received' && o.status !== 'Cancelled';
     });
     var opts = pos
       .map(function (o) {
@@ -396,6 +550,7 @@
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
       '<label style="font-size:12px;font-weight:700">Jumlah DP<input id="pdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      methodSelectHTML('pdp-method', 'Dibayar dari') +
       '<label style="font-size:12px;font-weight:700">Catatan<input id="pdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
@@ -431,6 +586,7 @@
           supplierName: supplier,
           date: date,
           amount: amount,
+          method: document.getElementById('pdp-method').value,
           notes: notes,
           status: 'Paid',
           createdAt: today(),
@@ -456,7 +612,9 @@
       .map(function (t) {
         var actual = sos
           .filter(function (o) {
-            return o.date && o.date.startsWith(t.period) && o.status !== 'Draft';
+            return (
+              o.date && o.date.startsWith(t.period) && o.status !== 'Draft' && o.status !== 'Cancelled'
+            );
           })
           .reduce(function (s, o) {
             return s + (o.amount || 0);
@@ -686,7 +844,7 @@
 
   function addReceiptModal() {
     var pos = (db().purchaseOrders || []).filter(function (o) {
-      return o.status === 'Confirmed' || o.status === 'Draft';
+      return o.status === 'Confirmed' || o.status === 'Draft' || o.status === 'Paid';
     });
     var opts = pos
       .map(function (o) {
@@ -755,6 +913,8 @@
         var items = [];
         lineEls.forEach(function (el) {
           var qty = parseFloat(el.value) || 0;
+          var max = parseFloat(el.max);
+          if (!isNaN(max) && qty > max) qty = max; // never receive more than is still open
           if (qty > 0) {
             items.push({ itemId: el.dataset.itemid, itemName: el.dataset.itemname, qty: qty });
           }
@@ -772,29 +932,23 @@
           supplierName: po.supplier || '',
           date: document.getElementById('ri-date').value,
           notes: document.getElementById('ri-notes').value.trim(),
+          warehouseId: po.warehouseId || null,
           items: items,
-          posted: doPost,
+          posted: false,
           createdAt: today(),
         };
         ensureArr('goodsReceipts').push(receipt);
 
-        if (doPost) {
-          var invItems = db().inventoryItems || [];
-          items.forEach(function (ri) {
-            var inv = invItems.find(function (i) { return i.id === ri.itemId; });
-            if (!inv && ri.itemName) inv = invItems.find(function (i) { return i.name === ri.itemName; });
-            if (inv) {
-              inv.stock = (inv.stock || 0) + ri.qty;
-              if (inv.warehouseStock) {
-                inv.warehouseStock['WH-DEFAULT'] = (inv.warehouseStock['WH-DEFAULT'] || 0) + ri.qty;
-              }
-            }
-          });
-        }
+        var completed = doPost ? receiveIntoStock(po, receipt) : false;
 
         save();
         closeM();
-        toast('Penerimaan barang dicatat' + (doPost ? ' & stok diupdate' : ''), 'success');
+        toast(
+          'Penerimaan barang dicatat' +
+            (doPost ? ' & stok bertambah' : '') +
+            (completed ? ' · PO ' + (po.number || po.id) + ' diterima penuh' : ''),
+          'success'
+        );
         openReceiveItem();
       });
     }, 60);
@@ -814,30 +968,39 @@
       return;
     }
 
+    var got = receivedQtyMap(poId);
     var html =
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Item dari PO ' +
-      esc(poId) +
+      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Barang dari PO ' +
+      esc(po.number || poId) +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr><th style="text-align:left;font-size:11px;padding:4px 6px">Item</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty Terima</th></tr></thead>' +
+      '<thead><tr><th style="text-align:left;font-size:11px;padding:4px 6px">Barang</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:11px;padding:4px 6px">Sudah diterima</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty Terima</th></tr></thead>' +
       '<tbody>';
     lines.forEach(function (l) {
+      var ordered = Number(l.qty) || 0;
+      var done = got[String(l.itemId)] || 0;
+      var open = Math.max(0, ordered - done);
       html +=
         '<tr><td style="padding:4px 6px;font-size:12px">' +
         esc(l.itemName || l.itemId) +
         '</td>' +
         '<td style="padding:4px 6px;text-align:right;font-size:12px">' +
-        (l.qty || 0) +
+        ordered +
         '</td>' +
-        '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" max="' +
-        (l.qty || 0) +
+        '<td style="padding:4px 6px;text-align:right;font-size:12px;color:var(--muted)">' +
+        (done || '—') +
+        '</td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" step="any" max="' +
+        open +
         '" value="' +
-        (l.qty || 0) +
+        open +
         '" data-itemid="' +
         esc(l.itemId || '') +
         '" data-itemname="' +
         esc(l.itemName || '') +
-        '" style="width:80px;font-size:12px;padding:4px 6px;text-align:right"></td>' +
+        '"' +
+        (open <= 0 ? ' disabled' : '') +
+        ' style="width:90px;font-size:12px;padding:4px 6px;text-align:right"></td>' +
         '</tr>';
     });
     html += '</tbody></table>';
@@ -851,21 +1014,20 @@
     });
     if (!r || r.posted) return;
 
-    var invItems = db().inventoryItems || [];
-    (r.items || []).forEach(function (ri) {
-      var inv = invItems.find(function (i) {
-        return i.id === ri.itemId || i.name === ri.itemName;
-      });
-      if (inv) {
-        inv.stock = (inv.stock || 0) + ri.qty;
-        if (inv.warehouseStock) {
-          inv.warehouseStock['WH-DEFAULT'] = (inv.warehouseStock['WH-DEFAULT'] || 0) + ri.qty;
-        }
-      }
+    var po = (db().purchaseOrders || []).find(function (o) {
+      return String(o.id) === String(r.poId);
     });
-    r.posted = true;
+    if (po && po.status === 'Received') {
+      toast('PO ' + (po.number || po.id) + ' sudah berstatus Diterima — stoknya sudah tercatat', 'warning');
+      return;
+    }
+    var completed = receiveIntoStock(po || null, r);
     save();
-    toast('Stok diupdate dari penerimaan barang', 'success');
+    toast(
+      'Stok bertambah dari penerimaan barang' +
+        (completed ? ' · PO ' + (po.number || po.id) + ' diterima penuh' : ''),
+      'success'
+    );
     openReceiveItem();
   }
 
@@ -1095,52 +1257,21 @@
         addSalesDPModal();
         break;
       case 'applySalesDP': {
-        var dp = ensureArr('salesDownPayments').find(function (x) {
-          return x.id === id;
-        });
-        if (dp && dp.status !== 'Applied') {
-          if (!window.DB.paymentLogs) window.DB.paymentLogs = [];
-          var maxPL = window.DB.paymentLogs.reduce(function (m, p) {
-            return Math.max(m, Number(p.id) || 0);
-          }, 0);
-          window.DB.paymentLogs.push({
-            id: maxPL + 1,
-            type: 'SO',
-            orderId: dp.orderId,
-            date: dp.date,
-            amount: dp.amount,
-            method: 'Down Payment',
-            note: 'DP: ' + dp.id,
-          });
-          var dpSO = (window.DB.salesOrders || []).find(function (o) {
-            return o.id === dp.orderId;
-          });
-          if (dpSO && dpSO.status !== 'Paid') {
-            var paidSO = window.DB.paymentLogs
-              .filter(function (p) {
-                return p.type === 'SO' && p.orderId === dp.orderId;
-              })
-              .reduce(function (s, p) {
-                return s + (p.amount || 0);
-              }, 0);
-            if (paidSO >= (dpSO.amount || 0) && (dpSO.amount || 0) > 0) dpSO.status = 'Paid';
-          }
-          dp.status = 'Applied';
-          save();
-          toast('DP diterapkan ke SO', 'success');
+        if (applyDownPayment('salesDownPayments', 'SO', 'sales', id)) {
+          toast('Uang muka diterapkan ke Sales Order', 'success');
           openSalesDP();
         }
         break;
       }
       case 'delSalesDP': {
-        if (!confirm('Hapus DP ini?')) return;
-        var arr = ensureArr('salesDownPayments');
-        var idx = arr.findIndex(function (x) {
-          return x.id === id;
-        });
-        if (idx >= 0) arr.splice(idx, 1);
-        save();
-        toast('DP dihapus', 'success');
+        if (
+          !confirm(
+            'Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'
+          )
+        )
+          return;
+        removeDownPayment('salesDownPayments', 'SO', 'sales', id);
+        toast('Uang muka dihapus', 'success');
         openSalesDP();
         break;
       }
@@ -1149,52 +1280,21 @@
         addPurchaseDPModal();
         break;
       case 'applyPurchaseDP': {
-        var dp2 = ensureArr('purchaseDownPayments').find(function (x) {
-          return x.id === id;
-        });
-        if (dp2 && dp2.status !== 'Applied') {
-          if (!window.DB.paymentLogs) window.DB.paymentLogs = [];
-          var maxPL2 = window.DB.paymentLogs.reduce(function (m, p) {
-            return Math.max(m, Number(p.id) || 0);
-          }, 0);
-          window.DB.paymentLogs.push({
-            id: maxPL2 + 1,
-            type: 'PO',
-            orderId: dp2.orderId,
-            date: dp2.date,
-            amount: dp2.amount,
-            method: 'Down Payment',
-            note: 'DP: ' + dp2.id,
-          });
-          var dpPO = (window.DB.purchaseOrders || []).find(function (o) {
-            return o.id === dp2.orderId;
-          });
-          if (dpPO && dpPO.status !== 'Paid') {
-            var paidPO = window.DB.paymentLogs
-              .filter(function (p) {
-                return p.type === 'PO' && p.orderId === dp2.orderId;
-              })
-              .reduce(function (s, p) {
-                return s + (p.amount || 0);
-              }, 0);
-            if (paidPO >= (dpPO.amount || 0) && (dpPO.amount || 0) > 0) dpPO.status = 'Paid';
-          }
-          dp2.status = 'Applied';
-          save();
-          toast('DP diterapkan ke PO', 'success');
+        if (applyDownPayment('purchaseDownPayments', 'PO', 'purchases', id)) {
+          toast('Uang muka diterapkan ke Purchase Order', 'success');
           openPurchaseDP();
         }
         break;
       }
       case 'delPurchaseDP': {
-        if (!confirm('Hapus DP ini?')) return;
-        var arr2 = ensureArr('purchaseDownPayments');
-        var idx2 = arr2.findIndex(function (x) {
-          return x.id === id;
-        });
-        if (idx2 >= 0) arr2.splice(idx2, 1);
-        save();
-        toast('DP dihapus', 'success');
+        if (
+          !confirm(
+            'Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'
+          )
+        )
+          return;
+        removeDownPayment('purchaseDownPayments', 'PO', 'purchases', id);
+        toast('Uang muka dihapus', 'success');
         openPurchaseDP();
         break;
       }
@@ -1266,14 +1366,37 @@
         break;
       }
       case 'delReceipt': {
-        if (!confirm('Hapus penerimaan barang ini?')) return;
         var arr4 = ensureArr('goodsReceipts');
         var idx4 = arr4.findIndex(function (x) {
           return x.id === id;
         });
-        if (idx4 >= 0) arr4.splice(idx4, 1);
+        if (idx4 < 0) break;
+        var gr = arr4[idx4];
+        var grPO = (db().purchaseOrders || []).find(function (o) {
+          return String(o.id) === String(gr.poId);
+        });
+        if (gr.posted) {
+          if (grPO && grPO.status === 'Received') {
+            toast(
+              'PO ' + (grPO.number || grPO.id) + ' sudah diterima penuh. Koreksi lewat Batalkan PO atau Retur Pembelian.',
+              'warning'
+            );
+            break;
+          }
+          var grLines = receiptLines(gr);
+          var grWh = gr.warehouseId || (grPO && grPO.warehouseId) || null;
+          if (typeof window.stockShortages === 'function' && window.stockShortages(grLines, grWh).length) {
+            toast('Barang dari penerimaan ini sudah terpakai, sehingga tidak bisa dihapus.', 'warning');
+            break;
+          }
+          if (!confirm('Hapus penerimaan barang ini?\n\nStok yang sudah ditambahkan akan dikurangi kembali.')) return;
+          if (typeof window.moveStockLines === 'function') window.moveStockLines(grLines, 'out', grWh);
+        } else if (!confirm('Hapus draft penerimaan barang ini?')) {
+          return;
+        }
+        arr4.splice(idx4, 1);
         save();
-        toast('Penerimaan dihapus', 'success');
+        toast('Penerimaan barang dihapus', 'success');
         openReceiveItem();
         break;
       }

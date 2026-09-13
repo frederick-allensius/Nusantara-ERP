@@ -43,23 +43,23 @@ function boot(role: string, db = freshDB()) {
 describe('permission matrix', () => {
   it('exposes can()/canView() consistent with the role', () => {
     boot('penjualan');
-    expect(window.RBAC.can('create', 'sales')).toBe(true);
-    expect(window.RBAC.can('delete', 'sales')).toBe(false);
-    expect(window.RBAC.can('create', 'purchases')).toBe(false);
-    expect(window.RBAC.canView('purchases')).toBe(true);
-    expect(window.RBAC.can('edit', 'gl')).toBe(false);
+    expect((window as any).RBAC.can('create', 'sales')).toBe(true);
+    expect((window as any).RBAC.can('delete', 'sales')).toBe(false);
+    expect((window as any).RBAC.can('create', 'purchases')).toBe(false);
+    expect((window as any).RBAC.canView('purchases')).toBe(true);
+    expect((window as any).RBAC.can('edit', 'gl')).toBe(false);
 
     boot('admin');
-    expect(window.RBAC.isAdmin()).toBe(true);
-    expect(window.RBAC.can('delete', 'gl')).toBe(true);
-    expect(window.RBAC.canManageUsers()).toBe(true);
+    expect((window as any).RBAC.isAdmin()).toBe(true);
+    expect((window as any).RBAC.can('delete', 'gl')).toBe(true);
+    expect((window as any).RBAC.canManageUsers()).toBe(true);
   });
 
   it('treats an inactive account as pending (no writes)', () => {
     boot('manajer');
     (window as any).__ERP_USER.active = false;
-    expect(window.RBAC.currentRole()).toBe('pending');
-    expect(window.RBAC.can('create', 'sales')).toBe(false);
+    expect((window as any).RBAC.currentRole()).toBe('pending');
+    expect((window as any).RBAC.can('create', 'sales')).toBe(false);
   });
 });
 
@@ -104,7 +104,7 @@ describe('saveDB safety net', () => {
   it('blocks a cashier (Penjualan) from deleting a journal', () => {
     const db = boot('penjualan');
     db.journals.push({ id: 'JV-1', source: 'manual', lines: [] });
-    window.RBAC.refreshSnapshot();
+    (window as any).RBAC.refreshSnapshot();
 
     db.journals.length = 0; // delete the manual journal
     window.saveDB();

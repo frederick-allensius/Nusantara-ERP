@@ -18,8 +18,8 @@
 // synced records don't show up as local edits.
 //
 // Transactional collections come from window.DocRegistry.types (+ manual
-// journals, itemAdjustments). Reference data (items, customers, …) is audited
-// but NOT period-locked. DB.auditLog is local-only (not in the Firestore
+// journals and the dated ledger/stock records in EXTRA_TXN_COLLECTIONS).
+// Reference data (items, customers, …) is audited but NOT period-locked. DB.auditLog is local-only (not in the Firestore
 // COLLECTIONS sync map) by design.
 //
 // Global-scope rule: classic <script>, IIFE-wrapped, exposes ONLY window.Integrity.
@@ -39,11 +39,28 @@
         out.push(c);
       }
     });
-    if (out.indexOf('itemAdjustments') === -1) {
-      out.push('itemAdjustments');
-    }
+    EXTRA_TXN_COLLECTIONS.forEach(c => {
+      if (out.indexOf(c) === -1) {
+        out.push(c);
+      }
+    });
     return out;
   }
+
+  // Dated records outside the registry that post to the ledger or move stock —
+  // period-locked like the document types.
+  const EXTRA_TXN_COLLECTIONS = [
+    'itemAdjustments',
+    'paymentLogs',
+    'salesDownPayments',
+    'purchaseDownPayments',
+    'goodsReceipts',
+    'payrollRuns',
+    'expenseAccruals',
+    'otherPayments',
+    'otherDeposits',
+    'bankTransfers',
+  ];
 
   // Reference data: audited, never period-locked.
   const REF_COLLECTIONS = [
@@ -54,10 +71,6 @@
     'warehouses',
     'budgets',
     'budgetTransfers',
-    'payrollRuns',
-    'salesDownPayments',
-    'purchaseDownPayments',
-    'goodsReceipts',
   ];
 
   function trackedCollections() {

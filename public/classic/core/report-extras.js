@@ -69,9 +69,10 @@
       {
         cat: 'Penjualan',
         icon: '📄',
-        name: 'Invoice Terhutang',
-        desc: 'Daftar piutang yang belum dilunasi',
-        view: 'invoices',
+        name: 'Faktur Penjualan Belum Lunas',
+        desc: 'Tagihan pelanggan yang belum dibayar',
+        action: 'openInvoiceTab',
+        val: 'SI',
       },
       {
         cat: 'Pembelian',
@@ -83,44 +84,45 @@
       {
         cat: 'Pembelian',
         icon: '💳',
-        name: 'Hutang Dagang',
-        desc: 'Daftar kewajiban ke supplier',
-        view: 'invoices',
+        name: 'Hutang ke Supplier',
+        desc: 'Faktur pembelian yang belum dibayar',
+        action: 'openInvoiceTab',
+        val: 'PI',
       },
       {
         cat: 'Persediaan',
         icon: '🏭',
-        name: 'Stock Valuation',
-        desc: 'Nilai persediaan per item dan lokasi',
+        name: 'Nilai Persediaan',
+        desc: 'Nilai stok per barang',
         view: 'inventory',
       },
       {
         cat: 'Persediaan',
         icon: '📉',
-        name: 'Stok Minimum Alert',
-        desc: 'Item dengan stok di bawah reorder point',
+        name: 'Stok di Bawah Minimum',
+        desc: 'Barang yang perlu dibeli lagi',
         view: 'inventory',
       },
       {
         cat: 'Pajak',
         icon: '🧾',
-        name: 'Rekapitulasi PPN',
+        name: 'Rekap PPN',
         desc: 'PPN masukan dan keluaran per periode',
         action: 'openSPTPPN',
       },
       {
-        cat: 'Umum Ledger',
+        cat: 'Buku Besar',
         icon: '📔',
-        name: 'Audit Journal',
+        name: 'Audit Jurnal',
         desc: 'Seluruh entri jurnal dengan filter lengkap',
-        view: 'finance',
+        action: 'openAuditJournal',
       },
       {
-        cat: 'Umum Ledger',
+        cat: 'Buku Besar',
         icon: '🗂️',
-        name: 'Account History',
-        desc: 'Riwayat transaksi per akun COA',
-        view: 'finance',
+        name: 'Riwayat Akun',
+        desc: 'Riwayat transaksi per akun',
+        action: 'openAccountHistory',
       },
     ];
 
@@ -137,11 +139,9 @@
         search +
         '" ' +
         (r.action
-          ? 'data-action="' + r.action + '"'
+          ? 'data-action="' + r.action + '"' + (r.val ? ' data-val="' + esc(r.val) + '"' : '')
           : 'data-action="navView" data-view="' + esc(r.view || '') + '"') +
-        ' style="display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface);text-align:left;width:100%;transition:border-color .15s,box-shadow .15s" ' +
-        "onmouseenter=\"this.style.borderColor='var(--primary,#2563eb)';this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)'\" " +
-        "onmouseleave=\"this.style.borderColor='var(--border)';this.style.boxShadow='none'\">" +
+        ' style="display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface);text-align:left;width:100%">' +
         '<span style="font-size:22px;flex:none">' +
         r.icon +
         '</span>' +
@@ -177,7 +177,7 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Report List</h1><p>' +
+      '<div class="sec-hdr"><div><h1>Daftar Laporan</h1><p>' +
         reports.length +
         ' laporan tersedia dalam sistem Nusantara ERP</p></div></div>' +
         '<div style="position:relative;max-width:380px;margin-bottom:18px">' +
@@ -215,24 +215,94 @@
   // § 2  SPT PPN / PPNBM
   // ══════════════════════════════════════════════════════════════════════════
   function openSPTPPN() {
-    var now = today();
-    var curPeriod = now.slice(0, 7);
-
-    // Build period list from SO + PI dates
+    var curPeriod = today().slice(0, 7);
     var periods = {};
-    (db().salesOrders || []).forEach(function (o) {
-      if (o.date) periods[o.date.slice(0, 7)] = true;
-    });
-    (db().purchaseOrders || []).forEach(function (o) {
-      if (o.date) periods[o.date.slice(0, 7)] = true;
+    periods[curPeriod] = true;
+    ['salesOrders', 'purchaseOrders', 'salesInvoices', 'purchaseInvoices'].forEach(function (coll) {
+      (db()[coll] || []).forEach(function (o) {
+        if (o.date) periods[o.date.slice(0, 7)] = true;
+      });
     });
     var periodList = Object.keys(periods).sort().reverse();
-    if (!periodList.length) periodList = [curPeriod];
-
-    var selectedPeriod = periodList[0];
-
-    renderSPT(selectedPeriod, periodList);
+    renderSPT(curPeriod, periodList);
   }
+
+  // PPN of one document: DPP and PPN from its lines and stored tax (handles
+  // tax-inclusive prices). Documents without PPN return zeros.
+  function taxOf(d) {
+    var rate = Number(d.taxRate) || 0;
+    if (rate <= 0) return { dpp: 0, ppn: 0, rate: 0 };
+    var net = (d.lines || []).reduce(function (s, l) {
+      return s + (Number(l.subtotal) || 0);
+    }, 0);
+    var incl = !!d.taxInclusive;
+    var ppn =
+      typeof d.tax === 'number' ? Math.round(d.tax) : Math.round(incl ? (net * rate) / (1 + rate) : net * rate);
+    return { dpp: incl ? net - ppn : net, ppn: ppn, rate: rate };
+  }
+
+  // PPN per tax period from the documents that post PPN to the ledger:
+  // output — active sales invoices, delivered SOs not yet invoiced, minus posted
+  // sales returns; input — active purchase invoices, received POs not yet
+  // invoiced, minus posted purchase returns. Drafts and cancelled documents never count.
+  function taxRows(period) {
+    var B = window.Balances;
+    function inPeriod(d) {
+      return d.date && d.date.slice(0, 7) === period;
+    }
+    function collect(spec) {
+      var rows = [];
+      function add(d, kind, sign) {
+        var t = taxOf(d);
+        if (t.ppn === 0) return;
+        rows.push({
+          date: d.date,
+          number: d.number || d.id,
+          party: d[spec.party] || '—',
+          kind: kind,
+          rate: t.rate,
+          dpp: sign * t.dpp,
+          ppn: sign * t.ppn,
+        });
+      }
+      (db()[spec.invColl] || []).forEach(function (inv) {
+        if (inPeriod(inv) && B && B.isActiveInvoice(inv)) add(inv, 'Faktur', 1);
+      });
+      (db()[spec.orderColl] || []).forEach(function (o) {
+        if (inPeriod(o) && o.status === spec.posted && !(B && B.activeInvoiceFor(spec.side, o.id))) {
+          add(o, spec.orderKind, 1);
+        }
+      });
+      (db()[spec.returnColl] || []).forEach(function (r) {
+        if (inPeriod(r) && r.status === 'Posted') add(r, 'Retur', -1);
+      });
+      return rows.sort(function (a, b) {
+        return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+      });
+    }
+    return {
+      output: collect({
+        invColl: 'salesInvoices',
+        orderColl: 'salesOrders',
+        returnColl: 'salesReturns',
+        posted: 'Delivered',
+        side: 'sales',
+        party: 'customer',
+        orderKind: 'SO terkirim (belum difakturkan)',
+      }),
+      input: collect({
+        invColl: 'purchaseInvoices',
+        orderColl: 'purchaseOrders',
+        returnColl: 'purchaseReturns',
+        posted: 'Received',
+        side: 'purchases',
+        party: 'supplier',
+        orderKind: 'PO diterima (belum difakturkan)',
+      }),
+    };
+  }
+
+  var lastSPT = null; // rows of the period on screen, for the CSV export
 
   function renderSPT(period, periodList) {
     var pOpts = periodList
@@ -243,90 +313,66 @@
       })
       .join('');
 
-    // Output Tax (PPN Keluaran) — from Sales Orders
-    var soInPeriod = (db().salesOrders || []).filter(function (o) {
-      return o.date && o.date.slice(0, 7) === period;
-    });
-    var outputDPP = soInPeriod.reduce(function (s, o) {
-      return s + (o.amount || 0);
-    }, 0);
-    var outputPPN = Math.round(outputDPP * VAT_RATE);
-
-    // Input Tax (PPN Masukan) — from Purchase Orders
-    var poInPeriod = (db().purchaseOrders || []).filter(function (o) {
-      return o.date && o.date.slice(0, 7) === period;
-    });
-    var inputDPP = poInPeriod.reduce(function (s, o) {
-      return s + (o.amount || o.total || 0);
-    }, 0);
-    var inputPPN = Math.round(inputDPP * VAT_RATE);
+    var data = taxRows(period);
+    lastSPT = { period: period, output: data.output, input: data.input };
+    var sum = function (rows, key) {
+      return rows.reduce(function (s, r) {
+        return s + r[key];
+      }, 0);
+    };
+    var outputDPP = sum(data.output, 'dpp');
+    var outputPPN = sum(data.output, 'ppn');
+    var inputDPP = sum(data.input, 'dpp');
+    var inputPPN = sum(data.input, 'ppn');
+    var soInPeriod = data.output;
+    var poInPeriod = data.input;
 
     var ppnKurang = outputPPN - inputPPN;
     var ppnStatus = ppnKurang > 0 ? 'Kurang Bayar' : ppnKurang < 0 ? 'Lebih Bayar' : 'Nihil';
     var ppnColor = ppnKurang > 0 ? '#DC2626' : ppnKurang < 0 ? '#2563EB' : '#6B7280';
 
-    var soRows =
-      soInPeriod
-        .slice(0, 20)
-        .map(function (o) {
-          var dpp = o.amount || 0;
-          return (
-            '<tr><td class="td-p" style="font-size:11px">' +
-            esc(o.date) +
-            '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
-            esc(o.id) +
-            '</td>' +
-            '<td class="td-p">' +
-            esc(o.customerName || '—') +
-            '</td>' +
-            '<td class="td-p" style="text-align:right">' +
-            money(dpp) +
-            '</td>' +
-            '<td class="td-p" style="text-align:right;color:#2563EB">' +
-            money(Math.round(dpp * VAT_RATE)) +
-            '</td>' +
-            '</tr>'
-          );
-        })
-        .join('') ||
-      '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">Tidak ada penjualan di periode ini.</td></tr>';
-
-    var poRows =
-      poInPeriod
-        .slice(0, 20)
-        .map(function (o) {
-          var dpp = o.amount || o.total || 0;
-          return (
-            '<tr><td class="td-p" style="font-size:11px">' +
-            esc(o.date) +
-            '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
-            esc(o.id) +
-            '</td>' +
-            '<td class="td-p">' +
-            esc(o.supplierName || '—') +
-            '</td>' +
-            '<td class="td-p" style="text-align:right">' +
-            money(dpp) +
-            '</td>' +
-            '<td class="td-p" style="text-align:right;color:#15803D">' +
-            money(Math.round(dpp * VAT_RATE)) +
-            '</td>' +
-            '</tr>'
-          );
-        })
-        .join('') ||
-      '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">Tidak ada pembelian di periode ini.</td></tr>';
+    function rowsHTML(rows, emptyText) {
+      return (
+        rows
+          .map(function (r) {
+            return (
+              '<tr><td class="td-p" style="font-size:11px">' +
+              esc(r.date) +
+              '</td>' +
+              '<td class="td-p" style="font-size:11px">' +
+              esc(r.number) +
+              '<div style="font-size:10px;color:var(--muted)">' +
+              esc(r.kind) +
+              '</div></td>' +
+              '<td class="td-p">' +
+              esc(r.party) +
+              '</td>' +
+              '<td class="td-p" style="text-align:right">' +
+              money(r.dpp) +
+              '</td>' +
+              '<td class="td-p" style="text-align:right">' +
+              money(r.ppn) +
+              '</td>' +
+              '</tr>'
+            );
+          })
+          .join('') ||
+        '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">' +
+          emptyText +
+          '</td></tr>'
+      );
+    }
+    var soRows = rowsHTML(data.output, 'Tidak ada penjualan ber-PPN di periode ini.');
+    var poRows = rowsHTML(data.input, 'Tidak ada pembelian ber-PPN di periode ini.');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>SPT PPN / PPNBM</h1><p>Laporan dan rekapitulasi Pajak Pertambahan Nilai</p></div>' +
+      '<div class="sec-hdr"><div><h1>Rekap PPN</h1><p>PPN keluaran dan masukan per masa pajak dari dokumen yang sudah diposting. Faktur pajak dan pelaporan SPT tetap dilakukan melalui aplikasi DJP.</p></div>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
         '<select class="form-select" id="spt-period" style="font-size:13px">' +
         pOpts +
         '</select>' +
         '<button class="btn" data-action="refreshSPT">Tampilkan</button>' +
-        '<button class="btn-ghost" data-action="exportSPT">Export</button>' +
+        '<button class="btn-ghost" data-action="exportSPT">Ekspor CSV</button>' +
         '</div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val" style="color:#DC2626">' +
@@ -360,14 +406,14 @@
         TH +
         '">Tanggal</th><th style="' +
         TH +
-        '">No. SO</th><th style="' +
+        '">Dokumen</th><th style="' +
         TH +
         '">Pelanggan</th>' +
         '<th style="' +
         TH +
         'text-align:right">DPP</th><th style="' +
         TH +
-        'text-align:right">PPN (11%)</th></tr></thead>' +
+        'text-align:right">PPN</th></tr></thead>' +
         '<tbody>' +
         soRows +
         '</tbody>' +
@@ -389,14 +435,14 @@
         TH +
         '">Tanggal</th><th style="' +
         TH +
-        '">No. PO</th><th style="' +
+        '">Dokumen</th><th style="' +
         TH +
         '">Supplier</th>' +
         '<th style="' +
         TH +
         'text-align:right">DPP</th><th style="' +
         TH +
-        'text-align:right">PPN (11%)</th></tr></thead>' +
+        'text-align:right">PPN</th></tr></thead>' +
         '<tbody>' +
         poRows +
         '</tbody>' +
@@ -828,11 +874,55 @@
         if (window._financialExtras) window._financialExtras.openCF();
         break;
       case 'exportSPT': {
-        toast('Export SPT sedang disiapkan...', 'success');
+        if (!lastSPT) {
+          toast('Buka Rekap PPN terlebih dahulu', 'warning');
+          break;
+        }
+        var csvCell = function (v) {
+          var s = String(v == null ? '' : v);
+          return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        };
+        var csv = [['Jenis', 'Tanggal', 'Dokumen', 'Keterangan', 'Pihak', 'Tarif', 'DPP', 'PPN'].join(';')];
+        [
+          ['PPN Keluaran', lastSPT.output],
+          ['PPN Masukan', lastSPT.input],
+        ].forEach(function (group) {
+          group[1].forEach(function (r) {
+            csv.push(
+              [group[0], r.date, r.number, r.kind, r.party, Math.round(r.rate * 100) + '%', r.dpp, r.ppn]
+                .map(csvCell)
+                .join(';')
+            );
+          });
+        });
+        var blob = new Blob(['﻿' + csv.join('\n')], { type: 'text/csv;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Rekap-PPN-' + lastSPT.period + '.csv';
+        document.body.appendChild(link);
+        link.click();
         setTimeout(function () {
-          var lines = ['Rekapitulasi PPN — Disiapkan: ' + today()];
-          window.open('data:text/plain;charset=utf-8,' + encodeURIComponent(lines.join('\n')));
-        }, 500);
+          URL.revokeObjectURL(link.href);
+          link.remove();
+        }, 0);
+        break;
+      }
+      case 'openAuditJournal':
+        if (window._budgetGLExtras) window._budgetGLExtras.openAuditJournal();
+        break;
+      case 'openAccountHistory':
+        if (window._budgetGLExtras) window._budgetGLExtras.openAccountHistory();
+        break;
+      case 'openInvoiceTab': {
+        var invTab = btn.dataset.val === 'PI' ? 'openPurchaseInvoice' : 'openSalesInvoice';
+        var openTab = function () {
+          if (window._invoiceExtras) window._invoiceExtras[invTab]();
+        };
+        if (window._invoiceExtras || typeof window.ensureView !== 'function') {
+          openTab();
+        } else {
+          window.ensureView('invoices').then(openTab);
+        }
         break;
       }
     }

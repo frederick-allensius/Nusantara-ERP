@@ -50,6 +50,7 @@ describe('DocRegistry', () => {
       'Confirmed',
       'Paid',
       'Delivered',
+      'Cancelled',
     ]);
   });
 });
@@ -145,6 +146,18 @@ describe('DocEngine.canTransition', () => {
   it('rejects an undefined transition and unknown types', () => {
     expect(window.DocEngine.canTransition('DO', 'Pending', 'Paid')).toBe(false);
     expect(window.DocEngine.canTransition('NOPE', 'Draft', 'Confirmed')).toBe(false);
+  });
+
+  it('keeps a delivered order delivered: payment is not a status change', () => {
+    expect(window.DocEngine.canTransition('SO', 'Delivered', 'Paid')).toBe(false);
+    expect(window.DocEngine.canTransition('PO', 'Received', 'Paid')).toBe(false);
+    expect(window.DocEngine.canTransition('SO', 'Delivered', 'Cancelled')).toBe(true);
+  });
+
+  it('allows cancelling invoices and receipts but not reviving them', () => {
+    expect(window.DocEngine.canTransition('SI', 'Outstanding', 'Cancelled')).toBe(true);
+    expect(window.DocEngine.canTransition('SR', 'Posted', 'Cancelled')).toBe(true);
+    expect(window.DocEngine.canTransition('SI', 'Cancelled', 'Outstanding')).toBe(false);
   });
 });
 

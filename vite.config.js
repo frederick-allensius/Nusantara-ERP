@@ -44,6 +44,8 @@ const classicAll = [
   'public/classic/core/cost-ledger.js',
   'public/classic/core/warehouse.js',
   'public/classic/core/gl.js',
+  // balances.js: shared receivable/payable balances (reads the same rules as gl.js).
+  'public/classic/core/balances.js',
   'public/classic/core/erp-crud.js',
   'public/classic/core/doc-migrate.js',
   'public/classic/core/erp-view.js',
@@ -81,11 +83,8 @@ const classicAll = [
   'public/classic/modules/dashboard.js',
   'public/classic/modules/master.js',
   'public/classic/ui/nav.js',
-  // view-tabs.js wraps nav.js's navigate (must be after it, before rbac.js so
-  // the rbac navigate guard stays outermost). Adds the multi-tab view bar.
-  'public/classic/ui/view-tabs.js',
-  // doc-tabs.js adds Accurate-style second-level tabs INSIDE each transaction
-  // module (Daftar / Data Baru / one tab per open document). After view-tabs.js
+  // doc-tabs.js adds document tabs INSIDE each transaction module (Daftar /
+  // Data Baru / one tab per open document). After nav.js (wraps its navigate)
   // and before rbac.js.
   'public/classic/ui/doc-tabs.js',
   'public/classic/modules/settings.js',

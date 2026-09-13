@@ -62,13 +62,13 @@
   // Close on backdrop click
   backdrop.addEventListener('click', closeSidebar);
 
-  // Close on nav item click (mobile)
-  sidebar.querySelectorAll('.rail-item').forEach(function (item) {
-    item.addEventListener('click', function () {
-      if (isMobile()) {
-        closeSidebar();
-      }
-    });
+  // Close after a page is opened. Menu entries are rendered later by
+  // ui/nav.js, so listen on the sidebar itself; group headers that only
+  // expand a group keep the drawer open.
+  sidebar.addEventListener('click', function (e) {
+    if (isMobile() && e.target.closest('.nav-item, .nav-group-head[data-view]')) {
+      closeSidebar();
+    }
   });
 
   // Close on Escape key

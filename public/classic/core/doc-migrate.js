@@ -1,19 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Nusantara ERP — Runtime Data Backfills  (doc-migrate.js)
-// Phase 1 of the V4 plan (see docs/ARCHITECTURE_ERP_V4.md).
 //
-// Runs ONCE per load, after loadDB() (it is in the main.js scriptQueue, which is
-// loaded only after the DB is ready). Idempotent: it only fills fields that are
-// missing, and persists only if something actually changed.
+// Runs ONCE per load, after loadDB() (the classic bundle loads only after the DB is
+// ready). Idempotent: it only fills or normalizes fields that need it, and persists
+// only if something actually changed.
 //
-// Phase 1 backfill: stamp customerId / supplierId onto existing SO / PO / DO by
-// matching the denormalized party name against the master records. The name field
-// stays authoritative for display (name-sync shim); the id is additive.
-//
-// Phase 2 backfill (2026-06-07): normalize Accurate migration field names.
-//   - customerName → customer  (Accurate export uses customerName, UI reads customer)
-//   - supplierName → supplier  (same issue for PO)
-//   - number from window.defaultData via _accurateId lookup (in case number is empty)
+//   Phase 1  stamp customerId / supplierId onto SO / PO / DO by matching the
+//            denormalized party name (the name stays authoritative for display).
+//   Phase 2  normalize imported field names (customerName → customer, …) and fill
+//            missing document numbers.
+//   Phase 3  replace random uid ids of SO/PO with their structured number, then
+//            remap EVERY cross-reference to the renamed ids (delivery orders,
+//            payment logs, invoices, down payments, goods receipts, returns,
+//            reservations) so no linked document is orphaned.
+//   Phase 4  normalize imported delivery-order statuses and destinations.
+//   Phase 5  normalize legacy invoices and payment logs: status 'Unpaid' →
+//            'Outstanding', soId/poId → sourceId + sourceType, payment type
+//            'Sales'/'Purchase' → 'SO'/'PO'.
 //
 // Global-scope rule: classic <script>, IIFE-wrapped, declares no top-level names.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -36,8 +39,7 @@
     return rec ? rec.id : null;
   }
 
-  // ── Phase 2: build lookup maps from window.defaultData (accurate-data.json) ──
-  // defaultData uses _accurateId as the bridge between re-migration UIDs.
+  // ── Phase 2: lookup maps from window.defaultData (bridged by _accurateId) ────
   const soByAccurateId = {};
   const poByAccurateId = {};
   if (window.defaultData) {
@@ -51,24 +53,21 @@
 
   let changed = 0;
 
-  // Phase 3 remap tables: old random uid → new structured id
+  // Phase 3 remap tables: old id → new structured id
   const soIdRemap = {};
   const poIdRemap = {};
 
   // ── SO backfills ──────────────────────────────────────────────────────────────
   const soIds = new Set((window.DB.salesOrders || []).map(o => o.id));
   (window.DB.salesOrders || []).forEach(o => {
-    // Phase 2a: customerName → customer
     if (!o.customer && o.customerName) {
       o.customer = o.customerName;
       changed++;
     }
-    // Phase 2b: fill number from defaultData if missing
     if (!o.number && o._accurateId != null && soByAccurateId[o._accurateId]) {
       o.number = soByAccurateId[o._accurateId].number || '';
       if (o.number) changed++;
     }
-    // Phase 3: replace random uid id with structured number (SI→SO prefix)
     if (o.number && o.id !== o.number && !/^SO[.\-]/.test(o.id) && !/^SI[.\-]/.test(o.id)) {
       const newId = o.number;
       if (!soIds.has(newId)) {
@@ -80,7 +79,6 @@
         changed++;
       }
     }
-    // Phase 1: stamp customerId
     if (isUnset(o.customerId) && o.customer) {
       const id = idByName('customers', o.customer);
       if (!isUnset(id)) {
@@ -90,18 +88,11 @@
     }
   });
 
-  // ── DO backfills ──────────────────────────────────────────────────────────────
-  // Phase 4 (2026-06-12): normalize Accurate-imported DOs so they are editable
-  // and print correctly:
-  //   - raw Accurate statuses (SENT / INVOICED / PARTIAL_INVOICED / DRAFT) are
-  //     now surfaced as their real Accurate labels (Sent / Invoiced / Partially
-  //     invoiced) so the UI matches the source documents; DRAFT → Pending.
-  //     The canonical Accurate status is preserved in _accurateStatus, and we
-  //     derive `status` from it so DBs migrated under the old (→Delivered) map
-  //     self-heal to the correct label on next load.
-  //   - destination was never imported; DO notes follow the Accurate convention
-  //     "item description\ndestination" — backfill from notes line 2, falling
-  //     back to the customer's master address.
+  // ── DO backfills (Phase 4) ────────────────────────────────────────────────────
+  // Imported raw statuses (SENT / INVOICED / PARTIAL_INVOICED / DRAFT) map to their
+  // labels (Sent / Invoiced / Partially invoiced / Pending); the raw value is kept
+  // in _accurateStatus. Destination falls back to notes line 2, then the
+  // customer's address.
   const DO_RAW_STATUS = {
     SENT: 'Sent',
     INVOICED: 'Invoiced',
@@ -134,8 +125,6 @@
         changed++;
       }
     }
-    // Prefer the canonical Accurate status (set on first import) so that DBs
-    // migrated under the old →Delivered map re-derive the correct label.
     const raw = String(o._accurateStatus || o.status || '').toUpperCase();
     const mapped = DO_RAW_STATUS[raw];
     if (mapped) {
@@ -157,17 +146,14 @@
   // ── PO backfills ──────────────────────────────────────────────────────────────
   const poIds = new Set((window.DB.purchaseOrders || []).map(o => o.id));
   (window.DB.purchaseOrders || []).forEach(o => {
-    // Phase 2a: supplierName → supplier
     if (!o.supplier && o.supplierName) {
       o.supplier = o.supplierName;
       changed++;
     }
-    // Phase 2b: fill number from defaultData if missing
     if (!o.number && o._accurateId != null && poByAccurateId[o._accurateId]) {
       o.number = poByAccurateId[o._accurateId].number || '';
       if (o.number) changed++;
     }
-    // Phase 3: replace random uid id with structured number (PI→PO prefix)
     if (o.number && o.id !== o.number && !/^PO[.\-]/.test(o.id) && !/^PI[.\-]/.test(o.id)) {
       const newId = o.number;
       if (!poIds.has(newId)) {
@@ -179,7 +165,6 @@
         changed++;
       }
     }
-    // Phase 1: stamp supplierId
     if (isUnset(o.supplierId) && o.supplier) {
       const id = idByName('suppliers', o.supplier);
       if (!isUnset(id)) {
@@ -189,19 +174,16 @@
     }
   });
 
-  // Phase 1b: backfill missing `number` on SO, PO, DO. Documents created before
-  // the V4 numbering engine was wired up only have an `id` (e.g. "DO-2026-039")
-  // but no Accurate-style `number` (e.g. "DO.2026.06.00001"). Generate one now
-  // using DocEngine.nextNumber() so the display is consistent.
-  var DE = window.DocEngine;
+  // Phase 1b: backfill missing `number` on SO, PO, DO.
+  const DE = window.DocEngine;
   if (DE) {
     [
       ['salesOrders', 'SO'],
       ['purchaseOrders', 'PO'],
       ['deliveryOrders', 'DO'],
     ].forEach(function (pair) {
-      var coll = pair[0],
-        docType = pair[1];
+      const coll = pair[0];
+      const docType = pair[1];
       (window.DB[coll] || []).forEach(function (o) {
         if (!o.number) {
           o.number = DE.nextNumber(docType, o.date, { commit: true });
@@ -211,17 +193,71 @@
     });
   }
 
-  // ── Phase 3: fix DO cross-references to renamed SO/PO ids ──────────────────
-  (window.DB.deliveryOrders || []).forEach(o => {
-    if (o.soId && soIdRemap[o.soId]) {
-      o.soId = soIdRemap[o.soId];
+  // ── Phase 5: legacy invoices & payment logs ─────────────────────────────────
+  // Runs before the Phase 3 remap so references written under the old field
+  // names are remapped too.
+  [
+    ['salesInvoices', 'soId', 'SO'],
+    ['purchaseInvoices', 'poId', 'PO'],
+  ].forEach(function (spec) {
+    (window.DB[spec[0]] || []).forEach(function (inv) {
+      if (!inv) {
+        return;
+      }
+      if (isUnset(inv.sourceId) && !isUnset(inv[spec[1]])) {
+        inv.sourceId = String(inv[spec[1]]);
+        inv.sourceType = inv.sourceType || spec[2];
+        changed++;
+      }
+      if (inv.status === 'Unpaid') {
+        inv.status = 'Outstanding';
+        changed++;
+      }
+    });
+  });
+  (window.DB.paymentLogs || []).forEach(function (p) {
+    if (p && p.type === 'Sales') {
+      p.type = 'SO';
       changed++;
-    }
-    if (o.poId && poIdRemap[o.poId]) {
-      o.poId = poIdRemap[o.poId];
+    } else if (p && p.type === 'Purchase') {
+      p.type = 'PO';
       changed++;
     }
   });
+
+  // ── Phase 3: remap every cross-reference to renamed SO/PO ids ────────────────
+  function remap(collection, field, table, when) {
+    (window.DB[collection] || []).forEach(function (d) {
+      if (d && !isUnset(d[field]) && table[d[field]] && (!when || when(d))) {
+        d[field] = table[d[field]];
+        changed++;
+      }
+    });
+  }
+  if (Object.keys(soIdRemap).length || Object.keys(poIdRemap).length) {
+    remap('deliveryOrders', 'soId', soIdRemap);
+    remap('deliveryOrders', 'poId', poIdRemap);
+    remap('paymentLogs', 'orderId', soIdRemap, p => p.type === 'SO');
+    remap('paymentLogs', 'orderId', poIdRemap, p => p.type === 'PO');
+    remap('salesInvoices', 'sourceId', soIdRemap, d => !d.sourceType || d.sourceType === 'SO');
+    remap('purchaseInvoices', 'sourceId', poIdRemap, d => !d.sourceType || d.sourceType === 'PO');
+    remap('salesDownPayments', 'orderId', soIdRemap);
+    remap('purchaseDownPayments', 'orderId', poIdRemap);
+    remap('goodsReceipts', 'poId', poIdRemap);
+    remap('salesReturns', 'sourceId', soIdRemap, d => d.sourceType === 'SO');
+    remap('purchaseReturns', 'sourceId', poIdRemap, d => d.sourceType === 'PO');
+    const res = window.DB.reservations;
+    if (res && typeof res === 'object' && !Array.isArray(res)) {
+      Object.keys(res).forEach(function (oldId) {
+        const newId = soIdRemap[oldId];
+        if (newId && !res[newId]) {
+          res[newId] = res[oldId];
+          delete res[oldId];
+          changed++;
+        }
+      });
+    }
+  }
 
   if (changed > 0 && typeof window.saveDB === 'function') {
     try {
@@ -229,6 +265,6 @@
     } catch {
       /* persistence is best-effort; fields are already set in memory */
     }
-    console.warn(`[ERP] Data backfill: normalized ${changed} field(s) (customer/supplier/number)`);
+    console.warn(`[ERP] Data backfill: normalized ${changed} field(s)`);
   }
 })();

@@ -717,9 +717,13 @@
               esc(a.id) +
               '">Posting</button> '
             : '') +
-          '<button class="action-ghost" data-action="delAccrual" data-id="' +
-          esc(a.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          (a.status === 'Draft'
+            ? '<button class="action-ghost" data-action="delAccrual" data-id="' +
+              esc(a.id) +
+              '" style="color:#EF4444">Hapus</button>'
+            : '<span style="font-size:11px;color:var(--muted)">' +
+              esc(a.journalNumber || 'Sudah dijurnal') +
+              '</span>') +
           '</td>' +
           '</tr>'
         );
@@ -822,10 +826,11 @@
 
     if (window.GL && typeof window.GL.postJournalVoucher === 'function') {
       try {
-        window.GL.postJournalVoucher(ac.date, [
+        var jv = window.GL.postJournalVoucher(ac.date, [
           { accountNo: ac.accountCode, debit: ac.amount, memo: 'Akrual: ' + ac.description },
           { accountNo: ac.creditAccountCode, credit: ac.amount, memo: 'Akrual: ' + ac.description },
         ], 'Akrual: ' + ac.description);
+        ac.journalNumber = jv && jv.number;
       } catch (err) {
         toast('Gagal posting: ' + err.message, 'error');
         return;
@@ -1279,7 +1284,17 @@
         postAccrual(id);
         break;
       case 'delAccrual': {
-        if (!confirm('Hapus akrual ini?')) return;
+        var accrual = ensureArr('expenseAccruals').find(function (x) {
+          return x.id === id;
+        });
+        if (accrual && accrual.status === 'Posted') {
+          toast(
+            'Akrual ini sudah diposting ke jurnal. Koreksi dengan Jurnal Umum (jurnal balik), bukan dengan menghapus.',
+            'warning'
+          );
+          return;
+        }
+        if (!confirm('Hapus draft akrual ini?')) return;
         var arr2 = ensureArr('expenseAccruals');
         var idx2 = arr2.findIndex(function (x) {
           return x.id === id;
