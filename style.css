@@ -3830,3 +3830,14 @@ html[data-theme] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Signed-in account on Pengaturan Umum */
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.account-card-text {
+  flex: 1;
+  min-width: 0;
+}

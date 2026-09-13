@@ -21,19 +21,10 @@
 // ── Document number normalizer ────────────────────────────────────────────────
 // Accurate exports SI. (Sales Invoice) and PI. (Purchase Invoice) prefixes.
 // Display them as SO. / PO. to match the app's own numbering scheme.
+// Document number as stored (invoices keep their SI./PI. numbers); the record id
+// when a document has no number yet.
 function docNum(number, id) {
-  // Merged from erp-patch.js — this stricter version (formerly the live
-  // override) only rewrites Accurate-style prefixes and shows '—' when empty.
-  const raw = number || id || '—';
-  if (typeof raw === 'string') {
-    if (raw.startsWith('SI.')) {
-      return 'SO.' + raw.slice(3);
-    }
-    if (raw.startsWith('PI.')) {
-      return 'PO.' + raw.slice(3);
-    }
-  }
-  return raw;
+  return number || id || '—';
 }
 window.docNum = docNum;
 window.getRenderer = getRenderer;
@@ -1622,7 +1613,20 @@ function renderMasterData() {
 
 // ── View: Settings ────────────────────────────────────────────────────────────
 function renderSettings() {
-  const currentUser = window.erpAuth?.getCurrentUser() || 'admin';
+  // Signed-in identity: profile name (or the account's own name) and the RBAC role.
+  const account = window.erpAuth?.getCurrentUser?.() || {};
+  const accountName =
+    typeof account === 'string' ? account : account.displayName || account.username || account.email;
+  const userName = DB.settings?.user?.name || accountName || 'Pengguna';
+  const roleLabels = window.erpUsers?.roleLabels || {};
+  const me = window.__ERP_USER || {};
+  const userRole = roleLabels[me.role] || me.role || '';
+  const initials = userName
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
   const backupStatus = window.erpBackup?.getBackupStatus() || { backupCount: 0 };
 
   const items = [
@@ -1697,22 +1701,13 @@ function renderSettings() {
   return `
   ${secHdr('Pengaturan Umum', 'Konfigurasi sistem, perusahaan, dan akun pengguna')}
   
-  <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border:none">
-    <div style="display:flex;align-items:center;gap:16px">
-      <div style="width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700;margin-bottom:4px">Login sebagai: ${escapeHtml(currentUser)}</div>
-        <div style="font-size:12px;opacity:0.9">Sistem dilindungi dengan autentikasi password</div>
-      </div>
-      <button class="btn-ghost" data-action="logout" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3)">
-        Logout
-      </button>
+  <div class="card account-card">
+    <span class="avatar-sm">${escapeHtml(initials)}</span>
+    <div class="account-card-text">
+      <div class="card-title">Masuk sebagai ${escapeHtml(userName)}</div>
+      <div class="card-sub">${userRole ? `Peran ${escapeHtml(userRole)} · ` : ''}menu dan tombol mengikuti hak akses peran</div>
     </div>
+    <button class="btn-ghost" data-action="logout">Keluar</button>
   </div>
   
   <div class="set-2col">
@@ -2602,36 +2597,50 @@ function handleSearch(query) {
   const match = (...vals) => vals.some(v => v != null && String(v).toLowerCase().includes(q));
 
   const groups = [];
+  // Documents store the party name in `customer` / `supplier` (older imports used *Name).
+  const party = (d, key) => d[key] || d[key + 'Name'] || '';
+  const docGroup = (label, list, cfg) => {
+    const rows = (list || [])
+      .filter(d => match(d.number, d.id, party(d, cfg.party), d.notes, d.note, d.sourceNumber))
+      .slice(0, LIMIT)
+      .map(d => ({
+        action: cfg.action,
+        type: cfg.type,
+        nav: cfg.nav,
+        id: d.id,
+        title: docNum(d.number, d.id),
+        sub: [party(d, cfg.party), d.date].filter(Boolean).join(' · '),
+        right: cfg.amount === false ? '' : money(d.total != null ? d.total : d.amount),
+      }));
+    if (rows.length) {
+      groups.push({ label, rows });
+    }
+  };
 
-  const so = (db.salesOrders || [])
-    .filter(o => match(o.number, o.customerName, o.id, o.notes, o.status))
-    .slice(0, LIMIT)
-    .map(o => ({
-      action: 'viewSO',
-      nav: 'sales',
-      id: o.id,
-      title: docNum(o.number, o.id),
-      sub: [o.customerName, o.status].filter(Boolean).join(' · '),
-      right: money(o.total != null ? o.total : o.amount),
-    }));
-  if (so.length) {
-    groups.push({ label: 'Sales Order', rows: so });
-  }
-
-  const po = (db.purchaseOrders || [])
-    .filter(o => match(o.number, o.supplierName, o.id, o.notes, o.status))
-    .slice(0, LIMIT)
-    .map(o => ({
-      action: 'viewPO',
-      nav: 'purchase',
-      id: o.id,
-      title: docNum(o.number, o.id),
-      sub: [o.supplierName, o.status].filter(Boolean).join(' · '),
-      right: money(o.total != null ? o.total : o.amount),
-    }));
-  if (po.length) {
-    groups.push({ label: 'Purchase Order', rows: po });
-  }
+  docGroup('Pesanan Penjualan', db.salesOrders, { action: 'viewSO', nav: 'sales', party: 'customer' });
+  docGroup('Faktur Penjualan', db.salesInvoices, {
+    action: 'invView',
+    type: 'SI',
+    nav: 'invoices',
+    party: 'customer',
+  });
+  docGroup('Surat Jalan', db.deliveryOrders, {
+    action: 'viewDO',
+    nav: 'logistics',
+    party: 'customer',
+    amount: false,
+  });
+  docGroup('Pesanan Pembelian', db.purchaseOrders, {
+    action: 'viewPO',
+    nav: 'purchase',
+    party: 'supplier',
+  });
+  docGroup('Faktur Pembelian', db.purchaseInvoices, {
+    action: 'invView',
+    type: 'PI',
+    nav: 'invoices',
+    party: 'supplier',
+  });
 
   const items = (db.inventoryItems || [])
     .filter(i => match(i.name, i.sku, i.id, i.category))
@@ -2682,29 +2691,28 @@ function handleSearch(query) {
 
   let body;
   if (total === 0) {
-    body = `<div style="padding:24px 8px;text-align:center;color:var(--muted)">
-      Tidak ada hasil untuk "<strong>${esc(query)}</strong>".
+    body = `<div class="empty-inline">
+      Tidak ada hasil untuk "<strong>${esc(query)}</strong>".<br>
+      Coba nomor dokumen, nama pelanggan atau supplier, atau nama barang.
     </div>`;
   } else {
     body = groups
       .map(g => {
         const rows = g.rows
           .map(
-            r => `<button type="button"
-              data-action="${r.action}" data-nav="${r.nav}" data-id="${esc(r.id)}"
-              style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;
-                background:none;border:none;border-bottom:1px solid var(--border);
-                padding:10px 4px;cursor:pointer">
+            r => `<button type="button" class="search-results-item"
+              data-action="${r.action}" data-nav="${r.nav}" data-id="${esc(r.id)}"${r.type ? ` data-type="${r.type}"` : ''}
+              style="width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left">
               <span style="flex:1;min-width:0">
-                <span style="display:block;font-weight:700;color:var(--ink);font-size:13px">${esc(r.title)}</span>
-                <span style="display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.sub)}</span>
+                <span class="t-strong" style="display:block;font-size:13px">${esc(r.title)}</span>
+                <span class="t-muted" style="display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.sub)}</span>
               </span>
-              <span style="flex-shrink:0;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums">${esc(r.right)}</span>
+              <span class="t-muted t-num" style="flex-shrink:0;font-size:12.5px">${esc(r.right)}</span>
             </button>`
           )
           .join('');
-        return `<div style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">${esc(g.label)}</div>
+        return `<div class="detail-section" style="margin-top:0;margin-bottom:12px">
+          <div class="detail-section-title">${esc(g.label)}</div>
           ${rows}
         </div>`;
       })
@@ -2822,43 +2830,29 @@ function handleSearch(query) {
         refreshActiveView();
       }
     } else if (inp.dataset.action === 'importBackup') {
+      // Same path as "Kelola Backup" (src/core/backup.js importFromFile): it
+      // validates and stores the data; the page then reloads from it.
       const file = inp.files && inp.files[0];
+      inp.value = '';
       if (!file) {
         return;
       }
-      const reader = new FileReader();
-      reader.onload = ev => {
-        try {
-          const parsed = JSON.parse(ev.target.result);
-          if (!parsed || typeof parsed !== 'object') {
-            throw new Error('Bukan file JSON yang valid');
-          }
-          const knownKeys = [
-            'salesOrders',
-            'purchaseOrders',
-            'inventoryItems',
-            'deliveryOrders',
-            'customers',
-            'suppliers',
-            'accounts',
-            'paymentLogs',
-            'reservations',
-          ];
-          if (!knownKeys.some(k => k in parsed)) {
-            throw new Error('File backup tidak terlihat sebagai backup ERP yang valid');
-          }
-          if (!confirm('Impor backup akan menggantikan seluruh data yang ada. Lanjutkan?')) {
-            return;
-          }
-          DB = typeof normalizeImportedDB === 'function' ? normalizeImportedDB(parsed) : parsed;
-          saveDB();
-          navigate(activeView);
-          showToast('Backup berhasil diimpor', 'success');
-        } catch (err) {
-          showToast('Gagal mengimpor: ' + err.message, 'danger');
-        }
-      };
-      reader.readAsText(file);
+      if (!window.erpBackup || typeof window.erpBackup.importFromFile !== 'function') {
+        showToast('Impor backup belum siap. Coba lagi setelah halaman selesai dimuat.', 'warning');
+        return;
+      }
+      if (!confirm('Impor backup akan menggantikan seluruh data yang ada. Lanjutkan?')) {
+        return;
+      }
+      window.erpBackup
+        .importFromFile(file)
+        .then(() => {
+          showToast('Backup berhasil diimpor. Halaman akan dimuat ulang.', 'success');
+          setTimeout(() => window.location.reload(), 1500);
+        })
+        .catch(err => {
+          showToast('Gagal mengimpor: ' + (err && err.message ? err.message : err), 'danger');
+        });
     }
 
     // Inline status and checkbox handlers (from erp-patch.js) - merged to avoid duplicate listeners
