@@ -111,6 +111,27 @@ Browser pane, otherwise rely on the tests.
 - `ui/doc-tabs.js`: a document opens as a tab only inside its own module view; from the
   dashboard, finance summary or other pages it opens as a dialog.
 
+### Demo data (T-35)
+- `src/core/demo-data.js` (new): `buildDemoData(now)` generates five months plus the current
+  month relative to today, deterministic (seeded). Same product family as before (bulk
+  materials, Ton/M3), fictional parties. Stock moves only through receipts, deliveries,
+  returns, adjustments and transfers; orders take free stock only; items are reordered at a
+  reorder level; salaries go through payroll runs plus payment vouchers; cash receipts are
+  deposited Kas → BCA; one opening voucher carries opening cash, bank and inventory. Cases
+  for the dashboard and the meeting demo: overdue receivable and payable, low stock, open
+  orders in every status, a return, a down payment, a quotation converted to an order.
+- `src/core/db.js`: old in-file seed removed. `emptyData` (structure only) fills keys missing
+  from saved or imported data, so demo records are never injected into existing data;
+  `initialData()` = demo dataset (empty when `VITE_SEED_DEMO=false`) for first run, Reset
+  Data and the empty-Firestore seed (which also merges bank accounts, categories, units).
+- `DocEngine.nextNumber(type, date, { docs })` scans the given documents for types outside
+  the registry (OP/OD/BT in bank-extras, ADJ, JV), so a number is never issued twice.
+- Tests: `tests/demo-data.test.ts` (stock, dates/numbers, links, payroll, invoice status,
+  balanced ledger, inventory = stock value, no cash/bank account overdrawn on any day, demo
+  cases); doc-engine `docs` option. Tuned against ten dates (month starts and ends).
+- A browser that already has local data keeps it; the new demo data appears on a fresh
+  store or after Reset Data.
+
 ## Verifying in a browser without signing in
 
 `harness.local/ui.html` (git-ignored by `*.local`) boots the classic bundle with the app's
@@ -122,13 +143,12 @@ with `NSANav.open('<menu label>')`. Delete the folder when the revamp is done.
 Browser pass done in the harness: light/dark, collapsed sidebar + popover, drawer ≤768px,
 document tab, ledger, sales list, dashboard.
 
-1. Demo data generator (T-35) in `src/core/db.js` defaults — realistic and internally
-   consistent; keep the product domain of the existing demo items; no tile/ceramic workflows.
-2. UI polish: hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens; emoji icons
+1. UI polish: hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens; emoji icons
    (Daftar Laporan, empty states); inline-styled tables in extras pages → `.data-table`.
-3. Docs sync: 08 statuses → "Diperbaiki" (T-18…T-22, T-24, T-32, T-33, T-34); 05 §5; 02/09
-   as implemented (tax entries gated by the `tax` module; dashboard blocks); 04
-   (`journalVouchers`); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs removed, navigate chain);
-   MEETING_KIT demo steps (menu names).
-4. Final summary for the user: firestore rules/functions need a manual deploy; open
+2. Docs sync: 08 statuses → "Diperbaiki" (T-18…T-22, T-24, T-32…T-35); 05 §5; 02/09 as
+   implemented (tax entries gated by the `tax` module; dashboard blocks); 04
+   (`journalVouchers`, payroll vouchers); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs removed,
+   navigate chain, demo-data.js, emptyData/initialData); MEETING_KIT demo steps (menu names,
+   demo cases from demo-data.js).
+3. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; remove `harness.local/`.

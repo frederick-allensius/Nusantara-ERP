@@ -90,6 +90,21 @@ describe('DocEngine.nextNumber', () => {
     expect(window.DocEngine.nextNumber('PO', '2026-05-01', { sequences })).toBe('PO.2026.05.00001');
     expect(window.DocEngine.nextNumber('DO', '2026-05-01', { sequences })).toBe('DO.2026.05.00001');
   });
+
+  it('skips numbers already used in the given documents (types outside the registry)', () => {
+    const sequences = {};
+    const docs = [
+      { number: 'OP.2026.05.00001' },
+      { number: 'OP.2026.05.00004' },
+      { number: 'OP.2026.04.00009' },
+    ];
+    expect(window.DocEngine.nextNumber('OP', '2026-05-20', { sequences, docs })).toBe(
+      'OP.2026.05.00005'
+    );
+    expect(window.DocEngine.nextNumber('OP', '2026-04-02', { sequences, docs })).toBe(
+      'OP.2026.04.00010'
+    );
+  });
 });
 
 describe('DocEngine.computeTotals', () => {

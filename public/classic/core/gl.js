@@ -899,7 +899,7 @@
     }
     const number =
       window.DocEngine && typeof window.DocEngine.nextNumber === 'function'
-        ? window.DocEngine.nextNumber('JV', date, { sequences: data.numberSequences, commit: true })
+        ? window.DocEngine.nextNumber('JV', date, { sequences: data.numberSequences, docs: data.journals, commit: true })
         : `JV-${Date.now()}`;
     const j = makeJournal(`J:JV:${number}`, number, date, 'manual', rawLines);
     if (!j) {

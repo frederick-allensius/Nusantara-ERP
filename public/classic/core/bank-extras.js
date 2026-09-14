@@ -65,10 +65,16 @@
   var DEP_CATS = ['Penjualan', 'Penerimaan Lainnya', 'Refund', 'Bunga Bank', 'Lainnya'];
   var PAY_METHODS = ['Transfer Bank', 'Tunai', 'Cek', 'Giro', 'QRIS'];
 
-  // Document number via the shared numbering engine (PREFIX.YYYY.MM.NNNNN).
+  // Document number via the shared numbering engine (PREFIX.YYYY.MM.NNNNN). Numbers
+  // already used in the collection are skipped, so a number is never issued twice.
+  var DOC_COLLECTIONS = { OP: 'otherPayments', OD: 'otherDeposits', BT: 'bankTransfers' };
   function docNumber(prefix, date) {
     return window.DocEngine
-      ? window.DocEngine.nextNumber(prefix, date, { sequences: db().numberSequences, commit: true })
+      ? window.DocEngine.nextNumber(prefix, date, {
+          sequences: db().numberSequences,
+          docs: db()[DOC_COLLECTIONS[prefix]] || [],
+          commit: true,
+        })
       : prefix + '-' + Date.now();
   }
 

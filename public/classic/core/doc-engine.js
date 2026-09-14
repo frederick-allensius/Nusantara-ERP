@@ -44,10 +44,11 @@
     // Multi-device safety: numberSequences syncs last-write-wins, so two
     // devices can hold the same counter and issue duplicate numbers. The
     // documents themselves are the real record of what was issued — scan this
-    // type's collection for numbers already used in the period and start above
-    // the highest one.
+    // type's collection (or opts.docs for types outside the registry) for numbers
+    // already used in the period and start above the highest one.
     const head = `${prefix}.${year}.${pad(month, 2)}.`;
-    const docs = (def && def.collection && window.DB && window.DB[def.collection]) || [];
+    const docs =
+      opts.docs || (def && def.collection && window.DB && window.DB[def.collection]) || [];
     let maxIssued = 0;
     for (let i = 0; i < docs.length; i++) {
       const num = docs[i] && docs[i].number;

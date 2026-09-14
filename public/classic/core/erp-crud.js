@@ -1799,7 +1799,11 @@ function _recordStockCorrection(item, diff, note) {
   }
   const date = today();
   const number = window.DocEngine
-    ? window.DocEngine.nextNumber('ADJ', date, { sequences: DB.numberSequences, commit: true })
+    ? window.DocEngine.nextNumber('ADJ', date, {
+        sequences: DB.numberSequences,
+        docs: DB.itemAdjustments,
+        commit: true,
+      })
     : `ADJ-${Date.now()}`;
   const line = {
     itemId: String(item.id),

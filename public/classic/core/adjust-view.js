@@ -284,6 +284,7 @@
       window.DocEngine && typeof window.DocEngine.nextNumber === 'function'
         ? window.DocEngine.nextNumber('ADJ', date, {
             sequences: data.numberSequences,
+            docs: data.itemAdjustments,
             commit: true,
           })
         : `ADJ-${Date.now()}`;
