@@ -903,7 +903,7 @@
         }
         var actions = '';
         if (!r.posted) {
-          actions += '<button class="action-ghost" data-action="postPayroll" data-id="' + esc(r.id) + '">Post GL</button> ';
+          actions += '<button class="action-ghost" data-action="postPayroll" data-id="' + esc(r.id) + '">Posting ke Jurnal</button> ';
         }
         if (r.posted && !r.paid) {
           actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '" style="color:var(--success)">Bayar</button> ';
@@ -940,11 +940,11 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(
             'Penggajian',
-            'Kelola karyawan dan proses payroll',
+            'Kelola karyawan dan proses gaji bulanan',
             'Tambah Karyawan',
             'addEmployee'
           )
-        : '<h1>Payroll</h1>';
+        : '<h1>Penggajian</h1>';
 
     var postedCount = payrollRuns.filter(function (r) { return r.posted; }).length;
     var paidCount = payrollRuns.filter(function (r) { return r.paid; }).length;
@@ -960,8 +960,8 @@
               sub: 'Gaji + tunjangan',
               color: 'var(--primary)',
             },
-            { label: 'Payroll Runs', value: String(payrollRuns.length), sub: postedCount + ' posted, ' + paidCount + ' dibayar' },
-            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Posted belum dibayar', color: unpaidPosted > 0 ? 'var(--warning)' : 'var(--success)' },
+            { label: 'Proses Gaji', value: String(payrollRuns.length), sub: postedCount + ' diposting, ' + paidCount + ' dibayar' },
+            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Diposting, belum dibayar', color: unpaidPosted > 0 ? 'var(--warning)' : 'var(--success)' },
           ])
         : '';
 
@@ -977,12 +977,12 @@
       '</tbody>' +
       '</table></div></div>' +
       '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:14px;font-weight:700">Riwayat Payroll</div>' +
-      '<button class="btn" data-action="runPayroll" style="font-size:12px">Proses Payroll</button></div>' +
+      '<div style="font-size:14px;font-weight:700">Riwayat Proses Gaji</div>' +
+      '<button class="btn" data-action="runPayroll" style="font-size:12px">Proses Gaji</button></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>ID</th><th>Periode</th><th>Karyawan</th><th style="text-align:right">Total</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>' +
       '<tbody>' +
-      (recentRuns || '<tr><td colspan="7" class="td-empty">Belum ada payroll diproses.</td></tr>') +
+      (recentRuns || '<tr><td colspan="7" class="td-empty">Belum ada gaji yang diproses.</td></tr>') +
       '</tbody>' +
       '</table></div></div>';
 
@@ -1132,7 +1132,7 @@
       '</div>';
 
     modal(
-      'Proses Payroll',
+      'Proses Gaji',
       body,
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
         '<button class="btn" id="pr-run">Proses</button>',
@@ -1173,7 +1173,7 @@
           save();
         }
         closeM();
-        toast('Payroll diproses: ' + money(total) + (doPost ? ' — jurnal diposting' : ' — draft'), 'success');
+        toast('Gaji diproses: ' + money(total) + (doPost ? ' — jurnal diposting' : ' — draft'), 'success');
         openPayroll();
       });
     }, 60);
@@ -1183,7 +1183,7 @@
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
       '<div style="background:var(--bg);border-radius:8px;padding:12px">' +
-      '<div style="font-size:12px">Payroll: <strong>' + esc(run.id) + '</strong></div>' +
+      '<div style="font-size:12px">Proses gaji: <strong>' + esc(run.id) + '</strong></div>' +
       '<div style="font-size:12px">Periode: <strong>' + esc(run.period) + '</strong></div>' +
       '<div style="font-size:12px">Total: <strong>' + money(run.totalAmount) + '</strong></div>' +
       '</div>' +
@@ -1340,7 +1340,7 @@
             window.GL.reconcileAll();
             save();
           }
-          toast('Payroll ' + id + ' diposting ke GL', 'success');
+          toast('Proses gaji ' + id + ' diposting ke jurnal', 'success');
           openPayroll();
         }
         break;

@@ -253,7 +253,7 @@
           esc(d.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
-          esc(d.orderId) +
+          esc((so && so.number) || d.orderId) +
           '</td>' +
           '<td class="td-p">' +
           esc(so ? so.customer : d.customerName || '—') +
@@ -301,11 +301,11 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(
             'Uang Muka Penjualan',
-            'Down payment dari pelanggan',
+            'Uang muka yang diterima dari pelanggan, lalu dipotong dari piutangnya',
             'Terima DP',
             'addSalesDP'
           )
-        : '<h1>Sales Down Payment</h1>';
+        : '<h1>Uang Muka Penjualan</h1>';
 
     var stats =
       typeof window.statRow === 'function'
@@ -315,7 +315,7 @@
             {
               label: 'Belum Diterapkan',
               value: money(pendingDP),
-              sub: 'Pending application',
+              sub: 'Belum dipotong dari piutang',
               color: 'var(--warning)',
             },
           ])
@@ -447,7 +447,7 @@
           esc(d.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
-          esc(d.orderId) +
+          esc((po && po.number) || d.orderId) +
           '</td>' +
           '<td class="td-p">' +
           esc(po ? po.supplier : d.supplierName || '—') +
@@ -491,18 +491,18 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(
             'Uang Muka Pembelian',
-            'Down payment ke supplier',
+            'Uang muka yang dibayar ke supplier, lalu dipotong dari hutangnya',
             'Bayar DP',
             'addPurchaseDP'
           )
-        : '<h1>Purchase Down Payment</h1>';
+        : '<h1>Uang Muka Pembelian</h1>';
 
     var stats =
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total DP', value: String(dps.length), sub: 'Transaksi DP' },
             { label: 'Total Dibayar', value: money(totalDP), sub: 'Seluruh DP', color: 'var(--warning)' },
-            { label: 'Belum Diterapkan', value: money(pendingDP), sub: 'Pending application', color: 'var(--danger)' },
+            { label: 'Belum Diterapkan', value: money(pendingDP), sub: 'Belum dipotong dari hutang', color: 'var(--danger)' },
           ])
         : '';
 

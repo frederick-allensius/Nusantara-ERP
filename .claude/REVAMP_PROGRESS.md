@@ -149,6 +149,8 @@ Browser pane, otherwise rely on the tests.
   orders incl. drafts/cancelled and PPN, used purchases as cost, read a missing
   `customerName` field and shifted months through `toISOString()`. Findings are factual
   statements (no advice), month to date vs the same days last month.
+- Uang Muka Penjualan/Pembelian show the order number (not the internal id); DP and
+  Penggajian labels in Indonesian.
 
 ### Documentation synced with the code
 - 08: all findings `Diperbaiki` except T-06 and T-44 (decision needed); T-27 still needs the
@@ -177,7 +179,10 @@ with `NSANav.open('<menu label>')`. Delete the folder when the revamp is done.
 Browser pass done in the harness: light/dark, collapsed sidebar + popover, drawer ≤768px,
 document tab, ledger, sales list, dashboard.
 
-1. UI polish, remaining: inline-styled tables and stat cards in extras pages → shared
-   classes (`.data-table`, `.stat-row`).
-2. Final summary for the user: firestore rules/functions need a manual deploy; open
+1. Optional: inline-styled tables and stat cards in extras pages → shared classes. The
+   pages already use the theme tokens and look consistent; low priority.
+2. `public/classic/core/erp-view.js` has an uncommitted removal of unused chart code made by
+   a separate session (task "Remove dead chart code from erp-view.js"); tests pass with it.
+   Commit it on its own once that session is done — do not sweep it in with `git add -u`.
+3. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; pitch sample outputs; remove `harness.local/`.
