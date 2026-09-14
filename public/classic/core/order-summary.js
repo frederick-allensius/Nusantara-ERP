@@ -226,7 +226,7 @@
       </div>`;
     const footer =
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
-      '<button class="btn" id="osum-go">🖨 Buat PDF</button>';
+      '<button class="btn" id="osum-go">Buat PDF</button>';
     window.openModal(`Ringkasan PDF — ${esc(cfg.label)}`, body, footer, false);
 
     setTimeout(() => {

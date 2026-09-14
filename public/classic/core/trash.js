@@ -278,7 +278,7 @@
           `<td class="td-p">${esc(t.deletedBy)}</td>` +
           '<td class="td-p" style="text-align:right;white-space:nowrap">' +
           `<button class="btn-ghost" data-action="trashRestore" data-id="${esc(t.id)}" style="font-size:11px;padding:4px 10px">Pulihkan</button> ` +
-          `<button class="btn-ghost" data-action="trashPurge" data-id="${esc(t.id)}" style="font-size:11px;padding:4px 10px;color:#FF3B30">Hapus</button>` +
+          `<button class="btn-ghost" data-action="trashPurge" data-id="${esc(t.id)}" style="font-size:11px;padding:4px 10px;color:var(--danger)">Hapus</button>` +
           '</td></tr>'
         );
       })
@@ -291,12 +291,12 @@
         '<div><div style="font-size:15px;font-weight:800">Recycle Bin</div>' +
         `<div style="font-size:11px;color:var(--muted)">Dokumen terhapus disimpan ${RETENTION_DAYS} hari (maks. ${MAX_ENTRIES} entri) dan bisa dipulihkan satu klik.</div></div>` +
         (entries.length > 0
-          ? '<button class="btn-ghost" data-action="trashPurgeAll" style="font-size:11px;padding:4px 10px;color:#FF3B30">Kosongkan Semua</button>'
+          ? '<button class="btn-ghost" data-action="trashPurgeAll" style="font-size:11px;padding:4px 10px;color:var(--danger)">Kosongkan Semua</button>'
           : '') +
         '</div>' +
         (entries.length === 0
           ? '<div style="text-align:center;padding:40px;color:var(--muted)">' +
-            '<div style="font-size:32px;margin-bottom:8px">🗑️</div>' +
+            '<div class="empty-state-icon" style="margin:0 auto 8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>' +
             '<div style="font-size:14px;font-weight:700;margin-bottom:4px">Recycle bin kosong</div>' +
             '<div style="font-size:12px">Dokumen yang dihapus akan muncul di sini.</div></div>'
           : '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +

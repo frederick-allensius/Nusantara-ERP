@@ -196,7 +196,7 @@
               '<td class="td-p" style="font-size:11px">' +
               esc(p.method || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;color:#DC2626">' +
+              '<td class="td-p" style="text-align:right;font-weight:700;color:var(--danger)">' +
               money(p.amount) +
               '</td>' +
               '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
@@ -216,12 +216,12 @@
       '<div class="sec-hdr"><div><h1>Pengeluaran Lain</h1><p>Biaya dan pengeluaran kas/bank di luar pembelian barang — otomatis dijurnal</p></div>' +
         '<button class="btn" data-action="addOP">+ Catat Pengeluaran</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Total Pengeluaran</div><div class="stat-val" style="color:#DC2626">' +
+        '<div class="card stat-card"><div class="stat-label">Total Pengeluaran</div><div class="stat-val" style="color:var(--danger)">' +
         money(total) +
         '</div><div class="stat-sub">' +
         payments.length +
         ' transaksi</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="color:#DC2626">' +
+        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="color:var(--danger)">' +
         money(
           payments
             .filter(function (p) {
@@ -362,7 +362,7 @@
               '<td class="td-p" style="font-size:11px">' +
               esc(d.method || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;color:#15803D">' +
+              '<td class="td-p" style="text-align:right;font-weight:700;color:var(--success)">' +
               money(d.amount) +
               '</td>' +
               '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
@@ -382,12 +382,12 @@
       '<div class="sec-hdr"><div><h1>Penerimaan Lain</h1><p>Uang masuk ke kas/bank di luar penjualan barang — otomatis dijurnal</p></div>' +
         '<button class="btn" data-action="addOD">+ Catat Penerimaan</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Total Penerimaan</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">Total Penerimaan</div><div class="stat-val" style="color:var(--success)">' +
         money(total) +
         '</div><div class="stat-sub">' +
         deposits.length +
         ' transaksi</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="color:var(--success)">' +
         money(
           deposits
             .filter(function (d) {
@@ -529,7 +529,7 @@
               '<td class="td-p" style="text-align:right;font-weight:700">' +
               money(t.amount) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-size:11px;color:#DC2626">' +
+              '<td class="td-p" style="text-align:right;font-size:11px;color:var(--danger)">' +
               (t.fee ? money(t.fee) : '—') +
               '</td>' +
               '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
@@ -668,7 +668,7 @@
           '<td class="td-p" style="font-size:11px">' +
           esc(a.accountNumber) +
           '</td>' +
-          '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:#FEF9C3;color:#854D0E">Manual</span></td>' +
+          '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--warning-bg);color:var(--warning)">Manual</span></td>' +
           '</tr>'
         );
       })
@@ -678,18 +678,18 @@
       '<div class="sec-hdr"><div><h1>SmartLink e-Banking</h1><p>Integrasi perbankan elektronik</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
-        '<div style="width:44px;height:44px;border-radius:10px;background:#DBEAFE;display:flex;align-items:center;justify-content:center">' +
-        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
+        '<div style="width:44px;height:44px;border-radius:10px;background:var(--info-bg);display:flex;align-items:center;justify-content:center">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
         '<div><div style="font-weight:700">Status Koneksi</div>' +
         '<div style="font-size:12px;color:var(--muted)">Koneksi API perbankan</div></div>' +
-        '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:4px 12px;background:#FEF9C3;color:#854D0E;border-radius:6px">Belum Terhubung</span>' +
+        '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:4px 12px;background:var(--warning-bg);color:var(--warning);border-radius:6px">Belum Terhubung</span>' +
         '</div>' +
         '<div style="padding:16px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">' +
         '<strong>Untuk mengaktifkan SmartLink e-Banking:</strong><br>' +
         '1. Daftarkan perusahaan Anda ke program corporate banking bank terpilih<br>' +
         '2. Dapatkan API Key dan Webhook URL dari portal developer bank<br>' +
         '3. Masukkan kredensial di bawah ini dan klik Simpan<br>' +
-        '<em style="color:#DC2626">Catatan: Integrasi langsung memerlukan kontrak bisnis dengan bank.</em>' +
+        '<em style="color:var(--danger)">Catatan: Integrasi langsung memerlukan kontrak bisnis dengan bank.</em>' +
         '</div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Konfigurasi API</div>' +
@@ -779,10 +779,10 @@
               '<td class="td-p" style="text-align:center">' +
               entryCount +
               ' baris</td>' +
-              '<td class="td-p" style="text-align:right;color:#DC2626">' +
+              '<td class="td-p" style="text-align:right;color:var(--danger)">' +
               money(totalDebit) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;color:#15803D">' +
+              '<td class="td-p" style="text-align:right;color:var(--success)">' +
               money(totalCredit) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
@@ -1022,7 +1022,7 @@
       entries
         .slice(0, 200)
         .map(function (e) {
-          var flowColor = e.flow === 'in' ? '#15803D' : e.flow === 'out' ? '#DC2626' : '#6B7280';
+          var flowColor = e.flow === 'in' ? 'var(--success)' : e.flow === 'out' ? 'var(--danger)' : 'var(--muted)';
           var prefix = e.flow === 'in' ? '+' : e.flow === 'out' ? '−' : '⇄';
           return (
             '<tr>' +
@@ -1059,14 +1059,14 @@
         entries.length.toLocaleString('id-ID') +
         ' total)</p></div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val" style="color:var(--success)">' +
         money(totalIn) +
         '</div><div class="stat-sub">Pelanggan, uang muka &amp; penerimaan lain</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Total Keluar</div><div class="stat-val" style="color:#DC2626">' +
+        '<div class="card stat-card"><div class="stat-label">Total Keluar</div><div class="stat-val" style="color:var(--danger)">' +
         money(totalOut) +
         '</div><div class="stat-sub">Supplier, uang muka &amp; pengeluaran lain</div></div>' +
         '<div class="card stat-card"><div class="stat-label">Net Posisi</div><div class="stat-val" style="color:' +
-        (totalIn - totalOut >= 0 ? '#15803D' : '#DC2626') +
+        (totalIn - totalOut >= 0 ? 'var(--success)' : 'var(--danger)') +
         '">' +
         money(Math.abs(totalIn - totalOut)) +
         '</div><div class="stat-sub">' +
@@ -1111,7 +1111,6 @@
       injectView(
         '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan buku besar</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:32px;margin-bottom:12px">🏦</div>' +
           '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
           '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Rekening Koran</div>' +
           '<button class="btn" data-action="goToBankStatement">Buka Rekening Koran</button></div>'
@@ -1144,10 +1143,10 @@
             '<td class="td-p" style="font-size:12px">' +
             esc(e.description) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:#DC2626">' +
+            '<td class="td-p" style="text-align:right;color:var(--danger)">' +
             (e.debit ? money(e.debit) : '—') +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:#15803D">' +
+            '<td class="td-p" style="text-align:right;color:var(--success)">' +
             (e.credit ? money(e.credit) : '—') +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
@@ -1186,7 +1185,7 @@
         ' (' +
         pct +
         '%)</div></div>' +
-        '<div style="flex:1;min-width:160px"><div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;background:#15803D;width:' +
+        '<div style="flex:1;min-width:160px"><div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;background:var(--success);width:' +
         pct +
         '%"></div></div></div>' +
         '</div></div>' +
@@ -1300,9 +1299,9 @@
               esc(e.date) +
               '</td><td class="td-p">' +
               esc(e.description) +
-              '</td><td class="td-p" style="text-align:right;color:#DC2626">' +
+              '</td><td class="td-p" style="text-align:right;color:var(--danger)">' +
               (e.debit ? money(e.debit) : '—') +
-              '</td><td class="td-p" style="text-align:right;color:#15803D">' +
+              '</td><td class="td-p" style="text-align:right;color:var(--success)">' +
               (e.credit ? money(e.credit) : '—') +
               '</td></tr>'
             );

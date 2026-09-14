@@ -142,7 +142,7 @@
             '<td class="td-p" style="text-align:right">' +
             money(inv.dpp) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:#2563EB">' +
+            '<td class="td-p" style="text-align:right;color:var(--info)">' +
             money(inv.ppn) +
             '</td>' +
             '<td class="td-p" style="font-size:11px">' +
@@ -163,15 +163,15 @@
         '<div style="display:flex;gap:8px">' +
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
         '<button class="btn" data-action="exportCTAS">Export CSV</button></div></div>' +
-        '<div class="card" style="background:#EFF6FF;border:1px solid #BFDBFE;padding:14px 18px;margin-bottom:16px">' +
+        '<div class="card" style="background:var(--info-bg);border:1px solid transparent;padding:14px 18px;margin-bottom:16px">' +
         '<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">' +
-        '<div><span style="color:#1D4ED8;font-weight:700">' +
+        '<div><span style="color:var(--info);font-weight:700">' +
         invoices.length.toLocaleString('id-ID') +
         '</span><span style="color:var(--muted)"> faktur</span></div>' +
         '<div><span style="font-weight:700">DPP:</span> ' +
         money(totalDPP) +
         '</div>' +
-        '<div><span style="font-weight:700;color:#2563EB">PPN (11%):</span> ' +
+        '<div><span style="font-weight:700;color:var(--info)">PPN (11%):</span> ' +
         money(totalPPN) +
         '</div>' +
         '<div style="margin-left:auto;font-size:11px;color:var(--muted)">NPWP Perusahaan: <strong>' +
@@ -263,7 +263,7 @@
           );
         })
         .join('') ||
-      '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted)">Semua faktur sudah dikirimkan 🎉</td></tr>';
+      '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted)">Semua faktur sudah dikirimkan.</td></tr>';
 
     var logRows =
       emailLog
@@ -283,7 +283,7 @@
             '<td class="td-p" style="font-size:11px">' +
             esc(l.to) +
             '</td>' +
-            '<td class="td-p" style="text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#DCFCE7;color:#166534;font-weight:700">Terkirim</span></td>' +
+            '<td class="td-p" style="text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--success-bg);color:var(--success);font-weight:700">Terkirim</span></td>' +
             '</tr>'
           );
         })
@@ -297,10 +297,10 @@
         '<div class="card stat-card"><div class="stat-label">Total Faktur</div><div class="stat-val">' +
         invoices.length +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Sudah Dikirim</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">Sudah Dikirim</div><div class="stat-val" style="color:var(--success)">' +
         sent.length +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Belum Dikirim</div><div class="stat-val" style="color:#DC2626">' +
+        '<div class="card stat-card"><div class="stat-label">Belum Dikirim</div><div class="stat-val" style="color:var(--danger)">' +
         pending.length +
         '</div></div>' +
         '</div>' +
@@ -390,7 +390,7 @@
             '<td class="td-p" style="text-align:right">' +
             inv.dpp +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:#2563EB">' +
+            '<td class="td-p" style="text-align:right;color:var(--info)">' +
             inv.ppn +
             '</td>' +
             '</tr>'
@@ -408,8 +408,8 @@
             '</select>'
           : '') +
         '<button class="btn" data-action="exportLegacyCSV">Export CSV Legacy</button></div></div>' +
-        '<div class="card" style="background:#FEF9C3;border:1px solid #FDE047;padding:12px 18px;margin-bottom:16px;font-size:12px">' +
-        '⚠️ <strong>Format Legacy:</strong> Gunakan format ini hanya jika aplikasi e-Faktur Anda masih versi lama (sebelum 4.0). ' +
+        '<div class="card" style="background:var(--warning-bg);border:1px solid transparent;padding:12px 18px;margin-bottom:16px;font-size:12px">' +
+        '<strong>Format lama:</strong> Gunakan format ini hanya jika aplikasi e-Faktur Anda masih versi lama (sebelum 4.0). ' +
         'Untuk versi terbaru, gunakan menu <strong>e-Faktur CTAS</strong>.' +
         '</div>' +
         '<div class="card">' +

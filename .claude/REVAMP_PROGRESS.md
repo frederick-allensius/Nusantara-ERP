@@ -132,6 +132,24 @@ Browser pane, otherwise rely on the tests.
 - A browser that already has local data keeps it; the new demo data appears on a fresh
   store or after Reset Data.
 
+### UI polish and figures that were misleading
+- Hardcoded colors in `public/classic/**` → tokens (`--success/-bg`, `--danger/-bg`,
+  `--warning/-bg`, `--info/-bg`, `--primary`, `--surface-sunken`, `--muted` …), so extras
+  pages follow light and dark themes. Script: 307 replacements; SVG `stroke="#…"` →
+  `currentColor` + token. Left as is: print/PDF templates (fixed colors on paper) and the
+  unused Chart.js code in erp-view.js (task chip suggested to remove it).
+- Emoji icons and markers → line icons or plain text: Daftar Laporan (icon per category,
+  `.report-card-icon`), empty states (`.empty-state`), sync dialogs, warnings, buttons.
+  The `⚠ Tujuan diubah` prefix stays: erp-crud.js stores and filters notes by it.
+- Ringkasan: "Penjualan bulan ini" compares with the same days of last month
+  (`_dashMonthly(months, throughDay)`), not the whole previous month.
+- Analisis Bisnis (report-extras `openAIAnalysis`): figures now come from journals (revenue,
+  cost of sales, purchases), invoices plus delivered orders without an invoice (top
+  customers/items, without PPN) and `Balances.summary` (receivables). Before it summed all
+  orders incl. drafts/cancelled and PPN, used purchases as cost, read a missing
+  `customerName` field and shifted months through `toISOString()`. Findings are factual
+  statements (no advice), month to date vs the same days last month.
+
 ## Verifying in a browser without signing in
 
 `harness.local/ui.html` (git-ignored by `*.local`) boots the classic bundle with the app's
@@ -143,8 +161,8 @@ with `NSANav.open('<menu label>')`. Delete the folder when the revamp is done.
 Browser pass done in the harness: light/dark, collapsed sidebar + popover, drawer ≤768px,
 document tab, ledger, sales list, dashboard.
 
-1. UI polish: hardcoded inline colors (#FF3B30, #34C759, #3B82F6 …) → tokens; emoji icons
-   (Daftar Laporan, empty states); inline-styled tables in extras pages → `.data-table`.
+1. UI polish, remaining: inline-styled tables and stat cards in extras pages → shared
+   classes (`.data-table`, `.stat-row`).
 2. Docs sync: 08 statuses → "Diperbaiki" (T-18…T-22, T-24, T-32…T-35); 05 §5; 02/09 as
    implemented (tax entries gated by the `tax` module; dashboard blocks); 04
    (`journalVouchers`, payroll vouchers); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs removed,

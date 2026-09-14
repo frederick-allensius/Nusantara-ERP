@@ -83,15 +83,15 @@
       });
 
     var statMap = {
-      Active: '#DCFCE7|#15803D',
-      Inactive: '#FEE2E2|#DC2626',
-      Probation: '#FEF9C3|#854D0E',
+      Active: 'var(--success-bg)|var(--success)',
+      Inactive: 'var(--danger-bg)|var(--danger)',
+      Probation: 'var(--warning-bg)|var(--warning)',
     };
 
     var rows = emps.length
       ? emps
           .map(function (e) {
-            var sc = (statMap[e.status] || '#F3F4F6|#374151').split('|');
+            var sc = (statMap[e.status] || 'var(--surface-sunken)|var(--text-secondary)').split('|');
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
@@ -158,7 +158,7 @@
         '<div class="card stat-card"><div class="stat-label">Total Karyawan</div><div class="stat-val">' +
         emps.length +
         '</div><div class="stat-sub">Terdaftar</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Aktif</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">Aktif</div><div class="stat-val" style="color:var(--success)">' +
         activeCount +
         '</div><div class="stat-sub">Status aktif</div></div>' +
         '<div class="card stat-card"><div class="stat-label">Departemen</div><div class="stat-val">' +

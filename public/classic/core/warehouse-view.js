@@ -181,7 +181,7 @@
           '</td>' +
           whCells +
           '<td class="td-p" style="font-size:13px;font-weight:800;text-align:right;color:' +
-          (isLow ? '#FF3B30' : 'var(--text)') +
+          (isLow ? 'var(--danger)' : 'var(--text)') +
           '">' +
           (item.stock || 0) +
           '</td>' +

@@ -511,7 +511,7 @@ function exportBtn(view) {
 function excelBtn(view) {
   return `<button class="btn-ghost" data-action="exportXLSX" data-type="${view}"
     style="display:flex;align-items:center;gap:5px;font-size:12px">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
       <line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/>
@@ -526,7 +526,7 @@ function excelBtn(view) {
 function importBtn(view) {
   return `<button class="btn-ghost" data-action="importXLSX" data-type="${view}"
     style="display:flex;align-items:center;gap:5px;font-size:12px">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
       <polyline points="17 8 12 3 7 8"/>
       <line x1="12" y1="3" x2="12" y2="15"/>
@@ -540,7 +540,7 @@ function importBtn(view) {
 function summaryBtn(view) {
   return `<button class="btn-ghost" data-action="printSummary" data-type="${view}"
     style="display:flex;align-items:center;gap:5px;font-size:12px">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
       <rect x="6" y="14" width="12" height="8"/>
     </svg> Ringkasan PDF
@@ -715,9 +715,9 @@ function renderPurchase() {
       label: 'Menunggu Barang',
       value: `${pendingCnt} PO`,
       sub: 'Belum diterima',
-      color: '#FF9F0A',
+      color: 'var(--warning)',
     },
-    { label: 'Hutang Belum Lunas', value: idr(hutangVal), sub: 'Ke supplier', color: '#FF3B30' },
+    { label: 'Hutang Belum Lunas', value: idr(hutangVal), sub: 'Ke supplier', color: 'var(--danger)' },
   ])}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -788,7 +788,7 @@ function renderInventory() {
   ${
     lowCount > 0
       ? `<div class="alert-warn">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
       <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
     </svg>
@@ -799,7 +799,7 @@ function renderInventory() {
   ${statRow([
     { label: 'Total Item', value: String(DB.inventoryItems.length), sub: 'Aktif di katalog' },
     { label: 'Nilai Stok Total', value: idr(totalValue), sub: 'Berdasarkan harga beli' },
-    { label: 'Stok Rendah', value: `${lowCount} item`, sub: 'Di bawah minimum', color: '#FF3B30' },
+    { label: 'Stok Rendah', value: `${lowCount} item`, sub: 'Di bawah minimum', color: 'var(--danger)' },
     { label: 'Kategori', value: String(cats.length), sub: 'Kelompok barang' },
   ])}
   <div class="card">
@@ -835,7 +835,7 @@ function renderInventory() {
                 <td class="td-p" style="font-size:13px;font-weight:700">${escapeHtml(i.name)}</td>
                 <td class="td-p"><span class="cat">${escapeHtml(i.category)}</span></td>
                 <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(i.unit)}</td>
-                <td class="td-p" style="font-size:13px;font-weight:800;color:${isLow ? '#FF3B30' : 'var(--text)'}">${i.stock}</td>
+                <td class="td-p" style="font-size:13px;font-weight:800;color:${isLow ? 'var(--danger)' : 'var(--text)'}">${i.stock}</td>
                 <td class="td-p" style="font-size:11px;color:var(--muted)">${i.min}</td>
                 <td class="td-p" style="font-size:12px">${idr(i.cost)}</td>
                 <td class="td-p" style="font-size:12px;font-weight:700">${idr(i.sell)}</td>
@@ -1013,13 +1013,13 @@ function renderAssets() {
       label: 'Perlu Perawatan',
       value: String(maintenanceCount),
       sub: 'Status Maintenance',
-      color: '#8B5CF6',
+      color: 'var(--chart-4)',
     },
     {
       label: 'Sudah Dilepas',
       value: String(disposedCount),
       sub: 'Disposisi aset',
-      color: '#EF4444',
+      color: 'var(--danger)',
     },
   ])}
   <div class="fin-2col">
@@ -1199,7 +1199,7 @@ function renderTax() {
       label: 'PPN Terutang',
       value: idrFull(summary.netTax),
       sub: `Keluaran - Masukan`,
-      color: summary.netTax >= 0 ? '#3B82F6' : '#EF4444',
+      color: summary.netTax >= 0 ? 'var(--primary)' : 'var(--danger)',
     },
     { label: 'Tarif PPN', value: `${ratePct}%`, sub: roundingLabel },
   ])}
@@ -1354,14 +1354,14 @@ function renderReports() {
       .map(
         (r, idx) => `
       <div class="card fin-card-row" data-action="openReport" data-idx="${idx}" style="cursor:pointer">
-        <div class="fin-ico" style="background:#EFF6FF">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div class="fin-ico" style="background:var(--info-bg)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${escapeHtml(r.title)}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml(r.sub)}</div>
         </div>
-        <div style="font-size:13px;font-weight:800;color:#3B82F6">${escapeHtml(r.value)}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--primary)">${escapeHtml(r.value)}</div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`
       )
@@ -1398,10 +1398,10 @@ function renderLogistics() {
       label: 'DO Difakturkan',
       value: String(invoiced),
       sub: 'Sudah jadi faktur',
-      color: '#34C759',
+      color: 'var(--success)',
     },
-    { label: 'DO Terkirim', value: String(sent), sub: 'Belum difaktur', color: '#3B82F6' },
-    { label: 'DO Faktur Sebagian', value: String(partialInv), sub: 'Sebagian difaktur', color: '#FF9F0A' },
+    { label: 'DO Terkirim', value: String(sent), sub: 'Belum difaktur', color: 'var(--primary)' },
+    { label: 'DO Faktur Sebagian', value: String(partialInv), sub: 'Sebagian difaktur', color: 'var(--warning)' },
     {
       label: 'Driver Aktif Bln Ini',
       value: String(uniqueDrivers),
@@ -1491,7 +1491,7 @@ function renderLogistics() {
                     const refColor = d.soId
                       ? 'var(--primary)'
                       : d.poId
-                        ? '#FF9F0A'
+                        ? 'var(--warning)'
                         : 'var(--muted)';
                     return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}" style="cursor:pointer">
               <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
@@ -1499,7 +1499,7 @@ function renderLogistics() {
               <td class="td-p" style="font-size:12px;font-weight:600">${escapeHtml(d.customer)}</td>
               <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(d.destination)}${
                 d.destChanged
-                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:9px;font-weight:800;color:#B45309;background:#FEF3C7;border:1px solid #FCD34D;border-radius:99px;padding:1px 6px;vertical-align:middle">⚠ TUJUAN DIUBAH</span>`
+                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:9px;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
                   : ''
               }</td>
               <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(d.date)}</td>
@@ -1716,7 +1716,7 @@ function renderSettings() {
         s => `
       <div class="card set-row" ${s.action ? `data-action="${s.action}"` : `data-action="openSettings" data-title="${escapeHtml(s.title)}" data-sub="${escapeHtml(s.sub)}"`}>
         <div class="set-ico">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
         </div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${escapeHtml(s.title)}</div>
@@ -1727,8 +1727,8 @@ function renderSettings() {
       )
       .join('')}
     <div class="card set-row" data-action="exportBackup" style="cursor:pointer">
-      <div class="set-ico" style="background:#EFF6FF">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <div class="set-ico" style="background:var(--info-bg)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">Ekspor Backup JSON</div>
@@ -1737,8 +1737,8 @@ function renderSettings() {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="card set-row" style="cursor:pointer;position:relative">
-      <div class="set-ico" style="background:#F0FDF4">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="set-ico" style="background:var(--success-bg)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">Impor Backup JSON</div>
@@ -1747,15 +1747,15 @@ function renderSettings() {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <input type="file" accept=".json" id="importBackupInput" style="position:absolute;inset:0;opacity:0;cursor:pointer" data-action="importBackup">
     </div>
-    <div class="card set-row" data-action="syncToFirebase" style="border-color:#DBEAFE;cursor:pointer">
-      <div class="set-ico" style="background:#EFF6FF">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <div class="card set-row" data-action="syncToFirebase" style="border-color:var(--info-bg);cursor:pointer">
+      <div class="set-ico" style="background:var(--info-bg)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:#2563EB">Sinkronisasi ke Firebase</div>
+        <div style="font-size:13px;font-weight:700;color:var(--info)">Sinkronisasi ke Firebase</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">Upload data lokal ke cloud (Firestore)</div>
       </div>
-      <span style="font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? '#D1FAE5' : '#FEF3C7'};color:${window.__nsaDataMode === 'firestore' ? '#065F46' : '#92400E'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
+      <span style="font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'var(--success-bg)' : 'var(--warning-bg)'};color:${window.__nsaDataMode === 'firestore' ? 'var(--success)' : 'var(--warning)'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
     </div>
     <div class="card set-row" data-action="resetDB" style="border-color:var(--danger-light)">
       <div class="set-ico" style="background:var(--danger-light)">
@@ -2368,11 +2368,11 @@ document.addEventListener('click', async e => {
         'Sinkronisasi ke Firebase',
         `
         <div id="sync-fb-body" style="text-align:center;padding:20px 0">
-          <div style="font-size:32px;margin-bottom:12px">☁️</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
           <div style="font-size:14px;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
           <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
-            <div id="sync-fb-bar" style="height:100%;background:#3B82F6;width:0%;transition:width .3s;border-radius:99px"></div>
+            <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
         </div>`
       );
@@ -2417,8 +2417,8 @@ document.addEventListener('click', async e => {
         const body = document.getElementById('sync-fb-body');
         if (body)
           body.innerHTML = `
-          <div style="font-size:32px;margin-bottom:12px">✅</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#16a34a">Sinkronisasi Berhasil!</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
           <div style="font-size:12px;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
         showToast('Data berhasil disinkronisasi ke Firebase', 'success');
         setTimeout(() => {
@@ -2429,7 +2429,7 @@ document.addEventListener('click', async e => {
         const body = document.getElementById('sync-fb-body');
         if (body)
           body.innerHTML = `
-          <div style="font-size:32px;margin-bottom:12px">❌</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--danger)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
           <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
           <div style="font-size:12px;color:var(--muted)">${escapeHtml(e.message)}</div>`;
         showToast('Gagal: ' + e.message, 'danger');
@@ -2963,7 +2963,7 @@ function renderSales() {
          style="font-size:11px;padding:4px 10px">${escapeHtml(l)}</button>`
     ).join('')}
     <button class="btn-ghost" data-action="clearSOSelection"
-      style="font-size:11px;padding:4px 10px;color:#FF3B30">✕ Batal</button>
+      style="font-size:11px;padding:4px 10px;color:var(--danger)">✕ Batal</button>
   </div>`;
 
   const tableRows =
@@ -3010,13 +3010,13 @@ function renderSales() {
       label: 'Menunggu Pengiriman',
       value: `${pendingCnt} SO`,
       sub: 'Status Confirmed',
-      color: '#FF9F0A',
+      color: 'var(--warning)',
     },
     {
       label: 'Piutang Belum Lunas',
       value: idr(unpaidVal),
       sub: 'Confirmed + Delivered',
-      color: '#FF3B30',
+      color: 'var(--danger)',
     },
   ])}
   <div class="card">

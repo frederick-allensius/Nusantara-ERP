@@ -361,7 +361,7 @@
     const log = db().auditLog || [];
     const last = log.length > 0 ? log[log.length - 1] : null;
     const lockBadge = lock
-      ? `<span style="color:#34C759;font-weight:700">Terkunci s/d ${esc(lock)}</span>`
+      ? `<span style="color:var(--success);font-weight:700">Terkunci s/d ${esc(lock)}</span>`
       : '<span style="color:var(--muted)">Tidak aktif</span>';
     const lastLine = last
       ? `${esc(last.ts.slice(0, 16).replace('T', ' '))} — ${esc(last.user)} ${esc(last.action)} ${esc(last.collection)} ${esc(last.id)}`
@@ -468,7 +468,7 @@
     const r = verifyLedger();
     const fmt = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
     const tbLine = r.trialBalance
-      ? `<div style="font-size:12px;padding:6px 0">Trial balance: D ${fmt(r.trialBalance.totalDebit)} / K ${fmt(r.trialBalance.totalCredit)} — ${r.trialBalance.balanced ? '<span style="color:#34C759;font-weight:700">Seimbang</span>' : '<span style="color:#FF3B30;font-weight:700">TIDAK seimbang</span>'}</div>`
+      ? `<div style="font-size:12px;padding:6px 0">Trial balance: D ${fmt(r.trialBalance.totalDebit)} / K ${fmt(r.trialBalance.totalCredit)} — ${r.trialBalance.balanced ? '<span style="color:var(--success);font-weight:700">Seimbang</span>' : '<span style="color:var(--danger);font-weight:700">TIDAK seimbang</span>'}</div>`
       : '<div style="font-size:12px;padding:6px 0;color:var(--muted)">Trial balance: GL belum tersedia</div>';
     const badRows = r.unbalanced
       .slice(0, 50)
@@ -479,7 +479,7 @@
       .join('');
     window.openModal(
       'Cek Buku Besar',
-      `<div style="font-size:13px;font-weight:700;color:${r.ok ? '#34C759' : '#FF3B30'};margin-bottom:8px">
+      `<div style="font-size:13px;font-weight:700;color:${r.ok ? 'var(--success)' : 'var(--danger)'};margin-bottom:8px">
         ${r.ok ? '✓ Semua jurnal seimbang' : '✗ Ditemukan masalah'}
       </div>
       <div style="font-size:12px;padding:6px 0">Total jurnal diperiksa: ${r.journalCount}</div>

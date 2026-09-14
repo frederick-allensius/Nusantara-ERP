@@ -208,7 +208,8 @@ function _dashAccountTypes() {
 // Revenue, cost of goods sold and purchases per month for the last `months`
 // months. Purchases are the stock/expense debits of purchase documents (invoice,
 // receipt of an uninvoiced order) net of purchase returns — PPN excluded.
-function _dashMonthly(months) {
+// With `throughDay`, each month counts only days 1..throughDay (month to date).
+function _dashMonthly(months, throughDay) {
   var types = _dashAccountTypes();
   var now = new Date();
   var keys = [];
@@ -219,8 +220,9 @@ function _dashMonthly(months) {
     data[k] = { revenue: 0, cogs: 0, purchases: 0 };
   }
   (DB.journals || []).forEach(function (j) {
-    var m = data[String(j.date || '').slice(0, 7)];
-    if (!m) {
+    var date = String(j.date || '');
+    var m = data[date.slice(0, 7)];
+    if (!m || (throughDay && Number(date.slice(8, 10)) > throughDay)) {
       return;
     }
     var src = j.source && j.source.docType;
@@ -437,11 +439,14 @@ function renderDashboard() {
   var ap = _dashBalances('purchases');
   var months = _dashMonthly(2);
   var cur = months.data[months.keys[1]];
-  var prev = months.data[months.keys[0]];
   var gross = cur.revenue - cur.cogs;
+  // This month so far against the same days of last month, not the whole month.
+  var prevDays = Math.min(now.getDate(), new Date(now.getFullYear(), now.getMonth(), 0).getDate());
+  var prev = _dashMonthly(2, prevDays).data[months.keys[0]];
   var delta =
     prev.revenue > 0 ? Math.round(((cur.revenue - prev.revenue) / prev.revenue) * 100) : null;
   var prevMonth = DASH_MONTHS[Number(months.keys[0].slice(5, 7)) - 1];
+  var prevPeriod = (prevDays > 1 ? '1–' + prevDays : '1') + ' ' + prevMonth;
 
   var tile = function (o) {
     return (
@@ -506,7 +511,7 @@ function renderDashboard() {
       sub:
         'Laba kotor ' +
         short(gross) +
-        (delta === null ? '' : ' · ' + (delta >= 0 ? '+' : '−') + Math.abs(delta) + '% vs ' + prevMonth),
+        (delta === null ? '' : ' · ' + (delta >= 0 ? '+' : '−') + Math.abs(delta) + '% vs ' + prevPeriod),
       open: 'Laba Rugi',
     }),
   ].join('');

@@ -79,7 +79,6 @@
       injectView(
         '<div class="sec-hdr"><div><h1>Aset per Lokasi</h1><p>Daftar aset dikelompokkan berdasarkan lokasi</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:36px;margin-bottom:12px">🏗️</div>' +
           '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada data aset</div>' +
           '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Tambahkan aset melalui menu Fixed Assets atau tandai item inventory sebagai aset</div>' +
           '<button class="btn-ghost" data-action="navAssets">Buka Daftar Aset</button></div>'
@@ -103,7 +102,7 @@
             var val = a.value || a.purchasePrice || a.cost || a.hargaBeli || 0;
             var nbv = a.bookValue || a.netBookValue || val;
             var dep = val > 0 ? Math.round(((val - nbv) / val) * 100) : 0;
-            var statusColor = dep > 80 ? '#DC2626' : dep > 50 ? '#F97316' : '#15803D';
+            var statusColor = dep > 80 ? 'var(--danger)' : dep > 50 ? 'var(--warning)' : 'var(--success)';
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:12px">' +
@@ -139,7 +138,7 @@
         return (
           '<div class="card" style="margin-bottom:14px">' +
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">' +
-          '<div style="width:36px;height:36px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none">📍</div>' +
+          '<div style="width:36px;height:36px;border-radius:8px;background:var(--info-bg);display:flex;align-items:center;justify-content:center;flex:none;color:var(--info)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>' +
           '<div style="flex:1">' +
           '<div style="font-size:14px;font-weight:700">' +
           esc(loc) +
@@ -160,7 +159,7 @@
           '</div>' +
           '</div>' +
           '<div style="height:5px;background:var(--border);border-radius:3px;margin-bottom:10px;overflow:hidden">' +
-          '<div style="height:100%;background:#3B82F6;width:' +
+          '<div style="height:100%;background:var(--primary);width:' +
           pct +
           '%;transition:width .3s"></div>' +
           '</div>' +
@@ -211,7 +210,7 @@
         return (
           '<div style="flex:1;text-align:center;min-width:60px">' +
           '<div style="display:flex;align-items:flex-end;justify-content:center;height:60px;margin-bottom:4px">' +
-          '<div style="width:24px;background:#3B82F6;border-radius:3px 3px 0 0;height:' +
+          '<div style="width:24px;background:var(--primary);border-radius:3px 3px 0 0;height:' +
           pct +
           '%;min-height:2px" title="' +
           esc(loc) +
@@ -333,18 +332,15 @@
     );
   }
 
-  function emptyCard(icon, title, sub) {
+  function emptyCard(title, sub) {
     return (
-      '<div class="card" style="text-align:center;padding:40px">' +
-      '<div style="font-size:36px;margin-bottom:12px">' +
-      icon +
-      '</div>' +
-      '<div style="font-size:15px;font-weight:700;margin-bottom:6px">' +
+      '<div class="card"><div class="empty-state">' +
+      '<div class="empty-state-title">' +
       title +
       '</div>' +
-      '<div style="font-size:13px;color:var(--muted)">' +
+      '<div class="empty-state-desc">' +
       sub +
-      '</div></div>'
+      '</div></div></div>'
     );
   }
 
@@ -453,7 +449,7 @@
           esc(name) +
           '">Ubah</button> ' +
           (catAssets.length === 0
-            ? '<button class="btn-ghost" style="padding:4px 10px;font-size:11px;color:#DC2626" data-action="axDelCat" data-type="' +
+            ? '<button class="btn-ghost" style="padding:4px 10px;font-size:11px;color:var(--danger)" data-action="axDelCat" data-type="' +
               cfg.type +
               '" data-cat="' +
               esc(name) +
@@ -515,7 +511,7 @@
         refCard +
         (names.length
           ? tableCard(head, rows)
-          : emptyCard('🗂️', 'Belum ada ' + cfg.noun, 'Klik "+ Tambah" untuk membuat ' + cfg.noun + ' baru'))
+          : emptyCard('Belum ada ' + cfg.noun, 'Klik "+ Tambah" untuk membuat ' + cfg.noun + ' baru'))
     );
   }
 
@@ -671,10 +667,10 @@
           '<td class="td-p" style="font-size:12px">' +
           esc(l.field || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;color:#DC2626">' +
+          '<td class="td-p" style="font-size:12px;color:var(--danger)">' +
           esc(l.from === '' ? '—' : l.from) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;color:#15803D;font-weight:600">' +
+          '<td class="td-p" style="font-size:12px;color:var(--success);font-weight:600">' +
           esc(l.to === '' ? '—' : l.to) +
           '</td>' +
           '</tr>'
@@ -705,9 +701,7 @@
                 '">Sesudah</th>',
               rows
             )
-          : emptyCard(
-              '📝',
-              'Belum ada riwayat perubahan',
+          : emptyCard('Belum ada riwayat perubahan',
               'Perubahan yang dilakukan lewat tombol "Edit Aset" di halaman ini akan tercatat di sini'
             ))
     );
@@ -842,7 +836,7 @@
           money(a.disposalProceeds || 0) +
           '</td>' +
           '<td class="td-p" style="text-align:right;font-weight:700;color:' +
-          (gain >= 0 ? '#15803D' : '#DC2626') +
+          (gain >= 0 ? 'var(--success)' : 'var(--danger)') +
           '">' +
           (gain >= 0 ? '+' : '−') +
           money(Math.abs(gain)) +
@@ -889,7 +883,7 @@
                 '"></th>',
               rows
             )
-          : emptyCard('♻️', 'Belum ada aset yang dilepas', 'Klik "+ Catat Pelepasan" untuk mencatat penjualan / penghapusan aset'))
+          : emptyCard('Belum ada aset yang dilepas', 'Klik "+ Catat Pelepasan" untuk mencatat penjualan / penghapusan aset'))
     );
   }
 
@@ -988,7 +982,7 @@
           '<td class="td-p" style="font-size:12px">' +
           esc(t.from || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;font-weight:600;color:#15803D">' +
+          '<td class="td-p" style="font-size:12px;font-weight:600;color:var(--success)">' +
           esc(t.to || '—') +
           '</td>' +
           '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
@@ -1022,7 +1016,7 @@
                 '">Catatan</th>',
               rows
             )
-          : emptyCard('🚚', 'Belum ada transfer aset', 'Klik "+ Transfer Aset" untuk memindahkan aset antar lokasi'))
+          : emptyCard('Belum ada transfer aset', 'Klik "+ Transfer Aset" untuk memindahkan aset antar lokasi'))
     );
   }
 

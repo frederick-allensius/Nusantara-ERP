@@ -301,7 +301,7 @@
           }</div>
         </div>`;
       if (p.unknown.length) {
-        html += `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">⚠ Kolom tak dikenal diabaikan: ${esc(
+        html += `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(
           p.unknown.join(', ')
         )}</div>`;
       }
@@ -756,7 +756,7 @@
           view === 'logistics' ? ', dan Nomor DO yang bentrok ditolak' : ''
         }.
       </div>
-      ${parsedSheet.unknown.length ? `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">⚠ Kolom tak dikenal diabaikan: ${esc(parsedSheet.unknown.join(', '))}</div>` : ''}
+      ${parsedSheet.unknown.length ? `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(parsedSheet.unknown.join(', '))}</div>` : ''}
       ${table}`;
     const footer =
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
@@ -823,15 +823,15 @@
     <div class="sec-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <h1>Import dari Excel</h1>
-        <p class="sec-sub">Unggah workbook .xlsx untuk membuat master &amp; transaksi melalui mesin GL / cost-ledger.</p>
+        <p class="sec-sub">Unggah file .xlsx untuk membuat data master dan transaksi. Jurnal dan nilai persediaan dihitung otomatis.</p>
       </div>
-      <button class="btn-ghost" data-xls="template">⬇ Unduh Template</button>
+      <button class="btn-ghost" data-xls="template">Unduh Template</button>
     </div>
 
     <div class="card" style="padding:0;margin-bottom:16px">
       <div id="excel-dropzone" data-xls="pick"
         style="cursor:pointer;border:2px dashed var(--border);border-radius:var(--r);padding:34px 18px;text-align:center;transition:border-color .15s">
-        <div style="font-size:34px;margin-bottom:8px">📥</div>
+        <div style="margin-bottom:8px;color:var(--muted)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
         <div style="font-weight:700;font-size:14px;margin-bottom:4px">Tarik &amp; lepas file .xlsx di sini</div>
         <div style="font-size:12px;color:var(--muted)">atau klik untuk memilih file</div>
         <input id="excel-file" type="file" accept=".xlsx,.xls" style="display:none">

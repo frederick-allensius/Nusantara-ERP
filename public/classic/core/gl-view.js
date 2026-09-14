@@ -95,7 +95,7 @@
               label: 'Status',
               value: tb.balanced ? 'Seimbang ✓' : 'Tidak Seimbang',
               sub: tb.balanced ? 'Debit = Kredit' : 'Periksa jurnal',
-              color: tb.balanced ? '#34C759' : '#FF3B30',
+              color: tb.balanced ? 'var(--success)' : 'var(--danger)',
             },
           ])
         : ''
@@ -344,7 +344,7 @@
         tcEl.textContent = money(tc);
         const balanced = Math.round(td) === Math.round(tc) && td > 0;
         balEl.textContent = balanced ? 'Seimbang ✓' : 'Belum seimbang';
-        balEl.style.color = balanced ? '#34C759' : '#FF9F0A';
+        balEl.style.color = balanced ? 'var(--success)' : 'var(--warning)';
       }
 
       function wireRow(tr) {

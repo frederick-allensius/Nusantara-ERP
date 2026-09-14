@@ -87,7 +87,7 @@
     return (
       '<div style="padding:64px 24px;text-align:center;color:var(--muted)">' +
       '<div class="lazy-spin" style="width:34px;height:34px;margin:0 auto 16px;' +
-      'border:3px solid var(--border,#e5e7eb);border-top-color:var(--primary,#2563eb);' +
+      'border:3px solid var(--border);border-top-color:var(--primary);' +
       'border-radius:50%;animation:lazySpin .7s linear infinite"></div>' +
       '<div style="font-size:13px;font-weight:600">Memuat modul…</div></div>'
     );
@@ -96,7 +96,7 @@
   function errorHTML(id) {
     return (
       '<div style="padding:48px 24px;text-align:center">' +
-      '<div style="font-size:40px;margin-bottom:12px">⚠️</div>' +
+      '<div class="empty-state-icon" style="margin:0 auto 12px;color:var(--danger)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
       '<h2 style="font-size:16px;font-weight:800;margin-bottom:6px">Gagal memuat modul</h2>' +
       '<p style="color:var(--muted);font-size:13px;margin-bottom:16px">' +
       'Periksa koneksi lalu coba lagi.</p>' +

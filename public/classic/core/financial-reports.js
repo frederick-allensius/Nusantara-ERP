@@ -205,7 +205,7 @@
         esc(r.name) +
         '</td>' +
         '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600' +
-        (val < 0 ? ';color:var(--danger,#DC2626)' : '') +
+        (val < 0 ? ';color:var(--danger)' : '') +
         '">' +
         money(val) +
         '</td>' +
@@ -244,7 +244,7 @@
   // 'major' draws the bold boxed total; 'minor' a lighter inline subtotal. An
   // optional margin % (over revenue) is shown when `base` is provided.
   function subtotalBar(label, value, level, base) {
-    var color = value >= 0 ? '#34C759' : '#FF3B30';
+    var color = value >= 0 ? 'var(--success)' : 'var(--danger)';
     var marginHtml =
       typeof base === 'number' && base !== 0
         ? '<span style="font-size:11px;color:var(--muted);font-weight:600;margin-left:10px">' +
@@ -335,7 +335,7 @@
     var incomeBeforeTax = operatingIncome + totalOtherIncome - totalOtherExpense;
     var totalTax = sum(taxRows);
     var netProfit = incomeBeforeTax - totalTax;
-    var netColor = netProfit >= 0 ? '#34C759' : '#FF3B30';
+    var netColor = netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
 
     var stats =
       typeof window.statRow === 'function'
@@ -345,13 +345,13 @@
               label: 'Laba Kotor',
               value: money(grossProfit),
               sub: 'Pendapatan − HPP',
-              color: grossProfit >= 0 ? '#34C759' : '#FF3B30',
+              color: grossProfit >= 0 ? 'var(--success)' : 'var(--danger)',
             },
             {
               label: 'Laba Usaha',
               value: money(operatingIncome),
               sub: 'Setelah beban operasional',
-              color: operatingIncome >= 0 ? '#34C759' : '#FF3B30',
+              color: operatingIncome >= 0 ? 'var(--success)' : 'var(--danger)',
             },
             {
               label: 'Laba Bersih',
@@ -481,7 +481,7 @@
               label: 'Status',
               value: balanced ? 'Seimbang ✓' : 'Tidak Seimbang',
               sub: balanced ? 'Aset = Liabilitas + Ekuitas' : 'Periksa jurnal',
-              color: balanced ? '#34C759' : '#FF3B30',
+              color: balanced ? 'var(--success)' : 'var(--danger)',
             },
           ])
         : '';
@@ -501,16 +501,16 @@
         ? sectionBlock('Aset Tetap & Lainnya', nonCurrentAssetRows)
         : '') +
       '<div style="display:flex;justify-content:flex-end;padding:10px 14px;margin-bottom:20px;border:2px solid var(--primary);border-radius:10px;background:rgba(59,130,246,0.15)">' +
-      '<span style="font-size:14px;font-weight:800;color:var(--text,#fff)">Total Aset: ' +
+      '<span style="font-size:14px;font-weight:800;color:var(--text)">Total Aset: ' +
       money(totalAssets) +
       '</span>' +
       '</div>' +
-      '<div style="font-size:13px;font-weight:700;color:#F59E0B;margin-bottom:8px">KEWAJIBAN</div>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:8px">KEWAJIBAN</div>' +
       (currentLiabRows.length > 0 ? sectionBlock('Kewajiban Lancar', currentLiabRows) : '') +
       (longTermLiabRows.length > 0
         ? sectionBlock('Kewajiban Jangka Panjang', longTermLiabRows)
         : '') +
-      '<div style="font-size:13px;font-weight:700;color:#10B981;margin-bottom:8px;margin-top:20px">EKUITAS</div>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;margin-top:20px">EKUITAS</div>' +
       (equityRows.length > 0 ? sectionBlock('Modal', equityRows) : '') +
       (retainedEarnings !== 0
         ? '<div style="margin-bottom:16px">' +
@@ -520,20 +520,20 @@
           '<td style="padding:7px 10px;font-size:12px;font-family:monospace;color:var(--muted)">—</td>' +
           '<td style="padding:7px 10px;font-size:12px">Laba (Rugi) Periode Berjalan</td>' +
           '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600;color:' +
-          (retainedEarnings >= 0 ? '#34C759' : '#FF3B30') +
+          (retainedEarnings >= 0 ? 'var(--success)' : 'var(--danger)') +
           '">' +
           money(retainedEarnings) +
           '</td>' +
           '</tr></tbody></table></div>'
         : '') +
-      '<div style="display:flex;justify-content:flex-end;padding:10px 14px;margin-bottom:6px;border:2px solid #F59E0B;border-radius:10px;background:rgba(245,158,11,0.15)">' +
-      '<span style="font-size:14px;font-weight:800;color:var(--text,#fff)">Total Kewajiban + Ekuitas: ' +
+      '<div style="display:flex;justify-content:flex-end;padding:10px 14px;margin-bottom:6px;border:2px solid var(--warning);border-radius:10px;background:rgba(245,158,11,0.15)">' +
+      '<span style="font-size:14px;font-weight:800;color:var(--text)">Total Kewajiban + Ekuitas: ' +
       money(totalLiabEquity) +
       '</span>' +
       '</div>' +
       (balanced
         ? ''
-        : '<div style="padding:8px 12px;background:#FFF1F0;border:1px solid #FFD8D3;border-radius:8px;font-size:12px;color:#B42318;margin-top:8px">' +
+        : '<div style="padding:8px 12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--danger);margin-top:8px">' +
           'Neraca tidak seimbang. Selisih: ' +
           money(Math.abs(totalAssets - totalLiabEquity)) +
           '. Periksa jurnal yang belum balanced.' +
@@ -652,25 +652,25 @@
               label: 'Arus Operasional',
               value: money(netOperating),
               sub: 'Penjualan & pembelian',
-              color: netOperating >= 0 ? '#34C759' : '#FF3B30',
+              color: netOperating >= 0 ? 'var(--success)' : 'var(--danger)',
             },
             {
               label: 'Arus Investasi',
               value: money(netInvesting),
               sub: 'Aset tetap',
-              color: netInvesting >= 0 ? '#34C759' : '#FF3B30',
+              color: netInvesting >= 0 ? 'var(--success)' : 'var(--danger)',
             },
             {
               label: 'Arus Pendanaan',
               value: money(netFinancing),
               sub: 'Modal & pinjaman',
-              color: netFinancing >= 0 ? '#34C759' : '#FF3B30',
+              color: netFinancing >= 0 ? 'var(--success)' : 'var(--danger)',
             },
             {
               label: 'Arus Kas Bersih',
               value: money(netTotal),
               sub: 'Total seluruh aktivitas',
-              color: netTotal >= 0 ? '#34C759' : '#FF3B30',
+              color: netTotal >= 0 ? 'var(--success)' : 'var(--danger)',
             },
           ])
         : '';
@@ -699,10 +699,10 @@
             '<td style="padding:5px 10px;font-size:12px">' +
             esc(d.desc) +
             '</td>' +
-            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:#34C759;font-weight:600">' +
+            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:var(--success);font-weight:600">' +
             (d.type === 'inflow' ? money(d.amount) : '') +
             '</td>' +
-            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:#FF3B30;font-weight:600">' +
+            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:var(--danger);font-weight:600">' +
             (d.type === 'outflow' ? money(d.amount) : '') +
             '</td>' +
             '</tr>';
@@ -738,7 +738,7 @@
         '</div>' +
         '</div>' +
         '<div style="font-size:15px;font-weight:800;color:' +
-        (net >= 0 ? '#34C759' : '#FF3B30') +
+        (net >= 0 ? 'var(--success)' : 'var(--danger)') +
         '">' +
         (net >= 0 ? '+' : '') +
         money(net) +
@@ -764,16 +764,16 @@
       '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Laporan Arus Kas (Cash Flow)</div>' +
       (noData
         ? '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Belum ada arus kas tercatat. Kas akan muncul setelah ada pembayaran (SO Paid / PO Paid) atau jurnal umum yang melibatkan akun kas.</div>'
-        : cfSection('Aktivitas Operasional', operating, '#3B82F6') +
-          cfSection('Aktivitas Investasi', investing, '#8B5CF6') +
-          cfSection('Aktivitas Pendanaan', financing, '#F59E0B') +
+        : cfSection('Aktivitas Operasional', operating, 'var(--primary)') +
+          cfSection('Aktivitas Investasi', investing, 'var(--chart-4)') +
+          cfSection('Aktivitas Pendanaan', financing, 'var(--warning)') +
           '<div style="display:flex;justify-content:flex-end;padding:12px 14px;border:2px solid ' +
-          (netTotal >= 0 ? '#34C759' : '#FF3B30') +
+          (netTotal >= 0 ? 'var(--success)' : 'var(--danger)') +
           ';border-radius:10px;background:' +
-          (netTotal >= 0 ? '#34C759' : '#FF3B30') +
+          (netTotal >= 0 ? 'var(--success)' : 'var(--danger)') +
           '10">' +
           '<span style="font-size:15px;font-weight:800">Kenaikan (Penurunan) Kas Bersih: <span style="color:' +
-          (netTotal >= 0 ? '#34C759' : '#FF3B30') +
+          (netTotal >= 0 ? 'var(--success)' : 'var(--danger)') +
           '">' +
           money(netTotal) +
           '</span></span>' +

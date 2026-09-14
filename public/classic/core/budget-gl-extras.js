@@ -115,7 +115,7 @@
           '">Edit</button> ' +
           '<button class="action-ghost" data-action="delBudget" data-id="' +
           esc(b.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -140,7 +140,7 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total Budget', value: budgets.length + ' item', sub: 'Anggaran terdaftar' },
-            { label: 'Total Nilai', value: money(total), sub: 'Seluruh periode', color: '#3B82F6' },
+            { label: 'Total Nilai', value: money(total), sub: 'Seluruh periode', color: 'var(--primary)' },
           ])
         : '';
 
@@ -285,8 +285,8 @@
       var actual = Math.abs(calcActualForAccount(g.code, periodFrom, periodTo));
       var variance = g.budgetTotal - actual;
       var pct = g.budgetTotal > 0 ? Math.round((actual / g.budgetTotal) * 100) : 0;
-      var color = pct > 100 ? '#EF4444' : pct > 80 ? '#F59E0B' : '#10B981';
-      var varColor = variance < 0 ? '#EF4444' : '#10B981';
+      var color = pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--success)';
+      var varColor = variance < 0 ? 'var(--danger)' : 'var(--success)';
       totalBudget += g.budgetTotal;
       totalActual += actual;
 
@@ -301,7 +301,7 @@
         '<td class="td-p" style="text-align:right;font-weight:700">' + money(actual) + '</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700;color:' + varColor + '">' + money(variance) + '</td>' +
         '<td class="td-p"><div style="display:flex;align-items:center;gap:8px">' +
-        '<div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden">' +
+        '<div style="flex:1;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden">' +
         '<div style="height:100%;width:' + Math.min(pct, 100) + '%;background:' + color + ';border-radius:4px"></div></div>' +
         '<span style="font-size:11px;font-weight:700;color:' + color + '">' + pct + '%</span></div></td>' +
         '</tr>'
@@ -310,7 +310,7 @@
 
     var totalVariance = totalBudget - totalActual;
     var totalPct = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
-    var totalColor = totalVariance < 0 ? '#EF4444' : '#10B981';
+    var totalColor = totalVariance < 0 ? 'var(--danger)' : 'var(--success)';
 
     var footer = rows ?
       '<tfoot><tr style="border-top:2px solid var(--border);background:var(--bg)">' +
@@ -342,8 +342,8 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total Budget', value: money(result.totalBudget), sub: result.count + ' item anggaran' },
-            { label: 'Total Realisasi', value: money(result.totalActual), sub: 'Dari jurnal GL', color: '#3B82F6' },
-            { label: 'Over Budget', value: String(overBudget), sub: 'Akun melebihi anggaran', color: overBudget > 0 ? '#EF4444' : '#10B981' },
+            { label: 'Total Realisasi', value: money(result.totalActual), sub: 'Dari jurnal GL', color: 'var(--primary)' },
+            { label: 'Over Budget', value: String(overBudget), sub: 'Akun melebihi anggaran', color: overBudget > 0 ? 'var(--danger)' : 'var(--success)' },
           ])
         : '';
 
@@ -687,8 +687,8 @@
       .map(function (a) {
         var statusBadge =
           a.status === 'Posted'
-            ? '<span class="badge" style="background:#DBEAFE;color:#1D4ED8">Diposting</span>'
-            : '<span class="badge" style="background:#FEF3C7;color:#92400E">Draft</span>';
+            ? '<span class="badge" style="background:var(--info-bg);color:var(--info)">Diposting</span>'
+            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>';
         return (
           '<tr>' +
           '<td class="td-p" style="font-size:11px;font-weight:700">' +
@@ -720,7 +720,7 @@
           (a.status === 'Draft'
             ? '<button class="action-ghost" data-action="delAccrual" data-id="' +
               esc(a.id) +
-              '" style="color:#EF4444">Hapus</button>'
+              '" style="color:var(--danger)">Hapus</button>'
             : '<span style="font-size:11px;color:var(--muted)">' +
               esc(a.journalNumber || 'Sudah dijurnal') +
               '</span>') +
@@ -881,7 +881,7 @@
           '">Edit</button> ' +
           '<button class="action-ghost" data-action="delEmployee" data-id="' +
           esc(e.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -895,18 +895,18 @@
       .map(function (r) {
         var statusBadge;
         if (r.paid) {
-          statusBadge = '<span class="badge" style="background:#D1FAE5;color:#065F46">Dibayar</span>';
+          statusBadge = '<span class="badge" style="background:var(--success-bg);color:var(--success)">Dibayar</span>';
         } else if (r.posted) {
-          statusBadge = '<span class="badge" style="background:#DBEAFE;color:#1D4ED8">Diposting</span>';
+          statusBadge = '<span class="badge" style="background:var(--info-bg);color:var(--info)">Diposting</span>';
         } else {
-          statusBadge = '<span class="badge" style="background:#F3F4F6;color:#374151">Draft</span>';
+          statusBadge = '<span class="badge" style="background:var(--surface-sunken);color:var(--text-secondary)">Draft</span>';
         }
         var actions = '';
         if (!r.posted) {
           actions += '<button class="action-ghost" data-action="postPayroll" data-id="' + esc(r.id) + '">Post GL</button> ';
         }
         if (r.posted && !r.paid) {
-          actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '" style="color:#059669">Bayar</button> ';
+          actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '" style="color:var(--success)">Bayar</button> ';
         }
         return (
           '<tr>' +
@@ -958,10 +958,10 @@
               label: 'Total Gaji/bln',
               value: money(totalPayroll),
               sub: 'Gaji + tunjangan',
-              color: '#3B82F6',
+              color: 'var(--primary)',
             },
             { label: 'Payroll Runs', value: String(payrollRuns.length), sub: postedCount + ' posted, ' + paidCount + ' dibayar' },
-            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Posted belum dibayar', color: unpaidPosted > 0 ? '#F59E0B' : '#10B981' },
+            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Posted belum dibayar', color: unpaidPosted > 0 ? 'var(--warning)' : 'var(--success)' },
           ])
         : '';
 

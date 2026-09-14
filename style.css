@@ -2583,6 +2583,18 @@ textarea:user-invalid {
   color: var(--muted);
 }
 
+.report-card-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
 .notice,
 .alert-warn {
   display: flex;

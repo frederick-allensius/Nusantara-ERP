@@ -1139,7 +1139,7 @@ function lineItemsHTML() {
         <div style="text-align:right">
           <div id="ppnRow" style="display:none;font-size:12px;color:var(--muted);margin-bottom:4px">
             <span>DPP: <span id="linesDPP">Rp 0</span></span>
-            <span style="margin-left:12px">PPN: <span id="linesPPN" style="color:#2563EB;font-weight:600">Rp 0</span></span>
+            <span style="margin-left:12px">PPN: <span id="linesPPN" style="color:var(--info);font-weight:600">Rp 0</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
             <span style="font-size:12px;color:var(--muted)">Total:</span>
@@ -1207,7 +1207,7 @@ function initLineItems(priceField, existingLines) {
         <select class="form-select ln-item" style="font-size:12px;padding:5px 8px">
           <option value="">— Pilih Item —</option>
           ${opts}
-          <option value="custom"${isCustom ? ' selected' : ''}>✏ Item Lainnya (manual)</option>
+          <option value="custom"${isCustom ? ' selected' : ''}>Item lainnya (isi manual)</option>
         </select>
         <input class="form-input ln-custom" type="text" placeholder="Nama item / jasa"
                value="${isCustom ? escapeHtml(line.itemName || '') : ''}"
@@ -1409,7 +1409,7 @@ function linesDetailHTML(lines, totalLabel, doc) {
     <div style="text-align:right;margin-top:10px">
       ${taxRate ? `
       <div style="font-size:12px;color:var(--muted);margin-bottom:2px">DPP: ${idrFull(dppAmt)}</div>
-      <div style="font-size:12px;color:#2563EB;font-weight:600;margin-bottom:4px">PPN (${Math.round(taxRate * 100)}%)${taxIncl ? ' — termasuk' : ''}: ${idrFull(taxAmt)}</div>
+      <div style="font-size:12px;color:var(--info);font-weight:600;margin-bottom:4px">PPN (${Math.round(taxRate * 100)}%)${taxIncl ? ' — termasuk' : ''}: ${idrFull(taxAmt)}</div>
       ` : ''}
       <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
         <span style="font-size:12px;color:var(--muted)">${totalLabel || 'Total'}:</span>
@@ -2043,8 +2043,8 @@ function showStockCard(id) {
         <td style="padding:6px 10px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(m.date)}</td>
         <td style="padding:6px 10px;font-size:12px">${escapeHtml(m.label)}</td>
         <td style="padding:6px 10px;font-size:11px">${refCell}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.inQty, '#34C759')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.outQty, '#FF3B30')}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.inQty, 'var(--success)')}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.outQty, 'var(--danger)')}</td>
         <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${r3(bal)}</td>
       </tr>`;
     })
@@ -2064,8 +2064,8 @@ function showStockCard(id) {
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Ref</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:#34C759">Masuk</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:#FF3B30">Keluar</th>
+            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">Masuk</th>
+            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">Keluar</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
           </tr>
         </thead>
@@ -2697,7 +2697,7 @@ function showPartyStatement(kind, id) {
         <td style="padding:6px 10px;font-size:12px">${escapeHtml(e.label)}</td>
         <td style="padding:6px 10px;font-size:11px">${refLink(e)}</td>
         <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.debit, 'var(--text)')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.credit, '#34C759')}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.credit, 'var(--success)')}</td>
         <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${m(e.balance)}</td>
       </tr>`
     )
@@ -2719,8 +2719,8 @@ function showPartyStatement(kind, id) {
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Dokumen</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:#FF3B30">${debitHdr}</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:#34C759">${creditHdr}</th>
+            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">${debitHdr}</th>
+            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">${creditHdr}</th>
             <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
           </tr>
         </thead>
@@ -3185,7 +3185,7 @@ function showUserManagement() {
        </p>
        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
          <button class="btn" id="um-add" style="font-size:11px;padding:4px 10px">＋ Tambah User</button>
-         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">📋 Log Aktivitas User</button>
+         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">Log Aktivitas Pengguna</button>
        </div>`
     : `<p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
          Akun dibuat di Firebase Console. Pengguna yang sudah login muncul di sini
@@ -3196,8 +3196,8 @@ function showUserManagement() {
        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
          <button class="btn-ghost" id="um-depts" style="font-size:11px;padding:4px 10px">Kelola Departemen</button>
          <button class="btn" id="um-sync" style="font-size:11px;padding:4px 10px">Sinkronkan dari Departemen</button>
-         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">📋 Log Aktivitas User</button>
-         <button class="btn-ghost" id="um-access-log" style="font-size:11px;padding:4px 10px">🔒 Log Akses (Audit)</button>
+         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">Log Aktivitas Pengguna</button>
+         <button class="btn-ghost" id="um-access-log" style="font-size:11px;padding:4px 10px">Log Akses</button>
        </div>`;
 
   openModal(
@@ -3235,12 +3235,12 @@ function showUserManagement() {
         const active = u.active !== false;
         const der = u.local ? null : roleForEmail(u.email);
         const deptLine = der
-          ? `<div style="font-size:10px;color:${der.role === u.role ? 'var(--muted)' : 'var(--primary,#2563eb)'};margin-top:1px">
+          ? `<div style="font-size:10px;color:${der.role === u.role ? 'var(--muted)' : 'var(--primary)'};margin-top:1px">
                Dept: ${escapeHtml(der.department.name)} → ${escapeHtml((ROLE_LABELS[der.role] || der.role))}${der.role !== u.role ? ' · belum sinkron' : ''}
              </div>`
           : '';
         const subLine = u.local
-          ? `@${escapeHtml(u.username || u.uid)}${u.mustChangePassword ? ' · <span style="color:var(--warning,#b45309)">password default</span>' : ''}`
+          ? `@${escapeHtml(u.username || u.uid)}${u.mustChangePassword ? ' · <span style="color:var(--warning)">password default</span>' : ''}`
           : escapeHtml(u.email || '—');
         const localActions = u.local
           ? `<button class="btn-ghost um-reset" data-uid="${escapeHtml(u.uid)}" style="font-size:10px;padding:3px 7px">Reset PW</button>
@@ -3409,7 +3409,7 @@ function showLoginLog() {
         <td style="padding:6px 8px;font-size:11px">${
           e.event === 'logout'
             ? '<span style="color:var(--muted)">Logout</span>'
-            : '<span style="color:var(--success,#16a34a);font-weight:700">Login</span>'
+            : '<span style="color:var(--success);font-weight:700">Login</span>'
         }</td>
         <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.ts))}</td>
       </tr>`
@@ -3471,10 +3471,10 @@ function showAccessLog() {
     }
   };
   const ACTION_LABELS = {
-    create: '<span style="color:var(--success,#16a34a);font-weight:700">Tambah</span>',
-    update: '<span style="color:var(--primary,#2563eb);font-weight:700">Ubah</span>',
+    create: '<span style="color:var(--success);font-weight:700">Tambah</span>',
+    update: '<span style="color:var(--primary);font-weight:700">Ubah</span>',
     delete: '<span style="color:var(--danger);font-weight:700">Hapus</span>',
-    login: '<span style="color:var(--success,#16a34a);font-weight:700">Login</span>',
+    login: '<span style="color:var(--success);font-weight:700">Login</span>',
     logout: '<span style="color:var(--muted)">Logout</span>',
     login_failed: '<span style="color:var(--danger);font-weight:700">Login Gagal</span>',
   };
@@ -4846,7 +4846,7 @@ function dpSummaryHTML(type, orderId, orderTotal) {
     <div class="detail-grid" style="gap:2px 12px">
       ${detailRow('Total DP', `<strong>${fmt(totalDP)}</strong>`)}
       ${detailRow('Sudah Diterapkan', fmt(applied))}
-      ${unapplied > 0 ? detailRow('Belum Diterapkan', `<span style="color:#FF9500">${fmt(unapplied)}</span>`) : ''}
+      ${unapplied > 0 ? detailRow('Belum Diterapkan', `<span style="color:var(--warning)">${fmt(unapplied)}</span>`) : ''}
     </div>
     <div style="margin-top:6px;font-size:11px;color:var(--muted)">
       ${dps.map(d => `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0">
@@ -5124,7 +5124,7 @@ function _soRefOptions(currentSoId, currentDoId) {
       data-customer="${escapeHtml(o.customer)}"
       data-destination="${escapeHtml(_getCustomerAddress(o.customer))}"
       ${currentSoId === o.id ? 'selected' : ''}
-      >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.customer)}${hasDO ? ' ★ (sudah ada DO)' : ''}</option>`;
+      >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.customer)}${hasDO ? ' — sudah ada surat jalan' : ''}</option>`;
     })
     .join('');
 }
@@ -5150,7 +5150,7 @@ function _poRefOptions(currentPoId, currentDoId) {
       data-supplier="${escapeHtml(o.supplier)}"
       data-destination="${escapeHtml(_getSupplierAddress(o.supplier))}"
       ${currentPoId === o.id ? 'selected' : ''}
-      >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.supplier)}${hasDO ? ' ★ (sudah ada DO)' : ''}</option>`;
+      >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.supplier)}${hasDO ? ' — sudah ada surat jalan' : ''}</option>`;
     })
     .join('');
 }
@@ -5176,15 +5176,15 @@ function _doLinesTable(lines) {
     <div class="form-label" style="margin-bottom:8px;font-size:13px;font-weight:700">Daftar Barang</div>
     ${
       hasPartial
-        ? `<div style="font-size:11px;color:#FF9F0A;margin-bottom:6px;padding:6px 10px;
+        ? `<div style="font-size:11px;color:var(--warning);margin-bottom:6px;padding:6px 10px;
         background:rgba(255,159,10,.1);border-radius:6px;border:1px solid rgba(255,159,10,.3)">
-        ⚠ SO ini sudah dikirim sebagian — qty di bawah adalah <strong>sisa belum terkirim</strong>.
+        SO ini sudah dikirim sebagian — qty di bawah adalah <strong>sisa belum terkirim</strong>.
       </div>`
         : ''
     }
     ${
       allZero
-        ? `<div style="font-size:11px;color:#FF3B30;margin-bottom:6px;padding:6px 10px;
+        ? `<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:6px 10px;
         background:rgba(255,59,48,.1);border-radius:6px;border:1px solid rgba(255,59,48,.3)">
         ✗ Semua item sudah terkirim penuh dari SO ini.
       </div>`
@@ -5660,9 +5660,9 @@ function viewDO(id) {
     return `<span style="display:inline-block;font-size:9px;font-weight:800;color:${color};background:${bg};border:1px solid ${border};border-radius:99px;padding:1px 7px;margin-right:6px;vertical-align:middle">${text}</span>`;
   }
   const refRow = o.poId
-    ? detailRow('Dibuat dari', _srcTag('DARI PO', '#B45309', '#FEF3C7', '#FCD34D') + poRefHtml)
+    ? detailRow('Dibuat dari', _srcTag('DARI PO', 'var(--warning)', 'var(--warning-bg)', 'transparent') + poRefHtml)
     : o.soId
-      ? detailRow('Dibuat dari', _srcTag('DARI SO', '#1D4ED8', '#DBEAFE', '#93C5FD') + soRefHtml)
+      ? detailRow('Dibuat dari', _srcTag('DARI SO', 'var(--info)', 'var(--info-bg)', 'transparent') + soRefHtml)
       : detailRow('Dibuat dari', '<span style="color:var(--muted)">Tanpa referensi (DO manual)</span>');
   const partyLabel = o.poId ? 'Supplier' : 'Pelanggan';
 
@@ -5710,7 +5710,7 @@ function viewDO(id) {
         'Tujuan',
         escapeHtml(o.destination) +
           (o.destChanged
-            ? ` <span style="display:inline-block;font-size:9px;font-weight:800;color:#B45309;background:#FEF3C7;border:1px solid #FCD34D;border-radius:99px;padding:1px 6px">⚠ DIUBAH</span>`
+            ? ` <span style="display:inline-block;font-size:9px;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px">DIUBAH</span>`
             : '')
       )}
       ${o.destChanged && o.destOriginal ? detailRow('Tujuan Asal', escapeHtml(o.destOriginal)) : ''}
@@ -6201,8 +6201,8 @@ function showAddSO() {
         }
         const match = (DB.customers || []).find(c => c.name === name);
         custHint.innerHTML = match
-          ? `<span style="color:#34C759">✓ Rekaman pelanggan ditemukan</span>`
-          : `<span style="color:#FF9F0A">⚠ Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
+          ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
+          : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
       });
     }
 
@@ -6341,8 +6341,8 @@ function editSO(id) {
         }
         const match = (DB.customers || []).find(c => c.name === name);
         custHint.innerHTML = match
-          ? `<span style="color:#34C759">✓ Rekaman pelanggan ditemukan</span>`
-          : `<span style="color:#FF9F0A">⚠ Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
+          ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
+          : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
       });
     }
 
@@ -6504,7 +6504,7 @@ function inlineSOStatus(id, newStatus) {
     const problems = checkOversell(o.lines || [], id);
     if (problems.length > 0) {
       showToast(
-        '⚠ Stok tidak cukup: ' +
+        'Stok tidak cukup: ' +
           problems.map(p => `${p.itemName} tersedia ${p.available}`).join(', '),
         'warning'
       );
@@ -6621,7 +6621,7 @@ function bulkSOStatus(newStatus) {
             `${p.id}: ${p.problems.map(pr => `${pr.itemName} (tersedia ${pr.available})`).join(', ')}`
         )
         .join('\n');
-      if (!confirm(`⚠ Peringatan stok tidak cukup:\n\n${msg}\n\nLanjutkan konfirmasi?`)) {
+      if (!confirm(`Peringatan: stok tidak cukup.\n\n${msg}\n\nLanjutkan konfirmasi?`)) {
         return;
       }
     }

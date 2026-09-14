@@ -77,10 +77,10 @@ function editIdentity() {
   <div class="form-group">
     <label class="form-label">Foto Profil</label>
     <div style="display:flex;align-items:center;gap:12px">
-      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center"></div>
+      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--primary);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center"></div>
       <input type="file" id="id-photo-file" accept="image/*" style="display:none">
       <button class="btn-ghost" type="button" id="id-photo-upload">Upload Foto</button>
-      <button class="btn-ghost" type="button" id="id-photo-remove" style="color:var(--danger,#f87171)">Hapus</button>
+      <button class="btn-ghost" type="button" id="id-photo-remove" style="color:var(--danger)">Hapus</button>
     </div>
   </div>
   <div class="form-row">
@@ -390,7 +390,7 @@ function _showBackupCodes(codes, note) {
       (note || 'Simpan kode berikut di tempat aman.') +
       ' Setiap kode hanya bisa dipakai <strong>satu kali</strong> jika kamu kehilangan akses ke aplikasi authenticator.</p>' +
       _backupCodesHtml(codes) +
-      '<div style="font-size:12px;color:var(--danger)">⚠️ Kode ini tidak akan ditampilkan lagi.</div>',
+      '<div style="font-size:12px;color:var(--danger)">Kode ini tidak akan ditampilkan lagi.</div>',
     '<button class="btn-ghost" data-action="closeModal">Tutup</button>' +
       '<button class="btn" id="tfa-copy-codes">Salin Semua</button>'
   );
@@ -468,7 +468,7 @@ function showTwoFactorManage(status) {
   openModal(
     'Verifikasi 2 Langkah',
     '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:14px">' +
-      '<div style="width:36px;height:36px;border-radius:50%;background:var(--success,#10B981)22;display:flex;align-items:center;justify-content:center">✅</div>' +
+      '<div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>' +
       '<div><div style="font-size:14px;font-weight:700">2FA Aktif</div>' +
       '<div style="font-size:12px;color:var(--muted)">' +
       status.backupCodesRemaining +
@@ -534,7 +534,7 @@ function showBackupManager() {
 
   const statusHtml = status.lastBackup
     ? `<div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--bg);border-radius:8px;margin-bottom:16px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         <div style="flex:1">
@@ -545,7 +545,7 @@ function showBackupManager() {
           </div>
         </div>
       </div>`
-    : `<div style="padding:12px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:8px;margin-bottom:16px;font-size:12px;color:#92400E">
+    : `<div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--warning)">
         Belum ada backup otomatis. Backup pertama akan dibuat dalam 24 jam.
       </div>`;
 
@@ -607,7 +607,7 @@ function showBackupManager() {
       <span style="font-size:12px;font-weight:600">Import dari Excel</span>
     </button>
 
-    <button class="btn" id="syncFirebase" style="width:100%;margin-bottom:16px;background:linear-gradient(135deg,#3B82F6,#2563EB);border:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
+    <button class="btn" id="syncFirebase" style="width:100%;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
         <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
@@ -681,11 +681,11 @@ function showBackupManager() {
       openModal(
         'Sinkronisasi ke Firebase',
         `<div id="sync-fb-body" style="text-align:center;padding:20px 0">
-          <div style="font-size:32px;margin-bottom:12px">☁️</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
           <div style="font-size:14px;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
           <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
-            <div id="sync-fb-bar" style="height:100%;background:#3B82F6;width:0%;transition:width .3s;border-radius:99px"></div>
+            <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
         </div>`
       );
@@ -705,8 +705,8 @@ function showBackupManager() {
         const body = document.getElementById('sync-fb-body');
         if (body)
           body.innerHTML = `
-          <div style="font-size:32px;margin-bottom:12px">✅</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#16a34a">Sinkronisasi Berhasil!</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
           <div style="font-size:12px;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
         showToast('Data berhasil disinkronisasi ke Firebase', 'success');
         setTimeout(() => { closeModal(); location.reload(); }, 2000);
@@ -714,7 +714,7 @@ function showBackupManager() {
         const body = document.getElementById('sync-fb-body');
         if (body)
           body.innerHTML = `
-          <div style="font-size:32px;margin-bottom:12px">❌</div>
+          <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--danger)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
           <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
           <div style="font-size:12px;color:var(--muted)">${e.message}</div>`;
         showToast('Gagal: ' + e.message, 'danger');
@@ -781,7 +781,7 @@ function showInstallApp() {
       .map(
         (s, i) => `
       <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px">
-        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary,#2563EB);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
         <div style="font-size:12.5px;line-height:1.5">${s}</div>
       </div>`
       )
@@ -799,8 +799,8 @@ function showInstallApp() {
 
   if (standalone) {
     body += `
-    <div style="display:flex;align-items:center;gap:10px;padding:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--success-bg);border:1px solid transparent;border-radius:10px;color:var(--success)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       <div style="font-size:13px;font-weight:600">Aplikasi sudah terpasang — Anda sedang menggunakannya dalam mode aplikasi.</div>
     </div>`;
   } else if (canPrompt) {
@@ -831,7 +831,7 @@ function showInstallApp() {
     ])}`;
   } else if (isFirefox) {
     body += `
-    <div style="padding:12px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:8px;font-size:12px;color:#92400E;line-height:1.5">
+    <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--warning);line-height:1.5">
       Firefox desktop tidak mendukung pemasangan PWA. Gunakan <strong>Chrome</strong> atau <strong>Edge</strong> untuk memasang aplikasi.
       Di Firefox Android: menu <strong>⋮</strong> → <strong>"Tambahkan ke Layar Utama"</strong>.
     </div>`;
@@ -893,19 +893,19 @@ function showNotificationSettings() {
   let statusHtml = '';
   if (!supported) {
     statusHtml = `
-      <div style="padding:12px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:8px;font-size:12px;color:#92400E;line-height:1.5">
+      <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--warning);line-height:1.5">
         Browser ini tidak mendukung notifikasi sistem.
       </div>`;
   } else if (perm === 'granted') {
     statusHtml = `
-      <div style="display:flex;align-items:center;gap:10px;padding:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534;margin-bottom:12px">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--success-bg);border:1px solid transparent;border-radius:10px;color:var(--success);margin-bottom:12px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <div style="font-size:13px;font-weight:600">Notifikasi aktif untuk perangkat ini.</div>
       </div>
       <button class="btn" id="notif-test" style="width:100%;padding:11px;font-size:13px">Kirim Notifikasi Percobaan</button>`;
   } else if (perm === 'denied') {
     statusHtml = `
-      <div style="padding:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;font-size:12px;color:#991B1B;line-height:1.6">
+      <div style="padding:12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--danger);line-height:1.6">
         Notifikasi <strong>diblokir</strong> untuk situs ini. Buka pengaturan situs di browser
         (ikon gembok di address bar → Notifikasi → Izinkan), lalu muat ulang halaman.
       </div>`;

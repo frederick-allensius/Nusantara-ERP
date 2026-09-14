@@ -40,35 +40,30 @@
     var reports = [
       {
         cat: 'Keuangan',
-        icon: '📊',
         name: 'Laporan Laba Rugi (P&L)',
         desc: 'Pendapatan dan beban per periode',
         action: 'openFinPL',
       },
       {
         cat: 'Keuangan',
-        icon: '📋',
         name: 'Neraca (Balance Sheet)',
         desc: 'Posisi aset, kewajiban, dan ekuitas',
         action: 'openFinBS',
       },
       {
         cat: 'Keuangan',
-        icon: '💸',
         name: 'Laporan Arus Kas',
         desc: 'Cash flow operasional, investasi, pendanaan',
         action: 'openFinCF',
       },
       {
         cat: 'Penjualan',
-        icon: '🛒',
         name: 'Rekap Sales Order',
         desc: 'Ringkasan SO per periode, pelanggan, item',
         view: 'sales',
       },
       {
         cat: 'Penjualan',
-        icon: '📄',
         name: 'Faktur Penjualan Belum Lunas',
         desc: 'Tagihan pelanggan yang belum dibayar',
         action: 'openInvoiceTab',
@@ -76,14 +71,12 @@
       },
       {
         cat: 'Pembelian',
-        icon: '📦',
         name: 'Rekap Purchase Order',
         desc: 'Ringkasan PO per periode, supplier, item',
         view: 'purchase',
       },
       {
         cat: 'Pembelian',
-        icon: '💳',
         name: 'Hutang ke Supplier',
         desc: 'Faktur pembelian yang belum dibayar',
         action: 'openInvoiceTab',
@@ -91,35 +84,30 @@
       },
       {
         cat: 'Persediaan',
-        icon: '🏭',
         name: 'Nilai Persediaan',
         desc: 'Nilai stok per barang',
         view: 'inventory',
       },
       {
         cat: 'Persediaan',
-        icon: '📉',
         name: 'Stok di Bawah Minimum',
         desc: 'Barang yang perlu dibeli lagi',
         view: 'inventory',
       },
       {
         cat: 'Pajak',
-        icon: '🧾',
         name: 'Rekap PPN',
         desc: 'PPN masukan dan keluaran per periode',
         action: 'openSPTPPN',
       },
       {
         cat: 'Buku Besar',
-        icon: '📔',
         name: 'Audit Jurnal',
         desc: 'Seluruh entri jurnal dengan filter lengkap',
         action: 'openAuditJournal',
       },
       {
         cat: 'Buku Besar',
-        icon: '🗂️',
         name: 'Riwayat Akun',
         desc: 'Riwayat transaksi per akun',
         action: 'openAccountHistory',
@@ -132,6 +120,28 @@
       cats[r.cat].push(r);
     });
 
+    // Line icon per report category.
+    function reportIcon(cat) {
+      var paths = {
+        Keuangan:
+          '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+        Penjualan: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+        Pembelian:
+          '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+        Persediaan:
+          '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+        Pajak:
+          '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+        'Buku Besar':
+          '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+      };
+      return (
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+        (paths[cat] || paths.Keuangan) +
+        '</svg>'
+      );
+    }
+
     function reportCard(r) {
       var search = esc((r.name + ' ' + r.desc + ' ' + r.cat).toLowerCase());
       return (
@@ -142,8 +152,8 @@
           ? 'data-action="' + r.action + '"' + (r.val ? ' data-val="' + esc(r.val) + '"' : '')
           : 'data-action="navView" data-view="' + esc(r.view || '') + '"') +
         ' style="display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface);text-align:left;width:100%">' +
-        '<span style="font-size:22px;flex:none">' +
-        r.icon +
+        '<span class="report-card-icon" aria-hidden="true">' +
+        reportIcon(r.cat) +
         '</span>' +
         '<span style="min-width:0;flex:1"><span style="display:block;font-size:13px;font-weight:700">' +
         esc(r.name) +
@@ -329,7 +339,7 @@
 
     var ppnKurang = outputPPN - inputPPN;
     var ppnStatus = ppnKurang > 0 ? 'Kurang Bayar' : ppnKurang < 0 ? 'Lebih Bayar' : 'Nihil';
-    var ppnColor = ppnKurang > 0 ? '#DC2626' : ppnKurang < 0 ? '#2563EB' : '#6B7280';
+    var ppnColor = ppnKurang > 0 ? 'var(--danger)' : ppnKurang < 0 ? 'var(--info)' : 'var(--muted)';
 
     function rowsHTML(rows, emptyText) {
       return (
@@ -375,12 +385,12 @@
         '<button class="btn-ghost" data-action="exportSPT">Ekspor CSV</button>' +
         '</div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val" style="color:#DC2626">' +
+        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val" style="color:var(--danger)">' +
         money(outputPPN) +
         '</div><div class="stat-sub">DPP ' +
         money(outputDPP) +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val" style="color:#15803D">' +
+        '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val" style="color:var(--success)">' +
         money(inputPPN) +
         '</div><div class="stat-sub">DPP ' +
         money(inputDPP) +
@@ -421,7 +431,7 @@
         '<td class="td-p" style="text-align:right;font-weight:700">' +
         money(outputDPP) +
         '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700;color:#DC2626">' +
+        '<td class="td-p" style="text-align:right;font-weight:700;color:var(--danger)">' +
         money(outputPPN) +
         '</td></tr></tfoot>' +
         '</table></div></div>' +
@@ -450,7 +460,7 @@
         '<td class="td-p" style="text-align:right;font-weight:700">' +
         money(inputDPP) +
         '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700;color:#15803D">' +
+        '<td class="td-p" style="text-align:right;font-weight:700;color:var(--success)">' +
         money(inputPPN) +
         '</td></tr></tfoot>' +
         '</table></div></div>'
@@ -470,233 +480,200 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // § 3  AI ANALYSIS
+  // § 3  ANALISIS BISNIS (simple rules on journals and documents)
   // ══════════════════════════════════════════════════════════════════════════
   function openAIAnalysis() {
-    var sos = db().salesOrders || [];
-    var pos = db().purchaseOrders || [];
-    var customers = db().customers || [];
-    var items = db().inventoryItems || [];
+    var data = db();
+    var now = new Date();
+    var monthKey = function (d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    };
+    var curMonth = monthKey(now);
+    var prevMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    var curYear = String(now.getFullYear());
+    // This month so far is compared with the same days of last month.
+    var prevDays = Math.min(now.getDate(), new Date(now.getFullYear(), now.getMonth(), 0).getDate());
 
-    var curMonth = today().slice(0, 7);
-    var prevMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-      .toISOString()
-      .slice(0, 7);
-    var curYear = today().slice(0, 4);
-
-    // Revenue data
-    var totalRevenue = sos.reduce(function (s, o) {
-      return s + (o.amount || 0);
-    }, 0);
-    var curMonthRevenue = sos
-      .filter(function (o) {
-        return o.date && o.date.slice(0, 7) === curMonth;
-      })
-      .reduce(function (s, o) {
-        return s + (o.amount || 0);
-      }, 0);
-    var prevMonthRevenue = sos
-      .filter(function (o) {
-        return o.date && o.date.slice(0, 7) === prevMonth;
-      })
-      .reduce(function (s, o) {
-        return s + (o.amount || 0);
-      }, 0);
-    var revenueGrowth =
-      prevMonthRevenue > 0
-        ? (((curMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100).toFixed(1)
-        : 0;
-
-    var totalPurchase = pos.reduce(function (s, o) {
-      return s + (o.amount || o.total || 0);
-    }, 0);
-    var grossProfit = totalRevenue - totalPurchase;
-    var profitMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : 0;
-
-    // Top 5 customers
-    var custMap = {};
-    sos.forEach(function (o) {
-      if (!o.customerName) return;
-      if (!custMap[o.customerName]) custMap[o.customerName] = 0;
-      custMap[o.customerName] += o.amount || 0;
+    // Revenue, cost of sales and purchases from posted journals — the same source as
+    // the financial reports and the Ringkasan dashboard.
+    var types = {};
+    (data.accountsChart || []).forEach(function (a) {
+      types[a.no] = a.type;
     });
-    var top5Cust = Object.keys(custMap)
-      .map(function (n) {
-        return { name: n, total: custMap[n] };
-      })
-      .sort(function (a, b) {
-        return b.total - a.total;
-      })
-      .slice(0, 5);
-
-    // Top 5 items sold (from SO lines)
-    var itemMap = {};
-    sos.forEach(function (o) {
-      (o.lines || o.items || []).forEach(function (l) {
-        var key = l.name || l.itemName || l.itemId || 'Unknown';
-        if (!itemMap[key]) itemMap[key] = { qty: 0, value: 0 };
-        itemMap[key].qty += l.qty || l.quantity || 1;
-        itemMap[key].value += (l.qty || l.quantity || 1) * (l.price || l.unitPrice || 0);
+    var months = {};
+    for (var i = 5; i >= 0; i--) {
+      months[monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1))] = { rev: 0, pur: 0 };
+    }
+    var totalRevenue = 0;
+    var totalCogs = 0;
+    var curMonthRevenue = 0;
+    var prevToDateRevenue = 0;
+    (data.journals || []).forEach(function (j) {
+      var date = String(j.date || '');
+      var key = date.slice(0, 7);
+      var src = j.source && j.source.docType;
+      var purchaseDoc = src === 'PI' || src === 'PO' || src === 'PRN';
+      (j.lines || []).forEach(function (l) {
+        var t = types[l.accountNo];
+        var dr = Number(l.debit) || 0;
+        var cr = Number(l.credit) || 0;
+        if (t === 'REVENUE') {
+          if (date.slice(0, 4) === curYear) totalRevenue += cr - dr;
+          if (key === curMonth) curMonthRevenue += cr - dr;
+          if (key === prevMonth && Number(date.slice(8, 10)) <= prevDays) prevToDateRevenue += cr - dr;
+          if (months[key]) months[key].rev += cr - dr;
+        } else if (t === 'COGS' && date.slice(0, 4) === curYear) {
+          totalCogs += dr - cr;
+        }
+        if (purchaseDoc && months[key] && (t === 'INVENTORY' || t === 'EXPENSE' || t === 'COGS')) {
+          months[key].pur += dr - cr;
+        }
       });
     });
-    var top5Items = Object.keys(itemMap)
-      .map(function (n) {
-        return { name: n, qty: itemMap[n].qty, value: itemMap[n].value };
-      })
-      .sort(function (a, b) {
-        return b.value - a.value;
-      })
-      .slice(0, 5);
-
-    // Outstanding receivables
-    var outstanding = sos.filter(function (o) {
-      return o.status !== 'Paid' && o.status !== 'Cancelled';
+    var grossProfit = totalRevenue - totalCogs;
+    var profitMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : 0;
+    var revenueGrowth =
+      prevToDateRevenue > 0
+        ? (((curMonthRevenue - prevToDateRevenue) / prevToDateRevenue) * 100).toFixed(1)
+        : null;
+    var trendData = Object.keys(months).map(function (k) {
+      return { month: k.slice(5, 7) + '/' + k.slice(2, 4), rev: months[k].rev, pur: months[k].pur };
     });
-    var outstandingAmt = outstanding.reduce(function (s, o) {
-      return s + (o.amount || 0);
-    }, 0);
 
-    // Monthly trend (last 6 months)
-    var trendData = [];
-    for (var i = 5; i >= 0; i--) {
-      var d = new Date();
-      d.setMonth(d.getMonth() - i);
-      var m = d.toISOString().slice(0, 7);
-      var rev = sos
-        .filter(function (o) {
-          return o.date && o.date.slice(0, 7) === m;
+    // Sales this year by customer and item, without PPN: invoices, plus delivered
+    // orders without an invoice (both post revenue).
+    var sales = (data.salesInvoices || []).filter(function (inv) {
+      return (
+        (inv.status === 'Outstanding' || inv.status === 'Paid') &&
+        String(inv.date || '').slice(0, 4) === curYear
+      );
+    });
+    (data.salesOrders || []).forEach(function (o) {
+      var invoiced =
+        window.GL && typeof window.GL.hasActiveInvoice === 'function'
+          ? window.GL.hasActiveInvoice('salesInvoices', 'SO', o.id)
+          : false;
+      if (o.status === 'Delivered' && !invoiced && String(o.date || '').slice(0, 4) === curYear) {
+        sales.push(o);
+      }
+    });
+    var custMap = {};
+    var itemMap = {};
+    var salesTotal = 0;
+    sales.forEach(function (doc) {
+      (doc.lines || []).forEach(function (l) {
+        var value = Number(l.subtotal) || (Number(l.qty) || 0) * (Number(l.price) || 0);
+        var cust = doc.customer || '—';
+        var item = l.itemName || l.name || l.itemId || '—';
+        custMap[cust] = (custMap[cust] || 0) + value;
+        itemMap[item] = (itemMap[item] || 0) + value;
+        salesTotal += value;
+      });
+    });
+    var ranked = function (map) {
+      return Object.keys(map)
+        .map(function (n) {
+          return { name: n, total: map[n] };
         })
-        .reduce(function (s, o) {
-          return s + (o.amount || 0);
-        }, 0);
-      var pur = pos
-        .filter(function (o) {
-          return o.date && o.date.slice(0, 7) === m;
+        .sort(function (a, b) {
+          return b.total - a.total;
         })
-        .reduce(function (s, o) {
-          return s + (o.amount || o.total || 0);
-        }, 0);
-      trendData.push({ month: m.slice(5, 7) + '/' + m.slice(2, 4), rev: rev, pur: pur });
+        .slice(0, 5);
+    };
+    var top5Cust = ranked(custMap);
+    var top5Items = ranked(itemMap);
+
+    // Receivables from invoice balances (payments and returns applied).
+    var ar =
+      window.Balances && typeof window.Balances.summary === 'function'
+        ? window.Balances.summary('sales')
+        : { total: 0, overdue: 0, count: 0, overdueCount: 0 };
+
+    // Findings from simple rules on the transactions
+    var insights = [];
+    if (revenueGrowth === null) {
+      insights.push({
+        type: 'info',
+        text: 'Belum ada penjualan pada hari yang sama bulan lalu untuk dibandingkan.',
+      });
+    } else {
+      insights.push({
+        type: Number(revenueGrowth) < -10 ? 'warn' : Number(revenueGrowth) > 10 ? 'good' : 'info',
+        text:
+          'Penjualan bulan ini sampai hari ini <strong>' +
+          (Number(revenueGrowth) >= 0 ? '+' : '−') +
+          Math.abs(revenueGrowth) +
+          '%</strong> dibanding tanggal 1–' +
+          prevDays +
+          ' bulan lalu.',
+      });
     }
 
-    // AI Insights generation
-    var insights = [];
-    if (Number(revenueGrowth) > 10)
-      insights.push({
-        type: 'good',
-        icon: '📈',
-        text:
-          'Pendapatan bulan ini tumbuh <strong>' +
-          revenueGrowth +
-          '%</strong> dibanding bulan lalu — momentum positif yang perlu dipertahankan.',
-      });
-    else if (Number(revenueGrowth) < -10)
-      insights.push({
-        type: 'warn',
-        icon: '📉',
-        text:
-          'Pendapatan turun <strong>' +
-          Math.abs(revenueGrowth) +
-          '%</strong> dibanding bulan lalu. Perlu evaluasi strategi penjualan.',
-      });
-    else
+    if (totalRevenue > 0)
       insights.push({
         type: 'info',
-        icon: '📊',
         text:
-          'Pendapatan bulan ini <strong>stabil</strong> (perubahan ' +
-          (revenueGrowth > 0 ? '+' : '') +
-          revenueGrowth +
-          '%) dibanding bulan lalu.',
+          'Margin kotor tahun ini <strong>' +
+          profitMargin +
+          '%</strong>: laba kotor ' +
+          money(grossProfit) +
+          ' dari penjualan ' +
+          money(totalRevenue) +
+          '.',
       });
 
-    if (Number(profitMargin) > 20)
-      insights.push({
-        type: 'good',
-        icon: '💰',
-        text:
-          'Gross margin <strong>' +
-          profitMargin +
-          '%</strong> sangat sehat. Efisiensi biaya terjaga dengan baik.',
-      });
-    else if (Number(profitMargin) < 5)
+    if (ar.overdueCount)
       insights.push({
         type: 'warn',
-        icon: '⚠️',
-        text:
-          'Gross margin hanya <strong>' +
-          profitMargin +
-          '%</strong>. Perlu review pricing atau negosiasi harga beli ke supplier.',
-      });
-
-    if (outstandingAmt > totalRevenue * 0.3)
-      insights.push({
-        type: 'warn',
-        icon: '💳',
-        text:
-          'Piutang belum tertagih <strong>' +
-          money(outstandingAmt) +
-          '</strong> (' +
-          (totalRevenue > 0 ? ((outstandingAmt / totalRevenue) * 100).toFixed(0) : 0) +
-          '% dari total omzet). Perlu follow-up penagihan.',
-      });
-    else if (outstandingAmt > 0)
-      insights.push({
-        type: 'info',
-        icon: '📬',
         text:
           '<strong>' +
-          outstanding.length +
-          ' SO</strong> senilai ' +
-          money(outstandingAmt) +
-          ' masih outstanding — piutang dalam batas wajar.',
+          ar.overdueCount +
+          ' faktur</strong> senilai ' +
+          money(ar.overdue) +
+          ' sudah lewat jatuh tempo, dari total piutang ' +
+          money(ar.total) +
+          '.',
       });
-
-    if (top5Cust.length)
+    else if (ar.count)
       insights.push({
         type: 'info',
-        icon: '🏆',
         text:
-          'Pelanggan terbesar: <strong>' +
-          esc(top5Cust[0].name) +
-          '</strong> (' +
-          money(top5Cust[0].total) +
-          '). ' +
-          ((top5Cust[0].total / totalRevenue) * 100 > 50
-            ? '⚠️ Konsentrasi tinggi — pertimbangkan diversifikasi pelanggan.'
-            : 'Portofolio pelanggan cukup diversifikasi.'),
+          'Piutang ' +
+          money(ar.total) +
+          ' dari ' +
+          ar.count +
+          ' dokumen; belum ada yang lewat jatuh tempo.',
       });
+
+    if (top5Cust.length && salesTotal > 0) {
+      var share = Math.round((top5Cust[0].total / salesTotal) * 100);
+      insights.push({
+        type: share > 50 ? 'warn' : 'info',
+        text:
+          'Pelanggan terbesar tahun ini: <strong>' +
+          esc(top5Cust[0].name) +
+          '</strong>, ' +
+          share +
+          '% dari penjualan.',
+      });
+    }
 
     if (top5Items.length)
       insights.push({
         type: 'info',
-        icon: '📦',
         text:
-          'Item terlaris: <strong>' +
+          'Barang dengan penjualan terbesar tahun ini: <strong>' +
           esc(top5Items[0].name) +
-          '</strong> — pertimbangkan memastikan stok selalu tersedia.',
+          '</strong> (' +
+          money(top5Items[0].total) +
+          ').',
       });
 
     var insightHtml = insights
       .map(function (ins) {
-        var bg = ins.type === 'good' ? '#F0FDF4' : ins.type === 'warn' ? '#FEF9C3' : '#EFF6FF';
-        var bc = ins.type === 'good' ? '#BBF7D0' : ins.type === 'warn' ? '#FDE047' : '#BFDBFE';
-        var tc = ins.type === 'good' ? '#166534' : ins.type === 'warn' ? '#854D0E' : '#1D4ED8';
-        return (
-          '<div style="padding:12px 16px;border-radius:8px;border:1px solid ' +
-          bc +
-          ';background:' +
-          bg +
-          ';display:flex;gap:10px;margin-bottom:8px">' +
-          '<span style="font-size:18px;flex:none">' +
-          ins.icon +
-          '</span>' +
-          '<div style="font-size:13px;color:' +
-          tc +
-          '">' +
-          ins.text +
-          '</div></div>'
-        );
+        var cls =
+          ins.type === 'good' ? 'notice-success' : ins.type === 'warn' ? 'notice-warning' : 'notice-info';
+        return '<div class="notice ' + cls + '" style="margin-bottom:8px">' + ins.text + '</div>';
       })
       .join('');
 
@@ -715,12 +692,12 @@
         return (
           '<div style="flex:1;text-align:center">' +
           '<div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;height:80px;margin-bottom:4px">' +
-          '<div style="width:12px;background:#3B82F6;border-radius:3px 3px 0 0;height:' +
+          '<div style="width:12px;background:var(--primary);border-radius:3px 3px 0 0;height:' +
           pct +
           '%;min-height:2px" title="Penjualan ' +
           money(d.rev) +
           '"></div>' +
-          '<div style="width:12px;background:#F97316;border-radius:3px 3px 0 0;height:' +
+          '<div style="width:12px;background:var(--warning);border-radius:3px 3px 0 0;height:' +
           pctP +
           '%;min-height:2px" title="Pembelian ' +
           money(d.pur) +
@@ -736,7 +713,7 @@
     var top5CustHtml = top5Cust.length
       ? top5Cust
           .map(function (c, i) {
-            var pct = totalRevenue > 0 ? Math.round((c.total / totalRevenue) * 100) : 0;
+            var pct = salesTotal > 0 ? Math.round((c.total / salesTotal) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
               '<span style="font-size:14px;font-weight:800;color:var(--muted);width:18px">' +
@@ -745,7 +722,7 @@
               '<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:2px">' +
               esc(c.name) +
               '</div>' +
-              '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:#3B82F6;width:' +
+              '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--primary);width:' +
               pct +
               '%"></div></div>' +
               '</div><div style="font-size:12px;font-weight:700;text-align:right;white-space:nowrap">' +
@@ -760,7 +737,7 @@
       ? top5Items
           .map(function (it, i) {
             var pct =
-              top5Items[0].value > 0 ? Math.round((it.value / top5Items[0].value) * 100) : 0;
+              top5Items[0].total > 0 ? Math.round((it.total / top5Items[0].total) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
               '<span style="font-size:14px;font-weight:800;color:var(--muted);width:18px">' +
@@ -769,30 +746,30 @@
               '<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:2px">' +
               esc(it.name) +
               '</div>' +
-              '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:#F97316;width:' +
+              '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--warning);width:' +
               pct +
               '%"></div></div>' +
               '</div><div style="font-size:12px;font-weight:700;text-align:right;white-space:nowrap">' +
-              it.qty.toLocaleString('id-ID') +
-              ' unit</div></div>'
+              money(it.total) +
+              '</div></div>'
             );
           })
           .join('')
       : '<div style="color:var(--muted);font-size:12px">Belum ada data item terjual.</div>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Analisis Bisnis</h1><p>Ringkasan berbasis aturan dari data transaksi — dianalisis ' +
+      '<div class="sec-hdr"><div><h1>Analisis Bisnis</h1><p>Dihitung dari jurnal dan dokumen yang tercatat, per ' +
         today() +
         '</p></div>' +
-        '<button class="btn-ghost" data-action="refreshAI">↻ Refresh</button></div>' +
+        '<button class="btn-ghost" data-action="refreshAI">Muat ulang</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Total Omzet</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Penjualan Tahun Ini</div><div class="stat-val" style="font-size:18px">' +
         money(totalRevenue) +
         '</div><div class="stat-sub">' +
-        sos.length.toLocaleString('id-ID') +
-        ' SO</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Gross Profit</div><div class="stat-val" style="font-size:18px;color:' +
-        (grossProfit >= 0 ? '#15803D' : '#DC2626') +
+        sales.length.toLocaleString('id-ID') +
+        ' dokumen penjualan</div></div>' +
+        '<div class="card stat-card"><div class="stat-label">Laba Kotor Tahun Ini</div><div class="stat-val" style="font-size:18px;color:' +
+        (grossProfit >= 0 ? 'var(--success)' : 'var(--danger)') +
         '">' +
         money(grossProfit) +
         '</div><div class="stat-sub">Margin ' +
@@ -800,38 +777,46 @@
         '%</div></div>' +
         '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="font-size:18px">' +
         money(curMonthRevenue) +
-        '</div><div class="stat-sub" style="color:' +
-        (Number(revenueGrowth) >= 0 ? '#15803D' : '#DC2626') +
+        '</div><div class="stat-sub"' +
+        (revenueGrowth === null
+          ? '>Belum ada pembanding'
+          : ' style="color:' +
+            (Number(revenueGrowth) >= 0 ? 'var(--success)' : 'var(--danger)') +
+            '">' +
+            (Number(revenueGrowth) >= 0 ? '+' : '−') +
+            Math.abs(revenueGrowth) +
+            '% vs tgl 1–' +
+            prevDays +
+            ' bulan lalu') +
+        '</div></div>' +
+        '<div class="card stat-card"><div class="stat-label">Piutang Belum Lunas</div><div class="stat-val" style="font-size:18px' +
+        (ar.overdueCount ? ';color:var(--warning)' : '') +
         '">' +
-        (Number(revenueGrowth) >= 0 ? '+' : '') +
-        revenueGrowth +
-        '% vs bln lalu</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Piutang Outstanding</div><div class="stat-val" style="font-size:18px;color:#F97316">' +
-        money(outstandingAmt) +
+        money(ar.total) +
         '</div><div class="stat-sub">' +
-        outstanding.length +
-        ' SO belum lunas</div></div>' +
+        (ar.overdueCount ? money(ar.overdue) + ' lewat jatuh tempo' : ar.count + ' dokumen') +
+        '</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🔍 AI Insights</div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Temuan dari data transaksi</div>' +
         insightHtml +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">' +
-        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏆 Top 5 Pelanggan</div>' +
+        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Pelanggan Teratas</div>' +
         top5CustHtml +
         '</div>' +
-        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Top 5 Item Terjual</div>' +
+        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Barang Terlaris</div>' +
         top5ItemHtml +
         '</div>' +
         '</div>' +
         '<div class="card">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📈 Tren 6 Bulan Terakhir</div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Tren 6 Bulan Terakhir</div>' +
         '<div style="display:flex;align-items:flex-end;gap:6px;height:100px">' +
         trendBars +
         '</div>' +
         '<div style="display:flex;gap:16px;font-size:11px;margin-top:8px">' +
-        '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:#3B82F6;border-radius:2px;display:inline-block"></span>Penjualan</span>' +
-        '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:#F97316;border-radius:2px;display:inline-block"></span>Pembelian</span>' +
+        '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--primary);border-radius:2px;display:inline-block"></span>Penjualan</span>' +
+        '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--warning);border-radius:2px;display:inline-block"></span>Pembelian</span>' +
         '</div></div>'
     );
   }

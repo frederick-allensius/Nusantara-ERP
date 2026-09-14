@@ -52,7 +52,7 @@
               const lines = (a.lines || [])
                 .map(l => {
                   const sign = l.type === 'out' ? '−' : '+';
-                  const color = l.type === 'out' ? '#FF3B30' : '#34C759';
+                  const color = l.type === 'out' ? 'var(--danger)' : 'var(--success)';
                   return `<tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:6px 10px;font-size:12px;font-weight:600">${esc(l.itemName)}</td>
                   <td style="padding:6px 10px;font-size:12px;text-align:right;color:${color};font-weight:700">${sign}${esc(l.qty)} ${esc(l.unit || '')}</td>
@@ -66,7 +66,7 @@
                 <div style="display:flex;align-items:center;gap:10px">
                   <span style="font-size:11px;color:var(--muted)">${esc(a.date || '')}</span>
                   <button class="action-ghost" data-action="adjDelete" data-id="${esc(a.id)}"
-                    style="font-size:11px;color:#FF3B30">Hapus</button>
+                    style="font-size:11px;color:var(--danger)">Hapus</button>
                 </div>
               </div>
               <table style="width:100%;border-collapse:collapse"><tbody>${lines}</tbody></table>

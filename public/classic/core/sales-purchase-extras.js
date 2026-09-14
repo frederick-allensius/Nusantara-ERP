@@ -238,8 +238,8 @@
         });
         var statusBadge =
           d.status === 'Applied'
-            ? '<span class="badge" style="background:#DCFCE7;color:#166534">Diterapkan</span>'
-            : '<span class="badge" style="background:#FEF3C7;color:#92400E">Diterima</span>';
+            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterapkan</span>'
+            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Diterima</span>';
         var orderTotal = so ? (so.amount || 0) : 0;
         var allDPForOrder = dps.filter(function (x) { return x.orderId === d.orderId; })
           .reduce(function (s, x) { return s + (x.amount || 0); }, 0);
@@ -265,7 +265,7 @@
           money(orderTotal) +
           '</td>' +
           '<td class="td-p" style="text-align:right;font-size:11px;font-weight:700;color:' +
-          (remaining > 0 ? '#EF4444' : '#10B981') + '">' +
+          (remaining > 0 ? 'var(--danger)' : 'var(--success)') + '">' +
           money(remaining) +
           '</td>' +
           '<td class="td-p">' +
@@ -279,7 +279,7 @@
             : '') +
           '<button class="action-ghost" data-action="delSalesDP" data-id="' +
           esc(d.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -311,12 +311,12 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total DP', value: String(dps.length), sub: 'Transaksi DP' },
-            { label: 'Total Diterima', value: money(totalDP), sub: 'Seluruh DP', color: '#10B981' },
+            { label: 'Total Diterima', value: money(totalDP), sub: 'Seluruh DP', color: 'var(--success)' },
             {
               label: 'Belum Diterapkan',
               value: money(pendingDP),
               sub: 'Pending application',
-              color: '#F59E0B',
+              color: 'var(--warning)',
             },
           ])
         : '';
@@ -432,8 +432,8 @@
         });
         var statusBadge =
           d.status === 'Applied'
-            ? '<span class="badge" style="background:#DCFCE7;color:#166534">Diterapkan</span>'
-            : '<span class="badge" style="background:#FEF3C7;color:#92400E">Dibayar</span>';
+            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterapkan</span>'
+            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Dibayar</span>';
         var orderTotal = po ? (po.amount || 0) : 0;
         var allDPForOrder = dps.filter(function (x) { return x.orderId === d.orderId; })
           .reduce(function (s, x) { return s + (x.amount || 0); }, 0);
@@ -459,7 +459,7 @@
           money(orderTotal) +
           '</td>' +
           '<td class="td-p" style="text-align:right;font-size:11px;font-weight:700;color:' +
-          (remaining > 0 ? '#EF4444' : '#10B981') + '">' +
+          (remaining > 0 ? 'var(--danger)' : 'var(--success)') + '">' +
           money(remaining) +
           '</td>' +
           '<td class="td-p">' +
@@ -473,7 +473,7 @@
             : '') +
           '<button class="action-ghost" data-action="delPurchaseDP" data-id="' +
           esc(d.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -501,8 +501,8 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total DP', value: String(dps.length), sub: 'Transaksi DP' },
-            { label: 'Total Dibayar', value: money(totalDP), sub: 'Seluruh DP', color: '#F59E0B' },
-            { label: 'Belum Diterapkan', value: money(pendingDP), sub: 'Pending application', color: '#EF4444' },
+            { label: 'Total Dibayar', value: money(totalDP), sub: 'Seluruh DP', color: 'var(--warning)' },
+            { label: 'Belum Diterapkan', value: money(pendingDP), sub: 'Pending application', color: 'var(--danger)' },
           ])
         : '';
 
@@ -620,7 +620,7 @@
             return s + (o.amount || 0);
           }, 0);
         var pct = t.target > 0 ? Math.round((actual / t.target) * 100) : 0;
-        var color = pct >= 100 ? '#10B981' : pct >= 70 ? '#F59E0B' : '#EF4444';
+        var color = pct >= 100 ? 'var(--success)' : pct >= 70 ? 'var(--warning)' : 'var(--danger)';
 
         return (
           '<tr>' +
@@ -636,7 +636,7 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(actual) +
           '</td>' +
-          '<td class="td-p"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="height:100%;width:' +
+          '<td class="td-p"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden"><div style="height:100%;width:' +
           Math.min(pct, 100) +
           '%;background:' +
           color +
@@ -654,7 +654,7 @@
           '">Edit</button> ' +
           '<button class="action-ghost" data-action="delTarget" data-id="' +
           esc(t.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -782,8 +782,8 @@
           ' item</td>' +
           '<td class="td-p">' +
           (r.posted
-            ? '<span class="badge" style="background:#DCFCE7;color:#166534">Diterima</span>'
-            : '<span class="badge" style="background:#FEF3C7;color:#92400E">Draft</span>') +
+            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterima</span>'
+            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>') +
           '</td>' +
           '<td class="td-p">' +
           (!r.posted
@@ -793,7 +793,7 @@
             : '') +
           '<button class="action-edit" data-action="delReceipt" data-id="' +
           esc(r.id) +
-          '" title="Hapus" style="color:#EF4444;border-color:#EF4444">' +
+          '" title="Hapus" style="color:var(--danger);border-color:var(--danger)">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>' +
           '</button>' +
           '</td>' +
@@ -824,7 +824,7 @@
               label: 'PO Pending',
               value: String(pendingPO),
               sub: 'Menunggu penerimaan',
-              color: '#F59E0B',
+              color: 'var(--warning)',
             },
           ])
         : '';
@@ -1068,7 +1068,7 @@
           '">Edit</button> ' +
           '<button class="action-ghost" data-action="delSupPrice" data-id="' +
           esc(p.id) +
-          '" style="color:#EF4444">Hapus</button>' +
+          '" style="color:var(--danger)">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
