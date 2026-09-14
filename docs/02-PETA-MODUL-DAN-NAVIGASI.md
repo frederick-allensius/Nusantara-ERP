@@ -120,13 +120,13 @@ Report List (daftar laporan), Laba Rugi (P/L), Neraca (Balance Sheet), Arus Kas 
 | Transaksi Favorit | Daftar template | Ditampilkan di Pengaturan |
 | Ekspor e-Faktur (CTAS) | Ekspor CSV + nomor e-Faktur | Ditampilkan di Akuntansi |
 | e-Faktur format lama | Ekspor CSV format lama | Tetap di kode, dibuka dari halaman e-Faktur bila diperlukan |
-| Rekap / SPT PPN | Hanya dari Daftar Laporan; angka belum andal (T-11) | Ditampilkan di Laporan setelah diperbaiki |
+| Rekap / SPT PPN | Angka dari dokumen yang diposting (T-11 diperbaiki) | Ditampilkan di Laporan sebagai **Rekap PPN** |
 | Halaman Keuangan (umur piutang/hutang, kunci periode, cek buku besar, log audit) | Tidak punya item menu langsung | Ditampilkan sebagai **Ringkasan Keuangan** |
 | Halaman Pengaturan (pengguna, backup, reset data, kategori) | Tidak punya item menu langsung | Ditampilkan sebagai **Pengaturan Umum** |
 | Mata Uang | Pengaturan kurs, transaksi hanya Rupiah | **Tidak ditampilkan** agar tidak memberi kesan sistem mendukung valas — **REQUIRES USER CONFIRMATION** |
 | Kirim Faktur Pajak via Email | Hanya mencatat; email tidak benar-benar terkirim | **Tidak ditampilkan** — perlu server email |
 | SmartLink e-Banking | Formulir konfigurasi tanpa koneksi bank | **Tidak ditampilkan** — belum ada integrasi |
-| "AI Business Analysis" | Aturan sederhana, bukan AI | **Tidak ditampilkan**; bila dipakai kelak, diberi nama "Analisis Bisnis" |
+| Analisis Bisnis | Aturan sederhana, bukan AI; angka dari buku besar, faktur, dan saldo faktur (T-29) | **Tidak ditampilkan** di menu; tetap bisa dibuka lewat rute di kode — **REQUIRES USER CONFIRMATION** apakah perlu ditampilkan |
 
 ---
 
@@ -226,5 +226,6 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 
 Catatan:
 - Menu disembunyikan sesuai hak akses peran seperti sebelumnya.
+- **Pajak & PPN** dan **Ekspor e-Faktur** mengikuti hak akses modul Pajak, bukan modul Akuntansi.
 - **REQUIRES USER CONFIRMATION:** grup yang tidak dipakai bisnis (mis. Aset Tetap, Anggaran, Job Costing) dapat disembunyikan per peran — **tidak dihapus** — setelah dikonfirmasi.
 - Keputusan tentang tab halaman dan tab dokumen: lihat [09-AUDIT-UX.md §2](09-AUDIT-UX.md).

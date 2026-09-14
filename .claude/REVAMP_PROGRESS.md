@@ -150,6 +150,22 @@ Browser pane, otherwise rely on the tests.
   `customerName` field and shifted months through `toISOString()`. Findings are factual
   statements (no advice), month to date vs the same days last month.
 
+### Documentation synced with the code
+- 08: all findings `Diperbaiki` except T-06 and T-44 (decision needed); T-27 still needs the
+  Firestore rules/functions deploy; §E describes the demo generator; current test status.
+- 05: §2/§3 marked as review findings; §5 lists the correction rules now in place.
+- 02: Rekap PPN and Analisis Bisnis rows as implemented; tax entries follow the `tax` module.
+- 04: `journalVouchers`, balance sheet and aging rows, demo opening voucher. 09: tabs
+  decision and dashboard blocks as implemented, visual direction status. 01: evidence rows
+  point to `demo-data.js`.
+- ARSITEKTUR / PROJECT_STRUCTURE: view-tabs removed, navigate chain, `initialData` /
+  `emptyData`, `demo-data.js`, `nextNumber({ docs })`, test list. MEETING_KIT: demo
+  preparation, demo cases, presenter note.
+- docs/pitch SKRIP_DEMO and FAQ_SANGGAHAN: menu names, login (username `admin`), and
+  capabilities that exist now (roles, 2FA, printing, read-only API). The sample outputs in
+  `docs/pitch/OUTPUT_LAPORAN.md` and the PDF/XLSX/PPTX files still show the earlier demo
+  data and labels; regenerating them needs the user's go-ahead.
+
 ## Verifying in a browser without signing in
 
 `harness.local/ui.html` (git-ignored by `*.local`) boots the classic bundle with the app's
@@ -163,10 +179,5 @@ document tab, ledger, sales list, dashboard.
 
 1. UI polish, remaining: inline-styled tables and stat cards in extras pages → shared
    classes (`.data-table`, `.stat-row`).
-2. Docs sync: 08 statuses → "Diperbaiki" (T-18…T-22, T-24, T-32…T-35); 05 §5; 02/09 as
-   implemented (tax entries gated by the `tax` module; dashboard blocks); 04
-   (`journalVouchers`, payroll vouchers); ARSITEKTUR + PROJECT_STRUCTURE (view-tabs removed,
-   navigate chain, demo-data.js, emptyData/initialData); MEETING_KIT demo steps (menu names,
-   demo cases from demo-data.js).
-3. Final summary for the user: firestore rules/functions need a manual deploy; open
-   decisions requiring confirmation; remove `harness.local/`.
+2. Final summary for the user: firestore rules/functions need a manual deploy; open
+   decisions requiring confirmation; pitch sample outputs; remove `harness.local/`.

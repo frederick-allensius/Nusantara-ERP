@@ -25,7 +25,7 @@
 
 1. **Jurnal diturunkan dari dokumen (*derived*).** Setiap kali data disimpan, sistem menyusun ulang semua jurnal otomatis berdasarkan status dokumen saat itu (`public/classic/core/gl.js`, fungsi `reconcileAll`). Tidak ada jurnal otomatis yang diketik manual.
 2. **Konsekuensinya:** jika status dokumen diubah atau dokumen dihapus, jurnalnya ikut berubah/hilang pada perhitungan berikutnya. Tidak ada "jurnal balik" terpisah; jejak perubahannya tercatat di **Log Audit**.
-3. **Jurnal manual** (Jurnal Umum, posting Biaya Akrual, pembayaran gaji) disimpan apa adanya dan tidak dihitung ulang.
+3. **Jurnal manual** (Jurnal Umum, posting Biaya Akrual, pembayaran gaji, saldo awal) disimpan apa adanya dan tidak dihitung ulang. Salinannya disimpan di koleksi `journalVouchers` yang ikut tersinkron di mode cloud; jurnal otomatis disusun ulang di setiap perangkat.
 4. **Keseimbangan dijaga:** setiap jurnal otomatis dibentuk seimbang; Jurnal Umum ditolak bila debit ≠ kredit. Menu **Cek Buku Besar** memeriksa semua jurnal.
 5. **Nomor jurnal stabil:** `J:SO:<id>:rev`, `J:PO:<id>:recv`, `J:SI:<id>:rev`, `J:SR:<id>`, dst. — sehingga penghitungan ulang tidak membuat duplikat.
 
@@ -206,14 +206,14 @@ Artinya saat ini ada **tiga** representasi rekening yang berbeda: akun buku besa
 |---|---|---|
 | Neraca Saldo (Trial Balance) | Semua jurnal | Akun bersaldo nol disembunyikan |
 | Laba Rugi | Neraca saldo per tipe akun | Beban pajak dipisah berdasarkan nama akun |
-| Neraca | Neraca saldo + laba periode berjalan | ⚠ Dengan filter tanggal hanya menghitung jurnal dalam rentang (T-13); saldo negatif ditampilkan sebagai positif (T-13) |
+| Neraca | Neraca saldo + laba periode berjalan | Saldo kumulatif sampai tanggal akhir; saldo negatif tampil dengan tanda minus |
 | Arus Kas | Baris jurnal akun kas/bank | Diklasifikasikan dari akun lawan pertama (metode langsung sederhana) |
-| Umur Piutang | Faktur Penjualan & penerimaan | ⚠ PPN terhitung dua kali (T-09) |
+| Umur Piutang | Saldo faktur penjualan (penerimaan dan retur diperhitungkan) | Perhitungan saldo yang sama dengan dashboard dan kartu piutang |
 | Kartu Stok | PO Diterima, penyesuaian, SO Terkirim | Saldo awal = stok sekarang − pergerakan |
 | Kartu Piutang/Hutang | Faktur & penerimaan/pembayaran | |
 | Budget vs Aktual | Jurnal per akun per bulan | |
 
-**Saldo awal:** belum ada jurnal saldo awal pada data kosong. Tanpa saldo awal (modal, kas awal, persediaan awal), Neraca bisa menampilkan persediaan negatif meskipun stok barang ada. Saldo awal dimasukkan lewat **Import Excel → Opening Balances** atau **Jurnal Umum**.
+**Saldo awal:** database kosong tidak memiliki jurnal saldo awal. Tanpa saldo awal (modal, kas awal, persediaan awal), Neraca bisa menampilkan persediaan negatif meskipun stok barang ada. Saldo awal dimasukkan lewat **Import Excel → Opening Balances** atau **Jurnal Umum**. Data demo memuat satu jurnal saldo awal: kas, bank, dan persediaan terhadap Modal Disetor.
 
 ---
 

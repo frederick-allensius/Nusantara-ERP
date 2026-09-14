@@ -235,7 +235,7 @@ Tujuan demo: menyamakan gambaran, **bukan** pelatihan. Gunakan data contoh.
 **Persiapan (sebelum meeting):**
 1. Jalankan aplikasi mode lokal: `npm run dev:local`, buka `http://localhost:8088/app.html`.
 2. Login (akun lokal `admin`, lalu ganti password saat diminta).
-3. Pastikan data contoh terisi (Pengaturan → Pengaturan Umum → Reset Data bila perlu).
+3. Pastikan data demo terisi. Data demo dibuat relatif terhadap tanggal hari ini; bila perlu jalankan **Pengaturan → Pengaturan Umum → Reset Data** (menghapus semua data di perangkat itu — hanya untuk instalasi demo).
 4. Pilih tema terang, perbesar tampilan browser bila memakai proyektor.
 
 **Urutan tampilan:**
@@ -250,6 +250,8 @@ Tujuan demo: menyamakan gambaran, **bukan** pelatihan. Gunakan data contoh.
 | 6 | Persediaan → Barang & Stok → kartu stok satu barang | "Riwayat keluar-masuk barang." |
 | 7 | Laporan → Laba Rugi | "Laporan disusun otomatis dari transaksi." |
 
+Kasus yang sudah tersedia di data demo bila muncul pertanyaan: faktur penjualan dan hutang ke supplier yang lewat jatuh tempo, barang di bawah stok minimum, pesanan yang masih draft, dikonfirmasi, dalam perjalanan, atau dibatalkan, penawaran yang diterima lalu menjadi pesanan, retur sebagian, uang muka, setoran tunai ke bank, dan penggajian bulanan.
+
 Setelah demo, tanyakan: *"Dari yang barusan, bagian mana yang paling mirip dengan cara kerja sekarang, dan bagian mana yang berbeda?"*
 
 ---
@@ -258,7 +260,7 @@ Setelah demo, tanyakan: *"Dari yang barusan, bagian mana yang paling mirip denga
 
 - Tunjukkan alur, bukan jumlah fitur. Banyaknya menu tidak perlu dijelaskan satu per satu.
 - Jika ditanya "apakah bisa …", jawab jujur berdasarkan [07-MATRIKS-KAPABILITAS.md](07-MATRIKS-KAPABILITAS.md): tersedia, sebagian, atau belum ada.
-- Beberapa perhitungan sedang dalam perbaikan (lihat [08-TEMUAN-TEKNIS.md](08-TEMUAN-TEKNIS.md)). Hindari menjadikan angka laporan pajak/SPT sebagai bahan demo sampai statusnya *Diperbaiki*.
+- Temuan perhitungan dan perbaikannya tercatat di [08-TEMUAN-TEKNIS.md](08-TEMUAN-TEKNIS.md); yang masih menunggu keputusan adalah T-06 (jalur pembayaran baku) dan T-44 (metode penilaian persediaan). Semua angka di data demo fiktif — jangan dipakai sebagai contoh angka pajak perusahaan.
 - Catat istilah yang dipakai pengguna sendiri (mis. "nota", "DO", "kwitansi") — istilah itu nanti dipakai di aplikasi.
 
 ---

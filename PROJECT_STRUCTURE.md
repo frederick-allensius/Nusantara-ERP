@@ -12,7 +12,7 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `mobile.css` | Penyesuaian layar kecil |
 | `vite.config.js` | Konfigurasi Vite, termasuk plugin penggabung skrip klasik (`classicAll`) |
 | `vitest.config.ts`, `tsconfig.json` | Tes & type-check |
-| `eslint.config.js` | Aturan lint (dipakai ESLint 10). `.eslintrc.json` dan `.eslintignore` adalah format lama |
+| `eslint.config.js` | Aturan lint (dipakai ESLint 10). `.eslintrc.json` adalah format lama yang tidak dipakai |
 | `.prettierrc.json`, `.prettierignore` | Format kode |
 | `firebase.json`, `.firebaserc` | Hosting (rewrite, header keamanan), functions, emulator, project Firebase |
 | `firestore.rules`, `firestore.indexes.json`, `storage.rules` | Aturan keamanan & indeks |
@@ -78,7 +78,7 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `modules/master.js` | Data master |
 | `modules/settings.js` | Profil, keamanan akun, 2FA, backup, instal aplikasi, notifikasi |
 | `ui/nav.js` | Sidebar, sub-menu, menu pengguna, notifikasi, tema, `navigate()` |
-| `ui/view-tabs.js`, `ui/doc-tabs.js` | Tab halaman & tab dokumen |
+| `ui/doc-tabs.js` | Tab dokumen di dalam modulnya |
 
 ## `src/` — ES modules (di-bundle Vite)
 
@@ -93,7 +93,8 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `core/local-users.js` | Akun lokal (hash PBKDF2) |
 | `core/user-role.js` | Peran & label peran, fungsi admin pengguna |
 | `core/totp.js` | Kode verifikasi 2 langkah |
-| `core/db.js` | Muat/simpan data, sinkron Firestore, data contoh, reset, impor |
+| `core/db.js` | Muat/simpan data, sinkron Firestore, data awal (`initialData`), reset, impor |
+| `core/demo-data.js` | Generator data demo (relatif terhadap tanggal hari ini, deterministik) |
 | `core/indexeddb.js`, `core/local-store.js` | Penyimpanan IndexedDB |
 | `core/backup.js` | Backup file & cloud |
 | `core/helpers.js` | Format Rupiah, badge status, header, penomoran lama |

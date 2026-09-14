@@ -143,11 +143,9 @@ Aplikasi tidak menyimpan deskripsi bisnis. Namun ada petunjuk di data contoh dan
 
 | Bukti | Lokasi | Interpretasi (🟡 dugaan) |
 |---|---|---|
-| Data barang contoh: agregat, batu split, abu batu, pasir, dalam satuan Ton/M3 | `src/core/db.js` (data demo) | Perdagangan material (curah) |
-| Kategori barang bawaan: Granit, Marmer, Andesit, Travertine, Koral, Candi, Paras, Batu Alam | `public/classic/core/erp-crud.js` | Pernah diarahkan ke batu alam |
+| Data barang contoh: agregat, batu split, abu batu, pasir, dalam satuan Ton/M3 | `src/core/demo-data.js` (data demo) | Perdagangan material (curah) |
 | Surat Jalan memiliki baris P/L/T dan fitur "Bagi per Truck" berdasarkan kapasitas | `erp-crud.js` (template Surat Jalan) | Pengiriman dengan truk, muatan besar |
-| Pelanggan contoh berbentuk PT/CV/UD/Toko, faktur bertempo 30 hari, PPN 11% | `db.js` | Penjualan B2B dengan termin |
-| Barang jasa "ongkir", "jasa pengiriman", "ritase" | `db.js` | Ongkos kirim ditagihkan ke pelanggan |
+| Pelanggan contoh berbentuk PT/CV/UD/Toko dengan termin pembayaran, PPN 11% | `demo-data.js` | Penjualan B2B dengan termin |
 
 ➡ Jenis produk, cara pengiriman, dan pelanggan yang sebenarnya — **REQUIRES USER CONFIRMATION**. Data contoh bukan data riil perusahaan.
 

@@ -55,6 +55,8 @@ Aplikasi punya **dua** sistem tab di dalam halaman:
 2. **Tab dokumen dipertahankan dan dirapikan**: tampil sebagai baris tab sekunder yang tenang di bawah judul modul, dengan tombol tutup, jumlah tab dibatasi, dan perilaku sama di semua modul.
 3. **REQUIRES USER CONFIRMATION:** apakah staf memang sering membuka beberapa dokumen sekaligus? Bila tidak, tab dokumen bisa diganti panel detail tunggal pada tahap berikutnya.
 
+**Status:** keputusan 1 dan 2 sudah diterapkan — `ui/view-tabs.js` dihapus; tab dokumen tampil di bawah judul modul hanya bila ada dokumen terbuka, maksimal 5, dan hanya di dalam modulnya (dari halaman lain, detail dokumen tampil sebagai dialog).
+
 ---
 
 ## 3. Arah struktur navigasi
@@ -77,11 +79,14 @@ Dashboard dibangun ulang hanya dari data yang benar-benar dicatat aplikasi. Tida
 | Kas & bank | Berapa uang yang tersedia? | Saldo akun kas/bank di buku besar |
 | Piutang | Berapa tagihan belum dibayar, berapa yang lewat jatuh tempo? | Faktur Penjualan belum lunas − penerimaan |
 | Hutang | Berapa kewajiban ke supplier, apa yang segera jatuh tempo? | Faktur Pembelian belum lunas − pembayaran |
-| Penjualan & laba kotor bulan ini | Bagaimana bulan ini dibanding bulan lalu? | Jurnal pendapatan & HPP |
+| Penjualan & laba kotor bulan ini | Bagaimana bulan ini dibanding hari yang sama bulan lalu? | Jurnal pendapatan & HPP |
 | Perlu tindakan | Pesanan dikonfirmasi belum dikirim, surat jalan pending, penawaran menunggu jawaban, draft | Status dokumen |
+| Jatuh tempo terdekat | Tagihan dan kewajiban mana yang harus diurus lebih dulu? | Saldo faktur penjualan & pembelian |
 | Stok menipis | Barang apa yang harus dibeli? | Stok vs stok minimum |
 | Tren 6 bulan | Arah penjualan vs pembelian | Jurnal per bulan |
-| Aktivitas terbaru | Apa yang baru terjadi? | Log audit |
+| Aktivitas terbaru | Apa yang baru terjadi? | Log audit (bila kosong: dokumen terbaru) |
+
+Blok bisa disembunyikan per browser lewat **Atur Tampilan**. Selama data perusahaan belum lengkap, dashboard menampilkan daftar periksanya.
 
 **REQUIRES USER CONFIRMATION:** urutan prioritas blok dan apakah ada angka lain yang dipantau pemilik setiap hari (mis. target penjualan, pengiriman hari ini).
 
@@ -105,5 +110,7 @@ Target: **perangkat lunak bisnis yang tenang, rapi, dan mudah dibaca** — rasa 
 | Keadaan kosong/muat/error | Emoji & teks teknis | Pesan singkat berbahasa sehari-hari + satu tindakan yang jelas |
 | Animasi | Latar bergerak, transisi beragam | Transisi singkat (150–200 ms) hanya untuk perubahan keadaan; menghormati *reduced motion* |
 | Tema gelap | Warna yang dibalik | Dirancang terpisah: permukaan bertingkat, border tipis terang, teks sekunder kontras cukup, grafik & tooltip mengikuti tema |
+
+**Status penerapan:** token warna terang dan gelap di `style.css` dipakai di seluruh halaman termasuk modul tambahan; font Inter; ikon garis menggantikan emoji; badge lembut; grafik dashboard mengikuti tema. Masih tersisa: sebagian tabel dan kartu statistik di modul tambahan memakai gaya inline.
 
 **Tidak dilakukan:** mengganti identitas warna, menambah animasi dekoratif, menambah fitur "AI", membuat grafik tanpa arti.

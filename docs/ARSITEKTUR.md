@@ -63,7 +63,7 @@ Mode ditentukan `isFirebaseConfigured` (`src/config/firebase.js`): kunci `VITE_F
 - **Koleksi tersinkron** ditentukan `COLLECTIONS` di `src/core/db.js` (dan harus sama dengan `functions/backup.js` serta `firestore.rules`). Koleksi di luar daftar hanya tersimpan lokal (T-27).
 - **Data turunan** — dihitung ulang, bukan sumber kebenaran: jurnal otomatis, harga pokok, total stok (`item.stock` = Σ stok per gudang).
 - **Skema & migrasi:** `core/schema.js` (versi skema, gudang default), `core/doc-migrate.js` (penomoran & referensi), `normalizeImportedDB` (impor backup).
-- **Data contoh:** `defaultData` di `src/core/db.js`, dimuat saat database kosong atau lewat Reset Data.
+- **Data awal:** `initialData()` di `src/core/db.js` — data demo dari `src/core/demo-data.js` (dibuat relatif terhadap tanggal hari ini, deterministik) untuk database lokal yang masih kosong, Reset Data, dan Firestore yang masih kosong; database kosong bila `VITE_SEED_DEMO=false`. `emptyData` hanya melengkapi kunci yang hilang pada data tersimpan atau impor, tanpa menyisipkan data demo.
 
 ---
 
@@ -74,7 +74,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 | Fungsi | Urutan dari luar ke dalam |
 |---|---|
 | `window.saveDB` | `rbac` (tolak & kembalikan perubahan yang tidak diizinkan) → `integrity` (log audit, kunci periode) → `trash` (salin data terhapus) → `gl-sync` (`GL.reconcileAll()`) → `db.js` (persist) |
-| `window.navigate` | `lazy-views` (muat chunk) → `rbac` (cek akses halaman) → `doc-tabs` → `view-tabs` → `ui/nav.js` (render) |
+| `window.navigate` | `lazy-views` (muat chunk) → `rbac` (cek akses halaman) → `doc-tabs` → `ui/nav.js` (render) |
 | `window.openModal` | `doc-tabs` (detail dokumen tertentu ditampilkan sebagai tab) → `src/core/modal.js` |
 
 ---
@@ -84,9 +84,9 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 | Komponen | File | Tugas |
 |---|---|---|
 | Registri | `src/classic/core/doc-registry.js` | Tipe dokumen (SQ, PQ, SO, PO, DO, SI, PI, SR, PP, SRN, PRN, IT), prefix, status, transisi |
-| Engine | `core/doc-engine.js` | `nextNumber` (`PREFIX.YYYY.MM.NNNNN`), `canTransition`, total |
+| Engine | `core/doc-engine.js` | `nextNumber` (`PREFIX.YYYY.MM.NNNNN`; nomor yang sudah dipakai di koleksi tipe itu dilewati — tipe di luar registri seperti OP, OD, BT, ADJ, JV mengirim koleksinya lewat `{ docs }`), `canTransition`, total |
 | Jejak | `core/doc-flow.js` | Rantai dokumen lewat `sourceQuotation`, `soId`/`poId`, `sourceId`, `invoiceId` |
-| Penomoran lama | `src/core/helpers.js` `nextId` | `PREFIX.YYYY.MM.NNN` — masih dipakai sebagian form (T-34) |
+| ID dokumen | `src/core/helpers.js` `nextId` | ID internal SO/PO (`PREFIX.YYYY.MM.NNN`); nomor yang tampil tetap dari `nextNumber` |
 
 ## 6. Stok
 
@@ -125,7 +125,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 - **Komponen:** `src/core/helpers.js` (`idr`, `badge`, `secHdr`, `statRow`, …), `src/core/modal.js` (`openModal`, `closeModal`, `showToast`, `confirmDialog`).
 - **Gaya:** `style.css` (token warna & komponen, tema terang/gelap via `data-theme`), `mobile.css`, `public/theme-init.js` (tema sebelum render), `public/mobile-ui.js`.
 - **Bahasa:** `src/core/i18n.js` menerjemahkan teks Indonesia → Inggris di DOM saat bahasa Inggris dipilih.
-- **Tab:** `ui/view-tabs.js`, `ui/doc-tabs.js` — lihat keputusan di [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
+- **Tab dokumen:** `ui/doc-tabs.js` — detail dokumen dibuka sebagai tab hanya di dalam modulnya (maks. 5); dari halaman lain tampil sebagai dialog. Tab halaman bergaya browser sudah dihapus — keputusan di [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
 
 ## 10. Cloud Functions (`functions/`)
 
@@ -146,6 +146,8 @@ Vitest + happy-dom (`tests/`). Tes yang memuat skrip klasik mengevaluasi file as
 |---|---|
 | `classic-bundle-smoke.test.ts` | Semua skrip klasik termuat; global wajib ada (`NSAMenu`, `GL`, `Integrity`, `DocEngine`, `NSAXlsx`, `navigate`, `invalidateView`); **setiap** `#view-*` di `app.html` bisa dirender; **setiap** rute `NSAMenu` bisa dibuka |
 | `gl.test.ts`, `cost-ledger.test.ts` | Jurnal otomatis, neraca saldo, jurnal umum, harga pokok |
+| `accounting-integrity.test.ts` | Pendapatan dan hutang dibentuk sekali per rantai pesanan–faktur, uang muka, jurnal Kas & Bank, dokumen termasuk PPN, saldo & umur faktur, stok lewat modul gudang |
+| `demo-data.test.ts` | Data demo: stok per gudang, nomor unik, tautan dokumen, penggajian, status faktur, neraca saldo seimbang, persediaan = nilai stok, kas/bank tidak minus di hari mana pun, kasus demo |
 | `doc-engine.test.ts`, `erp-flow.test.ts`, `stock-reservation.test.ts`, `transaction-rollback.test.ts` | Penomoran, transisi, alur dokumen, reservasi stok, rollback |
 | `rbac.test.ts`, `integrity.test.ts` | Hak akses dan log audit/kunci periode |
 | `auth.test.ts`, `twofa-flow.test.ts`, `totp.test.ts` | Login lokal & 2FA |

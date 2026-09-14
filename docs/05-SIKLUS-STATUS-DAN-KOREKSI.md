@@ -2,7 +2,7 @@
 
 > **Pertanyaan yang dijawab:** *"Kalau transaksi salah, apa yang boleh dilakukan — ubah, batalkan, retur, atau jurnal koreksi?"*
 >
-> Dokumen ini berisi (1) status yang ada saat ini, (2) apa yang terjadi pada ubah/hapus/batal, dan (3) model koreksi yang konsisten dengan logika akuntansi aplikasi.
+> Dokumen ini berisi (1) status dan (2) perilaku ubah/hapus/batal seperti ditemukan saat review, (3) model koreksi yang konsisten dengan logika akuntansi aplikasi, dan (4) status penerapannya.
 
 ---
 
@@ -22,7 +22,9 @@
 
 ---
 
-## 2. Status per jenis dokumen (saat ini)
+## 2. Status per jenis dokumen (temuan review)
+
+> Status dan transisi yang berlaku sekarang ada di mesin dokumen (`src/classic/core/doc-registry.js`); perubahan yang sudah diterapkan dirangkum di §5.
 
 | Dokumen | Status | Transisi yang divalidasi mesin |
 |---|---|---|
@@ -45,7 +47,9 @@
 
 ---
 
-## 3. Apa yang terjadi saat mengubah, menghapus, membatalkan (saat ini)
+## 3. Apa yang terjadi saat mengubah, menghapus, membatalkan (temuan review)
+
+> Perilaku setelah perbaikan dirangkum di §5.
 
 | Dokumen | Ubah | Hapus | Batal | Efek pada stok & akuntansi |
 |---|---|---|---|---|
@@ -121,10 +125,14 @@ Kolom ini diperbarui seiring perbaikan aplikasi. Rincian teknis di [08-TEMUAN-TE
 
 | Aturan | Status |
 |---|---|
-| Validasi transisi status juga berlaku di form Edit SO/PO | Direncanakan |
-| Dokumen yang sudah punya dokumen turunan tidak bisa dihapus (ditawarkan Batalkan) | Direncanakan |
-| Pembatalan Faktur Penjualan/Pembelian (bila belum ada pembayaran) | Direncanakan |
-| Pembatalan Penerimaan/Pembayaran (status faktur dihitung ulang) | Direncanakan |
-| Konversi penawaran hanya sekali | Direncanakan |
+| Validasi transisi status juga berlaku di form Edit SO/PO | Diterapkan |
+| Dokumen yang sudah punya dokumen turunan tidak bisa dihapus (ditawarkan Batalkan) | Diterapkan |
+| Pembatalan Faktur Penjualan/Pembelian (bila belum ada pembayaran) | Diterapkan |
+| Pembatalan Penerimaan/Pembayaran (status faktur dihitung ulang) | Diterapkan |
+| Konversi penawaran hanya sekali | Diterapkan |
+| Status **Dibatalkan** resmi di mesin dokumen: SO/PO, faktur, penerimaan/pembayaran, dan retur yang masih draft | Diterapkan |
+| Pesanan yang sudah difakturkan tidak bisa diubah sebelum fakturnya dibatalkan | Diterapkan |
+| Retur yang sudah diposting bersifat final; koreksi dengan dokumen baru | Diterapkan |
+| Biaya akrual yang sudah diposting tidak bisa dihapus; koreksi dengan Jurnal Umum (jurnal balik) | Diterapkan |
 | Jurnal balik eksplisit untuk pembatalan | Menunggu konfirmasi kebutuhan |
 | Approval pembatalan | Menunggu konfirmasi kebutuhan |

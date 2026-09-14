@@ -16,28 +16,28 @@ akses lintas perangkat. Kapan pun bisa **backup ke file** dan dibawa sendiri.
 
 **Q: Kalau laptop rusak / hilang, data ikut hilang?**
 Karena lokal, datanya memang di perangkat — makanya kami sarankan **backup
-berkala ke file** (Settings → Kelola Backup), dan/atau mengaktifkan **sync
+berkala ke file** (menu pengguna → Kelola Backup), dan/atau mengaktifkan **sync
 cloud** supaya ada salinan otomatis. Saya bantu atur rutinitas backup saat
 onboarding.
 
 **Q: Bisa diakses banyak orang sekaligus?**
 Dengan sync cloud, beberapa perangkat bisa lihat data yang sama secara
-real-time. Untuk **pembedaan hak akses per peran** (kasir vs manajer), fitur
-RBAC **sedang dikembangkan** — saat ini akses masih setara per akun.
+real-time. **Hak akses per peran** sudah tersedia: admin, manajer, akunting,
+penjualan, dan viewer, masing-masing dengan menu dan izin ubah data yang berbeda.
 
 ### Fitur
 **Q: Bisa cetak / kirim invoice PDF?**
-Export **Excel** sudah tersedia sekarang. **PDF ada di roadmap** — belum
-sekarang. (Sementara, Excel bisa di-print/convert ke PDF dari aplikasi
-spreadsheet.)
+Bisa. Faktur, pesanan, dan surat jalan dicetak dari aplikasi; lewat dialog cetak
+browser bisa langsung disimpan sebagai PDF. Daftar dan laporan juga bisa
+diekspor ke Excel.
 
 **Q: Bisa jalan di HP?**
 Ya. Tampilan responsif dan bisa **di-install sebagai aplikasi (PWA)** di HP
 maupun desktop, termasuk dipakai offline.
 
 **Q: Mendukung banyak gudang?**
-Ya — stok multi-gudang, penyesuaian, transfer, dan retur. Kartu stok selalu
-cocok dengan buku besar.
+Ya — stok multi-gudang, penyesuaian, transfer, dan retur. Mutasi stok dan jurnal
+persediaan dibentuk dari transaksi yang sama.
 
 **Q: Pembukuannya beneran akuntansi atau cuma catatan?**
 Beneran **double-entry**: tiap transaksi otomatis terposting ke jurnal, ada
@@ -95,8 +95,8 @@ disandera.
 > Nusantara ERP ringan, jalan offline, datanya tetap di tangan Anda, dan dibuat
 > untuk konteks bisnis di sini. Untuk UMKM, itu beda yang terasa setiap hari."
 
-### "Fitur X belum ada (mis. RBAC / PDF / 2FA)."
-> "Betul, itu **di roadmap** dan belum sekarang — saya tidak mau menjanjikan
+### "Fitur X belum ada (mis. integrasi bank otomatis / transaksi valas)."
+> "Betul, itu belum ada sekarang — saya tidak mau menjanjikan
 > yang belum ada. Yang sudah berjalan hari ini sudah menutup kebutuhan inti:
 > penjualan, pembelian, stok, dan pembukuan. Kalau fitur X krusial buat Anda,
 > catat sebagai prioritas — masukan pengguna awal sangat memengaruhi urutan
@@ -110,19 +110,22 @@ disandera.
 ---
 
 ## Yang JANGAN dikatakan
-- ❌ "Bisa kok" untuk fitur yang belum ada (RBAC, PDF, 2FA, multi-bahasa di luar
-  ID/EN, API). Sebut **"di roadmap"**.
+- ❌ "Bisa kok" untuk fitur yang belum ada (integrasi bank otomatis, transaksi valas,
+  kirim faktur pajak lewat email, bahasa selain ID/EN). Sebut apa adanya: belum tersedia.
 - ❌ "Data 100% tidak mungkin hilang." Yang benar: lokal + backup file + opsi
   sync cloud = risiko ditekan, tapi backup tetap tanggung jawab bersama.
 - ❌ Menjanjikan tanggal rilis fitur tertentu.
 
-## Status fitur (rujukan cepat — per Juni 2026)
-| Sudah ada | Roadmap (belum) |
+## Status fitur (rujukan cepat — per September 2026)
+| Sudah ada | Belum ada |
 |---|---|
-| Sales, Purchase, Inventory multi-gudang | Hak akses per peran (RBAC) |
-| Buku besar double-entry, kas/bank, aset, pajak | Export **PDF** invoice & laporan |
-| Laporan L/R, Neraca, Arus Kas | 2FA (autentikasi 2 faktor) |
+| Sales, Purchase, Inventory multi-gudang | Integrasi bank otomatis (e-Banking) |
+| Buku besar double-entry, kas/bank, aset, pajak | Transaksi valas (hanya Rupiah) |
+| Laporan L/R, Neraca, Arus Kas | Kirim faktur pajak lewat email |
 | Export **Excel** + import data | Bahasa selain ID/EN |
-| Local-first, offline, PWA, dwibahasa ID/EN | API untuk integrasi |
+| Local-first, offline, PWA, dwibahasa ID/EN | |
 | Audit trail, kunci periode, cek buku besar | |
 | Backup file + opsi sync cloud | |
+| Hak akses per peran, verifikasi 2 langkah (2FA) | |
+| Cetak faktur, pesanan, surat jalan (bisa disimpan sebagai PDF) | |
+| API baca-saja untuk integrasi (mode cloud) | |
