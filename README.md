@@ -9,6 +9,11 @@ A modern, lightweight Enterprise Resource Planning (ERP) system built for Nusant
 - 💾 **Local-first storage**: full dataset persists in IndexedDB (works without any backend)
 - 🔥 **Optional Firestore sync**: real-time sync across devices, with concurrent-edit protection (`updatedBy` stamping + conflict surfacing)
 - 📊 **Built-in reports**: Laporan Umur Piutang (AR aging), Kartu Stok (per-item movement card that reconciles to on-hand), and Kartu Piutang/Hutang (per-party running statement)
+- ⚖️ **Trading pipeline**: PO → Surat Jalan & Timbangan (weighbridge capture) → Rekonsiliasi → Multi-Invoice → Payment, with the reconciled quantity driving invoicing
+- 🔎 **Supplier SJ validation**: cross-checks field Surat Jalan tonnage/price against the supplier's Excel recap and flags mismatches before an invoice is issued (pluggable recap sources)
+- 📉 **Pipeline funnels + custom-range report**: purchase & sales funnels on the dashboard plus a report filterable by date range, month, customer, supplier, and PO number
+- 👥 **Dual-view access**: a minimal Entri Harian data-entry surface for admin/accounting and an executive dashboard (funnels, real-time margin, piutang aging, financial reports) for owner/management
+- 🔠 **Senior-friendly UI**: 16-18px base type, high contrast, and ~44px touch targets across desktop and mobile
 - 🛡️ **Data integrity**: audit trail, accounting period lock, and ledger self-check
 - 🔐 **Hardened auth**: username login via Cloud Function custom tokens, PBKDF2-600k password hashing (OWASP), brute-force login throttle + admin session revocation, RBAC (5 roles) + optional TOTP 2FA
 - 🔒 **Hardened delivery**: strict Content-Security-Policy + HSTS/anti-clickjacking headers (no inline scripts)
