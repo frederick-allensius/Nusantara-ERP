@@ -18,6 +18,8 @@ var DASH_WIDGET_CATALOG = [
   { id: 'pembelian', label: 'Pembelian', wide: true },
   { id: 'purchaseFunnel', label: 'Purchase Funnel' },
   { id: 'salesFunnel', label: 'Sales Funnel' },
+  { id: 'margin', label: 'Margin Real-time' },
+  { id: 'piutangAging', label: 'Piutang (Outstanding)' },
 ];
 
 // Returns the ordered list of enabled widget ids. Defaults to all widgets when
@@ -538,6 +540,31 @@ function renderDashboard() {
     }, 0);
   var notOverduePurchase = Math.max(0, apOutstanding - overduePurchase);
 
+  // ── Piutang aging buckets (Owner/Management outstanding-invoices widget) ───
+  // Age each unpaid receivable by days since its document date and bucket it, so
+  // management sees the outstanding invoices at a glance. Mirrors the detailed
+  // aging in the finance view's _piutangAgingSection.
+  var _agingBuckets = [
+    { label: '0–30 hari', min: 0, max: 30, color: '#10B981', val: 0, count: 0 },
+    { label: '31–60 hari', min: 31, max: 60, color: '#FBBF24', val: 0, count: 0 },
+    { label: '61–90 hari', min: 61, max: 90, color: '#F59E0B', val: 0, count: 0 },
+    { label: '>90 hari', min: 91, max: Infinity, color: '#EF4444', val: 0, count: 0 },
+  ];
+  var _todayMs = Date.now();
+  allSI.forEach(function (o) {
+    var owe = _owing(o);
+    if (owe <= 0.5) return;
+    var days = o.date ? Math.floor((_todayMs - new Date(o.date).getTime()) / 86400000) : 0;
+    for (var _b = 0; _b < _agingBuckets.length; _b++) {
+      var bk = _agingBuckets[_b];
+      if (days >= bk.min && days <= bk.max) {
+        bk.val += owe;
+        bk.count += 1;
+        break;
+      }
+    }
+  });
+
   // ── YTD Laba/Rugi — computed from Accurate journal vouchers ──────────────
   // This is the ONLY reliable P&L source: the JVs carry the exact same
   // revenue/COGS/expense postings Accurate uses for its own Laba Rugi report.
@@ -597,6 +624,27 @@ function renderDashboard() {
   // Laba/Rugi: Profit = Pendapatan − HPP − Beban (net profit, matches Accurate).
   var grossProfit = incomeValue - cogsValue;
   var netProfit = grossProfit - expValueYtd;
+
+  // ── Real-time margin (Owner/Management surface) ───────────────────────────
+  // Revenue vs COGS on the moving-average basis from cost-ledger.js: for every
+  // DELIVERED sales order we take its amount as revenue and CostLedger's COGS
+  // for that SO. This is the live gross margin, independent of the JV-derived
+  // YTD P&L above (which buckets by posting period).
+  var _marginRevenue = 0;
+  var _marginCogs = 0;
+  var _CL =
+    typeof window !== 'undefined' && window.CostLedger ? window.CostLedger : null;
+  (DB.salesOrders || []).forEach(function (o) {
+    if (!o || o.status !== 'Delivered') return;
+    if (o._type && o._type !== 'invoice') return;
+    _marginRevenue += o.amount || 0;
+    if (_CL && typeof _CL.cogsForSO === 'function') {
+      var c = _CL.cogsForSO(o.id);
+      if (c != null) _marginCogs += c;
+    }
+  });
+  var _marginValue = _marginRevenue - _marginCogs;
+  var _marginPct = _marginRevenue > 0 ? Math.round((_marginValue / _marginRevenue) * 100) : null;
 
   // Build activity timeline from recent orders
   var activities = [];
@@ -986,6 +1034,64 @@ function renderDashboard() {
           ? window._funnelReport.renderSalesFunnelHtml(DB)
           : '<div class="widget-header"><div class="widget-title">Sales Funnel</div></div>' +
             '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Belum ada data</div>',
+    },
+    // Real-time margin (Owner/Management): revenue vs COGS (moving average) from
+    // cost-ledger.js across delivered sales orders.
+    margin: {
+      inner:
+        '<div class="widget-header"><div class="widget-title">Margin Real-time</div></div>' +
+        '<div style="text-align:center;margin:6px 0 14px">' +
+        '<div style="font-size:11px;color:var(--muted)">Margin Kotor' +
+        (_marginPct != null ? ' · ' + _marginPct + '%' : '') +
+        '</div>' +
+        '<div style="font-size:24px;font-weight:800;color:' +
+        (_marginValue >= 0 ? '#10B981' : '#EF4444') +
+        '">' +
+        money(_marginValue) +
+        '</div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div class="donut-label"><div class="donut-label-dot" style="background:#3B82F6"></div> Pendapatan</div>' +
+        '<div style="font-size:13px;font-weight:700">' +
+        money(_marginRevenue) +
+        '</div></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div class="donut-label"><div class="donut-label-dot" style="background:#F59E0B"></div> HPP (COGS)</div>' +
+        '<div style="font-size:13px;font-weight:700">' +
+        money(_marginCogs) +
+        '</div></div>' +
+        '</div>',
+    },
+    // Outstanding invoices / piutang aging (Owner/Management).
+    piutangAging: {
+      inner:
+        '<div class="widget-header"><div class="widget-title">Piutang (Outstanding)</div></div>' +
+        '<div style="text-align:center;margin:6px 0 14px">' +
+        '<div style="font-size:11px;color:var(--muted)">Total Piutang</div>' +
+        '<div style="font-size:24px;font-weight:800;color:#0A84FF">' +
+        money(piutangVal) +
+        '</div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        _agingBuckets
+          .map(function (b) {
+            return (
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<div class="donut-label"><div class="donut-label-dot" style="background:' +
+              b.color +
+              '"></div> ' +
+              b.label +
+              ' <span style="color:var(--muted)">(' +
+              b.count +
+              ')</span></div>' +
+              '<div style="font-size:13px;font-weight:700;color:' +
+              (b.val > 0 ? b.color : 'var(--muted)') +
+              '">' +
+              money(b.val) +
+              '</div></div>'
+            );
+          })
+          .join('') +
+        '</div>',
     },
   };
 

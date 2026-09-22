@@ -627,6 +627,10 @@ function getRenderer(id) {
     case 'excelImport':
       // Import dari Excel — defined additively in excel-import.js.
       return typeof window.renderExcelImport === 'function' ? window.renderExcelImport : null;
+    case 'entriHarian':
+      // Section 5: Entri Harian — focused data-entry surface for the
+      // Admin/Accounting personas, defined additively in entri-harian.js.
+      return typeof window.renderEntriHarian === 'function' ? window.renderEntriHarian : null;
     case 'logistics':
       return renderLogistics;
     case 'master':

@@ -66,6 +66,11 @@ const classicAll = [
   // routed via menu-router.js, so it loads before it (and before rbac.js).
   'public/classic/core/funnel-report.js',
   'public/classic/core/asset-extras.js',
+  // entri-harian.js: the Section 5 daily data-entry surface (Entri Harian). It
+  // routes to the PO/DO create handlers, _pipelineExtras (Timbangan) and
+  // _bankExtras (Biaya Operasional) at click time, so it only needs to load
+  // before menu-router.js (which routes to it) and rbac.js (which gates it).
+  'public/classic/core/entri-harian.js',
   'public/classic/core/menu-router.js',
   'public/classic/core/gl-sync.js',
   // trash.js between gl-sync and integrity: integrity wraps OUTERMOST, so a

@@ -66,6 +66,15 @@
       view: 'dashboard',
       items: [],
     },
+    // Section 5: Entri Harian — the focused daily data-entry surface for the
+    // Admin/Accounting personas. Single-view group (like Dashboard) so a rail
+    // click navigates straight to it with the full content width.
+    entri: {
+      title: 'Entri Harian',
+      color: '#0EA5E9',
+      view: 'entriHarian',
+      items: [],
+    },
     company: {
       title: 'Company',
       color: '#3B82F6',
