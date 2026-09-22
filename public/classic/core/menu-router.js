@@ -88,6 +88,7 @@
     'Report List': ['_reportExtras', 'openReportList'],
     'SPT PPN / PPNBM': ['_reportExtras', 'openSPTPPN'],
     'AI Analysis': ['_reportExtras', 'openAIAnalysis'],
+    'Laporan Custom Range': ['_funnelReport', 'openCustomRange'],
 
     // ── Invoice / Receipt / Payment tab routing ──────────────────────────────
     'Sales Invoice':    ['_invoiceExtras', 'openSalesInvoice'],

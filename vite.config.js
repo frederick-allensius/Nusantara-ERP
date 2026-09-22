@@ -61,6 +61,10 @@ const classicAll = [
   'public/classic/core/bank-extras.js',
   'public/classic/core/tax-extras.js',
   'public/classic/core/report-extras.js',
+  // funnel-report.js: pipeline funnel analytics (dashboard) + custom-range
+  // report (Reports menu). Depends on the goodsReceipts/reconciled shape and is
+  // routed via menu-router.js, so it loads before it (and before rbac.js).
+  'public/classic/core/funnel-report.js',
   'public/classic/core/asset-extras.js',
   'public/classic/core/menu-router.js',
   'public/classic/core/gl-sync.js',

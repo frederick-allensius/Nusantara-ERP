@@ -16,6 +16,8 @@ var DASH_WIDGET_CATALOG = [
   { id: 'beban', label: 'Beban Perusahaan' },
   { id: 'penjualan', label: 'Penjualan', wide: true },
   { id: 'pembelian', label: 'Pembelian', wide: true },
+  { id: 'purchaseFunnel', label: 'Purchase Funnel' },
+  { id: 'salesFunnel', label: 'Sales Funnel' },
 ];
 
 // Returns the ordered list of enabled widget ids. Defaults to all widgets when
@@ -963,6 +965,27 @@ function renderDashboard() {
           </div>
         </div>
       </div>`,
+    },
+    // Pipeline funnels (FEAT-003). The stage-counting logic lives in
+    // funnel-report.js (window._funnelReport) so it is unit-testable and shared
+    // with the custom-range report. Degrades to "Belum ada data" on empty DB.
+    purchaseFunnel: {
+      inner:
+        typeof window !== 'undefined' &&
+        window._funnelReport &&
+        window._funnelReport.renderPurchaseFunnelHtml
+          ? window._funnelReport.renderPurchaseFunnelHtml(DB)
+          : '<div class="widget-header"><div class="widget-title">Purchase Funnel</div></div>' +
+            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Belum ada data</div>',
+    },
+    salesFunnel: {
+      inner:
+        typeof window !== 'undefined' &&
+        window._funnelReport &&
+        window._funnelReport.renderSalesFunnelHtml
+          ? window._funnelReport.renderSalesFunnelHtml(DB)
+          : '<div class="widget-header"><div class="widget-title">Sales Funnel</div></div>' +
+            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Belum ada data</div>',
     },
   };
 

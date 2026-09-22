@@ -178,6 +178,7 @@
       color: '#F97316',
       items: [
         { icon: 'file-text', label: 'Report List', view: 'reports' },
+        { icon: 'sliders', label: 'Laporan Custom Range', view: 'reports' },
         { icon: 'pie-chart', label: 'Laba Rugi (P/L)', view: 'financials' },
         { icon: 'bar-chart-2', label: 'Neraca (Balance Sheet)', view: 'financials' },
         { icon: 'activity', label: 'Arus Kas (Cash Flow)', view: 'financials' },
