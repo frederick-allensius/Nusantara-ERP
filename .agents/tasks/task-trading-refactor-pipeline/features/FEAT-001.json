@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "chore",
   "description": "Environment setup and baseline verification. Confirm the toolchain builds and the existing test suite is green BEFORE any feature work, so later regressions are attributable. Also perform a lightweight audit of what pipeline pieces already exist vs. what the handoff requires, recorded as findings for later features.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Run `npm install` (Node >=20.19.0; sandbox has Node 22). Confirm it completes.",
     "Run `npm run test:run` and confirm the baseline is green (expected: 224 tests pass / 18 files).",
