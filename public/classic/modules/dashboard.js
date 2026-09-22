@@ -1024,7 +1024,7 @@ function renderDashboard() {
         window._funnelReport.renderPurchaseFunnelHtml
           ? window._funnelReport.renderPurchaseFunnelHtml(DB)
           : '<div class="widget-header"><div class="widget-title">Purchase Funnel</div></div>' +
-            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Belum ada data</div>',
+            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">Belum ada data</div>',
     },
     salesFunnel: {
       inner:
@@ -1033,7 +1033,7 @@ function renderDashboard() {
         window._funnelReport.renderSalesFunnelHtml
           ? window._funnelReport.renderSalesFunnelHtml(DB)
           : '<div class="widget-header"><div class="widget-title">Sales Funnel</div></div>' +
-            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Belum ada data</div>',
+            '<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">Belum ada data</div>',
     },
     // Real-time margin (Owner/Management): revenue vs COGS (moving average) from
     // cost-ledger.js across delivered sales orders.
@@ -1041,7 +1041,7 @@ function renderDashboard() {
       inner:
         '<div class="widget-header"><div class="widget-title">Margin Real-time</div></div>' +
         '<div style="text-align:center;margin:6px 0 14px">' +
-        '<div style="font-size:11px;color:var(--muted)">Margin Kotor' +
+        '<div style="font-size:13px;color:var(--muted)">Margin Kotor' +
         (_marginPct != null ? ' · ' + _marginPct + '%' : '') +
         '</div>' +
         '<div style="font-size:24px;font-weight:800;color:' +
@@ -1067,7 +1067,7 @@ function renderDashboard() {
       inner:
         '<div class="widget-header"><div class="widget-title">Piutang (Outstanding)</div></div>' +
         '<div style="text-align:center;margin:6px 0 14px">' +
-        '<div style="font-size:11px;color:var(--muted)">Total Piutang</div>' +
+        '<div style="font-size:13px;color:var(--muted)">Total Piutang</div>' +
         '<div style="font-size:24px;font-weight:800;color:#0A84FF">' +
         money(piutangVal) +
         '</div></div>' +

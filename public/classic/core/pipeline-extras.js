@@ -208,13 +208,13 @@
             ? '<span class="badge" style="background:#DBEAFE;color:#1E40AF">' +
               invoicedCount +
               ' faktur</span>'
-            : '<span style="font-size:11px;color:var(--muted)">—</span>';
+            : '<span style="font-size:13px;color:var(--muted)">—</span>';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:13px;font-weight:700">' +
           esc(r.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:13px">' +
           esc(r.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
@@ -235,11 +235,11 @@
           '<td class="td-p">' +
           '<button class="action-primary" data-action="reconcileReceipt" data-id="' +
           esc(r.id) +
-          '" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--primary);color:#fff;cursor:pointer">Rekonsiliasi</button> ' +
+          '" style="font-size:13px;padding:8px 12px;border-radius:6px;border:none;background:var(--primary);color:#fff;cursor:pointer">Rekonsiliasi</button> ' +
           (r.reconciled
             ? '<button class="action-primary" data-action="invoiceReceipt" data-id="' +
               esc(r.id) +
-              '" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:#10B981;color:#fff;cursor:pointer">Buat Faktur</button>'
+              '" style="font-size:13px;padding:8px 12px;border-radius:6px;border:none;background:#10B981;color:#fff;cursor:pointer">Buat Faktur</button>'
             : '') +
           '</td>' +
           '</tr>'
@@ -327,25 +327,25 @@
           '<tr data-idx="' +
           idx +
           '">' +
-          '<td style="padding:4px 6px;font-size:12px">' +
+          '<td style="padding:4px 6px;font-size:13px">' +
           esc(it.itemName || it.itemId) +
           '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:12px">' +
+          '<td style="padding:4px 6px;text-align:right;font-size:13px">' +
           ordered +
           '</td>' +
           '<td style="padding:4px 6px"><input class="form-input rec-sj" type="number" min="0" step="0.01" value="' +
           (w.suratJalanQty || 0) +
-          '" style="width:80px;font-size:12px;padding:4px;text-align:right"></td>' +
+          '" style="width:88px;font-size:14px;padding:4px 6px;text-align:right"></td>' +
           '<td style="padding:4px 6px"><input class="form-input rec-gross" type="number" min="0" step="0.01" value="' +
           (w.grossQty || 0) +
-          '" style="width:80px;font-size:12px;padding:4px;text-align:right"></td>' +
+          '" style="width:88px;font-size:14px;padding:4px 6px;text-align:right"></td>' +
           '<td style="padding:4px 6px"><input class="form-input rec-tare" type="number" min="0" step="0.01" value="' +
           (w.tareQty || 0) +
-          '" style="width:70px;font-size:12px;padding:4px;text-align:right"></td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:700" class="rec-net">' +
+          '" style="width:78px;font-size:14px;padding:4px 6px;text-align:right"></td>' +
+          '<td style="padding:4px 6px;text-align:right;font-size:13px;font-weight:700" class="rec-net">' +
           (w.netQty || 0) +
           '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:700" class="rec-var"></td>' +
+          '<td style="padding:4px 6px;text-align:right;font-size:13px;font-weight:700" class="rec-var"></td>' +
           '<td style="padding:4px 6px"><input class="form-input rec-final" type="number" min="0" step="0.01" value="' +
           basis +
           '" data-itemid="' +
@@ -356,10 +356,10 @@
           esc(it.unit || '') +
           '" data-ordered="' +
           ordered +
-          '" style="width:80px;font-size:12px;padding:4px;text-align:right;background:#FEF9C3"></td>' +
+          '" style="width:88px;font-size:14px;padding:4px 6px;text-align:right;background:#FEF9C3"></td>' +
           '<td style="padding:4px 6px"><input class="form-input rec-price" type="number" min="0" step="1" value="' +
           num(it.unitPrice != null ? it.unitPrice : it.price) +
-          '" style="width:90px;font-size:12px;padding:4px;text-align:right"></td>' +
+          '" style="width:98px;font-size:14px;padding:4px 6px;text-align:right"></td>' +
           '</tr>'
         );
       })
@@ -367,26 +367,26 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:8px">' +
-      '<div style="font-size:12px">PO <strong>' +
+      '<div style="font-size:14px">PO <strong>' +
       esc(receipt.poId) +
       '</strong> — Supplier <strong>' +
       esc(receipt.supplierName || '—') +
       '</strong></div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="text-align:left;font-size:11px;padding:4px 6px">Item</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Surat Jalan</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Bruto</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Tara</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Netto</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Selisih</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Qty Rekonsiliasi</th>' +
-      '<th style="text-align:right;font-size:11px;padding:4px 6px">Harga</th>' +
+      '<th style="text-align:left;font-size:13px;padding:6px">Item</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Qty PO</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Surat Jalan</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Bruto</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Tara</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Netto</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Selisih</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Qty Rekonsiliasi</th>' +
+      '<th style="text-align:right;font-size:13px;padding:6px">Harga</th>' +
       '</tr></thead><tbody>' +
       rowsHtml +
       '</tbody></table></div>' +
-      '<div style="font-size:11px;color:var(--muted)">Netto = Bruto − Tara. Qty Rekonsiliasi (kuning) menjadi dasar faktur.</div>' +
+      '<div style="font-size:13px;color:var(--muted)">Netto = Bruto − Tara. Qty Rekonsiliasi (kuning) menjadi dasar faktur.</div>' +
       '</div>';
 
     modal(

@@ -37,11 +37,11 @@
   --surface-hover: rgba(255, 255, 255, 0.04);
   --surface-active: rgba(255, 255, 255, 0.06);
 
-  /* Text */
-  --text: #e8ecf4;
-  --text-secondary: #94a3b8;
-  --muted: #64748b;
-  --muted-light: #475569;
+  /* Text — high contrast on the dark graphite bg (senior-friendly) */
+  --text: #f1f4fb;
+  --text-secondary: #aab4c5;
+  --muted: #8b97a8;
+  --muted-light: #6b7688;
 
   /* Borders */
   --border: rgba(255, 255, 255, 0.06);
@@ -104,6 +104,19 @@
   --sp-6: 24px;
   --sp-8: 32px;
 
+  /* Typography scale — senior-friendly (50s-club) floor.
+     Base sits at 16px; the smallest tokens used for meaningful content stay
+     at ~14px so nothing critical reads too small. */
+  --fs-base: 16px; /* body / default */
+  --fs-xs: 13px; /* de-emphasised chrome only (badges, tiny meta) */
+  --fs-sm: 14px; /* smallest for readable content: table cells, labels, chips */
+  --fs-md: 15px; /* buttons, inputs, list items */
+  --fs-lg: 17px; /* section leads */
+  --fs-xl: 20px; /* headings */
+
+  /* Touch targets — comfortable 44px minimum tap height */
+  --tap-min: 44px;
+
   /* Layout — two-tier nav: slim icon rail + docked contextual sub-nav */
   --sidebar-w: 64px; /* slim icon rail (also the mobile-drawer base var) */
   --subnav-w: 212px; /* docked contextual sub-nav panel */
@@ -144,10 +157,10 @@
   --surface-hover: rgba(15, 23, 42, 0.04);
   --surface-active: rgba(15, 23, 42, 0.07);
 
-  --text: #0f172a;
-  --text-secondary: #334155;
-  --muted: #64748b;
-  --muted-light: #94a3b8;
+  --text: #0b1220;
+  --text-secondary: #2b3a4f;
+  --muted: #566374;
+  --muted-light: #7b8794;
 
   --border: rgba(15, 23, 42, 0.08);
   --border-light: rgba(15, 23, 42, 0.04);
@@ -209,7 +222,8 @@ body {
     sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  font-size: var(--fs-base);
+  line-height: 1.55;
   /* `dvh` tracks the *dynamic* viewport so the app fits the visible area on
      iOS Safari, where `100vh` is the large viewport — taller than what's
      visible while the toolbars show. With everything `overflow:hidden` (no
@@ -645,7 +659,8 @@ body.subnav-hidden .main {
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px 10px;
+  min-height: var(--tap-min);
   border: none;
   border-radius: 9px;
   background: transparent;
@@ -655,6 +670,7 @@ body.subnav-hidden .main {
   font-family: inherit;
   color: var(--text-secondary);
   width: 100%;
+  touch-action: manipulation;
 }
 
 .flyout-item:hover {
@@ -683,7 +699,7 @@ body.subnav-hidden .main {
 }
 
 .flyout-item span {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.3;
   color: inherit;
@@ -919,13 +935,13 @@ body.subnav-hidden .main {
   outline: none;
   box-shadow: none;
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text);
   padding: 0;
 }
 .search-wrap input.search-input::placeholder {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.04em;
 }
 
@@ -940,8 +956,8 @@ body.subnav-hidden .main {
 
 /* Theme toggle */
 .theme-toggle {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -950,7 +966,7 @@ body.subnav-hidden .main {
   backdrop-filter: blur(20px);
   border-radius: 10px;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--text-secondary);
   transition: all var(--dur) var(--ease);
   touch-action: manipulation;
   flex-shrink: 0;
@@ -990,8 +1006,8 @@ body.subnav-hidden .main {
 /* Notification */
 .notif {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1074,7 +1090,7 @@ body.subnav-hidden .main {
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 .db-status-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.03em;
@@ -1110,7 +1126,7 @@ body.subnav-hidden .main {
   outline-offset: 2px;
 }
 .user-chip span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
 }
@@ -1195,13 +1211,13 @@ body.subnav-hidden .main {
   background: none;
   color: var(--text);
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-md);
   font-weight: 500;
   cursor: pointer;
   border-radius: var(--r);
   transition: background var(--dur) var(--ease);
   text-align: left;
-  min-height: 44px;
+  min-height: var(--tap-min);
   touch-action: manipulation;
 }
 .overflow-item:hover {
@@ -1530,17 +1546,17 @@ body.subnav-hidden .main {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 }
 
 thead th {
   background: var(--surface-hover);
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 10px 14px;
+  padding: 12px 14px;
   text-align: left;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
@@ -1569,7 +1585,7 @@ tbody tr[data-action]:hover {
 }
 
 td {
-  padding: 11px 14px;
+  padding: 13px 14px;
   color: var(--text);
   vertical-align: middle;
 }
@@ -1578,14 +1594,15 @@ td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
   background: var(--glass-bg);
-  color: var(--muted);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
+  touch-action: manipulation;
 }
 .action-edit:hover {
   background: var(--primary);
@@ -1594,6 +1611,32 @@ td {
 }
 .action-edit:active {
   transform: scale(0.92);
+}
+
+/* Inline row action button (Post / Send / Convert / Reconcile / Invoice …).
+   Rendered in generated HTML strings across the doc views; give it a proper
+   readable, comfortably-tappable base so it inherits the senior-friendly scale. */
+.action-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  min-height: 38px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r);
+  background: var(--glass-bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+.action-primary:active {
+  transform: scale(0.96);
 }
 
 .th-sort {
@@ -1612,7 +1655,7 @@ td {
   text-align: center;
   padding: 36px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ── 11. BADGES / STATUS CHIPS ───────────────────────────────────────────────── */
@@ -1620,9 +1663,9 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: var(--r-full);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1660,14 +1703,15 @@ td {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 18px;
+  padding: 11px 20px;
+  min-height: var(--tap-min);
   border-radius: var(--r);
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  line-height: 1;
+  line-height: 1.1;
   text-decoration: none;
   white-space: nowrap;
   transition: all var(--dur) var(--ease);
@@ -1745,14 +1789,15 @@ select,
 textarea {
   display: block;
   width: 100%;
-  padding: 9px 14px;
+  padding: 11px 14px;
+  min-height: var(--tap-min);
   border: 1px solid var(--input-border);
   border-radius: var(--r);
   background: var(--input-bg);
   box-shadow: var(--input-shadow);
   color: var(--text);
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   transition:
     border-color var(--dur) var(--ease),
@@ -1815,7 +1860,7 @@ textarea {
 
 label {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
@@ -1836,13 +1881,14 @@ label {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
+  padding: 9px 14px;
+  min-height: var(--tap-min);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   color: var(--text-secondary);
   font-family: 'Outfit', sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   border-radius: var(--r);

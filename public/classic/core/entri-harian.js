@@ -167,7 +167,7 @@
         '<div style="font-size:15px;font-weight:700;color:var(--text)">' +
         esc(task.title) +
         '</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:3px">' +
+        '<div style="font-size:13px;color:var(--muted);margin-top:3px">' +
         esc(task.desc) +
         '</div>' +
         '</div>' +

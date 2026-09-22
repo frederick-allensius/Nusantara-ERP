@@ -64,21 +64,21 @@
           <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(37,99,235,0.4);">
             <img src="/logo-nusantara-sq.png" alt="Nusantara" style="width: 100%; height: 100%; object-fit: cover;">
           </div>
-          <h1 style="font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 8px;">Nusantara</h1>
-          <p style="font-size: 14px; color: var(--muted);">Sign in to continue</p>
+          <h1 style="font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 8px;">Nusantara</h1>
+          <p style="font-size: 15px; color: var(--muted);">Sign in to continue</p>
         </div>
         
         <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: var(--shadow-lg);">
           <form id="login-form">
             <div style="margin-bottom: 20px;">
-              <label for="login-email" style="display: block; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Username</label>
-              <input type="text" id="login-email" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="cth: firna" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--surface); color: var(--text);">
+              <label for="login-email" style="display: block; font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Username</label>
+              <input type="text" id="login-email" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="cth: firna" style="width: 100%; padding: 13px 14px; min-height: 44px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--surface); color: var(--text);">
             </div>
             
             <div style="margin-bottom: 24px;">
-              <label for="login-password" style="display: block; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Password</label>
+              <label for="login-password" style="display: block; font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Password</label>
               <div style="position: relative;">
-                <input type="password" id="login-password" required autocomplete="current-password" style="width: 100%; padding: 12px; padding-right: 44px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--surface); color: var(--text);">
+                <input type="password" id="login-password" required autocomplete="current-password" style="width: 100%; padding: 13px 14px; padding-right: 44px; min-height: 44px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--surface); color: var(--text);">
                 <button type="button" id="login-toggle-pw" tabindex="-1" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: var(--text-secondary); font-size: 18px; line-height: 1;" title="Tampilkan password">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -86,13 +86,13 @@
             </div>
             
             <div id="login-2fa-group" style="display: none; margin-bottom: 24px;">
-              <label for="login-2fa" style="display: block; font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Kode Verifikasi (2FA)</label>
-              <input type="text" id="login-2fa" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" placeholder="6 digit / kode cadangan" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; letter-spacing: 2px; background: var(--surface); color: var(--text);">
+              <label for="login-2fa" style="display: block; font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Kode Verifikasi (2FA)</label>
+              <input type="text" id="login-2fa" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" placeholder="6 digit / kode cadangan" style="width: 100%; padding: 13px 14px; min-height: 44px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; letter-spacing: 2px; background: var(--surface); color: var(--text);">
             </div>
 
-            <div id="login-error" style="display: none; padding: 12px; background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-size: 13px; margin-bottom: 16px;"></div>
+            <div id="login-error" style="display: none; padding: 12px; background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-size: 14px; margin-bottom: 16px;"></div>
 
-            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 15px;">
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; min-height: 48px; font-size: 16px;">
               Sign In
             </button>
           </form>
