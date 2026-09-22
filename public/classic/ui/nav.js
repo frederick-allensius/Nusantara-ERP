@@ -144,6 +144,7 @@
         { icon: 'file-text', label: 'Purchase Order', view: 'purchase' },
         { icon: 'download', label: 'Receive Item', view: 'purchase' },
         { icon: 'check-square', label: 'Rekonsiliasi', view: 'purchase' },
+        { icon: 'shield', label: 'Validasi SJ Supplier', view: 'purchase' },
         { icon: 'credit-card', label: 'Purchase Down Payment', view: 'purchase' },
         { icon: 'file', label: 'Purchase Invoice', view: 'invoices' },
         { icon: 'check-circle', label: 'Purchase Payment', view: 'invoices' },

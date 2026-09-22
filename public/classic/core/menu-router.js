@@ -33,6 +33,7 @@
     'Receive Item': ['_salesPurchaseExtras', 'openReceiveItem'],
     'Supplier Price': ['_salesPurchaseExtras', 'openSupplierPrice'],
     Rekonsiliasi: ['_pipelineExtras', 'openReconciliation'],
+    'Validasi SJ Supplier': ['SJValidation', 'openValidation'],
 
     // ── Entri Harian (Section 5 daily data-entry surface) ───────────────────
     'Entri Harian': ['_entriHarian', 'open'],
