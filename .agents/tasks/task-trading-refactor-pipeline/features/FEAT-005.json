@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Section 6 — Senior-friendly (50s-club) UI/UX standards. Apply a minimalist, clutter-free, high-contrast style with a large base font (16px-18px) and large touch targets for buttons and inputs, comfortable on both phone and PC. This is a cross-cutting styling pass on the existing theme and shell; it should not change business logic. Independent of FEAT-002/003/004 logic but should be done after them so it styles the new surfaces too.",
+  "status": "pending",
+  "steps": [
+    "In style.css, raise the base/body font-size to 16px-18px and bump the type scale for common text (table cells, labels, buttons, form inputs) so nothing critical reads below ~14px. Do this via existing CSS custom properties / a small set of tokens where possible rather than scattering overrides.",
+    "Increase touch-target sizing: buttons (.btn, .btn-ghost, .action-primary, .action-edit), form controls (.form-input, .form-select), and nav rail/subnav items to a minimum ~44px tap height with comfortable padding. Keep layout intact.",
+    "Improve contrast: verify text vs background meets a high-contrast bar in both dark (default) and [data-theme=light] blocks; nudge muted/label colors darker/lighter as needed. Keep the emerald primary.",
+    "Mirror the relevant sizing overrides in mobile.css so phones get the same large, clutter-free treatment; ensure large targets on <=768px.",
+    "app.html: if base font or key control sizing is set inline there, align it with the new tokens. Do not restructure the shell.",
+    "Verify the new FEAT-002/003/004 screens (weighbridge, reconciliation, funnels, custom report, daily-entry) inherit the larger type and targets; adjust any screen-specific inline styles that hardcode tiny fonts (e.g. font-size:11px) up to the new floor where they carry meaningful content.",
+    "No new logic tests required, but run the full suite to confirm no test that asserts DOM/text broke. If a smoke test inspects styles, keep it green."
+  ],
+  "acceptance_criteria": [
+    "Base font is 16px-18px; primary interactive text is not smaller than ~14px.",
+    "Buttons and form inputs have ~44px minimum tap height with comfortable padding, on desktop and mobile.",
+    "High contrast maintained in both dark and light themes.",
+    "The pipeline/funnel/report/daily-entry surfaces render with the enlarged type and targets.",
+    "`npm run test:run`, `npm run lint`, and `npm run build` all pass."
+  ],
+  "verification": [
+    "npm run test:run",
+    "npm run lint",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

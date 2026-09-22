@@ -32,6 +32,7 @@
     'Sales Target': ['_salesPurchaseExtras', 'openSalesTarget'],
     'Receive Item': ['_salesPurchaseExtras', 'openReceiveItem'],
     'Supplier Price': ['_salesPurchaseExtras', 'openSupplierPrice'],
+    Rekonsiliasi: ['_pipelineExtras', 'openReconciliation'],
 
     // ── Company profile ──────────────────────────────────────────────────────
     'Profil Perusahaan': ['_companyProfile', 'open'],

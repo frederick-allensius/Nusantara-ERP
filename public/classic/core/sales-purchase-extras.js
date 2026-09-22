@@ -2,6 +2,12 @@
 // Nusantara ERP — Sales & Purchase Extras  (sales-purchase-extras.js)
 // Implements: Sales Down Payment, Sales Target, Receive Item,
 //             Purchase Down Payment, Supplier Price
+//
+// Receive Item (Penerimaan Barang) captures per-line weighbridge (Timbangan)
+// readings alongside the received qty: surat-jalan qty, bruto, tara and a
+// derived netto (netQty = grossQty − tareQty) plus unit price, persisted on
+// each goodsReceipt line as a `weighing` object. The reconciliation +
+// multi-invoice steps live in pipeline-extras.js.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -756,7 +762,28 @@
         lineEls.forEach(function (el) {
           var qty = parseFloat(el.value) || 0;
           if (qty > 0) {
-            items.push({ itemId: el.dataset.itemid, itemName: el.dataset.itemname, qty: qty });
+            var row = el.closest('tr');
+            var sjEl = row ? row.querySelector('.ri-line-sj') : null;
+            var grossEl = row ? row.querySelector('.ri-line-gross') : null;
+            var tareEl = row ? row.querySelector('.ri-line-tare') : null;
+            var priceEl = row ? row.querySelector('.ri-line-price') : null;
+            var sj = sjEl ? parseFloat(sjEl.value) || 0 : 0;
+            var gross = grossEl ? parseFloat(grossEl.value) || 0 : 0;
+            var tare = tareEl ? parseFloat(tareEl.value) || 0 : 0;
+            var net = gross > 0 ? Math.max(0, gross - tare) : 0;
+            var unitPrice = priceEl ? parseFloat(priceEl.value) || 0 : 0;
+            items.push({
+              itemId: el.dataset.itemid,
+              itemName: el.dataset.itemname,
+              qty: qty,
+              unitPrice: unitPrice,
+              weighing: {
+                suratJalanQty: sj,
+                grossQty: gross,
+                tareQty: tare,
+                netQty: net,
+              },
+            });
           }
         });
 
@@ -817,31 +844,64 @@
     var html =
       '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Item dari PO ' +
       esc(poId) +
-      '</div>' +
-      '<table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr><th style="text-align:left;font-size:11px;padding:4px 6px">Item</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty Terima</th></tr></thead>' +
+      ' <span style="font-weight:400;color:var(--muted)">(Timbangan: Netto = Bruto − Tara)</span></div>' +
+      '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr>' +
+      '<th style="text-align:left;font-size:11px;padding:4px 6px">Item</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Qty Terima</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Surat Jalan</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Bruto</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Tara</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Netto</th>' +
+      '<th style="text-align:right;font-size:11px;padding:4px 6px">Harga</th>' +
+      '</tr></thead>' +
       '<tbody>';
     lines.forEach(function (l) {
+      var qty0 = l.qty || 0;
+      var price0 = l.price != null ? l.price : l.cost != null ? l.cost : 0;
       html +=
         '<tr><td style="padding:4px 6px;font-size:12px">' +
         esc(l.itemName || l.itemId) +
         '</td>' +
         '<td style="padding:4px 6px;text-align:right;font-size:12px">' +
-        (l.qty || 0) +
+        qty0 +
         '</td>' +
-        '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" max="' +
-        (l.qty || 0) +
-        '" value="' +
-        (l.qty || 0) +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" step="0.01" value="' +
+        qty0 +
         '" data-itemid="' +
         esc(l.itemId || '') +
         '" data-itemname="' +
         esc(l.itemName || '') +
-        '" style="width:80px;font-size:12px;padding:4px 6px;text-align:right"></td>' +
+        '" style="width:76px;font-size:12px;padding:4px;text-align:right"></td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-sj" type="number" min="0" step="0.01" value="' +
+        qty0 +
+        '" style="width:76px;font-size:12px;padding:4px;text-align:right"></td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-gross" type="number" min="0" step="0.01" value="0" style="width:70px;font-size:12px;padding:4px;text-align:right"></td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-tare" type="number" min="0" step="0.01" value="0" style="width:64px;font-size:12px;padding:4px;text-align:right"></td>' +
+        '<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:700" class="ri-line-net">0</td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-price" type="number" min="0" step="1" value="' +
+        price0 +
+        '" style="width:88px;font-size:12px;padding:4px;text-align:right"></td>' +
         '</tr>';
     });
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     container.innerHTML = html;
+
+    // Live Netto = Bruto − Tara per row.
+    container.querySelectorAll('tr').forEach(function (tr) {
+      var grossEl = tr.querySelector('.ri-line-gross');
+      var tareEl = tr.querySelector('.ri-line-tare');
+      var netEl = tr.querySelector('.ri-line-net');
+      if (!grossEl || !tareEl || !netEl) return;
+      function recalc() {
+        var g = parseFloat(grossEl.value) || 0;
+        var t = parseFloat(tareEl.value) || 0;
+        netEl.textContent = g > 0 ? Math.max(0, Math.round((g - t) * 100) / 100) : 0;
+      }
+      grossEl.addEventListener('input', recalc);
+      tareEl.addEventListener('input', recalc);
+    });
   }
 
   function postReceipt(id) {
@@ -1235,12 +1295,23 @@
         if (r) {
           var itemList = (r.items || [])
             .map(function (i) {
+              var w = i.weighing || {};
+              var wInfo =
+                w.suratJalanQty || w.grossQty || w.netQty
+                  ? ' <span style="color:var(--muted);font-size:11px">(SJ: ' +
+                    (w.suratJalanQty || 0) +
+                    ', Netto: ' +
+                    (w.netQty || 0) +
+                    ')</span>'
+                  : '';
               return (
                 '<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">' +
                 esc(i.itemName) +
                 ' — Qty: <strong>' +
                 i.qty +
-                '</strong></div>'
+                '</strong>' +
+                wInfo +
+                '</div>'
               );
             })
             .join('');

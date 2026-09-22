@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Section 3 — Dashboard, funnel analytics, and custom-range reporting. Add two pipeline funnel diagrams (Purchase funnel and Sales funnel) to the dashboard and a flexible custom-range report that can be filtered by date range / month / customer / supplier / per PO number. Depends on FEAT-002 because the funnel stages and reconciliation status come from the pipeline data.",
+  "status": "pending",
+  "steps": [
+    "In public/classic/modules/dashboard.js, add a PURCHASE FUNNEL visualization with the stages: Open PO Supplier -> Surat Jalan / Truk Jalan -> Tiba/Timbang -> Reconciled -> Invoiced Supplier. Derive each stage count from window.DB (purchaseOrders by status, deliveryOrders/goodsReceipts, weighed records, reconciled flag from FEAT-002, purchaseInvoices). Use the existing Chart.js integration (window.Chart) already used in dashboard.js, or a clean HTML/CSS funnel if a chart type does not fit; match the existing card styling.",
+    "Add a SALES FUNNEL with stages: Open PO Customer (SO) -> Pengambilan Bertahap (staged pickups / DOs) -> Draft Invoice -> Invoiced -> Paid. Derive counts from salesOrders, deliveryOrders, salesInvoices (Draft vs Outstanding vs Paid), salesReceipts.",
+    "Add a CUSTOM-RANGE REPORT view. Reuse report-extras.js / financial-reports.js patterns. Provide filters: date range (from/to), month shortcut, customer, supplier, and PO number. Output a filterable table of matching transactions with totals. Register the view in nav.js MENU_CONFIG (Reports group) and menu-router.js ROUTES.",
+    "If a new classic file is added, register it in vite.config.js classicAll (before rbac.js). If extending dashboard.js/report-extras.js in place, no vite change needed.",
+    "Ensure the funnels and report degrade gracefully with empty DB (no crash, show 'Belum ada data').",
+    "Add Vitest coverage tests/funnel-report.test.ts: build a window.DB with a few PO/SO/DO/receipt/invoice records and assert the funnel-stage counting function returns the correct counts per stage, and that the custom-range filter correctly includes/excludes by date range, customer, supplier, and PO number. Follow the classic-module import pattern. Expose the pure counting/filter helpers on the module's window.* object so they are unit-testable."
+  ],
+  "acceptance_criteria": [
+    "Dashboard renders a Purchase funnel with the five named stages and a Sales funnel with the five named stages, counts derived from DB.",
+    "A custom-range report view exists, reachable from the Reports menu, filterable by date range, month, customer, supplier, and PO number, showing matching transactions and totals.",
+    "Funnels/report do not throw on empty data.",
+    "`npm run test:run` passes including funnel/report tests that would fail if the stage-counting or filter logic were reverted."
+  ],
+  "verification": [
+    "npm run test:run",
+    "npm run type-check",
+    "npm run lint",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

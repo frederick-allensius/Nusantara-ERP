@@ -51,6 +51,10 @@ const classicAll = [
   'public/classic/core/xlsx-export.js',
   'public/classic/core/budget-gl-extras.js',
   'public/classic/core/sales-purchase-extras.js',
+  // pipeline-extras.js: weighbridge reconciliation + multi-invoice generation.
+  // Depends on the goodsReceipts shape written by sales-purchase-extras.js, so
+  // it loads right after it (and before menu-router.js which routes to it).
+  'public/classic/core/pipeline-extras.js',
   'public/classic/core/settings-extras.js',
   'public/classic/core/inventory-extras.js',
   'public/classic/core/master-extras.js',

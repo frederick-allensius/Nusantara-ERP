@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-006",
+  "type": "feat",
+  "description": "Section 2 — Supplier SJ Validation Tool (prevention of under-invoicing), MINUS live email. Build a production-grade cross-check engine that compares the field Surat Jalan tonnage/price (captured in the FEAT-002 weighbridge/reconciliation data) against the supplier's Excel recap, a mismatch flagging/alert UI, and a dummy-data demo scenario with a how-it-works guide. The live email ingestion (handoff item 2.1) is DEFERRED — design email ingestion as a PLUGGABLE interface (an adapter contract the app can call to fetch supplier recaps) but do NOT implement a live mailbox provider. Depends on FEAT-002 (weighbridge/reconciliation data is the field-SJ source of truth).",
+  "status": "pending",
+  "steps": [
+    "Create a new classic IIFE module public/classic/core/sj-validation.js (declare no top-level globals; expose exactly one window.* object, e.g. window.SJValidation). Register it in vite.config.js classicAll at the correct position (after sales-purchase-extras.js / erp-view.js it depends on, before rbac.js/lazy-views.js).",
+    "CROSS-CHECK ENGINE: implement a pure function that takes (a) field Surat Jalan / weighed records (from FEAT-002: per line net tonnage + unit price, keyed by DO/PO/item) and (b) a parsed supplier recap (rows of item, qty/tonnage, price). Match rows (by DO number / PO number / item + date), compute per-row tonnage variance and price variance, and return a structured result with a mismatch flag when tonnage or price differ beyond a small configurable tolerance. This is the core of preventing under-invoicing.",
+    "SUPPLIER RECAP PARSING: reuse the SheetJS reader pattern from public/classic/core/excel-import.js (window.XLSX is available) to parse an uploaded supplier Excel recap into the row shape the engine expects. Use docs/pitch/Contoh_SuratJalan_Excel.xlsx and Template-Import-Nusantara.xlsx (Delivery Orders sheet headers) to inform the expected columns.",
+    "PLUGGABLE EMAIL INGESTION INTERFACE: define a small adapter contract, e.g. window.SJValidation.registerRecapSource({ id, label, fetchRecaps() }), and ship a manual 'upload file' source implementing it. Document that a future email-mailbox source implements the same contract. Do NOT wire a real email provider or network mailbox.",
+    "MISMATCH ALERT UI: add a 'Validasi SJ Supplier' view that lists reconciliations/receipts, lets the user attach a supplier recap (via the upload source), runs the cross-check, and shows a clear visual flag (color-coded row/badge) on every tonnage or price mismatch BEFORE an invoice is issued. Register the view in nav.js MENU_CONFIG (Purchases group) and menu-router.js ROUTES. Match existing view/table styling.",
+    "DEMO READINESS: add a dummy-data demo scenario (a small seed of a field SJ/weighed record plus a matching-and-a-mismatching supplier recap) so the mismatch flagging can be demonstrated, and a short how-it-works guide at docs/SJ_VALIDATION_DEMO.md (Indonesian, matching the docs/pitch tone) describing the workflow and the demo steps. Reference docs/pitch/SKRIP_DEMO.md style. Do NOT add agent self-attribution to the doc.",
+    "Add Vitest coverage tests/sj-validation.test.ts importing ../public/classic/core/sj-validation.js: assert the cross-check flags a tonnage mismatch, flags a price mismatch, passes a matching row within tolerance, and handles unmatched rows. The test must fail if the variance/flagging logic were reverted."
+  ],
+  "acceptance_criteria": [
+    "A pure cross-check engine compares field Surat Jalan tonnage/price vs a parsed supplier recap and flags tonnage or price mismatches beyond tolerance.",
+    "Supplier recap Excel files parse via SheetJS into the engine's expected row shape.",
+    "Email ingestion is a documented pluggable adapter contract with a working manual-upload source; NO live mailbox is implemented.",
+    "A 'Validasi SJ Supplier' view visually flags mismatches before invoicing, reachable from the Purchases menu.",
+    "A dummy-data demo scenario + docs/SJ_VALIDATION_DEMO.md guide exist.",
+    "`npm run test:run` passes including sj-validation tests that would fail if the flagging logic were reverted; the new classic file is in vite.config.js classicAll."
+  ],
+  "verification": [
+    "npm run test:run",
+    "npm run type-check",
+    "npm run lint",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

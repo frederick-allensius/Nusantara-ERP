@@ -1,0 +1,7 @@
+{
+  "task_id": "task-trading-refactor-pipeline",
+  "task_description": "Execute the Trading Ubin & Material Alam project handoff end-to-end on Nusantara ERP: Section 1 core refactor + end-to-end pipeline (PO -> Surat Jalan & Timbangan -> Reconciliation -> Multi-Invoice -> Payment), Section 3 dashboard funnel analytics + custom-range reporting, Section 5 dual-view role-based access (Admin/Accounting entry vs Owner/Management executive), Section 6 senior-friendly (50s-club) UI, and Section 2 Supplier SJ validation cross-check + mismatch alert + demo (live email ingestion deferred as a pluggable interface). Section 4 (Coretax export) is explicitly DEFERRED (format spec unavailable). Preserve existing patterns (classic IIFE bundle + src ES modules); keep build/tests green; add tests for new logic. No agent self-attribution anywhere.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006", "FEAT-007"],
+  "blocked_reason": null
+}

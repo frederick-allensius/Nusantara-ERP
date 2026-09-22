@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Section 5 — Dual-view role-based access. Deliver two focused experiences on top of the existing RBAC: an Admin/Accounting data-entry view (PO, Surat Jalan, Timbangan, operational costs: Transport, ATK, Entertain) that is minimal and distraction-free, and an Owner/Management view with full Executive Dashboard, funnel monitoring, real-time margin, outstanding invoices (piutang), and complete financial reports. Depends on FEAT-002 (pipeline) and FEAT-003 (funnels/reports).",
+  "status": "pending",
+  "steps": [
+    "Review rbac.js PERMISSIONS/GROUP_MODULE/VIEW_MODULE and src/core/user-role.js ROLES (admin, manajer, akunting, penjualan, viewer). Map the two handoff personas onto existing roles: Owner/Management -> admin + manajer; Admin/Accounting data-entry -> akunting + penjualan. Do not invent new roles unless necessary; if a distinct persona toggle is cleaner, add a lightweight view-mode concept layered on the resolved role (do not weaken the server-enforced rbac boundary).",
+    "ADMIN/ACCOUNTING VIEW: create a focused, minimal 'Entri Harian' (daily data entry) landing/view that surfaces exactly the operational entry tasks — PO, Surat Jalan, Timbangan (from FEAT-002), and operational cost entry (Biaya Operasional: Transport, ATK, Entertain). If an operational-expense entry does not already exist, add a simple expense-entry form that posts through the existing finance/GL path (do not hand-write journals). Hide executive/analytics clutter for these roles via the existing nav gating.",
+    "OWNER/MANAGEMENT VIEW: ensure admin/manajer see the full Executive Dashboard including the FEAT-003 funnels, a real-time margin figure (revenue vs COGS from cost-ledger.js), outstanding invoices (AR/piutang aging already exists — surface it prominently), and the full financial reports. Compose these onto the dashboard for management roles.",
+    "Use the existing rbac.js nav/view gating mechanism (GROUP_MODULE, applyNavGating, guardView) to show/hide the right surfaces per role rather than duplicating logic. Extend the PERMISSIONS/GROUP mapping if new view ids were introduced by FEAT-002/003 so each role sees the correct menu entries.",
+    "Register any new views in nav.js MENU_CONFIG and menu-router.js; add to vite.config.js classicAll only if a new classic file is created.",
+    "Add Vitest coverage tests/dual-view.test.ts asserting the role->surface mapping: e.g. window.RBAC.canView('reports')/canViewGroup for each persona role, and that the daily-entry surface exposes exactly the operational entry actions while management surfaces expose the executive analytics. Follow the rbac.test.ts pattern (set window.__ERP_USER, import ../public/classic/core/rbac.js)."
+  ],
+  "acceptance_criteria": [
+    "An admin/accounting-focused daily-entry surface exists exposing PO, Surat Jalan, Timbangan, and operational cost (Transport, ATK, Entertain) entry, with executive analytics hidden for those roles.",
+    "Owner/management (admin/manajer) see the executive dashboard with funnels, real-time margin, outstanding invoices, and full financial reports.",
+    "Role-based show/hide is driven through the existing rbac.js gating (no bypass of the server rules).",
+    "`npm run test:run` passes including a dual-view test that would fail if the role->surface mapping were broken."
+  ],
+  "verification": [
+    "npm run test:run",
+    "npm run type-check",
+    "npm run lint",
+    "npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
