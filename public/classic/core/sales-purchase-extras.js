@@ -767,22 +767,41 @@
             var grossEl = row ? row.querySelector('.ri-line-gross') : null;
             var tareEl = row ? row.querySelector('.ri-line-tare') : null;
             var priceEl = row ? row.querySelector('.ri-line-price') : null;
+            var netEl = row ? row.querySelector('.ri-line-net') : null;
             var sj = sjEl ? parseFloat(sjEl.value) || 0 : 0;
             var gross = grossEl ? parseFloat(grossEl.value) || 0 : 0;
             var tare = tareEl ? parseFloat(tareEl.value) || 0 : 0;
-            var net = gross > 0 ? Math.max(0, gross - tare) : 0;
+            // Netto is derived from Bruto − Tara, but when the operator records
+            // only a netto (no Bruto — e.g. a trusted supplier weighbridge
+            // ticket) we honor that direct figure. Routing through
+            // computeWeighing keeps this identical to the pure engine so the
+            // receive path and reconciliation cannot drift.
+            var netInput = netEl ? parseFloat(netEl.value) : NaN;
+            var weighInput = { suratJalanQty: sj, grossQty: gross, tareQty: tare };
+            if (gross > 0) {
+              // Bruto present → netto is strictly derived (gross − tare).
+              weighInput.grossQty = gross;
+            } else {
+              // No Bruto → omit grossQty so a single netto figure is accepted.
+              delete weighInput.grossQty;
+              weighInput.netQty = isNaN(netInput) ? 0 : netInput;
+            }
+            var weighing =
+              window._pipelineExtras && typeof window._pipelineExtras.computeWeighing === 'function'
+                ? window._pipelineExtras.computeWeighing(weighInput)
+                : {
+                    suratJalanQty: sj,
+                    grossQty: gross,
+                    tareQty: tare,
+                    netQty: gross > 0 ? Math.max(0, gross - tare) : isNaN(netInput) ? 0 : netInput,
+                  };
             var unitPrice = priceEl ? parseFloat(priceEl.value) || 0 : 0;
             items.push({
               itemId: el.dataset.itemid,
               itemName: el.dataset.itemname,
               qty: qty,
               unitPrice: unitPrice,
-              weighing: {
-                suratJalanQty: sj,
-                grossQty: gross,
-                tareQty: tare,
-                netQty: net,
-              },
+              weighing: weighing,
             });
           }
         });
@@ -854,6 +873,7 @@
       '<th style="text-align:right;font-size:11px;padding:4px 6px">Bruto</th>' +
       '<th style="text-align:right;font-size:11px;padding:4px 6px">Tara</th>' +
       '<th style="text-align:right;font-size:11px;padding:4px 6px">Netto</th>' +
+      // Netto is auto-filled from Bruto − Tara; editable directly when no Bruto.
       '<th style="text-align:right;font-size:11px;padding:4px 6px">Harga</th>' +
       '</tr></thead>' +
       '<tbody>';
@@ -879,7 +899,7 @@
         '" style="width:76px;font-size:12px;padding:4px;text-align:right"></td>' +
         '<td style="padding:4px 6px"><input class="form-input ri-line-gross" type="number" min="0" step="0.01" value="0" style="width:70px;font-size:12px;padding:4px;text-align:right"></td>' +
         '<td style="padding:4px 6px"><input class="form-input ri-line-tare" type="number" min="0" step="0.01" value="0" style="width:64px;font-size:12px;padding:4px;text-align:right"></td>' +
-        '<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:700" class="ri-line-net">0</td>' +
+        '<td style="padding:4px 6px"><input class="form-input ri-line-net" type="number" min="0" step="0.01" value="0" title="Isi langsung bila tanpa Bruto" style="width:70px;font-size:12px;padding:4px;text-align:right;font-weight:700"></td>' +
         '<td style="padding:4px 6px"><input class="form-input ri-line-price" type="number" min="0" step="1" value="' +
         price0 +
         '" style="width:88px;font-size:12px;padding:4px;text-align:right"></td>' +
@@ -888,7 +908,9 @@
     html += '</tbody></table></div>';
     container.innerHTML = html;
 
-    // Live Netto = Bruto − Tara per row.
+    // Netto = Bruto − Tara when a Bruto is entered (derived, field locked). When
+    // no Bruto is recorded, the Netto field is editable so an operator can enter
+    // a single trusted netto figure directly (mirrors computeWeighing).
     container.querySelectorAll('tr').forEach(function (tr) {
       var grossEl = tr.querySelector('.ri-line-gross');
       var tareEl = tr.querySelector('.ri-line-tare');
@@ -897,10 +919,20 @@
       function recalc() {
         var g = parseFloat(grossEl.value) || 0;
         var t = parseFloat(tareEl.value) || 0;
-        netEl.textContent = g > 0 ? Math.max(0, Math.round((g - t) * 100) / 100) : 0;
+        if (g > 0) {
+          // Bruto present → Netto is derived and read-only.
+          netEl.value = Math.max(0, Math.round((g - t) * 100) / 100);
+          netEl.readOnly = true;
+          netEl.style.opacity = '0.75';
+        } else {
+          // No Bruto → let the operator type the netto directly.
+          netEl.readOnly = false;
+          netEl.style.opacity = '1';
+        }
       }
       grossEl.addEventListener('input', recalc);
       tareEl.addEventListener('input', recalc);
+      recalc();
     });
   }
 

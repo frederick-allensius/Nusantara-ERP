@@ -129,9 +129,17 @@
 
     var openSO = sos.filter(isOpenSO).length;
 
-    // Pengambilan Bertahap: staged pickups — sales-side delivery orders.
+    // Pengambilan Bertahap: staged pickups — sales-side delivery orders. Counted
+    // by an EXPLICIT positive sales marker (soId / soNumber / source === 'SO')
+    // only. The previous "no poId ⇒ sales" fallback misattributed purchase-side
+    // DOs stored without a poId (e.g. linked only through sourceId), so it is
+    // dropped; a DO that carries any purchase link is never counted here.
     var pickups = dos.filter(function (d) {
-      return d && (d.soId || d.soNumber || d.source === 'SO' || (!d.poId && !d.poNumber));
+      if (!d || isCancelled(d)) return false;
+      var hasPurchaseLink =
+        !!(d.poId || d.poNumber) || d.source === 'PO' || (d.sourceType === 'PO' && d.sourceId);
+      if (hasPurchaseLink) return false;
+      return !!(d.soId || d.soNumber) || d.source === 'SO';
     }).length;
 
     var draftInv = sis.filter(function (i) {

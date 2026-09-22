@@ -95,6 +95,25 @@ describe('computeWeighing', () => {
     expect(w.grossQty).toBe(0);
     expect(w.netQty).toBe(24.5);
   });
+
+  // The receive-modal save path (sales-purchase-extras.openReceiveItem) builds
+  // its weighing input exactly like the two cases below and routes it through
+  // computeWeighing so the UI capture cannot drift from the pure engine. These
+  // pin that a single-netto receipt persists a non-zero netQty (regression: the
+  // old `net = gross > 0 ? gross - tare : 0` zeroed it) while a bruto receipt
+  // still derives netto and ignores any typed netto.
+  it('single-netto receipt (no bruto) keeps the operator netto, not 0', () => {
+    // Mirrors the save path when the operator leaves Bruto empty and types Netto.
+    const w = P().computeWeighing({ suratJalanQty: 25, tareQty: 0, netQty: 24.6 });
+    expect(w.grossQty).toBe(0);
+    expect(w.netQty).toBe(24.6); // not silently zeroed
+  });
+
+  it('bruto receipt derives netto and ignores a typed netto figure', () => {
+    // Mirrors the save path when Bruto is present (netto field is derived/locked).
+    const w = P().computeWeighing({ suratJalanQty: 30, grossQty: 42, tareQty: 12, netQty: 999 });
+    expect(w.netQty).toBe(30);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -35,6 +35,7 @@ describe('sj-validation — cross-check engine', () => {
     );
     expect(res.summary.total).toBe(1);
     expect(res.summary.matched).toBe(1);
+    expect(res.summary.clean).toBe(1);
     expect(res.summary.mismatched).toBe(0);
     expect(res.rows[0].matched).toBe(true);
     expect(res.rows[0].mismatch).toBe(false);
@@ -54,6 +55,33 @@ describe('sj-validation — cross-check engine', () => {
     expect(row.mismatch).toBe(true);
     expect(row.tonnageVariance).toBe(3);
     expect(res.summary.mismatched).toBe(1);
+    // A flagged row is matched but NOT clean — the "Cocok" widget must exclude it.
+    expect(res.summary.matched).toBe(1);
+    expect(res.summary.clean).toBe(0);
+  });
+
+  it('excludes flagged rows from the clean count while keeping unflagged matches', () => {
+    // Two matched rows against their recap counterparts; only the second breaches
+    // tolerance. `clean` must count exactly the one unflagged match — not the two
+    // `matched`, and not the mis-derived `matched - mismatched` (= 1 here only by
+    // coincidence, so add an unmatched-field row to break that arithmetic).
+    const res = window.SJValidation.crossCheck(
+      [
+        fieldLine({ itemName: 'Batu Andesit', netQty: 24.6, unitPrice: 185000 }),
+        fieldLine({ itemName: 'Pasir Cor', netQty: 30, unitPrice: 210000 }),
+        fieldLine({ itemName: 'Tak Ada Di Rekap', netQty: 5, unitPrice: 1000 }),
+      ],
+      [
+        { poNumber: 'PO-1', itemName: 'Batu Andesit', qty: 24.6, price: 185000 },
+        { poNumber: 'PO-1', itemName: 'Pasir Cor', qty: 33, price: 225000 },
+      ]
+    );
+    expect(res.summary.matched).toBe(2);
+    expect(res.summary.unmatchedField).toBe(1);
+    expect(res.summary.mismatched).toBe(2); // 1 flagged match + 1 unmatched field
+    expect(res.summary.clean).toBe(1); // only the unflagged Batu Andesit match
+    // Guard against reverting to the old `matched - mismatched` formula (= 0 here).
+    expect(res.summary.matched - res.summary.mismatched).not.toBe(res.summary.clean);
   });
 
   it('FLAGS a price mismatch beyond tolerance', () => {
@@ -163,6 +191,8 @@ describe('sj-validation — receipt flattening + demo seed', () => {
     // Exactly one of the two demo rows must be flagged (the overstated one).
     expect(res.summary.mismatched).toBe(1);
     expect(res.summary.matched).toBe(2);
+    // The clean count is the "safe to invoice" figure: one matched, unflagged row.
+    expect(res.summary.clean).toBe(1);
   });
 });
 

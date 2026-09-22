@@ -114,6 +114,18 @@ describe('funnel-report — sales funnel', () => {
     expect(c['Invoiced']).toBe(1); // Outstanding
     expect(c['Paid']).toBe(2);
   });
+
+  it('does NOT count a purchase-side DO (no poId, only sourceId) as a sales pickup', () => {
+    window.DB.deliveryOrders = [
+      { id: 'DO-1', soId: 'SO-1' }, // genuine sales pickup
+      { id: 'DO-2', source: 'SO', soNumber: 'SO.2026.06.002' }, // genuine sales pickup
+      { id: 'DO-3', sourceType: 'PO', sourceId: 'PO-9' }, // purchase-side, no poId → must NOT count
+      { id: 'DO-4', source: 'PO', poNumber: 'PO.2026.06.001' }, // purchase-side → must NOT count
+      { id: 'DO-5' }, // no sales marker at all → must NOT count (dropped negative fallback)
+    ];
+    const c = countsByLabel(window._funnelReport.salesFunnel(window.DB));
+    expect(c['Pengambilan Bertahap']).toBe(2); // only DO-1 and DO-2
+  });
 });
 
 describe('funnel-report — funnels degrade on empty DB', () => {

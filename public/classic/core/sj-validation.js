@@ -268,6 +268,15 @@
     var mismatched = rows.filter(function (r) {
       return r.mismatch;
     }).length;
+    // `clean` is the count that a "safe to invoice" widget should show: rows that
+    // are matched to a recap counterpart AND carry no tonnage/price flag. It is
+    // NOT `matched` (which includes matched-but-flagged rows) and it is NOT
+    // `matched - mismatched` (mismatched also counts unmatched-field rows, so
+    // that arithmetic double-subtracts). Deriving it here keeps callers/UI from
+    // re-computing it incorrectly.
+    var clean = rows.filter(function (r) {
+      return r.matched && !r.mismatch;
+    }).length;
 
     return {
       rows: rows,
@@ -275,6 +284,7 @@
       summary: {
         total: rows.length,
         matched: matched,
+        clean: clean,
         mismatched: mismatched,
         unmatchedRecap: unmatchedRecap.length,
         unmatchedField: unmatchedField,
@@ -669,7 +679,7 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Baris Divalidasi', value: String(s.total), sub: 'Dari data lapangan' },
-            { label: 'Cocok', value: String(s.matched - s.mismatched < 0 ? 0 : s.matched), sub: 'Terpadankan', color: '#16A34A' },
+            { label: 'Cocok', value: String(s.clean != null ? s.clean : 0), sub: 'Cocok & dalam toleransi', color: '#16A34A' },
             { label: 'Bermasalah', value: String(s.mismatched), sub: 'Selisih / tak cocok', color: '#DC2626' },
             { label: 'Rekap Tanpa Padanan', value: String(s.unmatchedRecap), sub: 'Cek tagihan fiktif', color: '#F59E0B' },
           ])
