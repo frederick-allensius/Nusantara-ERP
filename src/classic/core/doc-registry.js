@@ -30,6 +30,8 @@ const STATUS = {
     ['Paid', 'Lunas'],
     ['Delivered', 'Terkirim'],
     ['Cancelled', 'Dibatalkan'],
+    // Pickup orders (trading.js) end here: picked up in trips, then closed.
+    ['Closed', 'Selesai'],
   ],
   PO: [
     ['Draft', 'Draft'],
@@ -37,6 +39,8 @@ const STATUS = {
     ['Paid', 'Lunas'],
     ['Received', 'Diterima'],
     ['Cancelled', 'Dibatalkan'],
+    // Pickup POs close at their quota or cut-off (trading.js).
+    ['Closed', 'Selesai'],
   ],
   DO: [
     ['Pending', 'Pending'],
@@ -46,6 +50,8 @@ const STATUS = {
     // legacy delivery-lifecycle statuses, kept for backward compatibility
     ['In Transit', 'Dalam Pengiriman'],
     ['Delivered', 'Terkirim'],
+    // An unused pickup surat jalan voided at the PO's quota or cut-off.
+    ['Cancelled', 'Batal'],
   ],
   SI: [
     ['Draft', 'Draft'],
@@ -102,26 +108,29 @@ const TRANSITIONS = {
   },
   SO: {
     Draft: ['Confirmed', 'Paid', 'Delivered', 'Cancelled'],
-    Confirmed: ['Paid', 'Delivered', 'Draft', 'Cancelled'],
+    Confirmed: ['Paid', 'Delivered', 'Draft', 'Cancelled', 'Closed'],
     Paid: ['Delivered', 'Confirmed', 'Cancelled'],
     Delivered: ['Cancelled'],
     Cancelled: ['Draft'],
+    Closed: ['Confirmed'],
   },
   PO: {
     Draft: ['Confirmed', 'Paid', 'Received', 'Cancelled'],
-    Confirmed: ['Paid', 'Received', 'Draft', 'Cancelled'],
+    Confirmed: ['Paid', 'Received', 'Draft', 'Cancelled', 'Closed'],
     Paid: ['Received', 'Confirmed', 'Cancelled'],
     Received: ['Cancelled'],
     Cancelled: ['Draft'],
+    Closed: ['Confirmed'],
   },
   DO: {
-    Pending: ['Sent', 'In Transit', 'Delivered'],
+    Pending: ['Sent', 'In Transit', 'Delivered', 'Cancelled'],
     Sent: ['Partially invoiced', 'Invoiced', 'Pending'],
     'Partially invoiced': ['Invoiced', 'Sent'],
     Invoiced: ['Partially invoiced'],
     // legacy delivery-lifecycle transitions
     'In Transit': ['Delivered', 'Pending'],
     Delivered: ['In Transit', 'Invoiced'],
+    Cancelled: ['Pending'],
   },
   SI: {
     Draft: ['Outstanding', 'Cancelled'],

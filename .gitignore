@@ -77,3 +77,6 @@ serviceAccount*.json
 backup-nusantara.json
 
 .vercel
+
+# Agent worktrees (temporary checkouts)
+.claude/worktrees/

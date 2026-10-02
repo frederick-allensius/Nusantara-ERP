@@ -51,6 +51,7 @@ describe('DocRegistry', () => {
       'Paid',
       'Delivered',
       'Cancelled',
+      'Closed',
     ]);
   });
 });

@@ -104,7 +104,7 @@
   // Sidebar group key → module (ui/nav.js). Entries inside a group are gated by
   // their own data-module; this map gates groups without entries (Ringkasan).
   const GROUP_MODULE = {
-    dashboard: 'dashboard', entri: 'purchases', sales: 'sales', purchases: 'purchases', inventory: 'inventory',
+    dashboard: 'dashboard', entri: 'purchases', pickups: 'purchases', sales: 'sales', purchases: 'purchases', inventory: 'inventory',
     cashbank: 'gl', accounting: 'gl', assets: 'assets', reports: 'reports',
     master: 'master', settings: 'admin', tax: 'tax',
   };
@@ -120,6 +120,7 @@
     returns: 'sales', purchase: 'purchases', inventory: 'inventory',
     warehouse: 'inventory', adjustments: 'inventory', assets: 'assets',
     entriHarian: 'purchases',
+    pickups: 'purchases',
   };
 
   // ── Dual-view surfaces (Section 5) ────────────────────────────────────────

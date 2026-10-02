@@ -105,6 +105,15 @@
     'Analisis Bisnis': ['_reportExtras', 'openAIAnalysis'],
     'Laporan per Periode': ['_funnelReport', 'openCustomRange'],
     'Entri Harian': ['_entriHarian', 'open'],
+
+    // ── Pengambilan (trading pickups) ───────────────────────────────────────
+    'PO Pengambilan': ['_pickupView', 'openOrders'],
+    'Catat Pengambilan': ['_pickupView', 'openRecord'],
+    'Impor Rekap Timbangan': ['_pickupView', 'openRecapImport'],
+    'Perubahan Timbangan': ['_pickupView', 'openWeightChanges'],
+    'Rekap Pengambilan': ['_pickupView', 'openTripRecap'],
+    'Tagih Pelanggan': ['_pickupBilling', 'openCustomerBilling'],
+    'Tagihan Supplier': ['_pickupBilling', 'openSupplierBilling'],
   };
 
   // Opener globals defined inside a lazily-loaded view chunk → that view id.

@@ -78,6 +78,20 @@
       module: 'purchases',
       items: [],
     },
+    pickups: {
+      title: 'Pengambilan',
+      icon: 'truck',
+      module: 'purchases',
+      items: [
+        { label: 'PO Pengambilan', view: 'pickups', home: true },
+        { label: 'Catat Pengambilan', view: 'pickups' },
+        { label: 'Impor Rekap Timbangan', view: 'pickups' },
+        { label: 'Perubahan Timbangan', view: 'pickups' },
+        { label: 'Rekap Pengambilan', view: 'pickups' },
+        { label: 'Tagih Pelanggan', view: 'pickups', module: 'sales' },
+        { label: 'Tagihan Supplier', view: 'pickups' },
+      ],
+    },
     sales: {
       title: 'Penjualan',
       icon: 'trending-up',
@@ -266,6 +280,8 @@
       '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
     refresh:
       '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+    truck:
+      '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
     'edit-3': '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
   };
 

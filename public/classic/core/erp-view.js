@@ -607,6 +607,10 @@ function getRenderer(id) {
     case 'excelImport':
       // Import dari Excel — defined additively in excel-import.js.
       return typeof window.renderExcelImport === 'function' ? window.renderExcelImport : null;
+    case 'pickups':
+      // Pengambilan (trading pickups) — pickup-view.js; its pages are opened
+      // through window._pickupView / window._pickupBilling.
+      return typeof window.renderPickups === 'function' ? window.renderPickups : null;
     case 'entriHarian':
       // Section 5: Entri Harian — focused data-entry surface for the
       // Admin/Accounting personas, defined additively in entri-harian.js.

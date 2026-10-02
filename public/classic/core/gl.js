@@ -341,7 +341,8 @@
     const out = [];
     const party = (db().customers || []).find(c => c.id === o.customerId) || null;
 
-    if (o.status === 'Delivered') {
+    // Pickup orders (trading flow) post per trip — see buildPickupJournals.
+    if (o.status === 'Delivered' && !o.pickupFlow) {
       // COGS from the perpetual moving-average cost ledger when available; static
       // item.cost otherwise.
       let cogs = null;
@@ -407,7 +408,11 @@
     const out = [];
     const party = (db().suppliers || []).find(s => s.id === o.supplierId) || null;
 
-    if (o.status === 'Received' && !hasActiveInvoice('purchaseInvoices', 'PO', o.id)) {
+    if (
+      o.status === 'Received' &&
+      !o.pickupFlow &&
+      !hasActiveInvoice('purchaseInvoices', 'PO', o.id)
+    ) {
       const j = makeJournal(
         `J:PO:${o.id}:recv`,
         o.id,
@@ -464,9 +469,11 @@
     const party = (db().customers || []).find(c => c.id === inv.customerId) || null;
     const label = inv.number || inv.id;
     const raw = revenueLines(inv, party, label, false);
-    // The goods movement belongs to the source order's delivery. Only an invoice
-    // without a source order (e.g. imported) books COGS itself, at item cost.
-    if (!invoiceSourceOrder(inv)) {
+    // The goods movement belongs to the source order's delivery, or to the trips
+    // an invoice was made from (doIds). Only an invoice with neither (e.g.
+    // imported) books COGS itself, at item cost.
+    const fromTrips = Array.isArray(inv.doIds) && inv.doIds.length > 0;
+    if (!invoiceSourceOrder(inv) && !fromTrips) {
       const cogs = round(staticCost(inv.lines || []));
       raw.push(
         { accountNo: resolveAccount('cogs', { party }), debit: cogs, memo: 'HPP' },
@@ -495,6 +502,58 @@
       { docType: 'PI', docId: inv.id },
       purchaseLines(inv, party, label, false)
     );
+    return j ? [j] : [];
+  }
+
+  // ── Trading pickups (trips) ─────────────────────────────────────────────────
+  // A trip (delivery order with pickup:true, weighed) posts:
+  //   • the purchase — Inventory + PPN Masukan / Payable — unless a purchase
+  //     invoice made from trips covers it (the invoice posts it then);
+  //   • the cost of sales at the trip's purchase price — HPP / Inventory; goods
+  //     go straight from supplier to customer, so inventory nets to zero;
+  //   • the sale — Receivable / Sales + PPN Keluaran — unless a sales invoice
+  //     made from trips covers it.
+  function tripCovered(collection, doId) {
+    return (db()[collection] || []).some(
+      inv =>
+        isActiveInvoice(inv) &&
+        Array.isArray(inv.doIds) &&
+        inv.doIds.some(x => String(x) === String(doId))
+    );
+  }
+
+  function buildPickupJournals(d) {
+    if (!d || d.pickup !== true || d.status === 'Pending' || d.status === 'Cancelled') {
+      return [];
+    }
+    const T = window.Trading;
+    if (!T || !T.isTrip(d)) {
+      return [];
+    }
+    const a = T.amounts(d);
+    const supplier = (db().suppliers || []).find(s => String(s.id) === String(d.supplierId)) || null;
+    const customer = (db().customers || []).find(c => String(c.id) === String(d.customerId)) || null;
+    const label = d.sjNo || d.number || d.id;
+    const raw = [];
+    if (!tripCovered('purchaseInvoices', d.id)) {
+      raw.push(
+        { accountNo: resolveAccount('inventory', { party: supplier }), debit: a.purchase.dpp, memo: `Pembelian ${label}` },
+        { accountNo: resolveAccount('ppnIn', { party: supplier }), debit: a.purchase.tax, memo: `PPN Masukan ${label}` },
+        { accountNo: resolveAccount('payable', { party: supplier }), credit: a.purchase.total, memo: `Hutang ${label}` }
+      );
+    }
+    raw.push(
+      { accountNo: resolveAccount('cogs', { party: customer }), debit: a.purchase.dpp, memo: `HPP ${label}` },
+      { accountNo: resolveAccount('inventory', { party: customer }), credit: a.purchase.dpp, memo: `Pengambilan ${label}` }
+    );
+    if (!tripCovered('salesInvoices', d.id)) {
+      raw.push(
+        { accountNo: resolveAccount('receivable', { party: customer }), debit: a.sale.total, memo: `Piutang ${label}` },
+        { accountNo: resolveAccount('sales', { party: customer }), credit: a.sale.dpp, memo: `Penjualan ${label}` },
+        { accountNo: resolveAccount('ppnOut', { party: customer }), credit: a.sale.tax, memo: `PPN Keluaran ${label}` }
+      );
+    }
+    const j = makeJournal(`J:DO:${d.id}:trip`, label, d.date, { docType: 'DO', docId: d.id }, raw);
     return j ? [j] : [];
   }
 
@@ -820,6 +879,7 @@
     add('otherPayments', buildOtherPaymentJournals);
     add('otherDeposits', buildOtherDepositJournals);
     add('bankTransfers', buildBankTransferJournals);
+    add('deliveryOrders', buildPickupJournals);
     data.journals = [...accurate, ...manual, ...auto];
     return auto.length;
   }
@@ -942,6 +1002,7 @@
     buildOtherPaymentJournals,
     buildOtherDepositJournals,
     buildBankTransferJournals,
+    buildPickupJournals,
     journalsForDoc,
     reconcileAll,
     trialBalance,

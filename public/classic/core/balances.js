@@ -8,6 +8,9 @@
 //     logged on the order (including applied down payments), receipts on the
 //     invoice and posted returns all reduce the invoice balance.
 //   • A delivered/received order without an invoice is an open item on its own.
+//   • A trading trip (trading.js) not yet on an invoice of that side is an open
+//     item too ("belum ditagih"): the ledger already carries it as receivable or
+//     payable (gl.js buildPickupJournals).
 // Document `amount` already includes PPN, so balances include PPN too.
 //
 // Read-only (never mutates DB) except recalcInvoiceStatus().
@@ -218,7 +221,19 @@
     };
   }
 
-  // Open items for one side: active invoices, then posted orders not yet invoiced.
+  // Trips (trading pickups) of one side that no active invoice covers yet.
+  function unbilledTrips(sideKey) {
+    const T = window.Trading;
+    return T && typeof T.unbilled === 'function' ? T.unbilled(sideKey) : [];
+  }
+
+  function tripTotal(sideKey, trip) {
+    const a = window.Trading.amounts(trip);
+    return sideKey === 'sales' ? a.sale.total : a.purchase.total;
+  }
+
+  // Open items for one side: active invoices, posted orders not yet invoiced, and
+  // trips not yet invoiced.
   function openItems(sideKey, opts) {
     opts = opts || {};
     const side = SIDES[sideKey];
@@ -241,6 +256,15 @@
       const bal = orderBalance(sideKey, o);
       if (keep(bal)) {
         items.push(makeItem(sideKey, side.orderType, o, bal, asOf));
+      }
+    });
+    unbilledTrips(sideKey).forEach(t => {
+      const bal = result(tripTotal(sideKey, t), 0, 0, 0);
+      if (keep(bal)) {
+        const item = makeItem(sideKey, 'DO', t, bal, asOf);
+        item.number = t.sjNo || item.number;
+        item.unbilled = true;
+        items.push(item);
       }
     });
     return items;
@@ -311,6 +335,11 @@
     orders.forEach(o => {
       if (o.status === side.postedStatus && !activeInvoiceFor(sideKey, o.id)) {
         entries.push({ date: o.date || '', docType: side.orderType, id: o.id, number: o.number || o.id, debit: num(o.amount), credit: 0 });
+      }
+    });
+    unbilledTrips(sideKey).forEach(t => {
+      if (mine(t)) {
+        entries.push({ date: t.date || '', docType: 'DO', id: t.id, number: t.sjNo || t.number || t.id, unbilled: true, debit: tripTotal(sideKey, t), credit: 0 });
       }
     });
     (data.paymentLogs || []).forEach(p => {

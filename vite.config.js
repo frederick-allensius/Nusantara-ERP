@@ -46,6 +46,9 @@ const classicAll = [
   'public/classic/core/gl.js',
   // balances.js: shared receivable/payable balances (reads the same rules as gl.js).
   'public/classic/core/balances.js',
+  // trading.js: pickup POs, surat jalan slots, trips and recap matching. gl.js and
+  // balances.js call it at run time; the views below use it.
+  'public/classic/core/trading.js',
   'public/classic/core/erp-crud.js',
   'public/classic/core/doc-migrate.js',
   'public/classic/core/erp-view.js',
@@ -78,6 +81,10 @@ const classicAll = [
   // _bankExtras (Biaya Operasional) at click time, so it only needs to load
   // before menu-router.js (which routes to it) and rbac.js (which gates it).
   'public/classic/core/entri-harian.js',
+  // pickup-view.js / pickup-billing.js: the Pengambilan pages (pickup POs, trips,
+  // weighbridge recap, customer and supplier billing from trips) over trading.js.
+  'public/classic/core/pickup-view.js',
+  'public/classic/core/pickup-billing.js',
   'public/classic/core/menu-router.js',
   'public/classic/core/gl-sync.js',
   // trash.js between gl-sync and integrity: integrity wraps OUTERMOST, so a
