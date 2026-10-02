@@ -186,3 +186,38 @@ document tab, ledger, sales list, dashboard.
    Commit it on its own once that session is done — do not sweep it in with `git add -u`.
 3. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; pitch sample outputs; remove `harness.local/`.
+
+## Session 2026-10-03 — friend's branch + meeting requirements (IN PROGRESS)
+
+Requirements: `D:\1. Work\ERP-Lisa-Kenneth\meeting notes 14092026.txt` + recording
+`meeting 14092026.mkv` (speech 17–93 min). Transcript chunks (Whisper small, greedy) in the
+session scratchpad `meeting/run3/part00–09.txt`; parts 04–09 were still transcribing.
+If missing, re-run per chunk (ffmpeg split from 240 s, 600 s chunks; whisper `--model small
+--language id --condition_on_previous_text False --beam_size 1 --temperature 0`).
+
+Done (commits on this branch):
+- 282703c merge of origin/feat/trading-refactor-pipeline (friend: weighbridge on goods
+  receipts, Rekonsiliasi, SJ validation, funnels, Laporan per Periode, Entri Harian, dual-view).
+- 3427750 adjustable text size (rem everywhere, "Ukuran teks" in user menu, default Besar).
+- a02771d Ekspor Coretax (XML, corrected output-tax rows), tests/coretax-export.test.ts.
+- b22c01a trading core: trading.js (pickup POs, SJ slots ceil(qty/35), quota + month-end
+  cut-off, trips with bruto/tara/netto, supplier price by date, invoices from trips with doIds,
+  recap matching + weight-change alerts), gl.js buildPickupJournals, balances unbilled trips,
+  SO/PO 'Closed', DO 'Cancelled', menu group Pengambilan (#view-pickups) with placeholder
+  pickup-view.js / pickup-billing.js. tests/trading-pickups.test.ts.
+
+Next (planned as parallel worktree agents; check `git worktree list` /
+`.claude/worktrees/` for unfinished agent work before redoing):
+1. Per-user module access (allowlist narrowing the role; client + firestore.rules +
+   functions; Manajemen Pengguna UI) — agent started.
+2. pickup-view.js pages (PO Pengambilan, Catat Pengambilan with ticket photo, Impor Rekap
+   Timbangan, Perubahan Timbangan, Rekap Pengambilan) — agent started.
+3. pickup-billing.js (Tagih Pelanggan weekly from trips; Tagihan Supplier with qty/price
+   compare; invoice-view cancel → Trading.releaseInvoice; invoice print shows line notes).
+4. Ringkasan pipeline view from trips (funnel-report rework, unbilled, alerts, cut-off),
+   Entri Harian tasks, notifications for weight alerts/cut-off, exclude pickup slots from
+   "pengiriman belum selesai"; friend modules → colour tokens.
+5. Friend cleanup: receive-grid weighing columns lost in the merge; pipeline-extras
+   invoiceFromReceipt (numeric id → DocEngine number, sourceType 'PO', terms due date).
+6. Demo data for the trading flow; 7. docs (meeting requirements doc, docs sync, security
+   & cloud/PC recommendation); remove harness.local/.
