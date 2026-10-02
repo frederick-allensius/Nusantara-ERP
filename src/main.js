@@ -290,8 +290,8 @@ async function startApp() {
     if (el) {
       el.innerHTML = `
       <div style="padding:24px;background:#FFF1F0;border:1px solid #FFD8D3;border-radius:12px">
-        <div style="font-size:16px;font-weight:800;color:#B42318;margin-bottom:8px">Gagal memuat aplikasi</div>
-        <div style="font-size:13px;color:#912018;font-family:monospace;white-space:pre-wrap">${String(err?.stack || err?.message || err)}</div>
+        <div style="font-size:1rem;font-weight:800;color:#B42318;margin-bottom:8px">Gagal memuat aplikasi</div>
+        <div style="font-size:.8125rem;color:#912018;font-family:monospace;white-space:pre-wrap">${String(err?.stack || err?.message || err)}</div>
       </div>
     `;
     }
@@ -319,7 +319,7 @@ function maybeShowVerifyBanner() {
     bar.style.cssText =
       'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#FEF3C7;color:#92400E;' +
       'border-top:1px solid #FCD34D;padding:10px 16px;display:flex;gap:12px;align-items:center;' +
-      'flex-wrap:wrap;font-size:13px;box-shadow:0 -2px 8px rgba(0,0,0,.08)';
+      'flex-wrap:wrap;font-size:.8125rem;box-shadow:0 -2px 8px rgba(0,0,0,.08)';
 
     const user = getCurrentUser();
     const email = (user && user.email) || 'akun ini';

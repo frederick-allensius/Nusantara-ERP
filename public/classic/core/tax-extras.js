@@ -30,7 +30,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   var VAT_RATE = 0.11; // PPN 11%
 
   function injectView(html) {
@@ -133,16 +133,16 @@
         .map(function (inv) {
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
             esc(inv.date) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.id) +
             '</td>' +
             '<td class="td-p">' +
             esc(inv.customerName) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             esc(inv.npwp) +
             '</td>' +
             '<td class="td-p" style="text-align:right">' +
@@ -151,11 +151,11 @@
             '<td class="td-p" style="text-align:right;color:var(--info)">' +
             money(inv.ppn) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.efakturNo || '—') +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="setEfakturNo" data-id="' +
+            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="setEfakturNo" data-id="' +
             esc(inv.orderId) +
             '">Set No.</button>' +
             '</td></tr>'
@@ -170,7 +170,7 @@
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
         '<button class="btn" data-action="exportCTAS">Export CSV</button></div></div>' +
         '<div class="card" style="background:var(--info-bg);border:1px solid transparent;padding:14px 18px;margin-bottom:16px">' +
-        '<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">' +
+        '<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:.8125rem">' +
         '<div><span style="color:var(--info);font-weight:700">' +
         invoices.length.toLocaleString('id-ID') +
         '</span><span style="color:var(--muted)"> faktur</span></div>' +
@@ -180,7 +180,7 @@
         '<div><span style="font-weight:700;color:var(--info)">PPN (11%):</span> ' +
         money(totalPPN) +
         '</div>' +
-        '<div style="margin-left:auto;font-size:11px;color:var(--muted)">NPWP Perusahaan: <strong>' +
+        '<div style="margin-left:auto;font-size:.75rem;color:var(--muted)">NPWP Perusahaan: <strong>' +
         esc(cfg.npwp || 'Belum diatur') +
         '</strong></div>' +
         '</div></div>' +
@@ -209,7 +209,7 @@
         rows +
         '</tbody></table>' +
         (invoices.length > 100
-          ? '<div style="text-align:center;padding:10px;font-size:11px;color:var(--muted)">Menampilkan 100 dari ' +
+          ? '<div style="text-align:center;padding:10px;font-size:.75rem;color:var(--muted)">Menampilkan 100 dari ' +
             invoices.length +
             ' faktur</div>'
           : '') +
@@ -240,23 +240,23 @@
           var email = cust ? cust.email || '—' : '—';
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
             esc(inv.date) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.id) +
             '</td>' +
             '<td class="td-p">' +
             esc(inv.customerName) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             esc(email) +
             '</td>' +
             '<td class="td-p" style="text-align:right">' +
             money(inv.ppn) +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn" style="font-size:11px;padding:4px 10px" data-action="sendTaxEmail" data-id="' +
+            '<button class="btn" style="font-size:.75rem;padding:4px 10px" data-action="sendTaxEmail" data-id="' +
             esc(inv.orderId) +
             '" data-invid="' +
             esc(inv.id) +
@@ -277,19 +277,19 @@
         .map(function (l) {
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(l.sentAt || '') +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(l.invoiceId) +
             '</td>' +
             '<td class="td-p">' +
             esc(l.customerName) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(l.to) +
             '</td>' +
-            '<td class="td-p" style="text-align:center"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--success-bg);color:var(--success);font-weight:700">Terkirim</span></td>' +
+            '<td class="td-p" style="text-align:center"><span style="font-size:.75rem;padding:2px 6px;border-radius:4px;background:var(--success-bg);color:var(--success);font-weight:700">Terkirim</span></td>' +
             '</tr>'
           );
         })
@@ -311,7 +311,7 @@
         '</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Antrian Pengiriman (' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Antrian Pengiriman (' +
         pending.length +
         ')</div>' +
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
@@ -333,7 +333,7 @@
         pendingRows +
         '</tbody></table></div></div>' +
         '<div class="card">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Log Pengiriman</div>' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Log Pengiriman</div>' +
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +
         TH +
@@ -378,19 +378,19 @@
         .map(function (inv, idx) {
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:11px;text-align:center">' +
+            '<td class="td-p" style="font-size:.75rem;text-align:center">' +
             (idx + 1) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.date.replace(/-/g, '')) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.efakturNo || '0') +
             '</td>' +
             '<td class="td-p">' +
             esc(inv.customerName) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(inv.npwp.replace(/\D/g, '') || '000000000000000') +
             '</td>' +
             '<td class="td-p" style="text-align:right">' +
@@ -409,17 +409,17 @@
       '<div class="sec-hdr"><div><h1>e-Faktur Format Lama</h1><p>Format lama e-Faktur (CSV) — kompatibel aplikasi versi sebelum 4.x</p></div>' +
         '<div style="display:flex;gap:8px">' +
         (monthOpts
-          ? '<select class="form-select" id="legacy-month" style="font-size:13px">' +
+          ? '<select class="form-select" id="legacy-month" style="font-size:.8125rem">' +
             monthOpts +
             '</select>'
           : '') +
         '<button class="btn" data-action="exportLegacyCSV">Export CSV Legacy</button></div></div>' +
-        '<div class="card" style="background:var(--warning-bg);border:1px solid transparent;padding:12px 18px;margin-bottom:16px;font-size:12px">' +
+        '<div class="card" style="background:var(--warning-bg);border:1px solid transparent;padding:12px 18px;margin-bottom:16px;font-size:.75rem">' +
         '<strong>Format lama:</strong> Gunakan format ini hanya jika aplikasi e-Faktur Anda masih versi lama (sebelum 4.0). ' +
         'Untuk versi terbaru, gunakan menu <strong>e-Faktur CTAS</strong>.' +
         '</div>' +
         '<div class="card">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Preview Data Faktur</div>' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Preview Data Faktur</div>' +
         '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +
         TH +
@@ -443,7 +443,7 @@
         rows +
         '</tbody></table></div>' +
         (invoices.length > 100
-          ? '<div style="text-align:center;padding:8px;font-size:11px;color:var(--muted)">Menampilkan 100 dari ' +
+          ? '<div style="text-align:center;padding:8px;font-size:.75rem;color:var(--muted)">Menampilkan 100 dari ' +
             invoices.length +
             ' baris</div>'
           : '') +

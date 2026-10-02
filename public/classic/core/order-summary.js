@@ -205,7 +205,7 @@
     const fromIso = fromD.toISOString().slice(0, 10);
 
     const body = `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">
         Pilih periode untuk ringkasan ${esc(cfg.label)}. Ringkasan berisi total per barang,
         daftar dokumen, dan total nilai — siap disimpan sebagai PDF.
       </div>
@@ -220,9 +220,9 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <button class="btn-ghost" data-osum-range="7" type="button" style="font-size:11px">7 hari</button>
-        <button class="btn-ghost" data-osum-range="30" type="button" style="font-size:11px">30 hari</button>
-        <button class="btn-ghost" data-osum-range="90" type="button" style="font-size:11px">90 hari</button>
+        <button class="btn-ghost" data-osum-range="7" type="button" style="font-size:.75rem">7 hari</button>
+        <button class="btn-ghost" data-osum-range="30" type="button" style="font-size:.75rem">30 hari</button>
+        <button class="btn-ghost" data-osum-range="90" type="button" style="font-size:.75rem">90 hari</button>
       </div>`;
     const footer =
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +

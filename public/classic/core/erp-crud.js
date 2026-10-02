@@ -1111,19 +1111,19 @@ function lineItemsHTML() {
   return `
   <div style="margin:14px 0 4px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span class="form-label" style="margin:0;font-size:13px;font-weight:700">Item Pesanan</span>
-      <button type="button" class="btn-ghost" id="addLineBtn" style="font-size:11px;padding:4px 10px">+ Tambah Baris</button>
+      <span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Item Pesanan</span>
+      <button type="button" class="btn-ghost" id="addLineBtn" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
     </div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg)">
           <tr>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item / Deskripsi</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:70px;border-bottom:1px solid var(--border)">Qty</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:120px;border-bottom:1px solid var(--border)">Harga (Rp)</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:110px;border-bottom:1px solid var(--border)">Diskon (Rp)</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:116px;border-bottom:1px solid var(--border)">Subtotal</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item / Deskripsi</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:70px;border-bottom:1px solid var(--border)">Qty</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:120px;border-bottom:1px solid var(--border)">Harga (Rp)</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:110px;border-bottom:1px solid var(--border)">Diskon (Rp)</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:116px;border-bottom:1px solid var(--border)">Subtotal</th>
             <th style="width:30px;border-bottom:1px solid var(--border)"></th>
           </tr>
         </thead>
@@ -1132,18 +1132,18 @@ function lineItemsHTML() {
     </div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;user-select:none">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.75rem;cursor:pointer;user-select:none">
           <input type="checkbox" id="ppnToggle">
           <span>Kenakan PPN (<span id="ppnRateLabel">11</span>%)</span>
         </label>
         <div style="text-align:right">
-          <div id="ppnRow" style="display:none;font-size:12px;color:var(--muted);margin-bottom:4px">
+          <div id="ppnRow" style="display:none;font-size:.75rem;color:var(--muted);margin-bottom:4px">
             <span>DPP: <span id="linesDPP">Rp 0</span></span>
             <span style="margin-left:12px">PPN: <span id="linesPPN" style="color:var(--info);font-weight:600">Rp 0</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
-            <span style="font-size:12px;color:var(--muted)">Total:</span>
-            <span id="linesGrandTotal" style="font-size:17px;font-weight:800">Rp 0</span>
+            <span style="font-size:.75rem;color:var(--muted)">Total:</span>
+            <span id="linesGrandTotal" style="font-size:1.0625rem;font-weight:800">Rp 0</span>
           </div>
         </div>
       </div>
@@ -1204,33 +1204,33 @@ function initLineItems(priceField, existingLines) {
 
     tr.innerHTML = `
       <td style="padding:5px 8px">
-        <select class="form-select ln-item" style="font-size:12px;padding:5px 8px">
+        <select class="form-select ln-item" style="font-size:.75rem;padding:5px 8px">
           <option value="">— Pilih Item —</option>
           ${opts}
           <option value="custom"${isCustom ? ' selected' : ''}>Item lainnya (isi manual)</option>
         </select>
         <input class="form-input ln-custom" type="text" placeholder="Nama item / jasa"
                value="${isCustom ? escapeHtml(line.itemName || '') : ''}"
-               style="display:${isCustom ? 'block' : 'none'};font-size:12px;padding:5px 8px;margin-top:4px">
+               style="display:${isCustom ? 'block' : 'none'};font-size:.75rem;padding:5px 8px;margin-top:4px">
       </td>
       <td style="padding:5px 8px">
         <input class="form-input ln-qty" type="number" min="0" step="any" value="${line.qty || 1}"
-               style="width:76px;font-size:12px;padding:5px 8px">
+               style="width:76px;font-size:.75rem;padding:5px 8px">
       </td>
-      <td style="padding:5px 8px;font-size:11px;color:var(--muted);white-space:nowrap" class="ln-unit">${escapeHtml(line.unit || '')}</td>
+      <td style="padding:5px 8px;font-size:.75rem;color:var(--muted);white-space:nowrap" class="ln-unit">${escapeHtml(line.unit || '')}</td>
       <td style="padding:5px 8px">
         <input class="form-input ln-price" type="number" min="0" value="${line.price || 0}"
-               style="width:108px;font-size:12px;padding:5px 8px">
+               style="width:108px;font-size:.75rem;padding:5px 8px">
       </td>
       <td style="padding:5px 8px">
         <input class="form-input ln-disc" type="number" min="0" value="${line.lineDiscount || 0}"
-               style="width:96px;font-size:12px;padding:5px 8px">
+               style="width:96px;font-size:.75rem;padding:5px 8px">
       </td>
-      <td style="padding:5px 8px;font-size:12px;font-weight:700;text-align:right;white-space:nowrap" class="ln-sub">
+      <td style="padding:5px 8px;font-size:.75rem;font-weight:700;text-align:right;white-space:nowrap" class="ln-sub">
         ${idrFull(Math.max(0, (line.qty || 0) * (line.price || 0) - (line.lineDiscount || 0)))}
       </td>
       <td style="padding:5px 8px;text-align:center">
-        <button type="button" class="ln-del" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:1px 5px" title="Hapus baris">×</button>
+        <button type="button" class="ln-del" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.125rem;line-height:1;padding:1px 5px" title="Hapus baris">×</button>
       </td>`;
 
     const sel = tr.querySelector('.ln-item');
@@ -1382,24 +1382,24 @@ function linesDetailHTML(lines, totalLabel, doc) {
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg)">
           <tr>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:50px;border-bottom:1px solid var(--border)">Qty</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:120px;border-bottom:1px solid var(--border)">Harga</th>
-            ${showDisc ? `<th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:110px;border-bottom:1px solid var(--border)">Diskon</th>` : ''}
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:120px;border-bottom:1px solid var(--border)">Subtotal</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:50px;border-bottom:1px solid var(--border)">Qty</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:120px;border-bottom:1px solid var(--border)">Harga</th>
+            ${showDisc ? `<th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:110px;border-bottom:1px solid var(--border)">Diskon</th>` : ''}
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:120px;border-bottom:1px solid var(--border)">Subtotal</th>
           </tr>
         </thead>
         <tbody>
           ${lines
             .map(
               l => `<tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 10px;font-size:12px;font-weight:600">${escapeHtml(l.itemName)}</td>
-            <td style="padding:7px 10px;font-size:12px;text-align:right">${(Number(l.qty) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })}</td>
-            <td style="padding:7px 10px;font-size:11px;color:var(--muted)">${escapeHtml(l.unit)}</td>
-            <td style="padding:7px 10px;font-size:12px;text-align:right;color:var(--muted)">${idrFull(l.price)}</td>
-            ${showDisc ? `<td style="padding:7px 10px;font-size:12px;text-align:right;color:var(--muted)">${(l.lineDiscount || 0) > 0 ? '−' + idrFull(l.lineDiscount) : '—'}</td>` : ''}
-            <td style="padding:7px 10px;font-size:12px;font-weight:700;text-align:right">${idrFull(l.subtotal)}</td>
+            <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${escapeHtml(l.itemName)}</td>
+            <td style="padding:7px 10px;font-size:.75rem;text-align:right">${(Number(l.qty) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })}</td>
+            <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${escapeHtml(l.unit)}</td>
+            <td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${idrFull(l.price)}</td>
+            ${showDisc ? `<td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${(l.lineDiscount || 0) > 0 ? '−' + idrFull(l.lineDiscount) : '—'}</td>` : ''}
+            <td style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right">${idrFull(l.subtotal)}</td>
           </tr>`
             )
             .join('')}
@@ -1408,12 +1408,12 @@ function linesDetailHTML(lines, totalLabel, doc) {
     </div>
     <div style="text-align:right;margin-top:10px">
       ${taxRate ? `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:2px">DPP: ${idrFull(dppAmt)}</div>
-      <div style="font-size:12px;color:var(--info);font-weight:600;margin-bottom:4px">PPN (${Math.round(taxRate * 100)}%)${taxIncl ? ' — termasuk' : ''}: ${idrFull(taxAmt)}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:2px">DPP: ${idrFull(dppAmt)}</div>
+      <div style="font-size:.75rem;color:var(--info);font-weight:600;margin-bottom:4px">PPN (${Math.round(taxRate * 100)}%)${taxIncl ? ' — termasuk' : ''}: ${idrFull(taxAmt)}</div>
       ` : ''}
       <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
-        <span style="font-size:12px;color:var(--muted)">${totalLabel || 'Total'}:</span>
-        <span style="font-size:16px;font-weight:800">${idrFull(grandTotal)}</span>
+        <span style="font-size:.75rem;color:var(--muted)">${totalLabel || 'Total'}:</span>
+        <span style="font-size:1rem;font-weight:800">${idrFull(grandTotal)}</span>
       </div>
     </div>
   </div>`;
@@ -1509,7 +1509,7 @@ function showAddPO() {
         <input class="form-input" id="po-date" type="date" value="${today()}">
       </div>
       <div class="form-group">
-        <label class="form-label">Jatuh Tempo <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <label class="form-label">Jatuh Tempo <span style="font-size:.75rem;color:var(--muted);font-weight:400">(opsional)</span></label>
         <input class="form-input" id="po-due-date" type="date">
       </div>
       <div class="form-group">
@@ -1613,7 +1613,7 @@ function editPO(id) {
         <input class="form-input" id="po-date" type="date" value="${escapeHtml(o.date)}">
       </div>
       <div class="form-group">
-        <label class="form-label">Jatuh Tempo <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <label class="form-label">Jatuh Tempo <span style="font-size:.75rem;color:var(--muted);font-weight:400">(opsional)</span></label>
         <input class="form-input" id="po-due-date" type="date" value="${escapeHtml(o.dueDate || '')}">
       </div>
       <div class="form-group">
@@ -2040,18 +2040,18 @@ function showStockCard(id) {
         ? `<a data-action="${m.action}" data-id="${escapeHtml(m.refId)}" style="color:var(--primary);cursor:pointer;text-decoration:underline">${escapeHtml(m.ref)}</a>`
         : escapeHtml(m.ref);
       return `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 10px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(m.date)}</td>
-        <td style="padding:6px 10px;font-size:12px">${escapeHtml(m.label)}</td>
-        <td style="padding:6px 10px;font-size:11px">${refCell}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.inQty, 'var(--success)')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${qtyCell(m.outQty, 'var(--danger)')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${r3(bal)}</td>
+        <td style="padding:6px 10px;font-size:.75rem;color:var(--muted);white-space:nowrap">${escapeHtml(m.date)}</td>
+        <td style="padding:6px 10px;font-size:.75rem">${escapeHtml(m.label)}</td>
+        <td style="padding:6px 10px;font-size:.75rem">${refCell}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right">${qtyCell(m.inQty, 'var(--success)')}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right">${qtyCell(m.outQty, 'var(--danger)')}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right;font-weight:800">${r3(bal)}</td>
       </tr>`;
     })
     .join('');
 
   const body = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:12px">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:.75rem">
       <div><span style="color:var(--muted)">Satuan:</span> <strong>${unit || '—'}</strong></div>
       <div><span style="color:var(--muted)">Saldo Awal (perkiraan):</span> <strong>${opening} ${unit}</strong></div>
       <div><span style="color:var(--muted)">Stok Saat Ini:</span> <strong style="color:var(--primary)">${r3(current)} ${unit}</strong></div>
@@ -2061,33 +2061,33 @@ function showStockCard(id) {
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg);position:sticky;top:0">
           <tr>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Ref</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">Masuk</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">Keluar</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Ref</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">Masuk</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">Keluar</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
           </tr>
         </thead>
         <tbody>
           <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
-            <td style="padding:6px 10px;font-size:11px;color:var(--muted)">—</td>
-            <td style="padding:6px 10px;font-size:12px;font-style:italic;color:var(--muted)">Saldo Awal</td>
+            <td style="padding:6px 10px;font-size:.75rem;color:var(--muted)">—</td>
+            <td style="padding:6px 10px;font-size:.75rem;font-style:italic;color:var(--muted)">Saldo Awal</td>
             <td style="padding:6px 10px"></td>
             <td style="padding:6px 10px"></td>
             <td style="padding:6px 10px"></td>
-            <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${opening}</td>
+            <td style="padding:6px 10px;font-size:.75rem;text-align:right;font-weight:800">${opening}</td>
           </tr>
           ${
             bodyRows ||
-            `<tr><td colspan="6" style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Belum ada mutasi tercatat untuk item ini.</td></tr>`
+            `<tr><td colspan="6" style="padding:16px;text-align:center;font-size:.75rem;color:var(--muted)">Belum ada mutasi tercatat untuk item ini.</td></tr>`
           }
         </tbody>
         <tfoot>
           <tr style="border-top:2px solid var(--border);background:var(--bg)">
-            <td colspan="3" style="padding:7px 10px;font-size:12px;font-weight:800;text-align:right">Stok Saat Ini</td>
+            <td colspan="3" style="padding:7px 10px;font-size:.75rem;font-weight:800;text-align:right">Stok Saat Ini</td>
             <td colspan="2"></td>
-            <td style="padding:7px 10px;font-size:13px;font-weight:800;text-align:right;color:var(--primary)">${r3(current)}</td>
+            <td style="padding:7px 10px;font-size:.8125rem;font-weight:800;text-align:right;color:var(--primary)">${r3(current)}</td>
           </tr>
         </tfoot>
       </table>
@@ -2693,12 +2693,12 @@ function showPartyStatement(kind, id) {
   const rows = entries
     .map(
       e => `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 10px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(e.date)}</td>
-        <td style="padding:6px 10px;font-size:12px">${escapeHtml(e.label)}</td>
-        <td style="padding:6px 10px;font-size:11px">${refLink(e)}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.debit, 'var(--text)')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right">${cell(e.credit, 'var(--success)')}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:800">${m(e.balance)}</td>
+        <td style="padding:6px 10px;font-size:.75rem;color:var(--muted);white-space:nowrap">${escapeHtml(e.date)}</td>
+        <td style="padding:6px 10px;font-size:.75rem">${escapeHtml(e.label)}</td>
+        <td style="padding:6px 10px;font-size:.75rem">${refLink(e)}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right">${cell(e.debit, 'var(--text)')}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right">${cell(e.credit, 'var(--success)')}</td>
+        <td style="padding:6px 10px;font-size:.75rem;text-align:right;font-weight:800">${m(e.balance)}</td>
       </tr>`
     )
     .join('');
@@ -2707,7 +2707,7 @@ function showPartyStatement(kind, id) {
   const creditHdr = isCust ? 'Terima' : 'Bayar';
   const balLabel = isCust ? 'Saldo Piutang' : 'Saldo Hutang';
   const body = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:12px">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;font-size:.75rem">
       <div><span style="color:var(--muted)">${isCust ? 'Total Tagihan' : 'Total Hutang'}:</span> <strong>${m(totalDebit)}</strong></div>
       <div><span style="color:var(--muted)">${isCust ? 'Total Diterima' : 'Total Dibayar'}:</span> <strong>${m(totalCredit)}</strong></div>
       <div><span style="color:var(--muted)">${balLabel}:</span> <strong style="color:${outstanding > 0 ? 'var(--danger)' : 'var(--primary)'}">${m(outstanding)}</strong></div>
@@ -2716,26 +2716,26 @@ function showPartyStatement(kind, id) {
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg);position:sticky;top:0">
           <tr>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Dokumen</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">${debitHdr}</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">${creditHdr}</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Dokumen</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--danger)">${debitHdr}</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border);color:var(--success)">${creditHdr}</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;border-bottom:1px solid var(--border)">Saldo</th>
           </tr>
         </thead>
         <tbody>
           ${
             rows ||
-            `<tr><td colspan="6" style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Belum ada faktur atau pembayaran untuk ${escapeHtml(party.name)}.</td></tr>`
+            `<tr><td colspan="6" style="padding:16px;text-align:center;font-size:.75rem;color:var(--muted)">Belum ada faktur atau pembayaran untuk ${escapeHtml(party.name)}.</td></tr>`
           }
         </tbody>
         <tfoot>
           <tr style="border-top:2px solid var(--border);background:var(--bg)">
-            <td colspan="3" style="padding:7px 10px;font-size:12px;font-weight:800;text-align:right">${balLabel}</td>
-            <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700">${m(totalDebit)}</td>
-            <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700">${m(totalCredit)}</td>
-            <td style="padding:7px 10px;font-size:13px;text-align:right;font-weight:800;color:${outstanding > 0 ? 'var(--danger)' : 'var(--primary)'}">${m(outstanding)}</td>
+            <td colspan="3" style="padding:7px 10px;font-size:.75rem;font-weight:800;text-align:right">${balLabel}</td>
+            <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:700">${m(totalDebit)}</td>
+            <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:700">${m(totalCredit)}</td>
+            <td style="padding:7px 10px;font-size:.8125rem;text-align:right;font-weight:800;color:${outstanding > 0 ? 'var(--danger)' : 'var(--primary)'}">${m(outstanding)}</td>
           </tr>
         </tfoot>
       </table>
@@ -2866,7 +2866,7 @@ function showFinanceDetail(title, items) {
          .map(
            item => `
          <li style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                    background:var(--bg);border-radius:10px;font-size:13px;font-weight:600">
+                    background:var(--bg);border-radius:10px;font-size:.8125rem;font-weight:600">
            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
              <polyline points="20 6 9 17 4 12"/>
            </svg>
@@ -2889,9 +2889,9 @@ function showSettingPanel(title, sub) {
            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
          </svg>
        </div>
-       <div style="font-size:15px;font-weight:700;margin-bottom:6px">${escapeHtml(title)}</div>
-       <div style="font-size:12px;color:var(--muted);margin-bottom:20px">${escapeHtml(sub)}</div>
-       <div style="padding:14px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--muted)">
+       <div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">${escapeHtml(title)}</div>
+       <div style="font-size:.75rem;color:var(--muted);margin-bottom:20px">${escapeHtml(sub)}</div>
+       <div style="padding:14px;background:var(--bg);border-radius:10px;font-size:.75rem;color:var(--muted)">
          Panel pengaturan ini akan tersedia di versi berikutnya.
        </div>
      </div>`,
@@ -2938,7 +2938,7 @@ function showTaxSettings() {
         <option value="ceil" ${t.rounding === 'ceil' ? 'selected' : ''}>Bulat ke atas</option>
       </select>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-top:8px">
+    <div style="font-size:.75rem;color:var(--muted);margin-top:8px">
       Tarif PPN/PPh disimpan dalam bentuk persen dan dihitung dari total transaksi non-draft.
     </div>
   `,
@@ -3081,26 +3081,26 @@ function showDepartments() {
 
   const rowsHTML = () =>
     depts.length === 0
-      ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">Belum ada departemen.</div>`
+      ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:12px">Belum ada departemen.</div>`
       : depts
           .map(
             d => `<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-            <input class="form-input dept-name" data-id="${escapeHtml(d.id)}" value="${escapeHtml(d.name)}" style="font-size:11px;flex:1;padding:4px 8px">
-            <select class="form-input dept-role" data-id="${escapeHtml(d.id)}" style="font-size:11px;width:auto;padding:4px 8px">${roleOpts(d.role)}</select>
-            <button class="btn-ghost dept-del" data-id="${escapeHtml(d.id)}" style="font-size:11px;padding:4px 8px;color:var(--danger)">Hapus</button>
+            <input class="form-input dept-name" data-id="${escapeHtml(d.id)}" value="${escapeHtml(d.name)}" style="font-size:.75rem;flex:1;padding:4px 8px">
+            <select class="form-input dept-role" data-id="${escapeHtml(d.id)}" style="font-size:.75rem;width:auto;padding:4px 8px">${roleOpts(d.role)}</select>
+            <button class="btn-ghost dept-del" data-id="${escapeHtml(d.id)}" style="font-size:.75rem;padding:4px 8px;color:var(--danger)">Hapus</button>
           </div>`
           )
           .join('');
 
   openModal(
     'Kelola Departemen',
-    `<p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+    `<p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.5">
        Tiap departemen dipetakan ke satu peran. Karyawan di departemen itu (yang
        emailnya cocok dengan akun login) otomatis mendapat peran tersebut saat
        disinkronkan di Manajemen Pengguna.
      </p>
      <div id="dept-list">${rowsHTML()}</div>
-     <button class="btn-ghost" id="dept-add" style="font-size:11px;margin-top:10px">+ Tambah Departemen</button>`,
+     <button class="btn-ghost" id="dept-add" style="font-size:.75rem;margin-top:10px">+ Tambah Departemen</button>`,
     `<button class="btn-ghost" data-action="closeModal">Tutup</button><button class="btn" id="dept-save">Simpan</button>`,
     true
   );
@@ -3178,33 +3178,33 @@ function showUserManagement() {
   const isLocal = (window.__ERP_USER && window.__ERP_USER.mode) === 'local';
 
   const intro = isLocal
-    ? `<p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+    ? `<p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.5">
          Akun login lokal (username + password). Tambah pengguna, atur peran,
          reset password, atau nonaktifkan akun di sini. Password disimpan
          ter-hash di perangkat ini.
        </p>
        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-         <button class="btn" id="um-add" style="font-size:11px;padding:4px 10px">＋ Tambah User</button>
-         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">Log Aktivitas Pengguna</button>
+         <button class="btn" id="um-add" style="font-size:.75rem;padding:4px 10px">＋ Tambah User</button>
+         <button class="btn-ghost" id="um-log" style="font-size:.75rem;padding:4px 10px">Log Aktivitas Pengguna</button>
        </div>`
-    : `<p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+    : `<p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.5">
          Akun dibuat di Firebase Console. Pengguna yang sudah login muncul di sini
          dengan role <strong>pending</strong> hingga Anda menetapkan peran. Peran
          bisa diatur otomatis dari <strong>Departemen</strong> karyawan (cocok via
          email) atau manual di sini. Perubahan tersimpan langsung ke cloud.
        </p>
        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-         <button class="btn-ghost" id="um-depts" style="font-size:11px;padding:4px 10px">Kelola Departemen</button>
-         <button class="btn" id="um-sync" style="font-size:11px;padding:4px 10px">Sinkronkan dari Departemen</button>
-         <button class="btn-ghost" id="um-log" style="font-size:11px;padding:4px 10px">Log Aktivitas Pengguna</button>
-         <button class="btn-ghost" id="um-access-log" style="font-size:11px;padding:4px 10px">Log Akses</button>
+         <button class="btn-ghost" id="um-depts" style="font-size:.75rem;padding:4px 10px">Kelola Departemen</button>
+         <button class="btn" id="um-sync" style="font-size:.75rem;padding:4px 10px">Sinkronkan dari Departemen</button>
+         <button class="btn-ghost" id="um-log" style="font-size:.75rem;padding:4px 10px">Log Aktivitas Pengguna</button>
+         <button class="btn-ghost" id="um-access-log" style="font-size:.75rem;padding:4px 10px">Log Akses</button>
        </div>`;
 
   openModal(
     'Manajemen Pengguna',
     `${intro}
      <div id="um-list" style="min-height:60px">
-       <div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Memuat daftar pengguna…</div>
+       <div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Memuat daftar pengguna…</div>
      </div>`,
     `<button class="btn-ghost" data-action="closeModal">Tutup</button>`,
     true
@@ -3226,7 +3226,7 @@ function showUserManagement() {
       return;
     }
     if (!list.length) {
-      el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada pengguna terdaftar.</div>`;
+      el.innerHTML = `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada pengguna terdaftar.</div>`;
       return;
     }
     el.innerHTML = list
@@ -3235,7 +3235,7 @@ function showUserManagement() {
         const active = u.active !== false;
         const der = u.local ? null : roleForEmail(u.email);
         const deptLine = der
-          ? `<div style="font-size:10px;color:${der.role === u.role ? 'var(--muted)' : 'var(--primary)'};margin-top:1px">
+          ? `<div style="font-size:.75rem;color:${der.role === u.role ? 'var(--muted)' : 'var(--primary)'};margin-top:1px">
                Dept: ${escapeHtml(der.department.name)} → ${escapeHtml((ROLE_LABELS[der.role] || der.role))}${der.role !== u.role ? ' · belum sinkron' : ''}
              </div>`
           : '';
@@ -3243,19 +3243,19 @@ function showUserManagement() {
           ? `@${escapeHtml(u.username || u.uid)}${u.mustChangePassword ? ' · <span style="color:var(--warning)">password default</span>' : ''}`
           : escapeHtml(u.email || '—');
         const localActions = u.local
-          ? `<button class="btn-ghost um-reset" data-uid="${escapeHtml(u.uid)}" style="font-size:10px;padding:3px 7px">Reset PW</button>
-             ${u.uid === 'admin' ? '' : `<button class="btn-ghost um-del" data-uid="${escapeHtml(u.uid)}" style="font-size:10px;padding:3px 7px;color:var(--danger)">Hapus</button>`}`
+          ? `<button class="btn-ghost um-reset" data-uid="${escapeHtml(u.uid)}" style="font-size:.75rem;padding:3px 7px">Reset PW</button>
+             ${u.uid === 'admin' ? '' : `<button class="btn-ghost um-del" data-uid="${escapeHtml(u.uid)}" style="font-size:.75rem;padding:3px 7px;color:var(--danger)">Hapus</button>`}`
           : '';
         return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <div style="min-width:0;flex:1">
-            <div style="font-size:12px;font-weight:700">${escapeHtml(u.displayName || u.email || u.uid)}${self ? ' <span style="color:var(--muted);font-weight:400">(Anda)</span>' : ''}</div>
-            <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subLine}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(u.displayName || u.email || u.uid)}${self ? ' <span style="color:var(--muted);font-weight:400">(Anda)</span>' : ''}</div>
+            <div style="font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subLine}</div>
             ${deptLine}
           </div>
-          <select class="form-input um-role" data-uid="${escapeHtml(u.uid)}" ${self ? 'disabled title="Anda tidak dapat mengubah peran sendiri"' : ''} style="font-size:11px;width:auto;padding:4px 8px">
+          <select class="form-input um-role" data-uid="${escapeHtml(u.uid)}" ${self ? 'disabled title="Anda tidak dapat mengubah peran sendiri"' : ''} style="font-size:.75rem;width:auto;padding:4px 8px">
             ${roleOptions(u.role || 'pending')}
           </select>
-          <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:${self ? 'not-allowed' : 'pointer'}">
+          <label style="font-size:.75rem;display:flex;align-items:center;gap:4px;cursor:${self ? 'not-allowed' : 'pointer'}">
             <input type="checkbox" class="um-active" data-uid="${escapeHtml(u.uid)}" ${active ? 'checked' : ''} ${self ? 'disabled' : ''}> Aktif
           </label>
           ${localActions}
@@ -3316,7 +3316,7 @@ function showUserManagement() {
       .catch(e => {
         const el = document.getElementById('um-list');
         if (el) {
-          el.innerHTML = `<div style="font-size:12px;color:var(--danger);text-align:center;padding:14px">Gagal memuat: ${escapeHtml(e?.message || String(e))}</div>`;
+          el.innerHTML = `<div style="font-size:.75rem;color:var(--danger);text-align:center;padding:14px">Gagal memuat: ${escapeHtml(e?.message || String(e))}</div>`;
         }
       });
   }
@@ -3404,28 +3404,28 @@ function showLoginLog() {
     ? log
         .map(
           e => `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 8px;font-size:12px;font-weight:600">${escapeHtml(e.displayName || e.username)}</td>
-        <td style="padding:6px 8px;font-size:11px;color:var(--muted)">@${escapeHtml(e.username)}</td>
-        <td style="padding:6px 8px;font-size:11px">${
+        <td style="padding:6px 8px;font-size:.75rem;font-weight:600">${escapeHtml(e.displayName || e.username)}</td>
+        <td style="padding:6px 8px;font-size:.75rem;color:var(--muted)">@${escapeHtml(e.username)}</td>
+        <td style="padding:6px 8px;font-size:.75rem">${
           e.event === 'logout'
             ? '<span style="color:var(--muted)">Logout</span>'
             : '<span style="color:var(--success);font-weight:700">Login</span>'
         }</td>
-        <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.ts))}</td>
+        <td style="padding:6px 8px;font-size:.75rem;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.ts))}</td>
       </tr>`
         )
         .join('')
     : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Belum ada aktivitas login.</td></tr>';
   openModal(
     'Log Aktivitas User',
-    `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Menampilkan ${log.length} aktivitas terakhir (login/logout).</div>
+    `<div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">Menampilkan ${log.length} aktivitas terakhir (login/logout).</div>
      <div class="table-wrap" style="overflow:auto;max-height:60vh">
        <table style="width:100%;border-collapse:collapse">
          <thead><tr style="border-bottom:1.5px solid var(--border)">
-           <th style="text-align:left;padding:6px 8px;font-size:11px">Nama</th>
-           <th style="text-align:left;padding:6px 8px;font-size:11px">Username</th>
-           <th style="text-align:left;padding:6px 8px;font-size:11px">Aktivitas</th>
-           <th style="text-align:left;padding:6px 8px;font-size:11px">Waktu</th>
+           <th style="text-align:left;padding:6px 8px;font-size:.75rem">Nama</th>
+           <th style="text-align:left;padding:6px 8px;font-size:.75rem">Username</th>
+           <th style="text-align:left;padding:6px 8px;font-size:.75rem">Aktivitas</th>
+           <th style="text-align:left;padding:6px 8px;font-size:.75rem">Waktu</th>
          </tr></thead>
          <tbody>${rows}</tbody>
        </table>
@@ -3456,7 +3456,7 @@ function showAccessLog() {
   openModal(
     'Log Akses (Audit Trail)',
     `<div id="al-list" style="min-height:60px">
-       <div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Memuat log akses…</div>
+       <div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Memuat log akses…</div>
      </div>`,
     `<button class="btn-ghost" id="al-back">Kembali</button>
      <button class="btn" data-action="closeModal">Tutup</button>`,
@@ -3485,30 +3485,30 @@ function showAccessLog() {
       return;
     }
     if (!entries.length) {
-      el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada aktivitas tercatat.</div>`;
+      el.innerHTML = `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada aktivitas tercatat.</div>`;
       return;
     }
     const rows = entries
       .map(
         e => `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.at))}</td>
-        <td style="padding:6px 8px;font-size:12px;font-weight:600">${escapeHtml(e.actor || '—')}</td>
-        <td style="padding:6px 8px;font-size:11px">${ACTION_LABELS[e.action] || escapeHtml(e.action || '')}</td>
-        <td style="padding:6px 8px;font-size:11px;color:var(--muted)">${escapeHtml(e.collection || '—')}</td>
-        <td style="padding:6px 8px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${escapeHtml(e.docId || '')}</td>
+        <td style="padding:6px 8px;font-size:.75rem;color:var(--muted);white-space:nowrap">${escapeHtml(fmt(e.at))}</td>
+        <td style="padding:6px 8px;font-size:.75rem;font-weight:600">${escapeHtml(e.actor || '—')}</td>
+        <td style="padding:6px 8px;font-size:.75rem">${ACTION_LABELS[e.action] || escapeHtml(e.action || '')}</td>
+        <td style="padding:6px 8px;font-size:.75rem;color:var(--muted)">${escapeHtml(e.collection || '—')}</td>
+        <td style="padding:6px 8px;font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${escapeHtml(e.docId || '')}</td>
       </tr>`
       )
       .join('');
     el.innerHTML = `
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Menampilkan ${entries.length} aktivitas terakhir. Log ini ditulis oleh server — tidak bisa diubah atau dihapus lewat aplikasi.</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">Menampilkan ${entries.length} aktivitas terakhir. Log ini ditulis oleh server — tidak bisa diubah atau dihapus lewat aplikasi.</div>
       <div class="table-wrap" style="overflow:auto;max-height:55vh">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="border-bottom:1.5px solid var(--border)">
-            <th style="text-align:left;padding:6px 8px;font-size:11px">Waktu</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px">User</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px">Aksi</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px">Koleksi</th>
-            <th style="text-align:left;padding:6px 8px;font-size:11px">Dokumen</th>
+            <th style="text-align:left;padding:6px 8px;font-size:.75rem">Waktu</th>
+            <th style="text-align:left;padding:6px 8px;font-size:.75rem">User</th>
+            <th style="text-align:left;padding:6px 8px;font-size:.75rem">Aksi</th>
+            <th style="text-align:left;padding:6px 8px;font-size:.75rem">Koleksi</th>
+            <th style="text-align:left;padding:6px 8px;font-size:.75rem">Dokumen</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -3522,7 +3522,7 @@ function showAccessLog() {
       .catch(e => {
         const el = document.getElementById('al-list');
         if (el) {
-          el.innerHTML = `<div style="font-size:12px;color:var(--danger);text-align:center;padding:14px">Gagal memuat: ${escapeHtml(e?.message || String(e))}</div>`;
+          el.innerHTML = `<div style="font-size:.75rem;color:var(--danger);text-align:center;padding:14px">Gagal memuat: ${escapeHtml(e?.message || String(e))}</div>`;
         }
       });
   } else {
@@ -3616,22 +3616,22 @@ function showItemCategories() {
     'Kategori Item',
     `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700">Kategori Tersimpan</div>
-      <button class="btn-ghost" id="addCategoryBtn" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+      <div style="font-size:.8125rem;font-weight:700">Kategori Tersimpan</div>
+      <button class="btn-ghost" id="addCategoryBtn" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
     </div>
     ${
       categories.length === 0
-        ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada kategori item.</div>`
+        ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada kategori item.</div>`
         : categories
             .map(
               c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700">${escapeHtml(c)}</div>
-        <button class="btn-ghost" data-cat="${escapeHtml(c)}" style="font-size:11px;padding:4px 8px">Hapus</button>
+        <div style="font-size:.75rem;font-weight:700">${escapeHtml(c)}</div>
+        <button class="btn-ghost" data-cat="${escapeHtml(c)}" style="font-size:.75rem;padding:4px 8px">Hapus</button>
       </div>`
             )
             .join('')
     }
-    <div style="font-size:11px;color:var(--muted);margin-top:10px">
+    <div style="font-size:.75rem;color:var(--muted);margin-top:10px">
       Menghapus kategori tidak mengubah data item yang sudah ada.
     </div>
   `,
@@ -3705,17 +3705,17 @@ function showUnitSettings() {
     'Satuan Ukur',
     `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700">Daftar Satuan</div>
-      <button class="btn-ghost" id="addUnitBtn" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+      <div style="font-size:.8125rem;font-weight:700">Daftar Satuan</div>
+      <button class="btn-ghost" id="addUnitBtn" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
     </div>
     ${
       units.length === 0
-        ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada satuan ukur.</div>`
+        ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada satuan ukur.</div>`
         : units
             .map(
               u => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700">${escapeHtml(u)}</div>
-        <button class="btn-ghost" data-unit="${escapeHtml(u)}" style="font-size:11px;padding:4px 8px">Hapus</button>
+        <div style="font-size:.75rem;font-weight:700">${escapeHtml(u)}</div>
+        <button class="btn-ghost" data-unit="${escapeHtml(u)}" style="font-size:.75rem;padding:4px 8px">Hapus</button>
       </div>`
             )
             .join('')
@@ -4842,13 +4842,13 @@ function dpSummaryHTML(type, orderId, orderTotal) {
   return `
   <div style="margin:12px 0 4px;padding:10px 14px;background:var(--bg);border-radius:10px;
               border:1px solid var(--border)">
-    <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:var(--muted)">Uang Muka</div>
+    <div style="font-weight:700;font-size:.75rem;margin-bottom:6px;color:var(--muted)">Uang Muka</div>
     <div class="detail-grid" style="gap:2px 12px">
       ${detailRow('Total DP', `<strong>${fmt(totalDP)}</strong>`)}
       ${detailRow('Sudah Diterapkan', fmt(applied))}
       ${unapplied > 0 ? detailRow('Belum Diterapkan', `<span style="color:var(--warning)">${fmt(unapplied)}</span>`) : ''}
     </div>
-    <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+    <div style="margin-top:6px;font-size:.75rem;color:var(--muted)">
       ${dps.map(d => `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0">
         ${escapeHtml(d.id)} · ${fmt(d.amount)} · ${badge(d.status)}</span>`).join('')}
     </div>
@@ -4871,13 +4871,13 @@ function viewSO(id) {
   const doLinksHtml =
     linkedDOs.length > 0
       ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
-                  font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">DO Terkait:</span>
         ${linkedDOs
           .map(
             d =>
               `<button class="action-ghost" data-action="viewDO" data-id="${escapeHtml(d.id)}"
-            style="font-size:11px">${escapeHtml(docNum(d.number, d.id))} · ${badge(d.status)}</button>`
+            style="font-size:.75rem">${escapeHtml(docNum(d.number, d.id))} · ${badge(d.status)}</button>`
           )
           .join('')}
        </div>`
@@ -4888,13 +4888,13 @@ function viewSO(id) {
   const siLinksHtml =
     linkedSIs.length > 0
       ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
-                  font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">Faktur Terkait:</span>
         ${linkedSIs
           .map(
             s =>
               `<button class="action-ghost" data-action="viewSI" data-id="${escapeHtml(s.id)}"
-            style="font-size:11px">${escapeHtml(docNum(s.number, s.id))} · ${badge(s.status)}</button>`
+            style="font-size:.75rem">${escapeHtml(docNum(s.number, s.id))} · ${badge(s.status)}</button>`
           )
           .join('')}
        </div>`
@@ -4966,13 +4966,13 @@ function viewPO(id) {
   const doLinksHtml =
     linkedDOs.length > 0
       ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
-                  font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">DO Terkait:</span>
         ${linkedDOs
           .map(
             d =>
               `<button class="action-ghost" data-action="viewDO" data-id="${escapeHtml(d.id)}"
-            style="font-size:11px">${escapeHtml(docNum(d.number, d.id))} · ${badge(d.status)}</button>`
+            style="font-size:.75rem">${escapeHtml(docNum(d.number, d.id))} · ${badge(d.status)}</button>`
           )
           .join('')}
        </div>`
@@ -4983,13 +4983,13 @@ function viewPO(id) {
   const piLinksHtml =
     linkedPIs.length > 0
       ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
-                  font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">Faktur Terkait:</span>
         ${linkedPIs
           .map(
             p =>
               `<button class="action-ghost" data-action="viewPI" data-id="${escapeHtml(p.id)}"
-            style="font-size:11px">${escapeHtml(docNum(p.number, p.id))} · ${badge(p.status)}</button>`
+            style="font-size:.75rem">${escapeHtml(docNum(p.number, p.id))} · ${badge(p.status)}</button>`
           )
           .join('')}
        </div>`
@@ -5164,7 +5164,7 @@ function _getSupplierAddress(name) {
 function _doLinesTable(lines) {
   if (!lines || lines.length === 0) {
     return `<div id="do-lines-wrap" style="margin:14px 0">
-      <div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;
+      <div style="font-size:.75rem;color:var(--muted);text-align:center;padding:16px;
         border:1px dashed var(--border);border-radius:10px">
         Pilih referensi SO atau PO untuk mengisi daftar barang otomatis
       </div>
@@ -5173,10 +5173,10 @@ function _doLinesTable(lines) {
   const hasPartial = lines.some(l => (l.qtyDelivered || 0) > 0);
   const allZero = hasPartial && lines.every(l => (l.qty || 0) === 0);
   return `<div id="do-lines-wrap" style="margin:14px 0">
-    <div class="form-label" style="margin-bottom:8px;font-size:13px;font-weight:700">Daftar Barang</div>
+    <div class="form-label" style="margin-bottom:8px;font-size:.8125rem;font-weight:700">Daftar Barang</div>
     ${
       hasPartial
-        ? `<div style="font-size:11px;color:var(--warning);margin-bottom:6px;padding:6px 10px;
+        ? `<div style="font-size:.75rem;color:var(--warning);margin-bottom:6px;padding:6px 10px;
         background:rgba(255,159,10,.1);border-radius:6px;border:1px solid rgba(255,159,10,.3)">
         SO ini sudah dikirim sebagian — qty di bawah adalah <strong>sisa belum terkirim</strong>.
       </div>`
@@ -5184,7 +5184,7 @@ function _doLinesTable(lines) {
     }
     ${
       allZero
-        ? `<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:6px 10px;
+        ? `<div style="font-size:.75rem;color:var(--danger);margin-bottom:6px;padding:6px 10px;
         background:rgba(255,59,48,.1);border-radius:6px;border:1px solid rgba(255,59,48,.3)">
         ✗ Semua item sudah terkirim penuh dari SO ini.
       </div>`
@@ -5194,10 +5194,10 @@ function _doLinesTable(lines) {
       <table style="width:100%;border-collapse:collapse">
         <thead style="background:var(--bg)">
           <tr>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
-            ${hasPartial ? `<th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:70px;border-bottom:1px solid var(--border);color:var(--muted)">Sudah Kirim</th>` : ''}
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:90px;border-bottom:1px solid var(--border)">Qty Kirim</th>
-            <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
+            ${hasPartial ? `<th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:70px;border-bottom:1px solid var(--border);color:var(--muted)">Sudah Kirim</th>` : ''}
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:90px;border-bottom:1px solid var(--border)">Qty Kirim</th>
+            <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
           </tr>
         </thead>
         <tbody>
@@ -5207,8 +5207,8 @@ function _doLinesTable(lines) {
               const original = l.qtyOriginal != null ? l.qtyOriginal : l.qty || 0;
               const qty = l.qty != null ? l.qty : original;
               return `<tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:7px 10px;font-size:12px;font-weight:600">${escapeHtml(l.itemName || '')}</td>
-              ${hasPartial ? `<td style="padding:7px 10px;font-size:12px;text-align:right;color:var(--muted)">${delivered}</td>` : ''}
+              <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${escapeHtml(l.itemName || '')}</td>
+              ${hasPartial ? `<td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${delivered}</td>` : ''}
               <td style="padding:5px 8px;text-align:right">
                 <input type="number" class="do-line-qty form-input"
                   data-item-id="${escapeHtml(l.itemId || '')}"
@@ -5216,9 +5216,9 @@ function _doLinesTable(lines) {
                   data-item-code="${escapeHtml(l.itemCode || '')}"
                   data-unit="${escapeHtml(l.unit || '')}"
                   value="${qty}" min="0" max="${original}"
-                  style="width:74px;padding:4px 6px;font-size:12px;text-align:right">
+                  style="width:74px;padding:4px 6px;font-size:.75rem;text-align:right">
               </td>
-              <td style="padding:7px 10px;font-size:11px;color:var(--muted)">${escapeHtml(l.unit || '')}</td>
+              <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${escapeHtml(l.unit || '')}</td>
             </tr>`;
             })
             .join('')}
@@ -5245,18 +5245,18 @@ function _doFormBody(o, opts) {
       <div class="form-group" style="grid-column:1/-1">
         <label class="form-label">
           Tipe Referensi
-          <span style="font-size:10px;color:var(--muted);font-weight:400">
+          <span style="font-size:.75rem;color:var(--muted);font-weight:400">
             — pilih dokumen sumber untuk auto-isi data &amp; barang
           </span>
         </label>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+          <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer">
             <input type="radio" name="do-ref-type" value="none" ${refType === 'none' ? 'checked' : ''}> Manual
           </label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+          <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer">
             <input type="radio" name="do-ref-type" value="SO" ${refType === 'SO' ? 'checked' : ''}> Sales Order
           </label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+          <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer">
             <input type="radio" name="do-ref-type" value="PO" ${refType === 'PO' ? 'checked' : ''}> Purchase Order
           </label>
         </div>
@@ -5314,13 +5314,13 @@ function _doFormBody(o, opts) {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">No. PO Customer <span style="font-size:10px;color:var(--muted);font-weight:400">(untuk Surat Jalan)</span></label>
+        <label class="form-label">No. PO Customer <span style="font-size:.75rem;color:var(--muted);font-weight:400">(untuk Surat Jalan)</span></label>
         <input class="form-input" id="do-customer-po" type="text"
           value="${escapeHtml(cur.customerPO || '')}"
           placeholder="PO/CUST/2026/...">
       </div>
       <div class="form-group">
-        <label class="form-label">Catatan <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <label class="form-label">Catatan <span style="font-size:.75rem;color:var(--muted);font-weight:400">(opsional)</span></label>
         <textarea class="form-input" id="do-notes" rows="1"
           placeholder="Catatan pengiriman...">${escapeHtml(cur.notes || '')}</textarea>
       </div>
@@ -5657,7 +5657,7 @@ function viewDO(id) {
   // Make the DO's origin explicit: it is created either from a PO (purchase
   // delivery) or an SO (sales delivery), or stands alone with no reference.
   function _srcTag(text, color, bg, border) {
-    return `<span style="display:inline-block;font-size:9px;font-weight:800;color:${color};background:${bg};border:1px solid ${border};border-radius:99px;padding:1px 7px;margin-right:6px;vertical-align:middle">${text}</span>`;
+    return `<span style="display:inline-block;font-size:.75rem;font-weight:800;color:${color};background:${bg};border:1px solid ${border};border-radius:99px;padding:1px 7px;margin-right:6px;vertical-align:middle">${text}</span>`;
   }
   const refRow = o.poId
     ? detailRow('Dibuat dari', _srcTag('DARI PO', 'var(--warning)', 'var(--warning-bg)', 'transparent') + poRefHtml)
@@ -5676,18 +5676,18 @@ function viewDO(id) {
           <table style="width:100%;border-collapse:collapse">
             <thead style="background:var(--bg)">
               <tr>
-                <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
-                <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;width:60px;border-bottom:1px solid var(--border)">Qty</th>
-                <th style="padding:7px 10px;font-size:11px;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
+                <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
+                <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:60px;border-bottom:1px solid var(--border)">Qty</th>
+                <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:46px;border-bottom:1px solid var(--border)">Sat.</th>
               </tr>
             </thead>
             <tbody>
               ${viewLines
                 .map(
                   l => `<tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:7px 10px;font-size:12px;font-weight:600">${escapeHtml(l.itemName || '')}</td>
-                <td style="padding:7px 10px;font-size:12px;text-align:right">${l.qty || 0}</td>
-                <td style="padding:7px 10px;font-size:11px;color:var(--muted)">${escapeHtml(l.unit || '')}</td>
+                <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${escapeHtml(l.itemName || '')}</td>
+                <td style="padding:7px 10px;font-size:.75rem;text-align:right">${l.qty || 0}</td>
+                <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${escapeHtml(l.unit || '')}</td>
               </tr>`
                 )
                 .join('')}
@@ -5710,7 +5710,7 @@ function viewDO(id) {
         'Tujuan',
         escapeHtml(o.destination) +
           (o.destChanged
-            ? ` <span style="display:inline-block;font-size:9px;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px">DIUBAH</span>`
+            ? ` <span style="display:inline-block;font-size:.75rem;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px">DIUBAH</span>`
             : '')
       )}
       ${o.destChanged && o.destOriginal ? detailRow('Tujuan Asal', escapeHtml(o.destOriginal)) : ''}
@@ -5762,7 +5762,7 @@ function showBulkSuratJalan(doId) {
   openModal(
     'Bulk Surat Jalan — Bagi per Truck',
     `
-    <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px;font-size:12px">
+    <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px;font-size:.75rem">
       <div style="font-weight:700;margin-bottom:4px">Referensi: ${escapeHtml(docNum(o.number, o.id))} ${o.soId ? '→ ' + escapeHtml(o.soId) : ''} ${o.poId ? '→ ' + escapeHtml(o.poId) : ''}</div>
       <div>Pelanggan: <strong>${escapeHtml(o.customer)}</strong></div>
       <div>Barang: <strong>${escapeHtml(itemNames)}</strong></div>
@@ -5777,7 +5777,7 @@ function showBulkSuratJalan(doId) {
       <div class="form-group">
         <label class="form-label">Jumlah Trip</label>
         <input class="form-input" id="bulk-trip-count" type="number" readonly
-          style="background:var(--bg);font-weight:700;font-size:16px" value="0">
+          style="background:var(--bg);font-weight:700;font-size:1rem" value="0">
       </div>
     </div>
     <div class="form-row">
@@ -5788,13 +5788,13 @@ function showBulkSuratJalan(doId) {
           placeholder="SJ-26-039">
       </div>
       <div class="form-group">
-        <label class="form-label">No. PO Customer <span style="font-size:10px;color:var(--muted)">(opsional)</span></label>
+        <label class="form-label">No. PO Customer <span style="font-size:.75rem;color:var(--muted)">(opsional)</span></label>
         <input class="form-input" id="bulk-cust-po" type="text"
           value="${escapeHtml(o.customerPO || '')}"
           placeholder="PO/CUST/2026/...">
       </div>
     </div>
-    <div id="bulk-preview" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    <div id="bulk-preview" style="margin-top:10px;font-size:.75rem;color:var(--muted)"></div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
      <button class="btn" id="bulkExportBtn" disabled>Download Excel</button>`
@@ -6163,14 +6163,14 @@ function showAddSO() {
         <input class="form-input" id="so-customer" type="text"
           placeholder="Nama pelanggan" list="so-cust-list" autocomplete="off">
         <datalist id="so-cust-list">${custOpts}</datalist>
-        <div id="so-cust-hint" style="font-size:10px;margin-top:3px;min-height:14px"></div>
+        <div id="so-cust-hint" style="font-size:.75rem;margin-top:3px;min-height:14px"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Tanggal</label>
         <input class="form-input" id="so-date" type="date" value="${today()}">
       </div>
       <div class="form-group">
-        <label class="form-label">Jatuh Tempo <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <label class="form-label">Jatuh Tempo <span style="font-size:.75rem;color:var(--muted);font-weight:400">(opsional)</span></label>
         <input class="form-input" id="so-due-date" type="date">
       </div>
       <div class="form-group">
@@ -6302,14 +6302,14 @@ function editSO(id) {
         <input class="form-input" id="so-customer" type="text"
           value="${escapeHtml(o.customer)}" list="so-cust-list" autocomplete="off">
         <datalist id="so-cust-list">${custOpts}</datalist>
-        <div id="so-cust-hint" style="font-size:10px;margin-top:3px;min-height:14px"></div>
+        <div id="so-cust-hint" style="font-size:.75rem;margin-top:3px;min-height:14px"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Tanggal</label>
         <input class="form-input" id="so-date" type="date" value="${escapeHtml(o.date)}">
       </div>
       <div class="form-group">
-        <label class="form-label">Jatuh Tempo <span style="font-size:10px;color:var(--muted);font-weight:400">(opsional)</span></label>
+        <label class="form-label">Jatuh Tempo <span style="font-size:.75rem;color:var(--muted);font-weight:400">(opsional)</span></label>
         <input class="form-input" id="so-due-date" type="date" value="${escapeHtml(o.dueDate || '')}">
       </div>
       <div class="form-group">

@@ -70,7 +70,7 @@
   var DP_METHODS = ['Transfer BCA', 'Transfer Mandiri', 'Tunai'];
   function methodSelectHTML(id, label) {
     return (
-      '<label style="font-size:12px;font-weight:700">' +
+      '<label style="font-size:.75rem;font-weight:700">' +
       esc(label) +
       '<select id="' +
       id +
@@ -252,10 +252,10 @@
         var remaining = orderTotal - allDPForOrder;
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(d.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(d.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
@@ -267,10 +267,10 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(d.amount) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:11px">' +
+          '<td class="td-p" style="text-align:right;font-size:.75rem">' +
           money(orderTotal) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:11px;font-weight:700;color:' +
+          '<td class="td-p" style="text-align:right;font-size:.75rem;font-weight:700;color:' +
           (remaining > 0 ? 'var(--danger)' : 'var(--success)') + '">' +
           money(remaining) +
           '</td>' +
@@ -366,15 +366,15 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Sales Order<select id="sdp-so" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Sales Order<select id="sdp-so" class="form-select" style="width:100%;margin-top:4px">' +
       (opts || '<option value="">Tidak ada SO aktif</option>') +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Tanggal<input id="sdp-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tanggal<input id="sdp-date" class="form-input" type="date" value="' +
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Jumlah DP<input id="sdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Jumlah DP<input id="sdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
       methodSelectHTML('sdp-method', 'Diterima di') +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="sdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="sdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(
@@ -446,10 +446,10 @@
         var remaining = orderTotal - allDPForOrder;
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(d.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(d.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
@@ -461,10 +461,10 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(d.amount) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:11px">' +
+          '<td class="td-p" style="text-align:right;font-size:.75rem">' +
           money(orderTotal) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:11px;font-weight:700;color:' +
+          '<td class="td-p" style="text-align:right;font-size:.75rem;font-weight:700;color:' +
           (remaining > 0 ? 'var(--danger)' : 'var(--success)') + '">' +
           money(remaining) +
           '</td>' +
@@ -549,15 +549,15 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Purchase Order<select id="pdp-po" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Purchase Order<select id="pdp-po" class="form-select" style="width:100%;margin-top:4px">' +
       (opts || '<option value="">Tidak ada PO aktif</option>') +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Tanggal<input id="pdp-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tanggal<input id="pdp-date" class="form-input" type="date" value="' +
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Jumlah DP<input id="pdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Jumlah DP<input id="pdp-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
       methodSelectHTML('pdp-method', 'Dibayar dari') +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="pdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="pdp-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(
@@ -646,12 +646,12 @@
           Math.min(pct, 100) +
           '%;background:' +
           color +
-          ';border-radius:4px"></div></div><span style="font-size:11px;font-weight:700;color:' +
+          ';border-radius:4px"></div></div><span style="font-size:.75rem;font-weight:700;color:' +
           color +
           '">' +
           pct +
           '%</span></div></td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(t.notes || '—') +
           '</td>' +
           '<td class="td-p">' +
@@ -693,16 +693,16 @@
     var t = existing || {};
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Periode<input id="st-period" class="form-input" type="month" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Periode<input id="st-period" class="form-input" type="month" value="' +
       esc(t.period || thisMonth()) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Kategori (opsional)<input id="st-cat" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Kategori (opsional)<input id="st-cat" class="form-input" value="' +
       esc(t.category || '') +
       '" placeholder="Semua" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Target Penjualan (Rp)<input id="st-target" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Target Penjualan (Rp)<input id="st-target" class="form-input" type="number" min="0" value="' +
       (t.target || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="st-notes" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="st-notes" class="form-input" value="' +
       esc(t.notes || '') +
       '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
@@ -771,10 +771,10 @@
           '<tr data-action="viewReceipt" data-id="' +
           esc(r.id) +
           '">' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(r.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(r.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
@@ -872,18 +872,18 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Purchase Order<select id="ri-po" class="form-select" style="width:100%;margin-top:4px" data-action="riSelectPO">' +
+      '<label style="font-size:.75rem;font-weight:700">Purchase Order<select id="ri-po" class="form-select" style="width:100%;margin-top:4px" data-action="riSelectPO">' +
       (opts || '<option value="">Tidak ada PO aktif</option>') +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Tanggal Terima<input id="ri-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tanggal Terima<input id="ri-date" class="form-input" type="date" value="' +
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="ri-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="ri-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '<div id="ri-lines" style="background:var(--bg);border-radius:8px;padding:12px">' +
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Item dari PO</div>' +
-      '<div style="font-size:11px;color:var(--muted)">Pilih PO untuk melihat daftar item</div>' +
+      '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Item dari PO</div>' +
+      '<div style="font-size:.75rem;color:var(--muted)">Pilih PO untuk melihat daftar item</div>' +
       '</div>' +
-      '<label style="font-size:12px"><input type="checkbox" id="ri-post" checked> Langsung update stok</label>' +
+      '<label style="font-size:.75rem"><input type="checkbox" id="ri-post" checked> Langsung update stok</label>' +
       '</div>';
 
     modal(
@@ -1010,30 +1010,30 @@
     var lines = po.lines && po.lines.length ? po.lines : po.items || [];
     if (lines.length === 0) {
       container.innerHTML =
-        '<div style="font-size:12px;color:var(--muted)">PO tidak memiliki item.</div>';
+        '<div style="font-size:.75rem;color:var(--muted)">PO tidak memiliki item.</div>';
       return;
     }
 
     var got = receivedQtyMap(poId);
     var html =
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Barang dari PO ' +
+      '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Barang dari PO ' +
       esc(po.number || poId) +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr><th style="text-align:left;font-size:11px;padding:4px 6px">Barang</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:11px;padding:4px 6px">Sudah diterima</th><th style="text-align:right;font-size:11px;padding:4px 6px">Qty Terima</th></tr></thead>' +
+      '<thead><tr><th style="text-align:left;font-size:.75rem;padding:4px 6px">Barang</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Sudah diterima</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Qty Terima</th></tr></thead>' +
       '<tbody>';
     lines.forEach(function (l) {
       var ordered = Number(l.qty) || 0;
       var done = got[String(l.itemId)] || 0;
       var open = Math.max(0, ordered - done);
       html +=
-        '<tr><td style="padding:4px 6px;font-size:12px">' +
+        '<tr><td style="padding:4px 6px;font-size:.75rem">' +
         esc(l.itemName || l.itemId) +
         '</td>' +
-        '<td style="padding:4px 6px;text-align:right;font-size:12px">' +
+        '<td style="padding:4px 6px;text-align:right;font-size:.75rem">' +
         ordered +
         '</td>' +
-        '<td style="padding:4px 6px;text-align:right;font-size:12px;color:var(--muted)">' +
+        '<td style="padding:4px 6px;text-align:right;font-size:.75rem;color:var(--muted)">' +
         (done || '—') +
         '</td>' +
         '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" step="any" max="' +
@@ -1046,7 +1046,7 @@
         esc(l.itemName || '') +
         '"' +
         (open <= 0 ? ' disabled' : '') +
-        ' style="width:90px;font-size:12px;padding:4px 6px;text-align:right"></td>' +
+        ' style="width:90px;font-size:.75rem;padding:4px 6px;text-align:right"></td>' +
         '</tr>';
     });
     html += '</tbody></table></div>';
@@ -1123,16 +1123,16 @@
           '<td class="td-p">' +
           esc(p.itemName) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(p.itemCode || '—') +
           '</td>' +
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(p.price) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(p.unit || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(p.effectiveDate || '—') +
           '</td>' +
           '<td class="td-p">' +
@@ -1234,16 +1234,16 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Supplier<select id="sp-sup" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Supplier<select id="sp-sup" class="form-select" style="width:100%;margin-top:4px">' +
       supOpts +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Item<select id="sp-item" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Item<select id="sp-item" class="form-select" style="width:100%;margin-top:4px">' +
       itemOpts +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Harga<input id="sp-price" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Harga<input id="sp-price" class="form-input" type="number" min="0" value="' +
       (p.price || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Berlaku Sejak<input id="sp-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Berlaku Sejak<input id="sp-date" class="form-input" type="date" value="' +
       esc(p.effectiveDate || today()) +
       '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
@@ -1411,14 +1411,14 @@
               var w = i.weighing || {};
               var wInfo =
                 w.suratJalanQty || w.grossQty || w.netQty
-                  ? ' <span style="color:var(--muted);font-size:11px">(SJ: ' +
+                  ? ' <span style="color:var(--muted);font-size:.75rem">(SJ: ' +
                     (w.suratJalanQty || 0) +
                     ', Netto: ' +
                     (w.netQty || 0) +
                     ')</span>'
                   : '';
               return (
-                '<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+                '<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:.75rem">' +
                 esc(i.itemName) +
                 ' — Qty: <strong>' +
                 i.qty +

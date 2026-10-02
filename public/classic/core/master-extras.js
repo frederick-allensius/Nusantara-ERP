@@ -52,7 +52,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  EMPLOYEE
@@ -94,28 +94,28 @@
             var sc = (statMap[e.status] || 'var(--surface-sunken)|var(--text-secondary)').split('|');
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(e.id) +
               '</td>' +
               '<td class="td-p" style="font-weight:700">' +
               esc(e.name) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.position || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.department || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.phone || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.email || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.joinDate || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:4px;background:' +
               sc[0] +
               ';color:' +
               sc[1] +
@@ -131,10 +131,10 @@
               ) +
               '</span></td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="editEmpM" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editEmpM" data-id="' +
               esc(e.id) +
               '">Edit</button> ' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delEmpM" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delEmpM" data-id="' +
               esc(e.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -327,29 +327,29 @@
               '<td class="td-p" style="font-weight:700">' +
               esc(c.name) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(c.company || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(c.position || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(c.phone || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(c.email || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(c.type || '—') +
               '</span></td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
               esc(c.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="editContact" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editContact" data-id="' +
               esc(c.id) +
               '">Edit</button> ' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delContact" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delContact" data-id="' +
               esc(c.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -507,7 +507,7 @@
             count +
             ' pelanggan</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delCustCat" data-idx="' +
+            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delCustCat" data-idx="' +
             i +
             '">Hapus</button>' +
             '</td></tr>'
@@ -527,10 +527,10 @@
             }).length;
             return (
               '<div class="card" style="flex:0 0 auto;padding:14px 20px;text-align:center;min-width:120px">' +
-              '<div style="font-size:22px;font-weight:800">' +
+              '<div style="font-size:1.375rem;font-weight:800">' +
               count +
               '</div>' +
-              '<div style="font-size:11px;color:var(--muted);margin-top:2px">' +
+              '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
               esc(c) +
               '</div></div>'
             );
@@ -611,7 +611,7 @@
             count +
             ' supplier</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delSuppCat" data-idx="' +
+            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delSuppCat" data-idx="' +
             i +
             '">Hapus</button>' +
             '</td></tr>'
@@ -631,10 +631,10 @@
             }).length;
             return (
               '<div class="card" style="flex:0 0 auto;padding:14px 20px;text-align:center;min-width:120px">' +
-              '<div style="font-size:22px;font-weight:800">' +
+              '<div style="font-size:1.375rem;font-weight:800">' +
               count +
               '</div>' +
-              '<div style="font-size:11px;color:var(--muted);margin-top:2px">' +
+              '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
               esc(c) +
               '</div></div>'
             );

@@ -53,7 +53,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  ITEM UNIT  (DB.settings.units — string array)
@@ -74,7 +74,7 @@
           }).length +
           ' item</td>' +
           '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delUnit" data-idx="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delUnit" data-idx="' +
           i +
           '">Hapus</button>' +
           '</td></tr>'
@@ -161,7 +161,7 @@
           count +
           ' item</td>' +
           '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delItemCat" data-idx="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delItemCat" data-idx="' +
           i +
           '">Hapus</button>' +
           '</td></tr>'
@@ -239,7 +239,7 @@
               count +
               ' item</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delItemBrand" data-idx="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delItemBrand" data-idx="' +
               i +
               '">Hapus</button>' +
               '</td></tr>'
@@ -318,47 +318,47 @@
             var actions = '';
             if (r.status === 'Draft' || r.status === 'Pending') {
               actions +=
-                '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="approveIR" data-id="' +
+                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="approveIR" data-id="' +
                 esc(r.id) +
                 '">Setujui</button> ' +
-                '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="rejectIR" data-id="' +
+                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="rejectIR" data-id="' +
                 esc(r.id) +
                 '">Tolak</button> ';
             } else if (r.status === 'Approved') {
               actions +=
-                '<button class="btn" style="font-size:11px;padding:3px 10px;background:var(--primary)" data-action="createPOFromIR" data-id="' +
+                '<button class="btn" style="font-size:.75rem;padding:3px 10px;background:var(--primary)" data-action="createPOFromIR" data-id="' +
                 esc(r.id) +
                 '">Buat PO</button> ';
             } else if (r.status === 'PO Dibuat' && r.poId) {
               actions +=
-                '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--primary)" data-action="viewPOFromIR" data-id="' +
+                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--primary)" data-action="viewPOFromIR" data-id="' +
                 esc(r.poId) +
                 '">Lihat PO</button> ';
             }
             actions +=
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delIR" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delIR" data-id="' +
               esc(r.id) +
               '">Hapus</button>';
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(r.id) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(r.requestedBy || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(r.date || '') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               itemCount +
               ' item</td>' +
               '<td class="td-p">' +
               window.badge(r.status || 'Draft') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(r.notes || '') +
-              (r.poId ? ' <span style="font-size:10px;color:var(--primary)">→ ' + esc(r.poId) + '</span>' : '') +
+              (r.poId ? ' <span style="font-size:.75rem;color:var(--primary)">→ ' + esc(r.poId) + '</span>' : '') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
               actions +
@@ -410,11 +410,11 @@
       .map(function (it) {
         return (
           '<tr>' +
-          '<td style="padding:6px 10px;font-size:12px">' + esc(it.itemName || it.itemId) + '</td>' +
-          '<td style="padding:6px 10px;font-size:12px;text-align:center">' + esc(it.qty) + '</td>' +
+          '<td style="padding:6px 10px;font-size:.75rem">' + esc(it.itemName || it.itemId) + '</td>' +
+          '<td style="padding:6px 10px;font-size:.75rem;text-align:center">' + esc(it.qty) + '</td>' +
           '<td style="padding:6px 10px"><input class="form-input ir-price" type="number" min="0" value="0" ' +
           'data-item-id="' + esc(it.itemId) + '" data-item-name="' + esc(it.itemName || it.itemId) + '" ' +
-          'data-qty="' + esc(it.qty) + '" style="width:120px;font-size:12px" placeholder="Harga satuan"></td>' +
+          'data-qty="' + esc(it.qty) + '" style="width:120px;font-size:.75rem" placeholder="Harga satuan"></td>' +
           '</tr>'
         );
       })
@@ -428,7 +428,7 @@
         '<datalist id="ir-po-supp-list">' + suppOpts + '</datalist></div>' +
         '<div class="form-group"><label class="form-label">Tanggal PO</label>' +
         '<input class="form-input" id="ir-po-date" type="date" value="' + today() + '"></div></div>' +
-        '<div style="font-size:12px;font-weight:700;margin:10px 0 6px">Item dari IR <span style="color:var(--muted);font-weight:400">(isi harga satuan)</span></div>' +
+        '<div style="font-size:.75rem;font-weight:700;margin:10px 0 6px">Item dari IR <span style="color:var(--muted);font-weight:400">(isi harga satuan)</span></div>' +
         '<table style="width:100%;border-collapse:collapse;margin-bottom:4px">' +
         '<thead><tr>' +
         '<th style="' + TH + '">Item</th>' +
@@ -523,11 +523,11 @@
         '<div class="form-group"><label class="form-label">Item yang Diminta</label>' +
         '<div id="ir-lines-wrap">' +
         '<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">' +
-        '<select class="form-select ir-item-sel" style="flex:1;font-size:12px"><option value="">— Pilih Item —</option>' +
+        '<select class="form-select ir-item-sel" style="flex:1;font-size:.75rem"><option value="">— Pilih Item —</option>' +
         itemOpts +
         '</select>' +
-        '<input class="form-input ir-item-qty" type="number" min="1" value="1" style="width:80px;font-size:12px" placeholder="Qty">' +
-        '<button type="button" class="btn-ghost" data-action="addIRLine" style="white-space:nowrap;font-size:12px">+ Baris</button>' +
+        '<input class="form-input ir-item-qty" type="number" min="1" value="1" style="width:80px;font-size:.75rem" placeholder="Qty">' +
+        '<button type="button" class="btn-ghost" data-action="addIRLine" style="white-space:nowrap;font-size:.75rem">+ Baris</button>' +
         '</div></div></div>' +
         '<div class="form-group"><label class="form-label">Catatan</label>' +
         '<input class="form-input" id="ir-notes" placeholder="Keperluan / keterangan (opsional)"></div>',
@@ -594,19 +594,19 @@
             }, 0);
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(j.id) +
               '</td>' +
               '<td class="td-p" style="font-weight:600">' +
               esc(j.name) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.customer || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.startDate || '') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.endDate || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:right;font-weight:700">' +
@@ -616,10 +616,10 @@
               window.badge(j.status || 'Open') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="viewJC" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="viewJC" data-id="' +
               esc(j.id) +
               '">Detail</button>' +
-              ' <button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delJC" data-id="' +
+              ' <button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delJC" data-id="' +
               esc(j.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -734,10 +734,10 @@
       (j.costs || [])
         .map(function (c, i) {
           return (
-            '<tr><td class="td-p" style="font-size:12px">' +
+            '<tr><td class="td-p" style="font-size:.75rem">' +
             esc(c.date) +
             '</td>' +
-            '<td class="td-p" style="font-size:12px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(c.category || '—') +
             '</td>' +
             '<td class="td-p">' +
@@ -747,7 +747,7 @@
             money(c.amount) +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:11px;padding:2px 6px;color:var(--danger)" data-action="delJCCost" data-jcid="' +
+            '<button class="btn-ghost" style="font-size:.75rem;padding:2px 6px;color:var(--danger)" data-action="delJCCost" data-jcid="' +
             esc(id) +
             '" data-idx="' +
             i +
@@ -756,11 +756,11 @@
           );
         })
         .join('') ||
-      '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Belum ada entri biaya.</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-size:.75rem">Belum ada entri biaya.</td></tr>';
 
     modal(
       'Job Costing — ' + j.id,
-      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px">' +
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:.75rem">' +
         '<div><span style="color:var(--muted)">Pekerjaan:</span> <strong>' +
         esc(j.name) +
         '</strong></div>' +
@@ -775,7 +775,7 @@
         '<div><span style="color:var(--muted)">Total:</span> <strong>' +
         money(totalCost) +
         '</strong></div></div>' +
-        '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Tambah Biaya</div>' +
+        '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Tambah Biaya</div>' +
         '<div class="form-row" style="margin-bottom:12px">' +
         '<div class="form-group"><label class="form-label">Tanggal</label><input class="form-input" id="jcc-date" type="date" value="' +
         today() +
@@ -790,10 +790,10 @@
         esc(id) +
         '">+ Tambah</button></div></div>' +
         '<table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Tgl</th>' +
-        '<th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Kategori</th>' +
-        '<th style="text-align:left;padding:8px;font-size:11px;color:var(--muted)">Keterangan</th>' +
-        '<th style="text-align:right;padding:8px;font-size:11px;color:var(--muted)">Jumlah</th><th></th></tr></thead>' +
+        '<thead><tr><th style="text-align:left;padding:8px;font-size:.75rem;color:var(--muted)">Tgl</th>' +
+        '<th style="text-align:left;padding:8px;font-size:.75rem;color:var(--muted)">Kategori</th>' +
+        '<th style="text-align:left;padding:8px;font-size:.75rem;color:var(--muted)">Keterangan</th>' +
+        '<th style="text-align:right;padding:8px;font-size:.75rem;color:var(--muted)">Jumlah</th><th></th></tr></thead>' +
         '<tbody id="jcc-rows">' +
         costRows +
         '</tbody></table>',
@@ -898,11 +898,11 @@
         var row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:center';
         row.innerHTML =
-          '<select class="form-select ir-item-sel" style="flex:1;font-size:12px"><option value="">— Pilih Item —</option>' +
+          '<select class="form-select ir-item-sel" style="flex:1;font-size:.75rem"><option value="">— Pilih Item —</option>' +
           opts +
           '</select>' +
-          '<input class="form-input ir-item-qty" type="number" min="1" value="1" style="width:80px;font-size:12px">' +
-          '<button type="button" class="btn-ghost" data-action="removeIRLine" style="font-size:18px;padding:0 6px;line-height:1">×</button>';
+          '<input class="form-input ir-item-qty" type="number" min="1" value="1" style="width:80px;font-size:.75rem">' +
+          '<button type="button" class="btn-ghost" data-action="removeIRLine" style="font-size:1.125rem;padding:0 6px;line-height:1">×</button>';
         wrap.appendChild(row);
         break;
       }

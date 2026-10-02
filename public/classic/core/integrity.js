@@ -370,15 +370,15 @@
     return `
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700">Integritas Data</div>
+      <div style="font-size:.8125rem;font-weight:700">Integritas Data</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-ghost" data-action="igPeriodLock" style="font-size:11px;padding:4px 10px">Kunci Periode</button>
-        <button class="btn-ghost" data-action="igAuditLog" style="font-size:11px;padding:4px 10px">Audit Log (${log.length})</button>
-        <button class="btn-ghost" data-action="igVerifyLedger" style="font-size:11px;padding:4px 10px">Cek Buku Besar</button>
+        <button class="btn-ghost" data-action="igPeriodLock" style="font-size:.75rem;padding:4px 10px">Kunci Periode</button>
+        <button class="btn-ghost" data-action="igAuditLog" style="font-size:.75rem;padding:4px 10px">Audit Log (${log.length})</button>
+        <button class="btn-ghost" data-action="igVerifyLedger" style="font-size:.75rem;padding:4px 10px">Cek Buku Besar</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);padding:7px 0;border-bottom:1px solid var(--border)">Kunci periode: ${lockBadge}</div>
-    <div style="font-size:11px;color:var(--muted);padding:7px 0">Aktivitas terakhir: ${lastLine}</div>
+    <div style="font-size:.75rem;color:var(--muted);padding:7px 0;border-bottom:1px solid var(--border)">Kunci periode: ${lockBadge}</div>
+    <div style="font-size:.75rem;color:var(--muted);padding:7px 0">Aktivitas terakhir: ${lastLine}</div>
   </div>`;
   }
 
@@ -387,11 +387,11 @@
     const lock = lockedThrough();
     window.openModal(
       'Kunci Periode Akuntansi',
-      `<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+      `<p style="font-size:.75rem;color:var(--muted);margin-bottom:12px;line-height:1.5">
         Transaksi bertanggal pada atau sebelum tanggal kunci tidak bisa ditambah,
         diubah, atau dihapus. Perubahan yang melanggar otomatis dibatalkan.
       </p>
-      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kunci sampai dengan tanggal</label>
+      <label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:6px">Kunci sampai dengan tanggal</label>
       <input type="date" id="igLockDate" value="${esc(lock)}" style="width:100%">`,
       `${lock ? '<button class="btn-ghost" id="igLockClear">Buka Kunci</button>' : ''}
        <button class="btn-ghost" data-action="closeModal">Batal</button>
@@ -451,14 +451,14 @@
     window.openModal(
       'Audit Log',
       log.length === 0
-        ? '<p style="font-size:12px;color:var(--muted)">Belum ada aktivitas tercatat. Setiap tambah/ubah/hapus dokumen akan muncul di sini.</p>'
+        ? '<p style="font-size:.75rem;color:var(--muted)">Belum ada aktivitas tercatat. Setiap tambah/ubah/hapus dokumen akan muncul di sini.</p>'
         : `<div style="max-height:55vh;overflow:auto">
-            <table class="data-table" style="font-size:11px;width:100%">
+            <table class="data-table" style="font-size:.75rem;width:100%">
               <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Koleksi</th><th>Dokumen</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>
-          <p style="font-size:10px;color:var(--muted);margin-top:8px">Menampilkan ${log.length} aktivitas terakhir (maks. ${MAX_AUDIT} tersimpan, lokal di perangkat ini).</p>`,
+          <p style="font-size:.75rem;color:var(--muted);margin-top:8px">Menampilkan ${log.length} aktivitas terakhir (maks. ${MAX_AUDIT} tersimpan, lokal di perangkat ini).</p>`,
       '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
       true
     );
@@ -468,8 +468,8 @@
     const r = verifyLedger();
     const fmt = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
     const tbLine = r.trialBalance
-      ? `<div style="font-size:12px;padding:6px 0">Trial balance: D ${fmt(r.trialBalance.totalDebit)} / K ${fmt(r.trialBalance.totalCredit)} — ${r.trialBalance.balanced ? '<span style="color:var(--success);font-weight:700">Seimbang</span>' : '<span style="color:var(--danger);font-weight:700">TIDAK seimbang</span>'}</div>`
-      : '<div style="font-size:12px;padding:6px 0;color:var(--muted)">Trial balance: GL belum tersedia</div>';
+      ? `<div style="font-size:.75rem;padding:6px 0">Trial balance: D ${fmt(r.trialBalance.totalDebit)} / K ${fmt(r.trialBalance.totalCredit)} — ${r.trialBalance.balanced ? '<span style="color:var(--success);font-weight:700">Seimbang</span>' : '<span style="color:var(--danger);font-weight:700">TIDAK seimbang</span>'}</div>`
+      : '<div style="font-size:.75rem;padding:6px 0;color:var(--muted)">Trial balance: GL belum tersedia</div>';
     const badRows = r.unbalanced
       .slice(0, 50)
       .map(
@@ -479,14 +479,14 @@
       .join('');
     window.openModal(
       'Cek Buku Besar',
-      `<div style="font-size:13px;font-weight:700;color:${r.ok ? 'var(--success)' : 'var(--danger)'};margin-bottom:8px">
+      `<div style="font-size:.8125rem;font-weight:700;color:${r.ok ? 'var(--success)' : 'var(--danger)'};margin-bottom:8px">
         ${r.ok ? '✓ Semua jurnal seimbang' : '✗ Ditemukan masalah'}
       </div>
-      <div style="font-size:12px;padding:6px 0">Total jurnal diperiksa: ${r.journalCount}</div>
+      <div style="font-size:.75rem;padding:6px 0">Total jurnal diperiksa: ${r.journalCount}</div>
       ${tbLine}
       ${
         r.unbalanced.length > 0
-          ? `<table class="data-table" style="font-size:11px;width:100%;margin-top:8px">
+          ? `<table class="data-table" style="font-size:.75rem;width:100%;margin-top:8px">
               <thead><tr><th>Jurnal</th><th>Debit</th><th>Kredit</th></tr></thead>
               <tbody>${badRows}</tbody>
             </table>`

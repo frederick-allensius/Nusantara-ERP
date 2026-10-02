@@ -171,18 +171,18 @@
     var active = periodFrom || periodTo;
     return (
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
-      '<label style="font-size:11px;color:var(--muted)">Periode dari</label>' +
-      '<input type="date" class="form-input" style="padding:4px 8px;font-size:12px;width:138px"' +
+      '<label style="font-size:.75rem;color:var(--muted)">Periode dari</label>' +
+      '<input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"' +
       ' value="' +
       (periodFrom || '') +
       '" data-action="finPeriodFrom">' +
-      '<label style="font-size:11px;color:var(--muted)">s/d</label>' +
-      '<input type="date" class="form-input" style="padding:4px 8px;font-size:12px;width:138px"' +
+      '<label style="font-size:.75rem;color:var(--muted)">s/d</label>' +
+      '<input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"' +
       ' value="' +
       (periodTo || '') +
       '" data-action="finPeriodTo">' +
       (active
-        ? '<button class="btn-ghost" data-action="finPeriodClear" style="font-size:11px;padding:3px 8px">× Hapus</button>'
+        ? '<button class="btn-ghost" data-action="finPeriodClear" style="font-size:.75rem;padding:3px 8px">× Hapus</button>'
         : '') +
       '</div>'
     );
@@ -198,13 +198,13 @@
       total += val;
       rowsHtml +=
         '<tr style="border-bottom:1px solid var(--border)">' +
-        '<td style="padding:7px 10px;font-size:12px;font-family:monospace;color:var(--muted)">' +
+        '<td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">' +
         esc(r.no) +
         '</td>' +
-        '<td style="padding:7px 10px;font-size:12px">' +
+        '<td style="padding:7px 10px;font-size:.75rem">' +
         esc(r.name) +
         '</td>' +
-        '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600' +
+        '<td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600' +
         (val < 0 ? ';color:var(--danger)' : '') +
         '">' +
         money(val) +
@@ -213,12 +213,12 @@
     });
     if (rows.length === 0) {
       rowsHtml =
-        '<tr><td colspan="3" style="padding:10px;text-align:center;color:var(--muted);font-size:12px">Tidak ada data</td></tr>';
+        '<tr><td colspan="3" style="padding:10px;text-align:center;color:var(--muted);font-size:.75rem">Tidak ada data</td></tr>';
     }
     var totalColor = opts.totalColor || 'var(--text)';
     return (
       '<div style="margin-bottom:16px">' +
-      '<div style="font-size:13px;font-weight:700;padding:8px 10px;background:var(--bg);border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none">' +
+      '<div style="font-size:.8125rem;font-weight:700;padding:8px 10px;background:var(--bg);border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none">' +
       esc(title) +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-top:none">' +
@@ -226,10 +226,10 @@
       rowsHtml +
       '</tbody>' +
       '<tfoot><tr style="border-top:2px solid var(--border)">' +
-      '<td colspan="2" style="padding:8px 10px;font-size:12px;font-weight:800;text-align:right">Total ' +
+      '<td colspan="2" style="padding:8px 10px;font-size:.75rem;font-weight:800;text-align:right">Total ' +
       esc(title) +
       '</td>' +
-      '<td style="padding:8px 10px;font-size:13px;font-weight:800;text-align:right;color:' +
+      '<td style="padding:8px 10px;font-size:.8125rem;font-weight:800;text-align:right;color:' +
       totalColor +
       '">' +
       money(total) +
@@ -247,7 +247,7 @@
     var color = value >= 0 ? 'var(--success)' : 'var(--danger)';
     var marginHtml =
       typeof base === 'number' && base !== 0
-        ? '<span style="font-size:11px;color:var(--muted);font-weight:600;margin-left:10px">' +
+        ? '<span style="font-size:.75rem;color:var(--muted);font-weight:600;margin-left:10px">' +
           ((value / base) * 100).toFixed(1) +
           '% dari pendapatan</span>'
         : '';
@@ -258,11 +258,11 @@
         ';border-radius:10px;background:' +
         color +
         '10">' +
-        '<span style="font-size:15px;font-weight:800">' +
+        '<span style="font-size:.9375rem;font-weight:800">' +
         esc(label) +
         marginHtml +
         '</span>' +
-        '<span style="font-size:15px;font-weight:800;color:' +
+        '<span style="font-size:.9375rem;font-weight:800;color:' +
         color +
         '">' +
         money(value) +
@@ -271,11 +271,11 @@
     }
     return (
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-bottom:16px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">' +
-      '<span style="font-size:13px;font-weight:800">' +
+      '<span style="font-size:.8125rem;font-weight:800">' +
       esc(label) +
       marginHtml +
       '</span>' +
-      '<span style="font-size:13px;font-weight:800;color:' +
+      '<span style="font-size:.8125rem;font-weight:800;color:' +
       color +
       '">' +
       money(value) +
@@ -365,8 +365,8 @@
     return (
       stats +
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:4px">Laporan Laba Rugi (Multi-Langkah)</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">' +
+      '<div style="font-size:.875rem;font-weight:700;margin-bottom:4px">Laporan Laba Rugi (Multi-Langkah)</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-bottom:14px">' +
       (periodFrom || periodTo
         ? 'Periode ' + esc(periodFrom || '…') + ' s/d ' + esc(periodTo || '…')
         : 'Seluruh periode') +
@@ -489,37 +489,37 @@
     return (
       stats +
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:4px">Neraca (Balance Sheet)</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">Posisi per ' +
+      '<div style="font-size:.875rem;font-weight:700;margin-bottom:4px">Neraca (Balance Sheet)</div>' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-bottom:14px">Posisi per ' +
       esc(periodTo || 'hari ini') +
       ' · saldo kumulatif sejak awal pencatatan' +
       (periodFrom ? ' (tanggal mulai tidak dipakai untuk neraca)' : '') +
       '</div>' +
-      '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px">ASET</div>' +
+      '<div style="font-size:.8125rem;font-weight:700;color:var(--primary);margin-bottom:8px">ASET</div>' +
       (currentAssetRows.length > 0 ? sectionBlock('Aset Lancar', currentAssetRows) : '') +
       (nonCurrentAssetRows.length > 0
         ? sectionBlock('Aset Tetap & Lainnya', nonCurrentAssetRows)
         : '') +
       '<div style="display:flex;justify-content:flex-end;padding:10px 14px;margin-bottom:20px;border:2px solid var(--primary);border-radius:10px;background:rgba(59,130,246,0.15)">' +
-      '<span style="font-size:14px;font-weight:800;color:var(--text)">Total Aset: ' +
+      '<span style="font-size:.875rem;font-weight:800;color:var(--text)">Total Aset: ' +
       money(totalAssets) +
       '</span>' +
       '</div>' +
-      '<div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:8px">KEWAJIBAN</div>' +
+      '<div style="font-size:.8125rem;font-weight:700;color:var(--warning);margin-bottom:8px">KEWAJIBAN</div>' +
       (currentLiabRows.length > 0 ? sectionBlock('Kewajiban Lancar', currentLiabRows) : '') +
       (longTermLiabRows.length > 0
         ? sectionBlock('Kewajiban Jangka Panjang', longTermLiabRows)
         : '') +
-      '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;margin-top:20px">EKUITAS</div>' +
+      '<div style="font-size:.8125rem;font-weight:700;color:var(--success);margin-bottom:8px;margin-top:20px">EKUITAS</div>' +
       (equityRows.length > 0 ? sectionBlock('Modal', equityRows) : '') +
       (retainedEarnings !== 0
         ? '<div style="margin-bottom:16px">' +
-          '<div style="font-size:13px;font-weight:700;padding:8px 10px;background:var(--bg);border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none">Laba Periode Berjalan</div>' +
+          '<div style="font-size:.8125rem;font-weight:700;padding:8px 10px;background:var(--bg);border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none">Laba Periode Berjalan</div>' +
           '<table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-top:none">' +
           '<tbody><tr style="border-bottom:1px solid var(--border)">' +
-          '<td style="padding:7px 10px;font-size:12px;font-family:monospace;color:var(--muted)">—</td>' +
-          '<td style="padding:7px 10px;font-size:12px">Laba (Rugi) Periode Berjalan</td>' +
-          '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600;color:' +
+          '<td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">—</td>' +
+          '<td style="padding:7px 10px;font-size:.75rem">Laba (Rugi) Periode Berjalan</td>' +
+          '<td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600;color:' +
           (retainedEarnings >= 0 ? 'var(--success)' : 'var(--danger)') +
           '">' +
           money(retainedEarnings) +
@@ -527,13 +527,13 @@
           '</tr></tbody></table></div>'
         : '') +
       '<div style="display:flex;justify-content:flex-end;padding:10px 14px;margin-bottom:6px;border:2px solid var(--warning);border-radius:10px;background:rgba(245,158,11,0.15)">' +
-      '<span style="font-size:14px;font-weight:800;color:var(--text)">Total Kewajiban + Ekuitas: ' +
+      '<span style="font-size:.875rem;font-weight:800;color:var(--text)">Total Kewajiban + Ekuitas: ' +
       money(totalLiabEquity) +
       '</span>' +
       '</div>' +
       (balanced
         ? ''
-        : '<div style="padding:8px 12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--danger);margin-top:8px">' +
+        : '<div style="padding:8px 12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:.75rem;color:var(--danger);margin-top:8px">' +
           'Neraca tidak seimbang. Selisih: ' +
           money(Math.abs(totalAssets - totalLiabEquity)) +
           '. Periksa jurnal yang belum balanced.' +
@@ -685,31 +685,31 @@
         detailHtml =
           '<table style="width:100%;border-collapse:collapse;margin-top:8px">' +
           '<thead><tr style="background:var(--bg)">' +
-          '<th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:left">Tanggal</th>' +
-          '<th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:left">Keterangan</th>' +
-          '<th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:right">Masuk</th>' +
-          '<th style="padding:6px 10px;font-size:11px;font-weight:700;text-align:right">Keluar</th>' +
+          '<th style="padding:6px 10px;font-size:.75rem;font-weight:700;text-align:left">Tanggal</th>' +
+          '<th style="padding:6px 10px;font-size:.75rem;font-weight:700;text-align:left">Keterangan</th>' +
+          '<th style="padding:6px 10px;font-size:.75rem;font-weight:700;text-align:right">Masuk</th>' +
+          '<th style="padding:6px 10px;font-size:.75rem;font-weight:700;text-align:right">Keluar</th>' +
           '</tr></thead><tbody>';
         recent.forEach(function (d) {
           detailHtml +=
             '<tr style="border-bottom:1px solid var(--border)">' +
-            '<td style="padding:5px 10px;font-size:11px;color:var(--muted)">' +
+            '<td style="padding:5px 10px;font-size:.75rem;color:var(--muted)">' +
             esc(d.date || '') +
             '</td>' +
-            '<td style="padding:5px 10px;font-size:12px">' +
+            '<td style="padding:5px 10px;font-size:.75rem">' +
             esc(d.desc) +
             '</td>' +
-            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:var(--success);font-weight:600">' +
+            '<td style="padding:5px 10px;font-size:.75rem;text-align:right;color:var(--success);font-weight:600">' +
             (d.type === 'inflow' ? money(d.amount) : '') +
             '</td>' +
-            '<td style="padding:5px 10px;font-size:12px;text-align:right;color:var(--danger);font-weight:600">' +
+            '<td style="padding:5px 10px;font-size:.75rem;text-align:right;color:var(--danger);font-weight:600">' +
             (d.type === 'outflow' ? money(d.amount) : '') +
             '</td>' +
             '</tr>';
         });
         if (bucket.details.length > 10) {
           detailHtml +=
-            '<tr><td colspan="4" style="padding:6px 10px;font-size:11px;color:var(--muted);text-align:center">... dan ' +
+            '<tr><td colspan="4" style="padding:6px 10px;font-size:.75rem;color:var(--muted);text-align:center">... dan ' +
             (bucket.details.length - 10) +
             ' transaksi lainnya</td></tr>';
         }
@@ -726,18 +726,18 @@
         (recent.length > 0 ? '0 0' : '10px 10px') +
         '">' +
         '<div>' +
-        '<div style="font-size:13px;font-weight:700;color:' +
+        '<div style="font-size:.8125rem;font-weight:700;color:' +
         color +
         '">' +
         esc(title) +
         '</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">Masuk: ' +
+        '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">Masuk: ' +
         money(bucket.inflow) +
         ' · Keluar: ' +
         money(bucket.outflow) +
         '</div>' +
         '</div>' +
-        '<div style="font-size:15px;font-weight:800;color:' +
+        '<div style="font-size:.9375rem;font-weight:800;color:' +
         (net >= 0 ? 'var(--success)' : 'var(--danger)') +
         '">' +
         (net >= 0 ? '+' : '') +
@@ -761,9 +761,9 @@
     return (
       stats +
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Laporan Arus Kas (Cash Flow)</div>' +
+      '<div style="font-size:.875rem;font-weight:700;margin-bottom:14px">Laporan Arus Kas (Cash Flow)</div>' +
       (noData
-        ? '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Belum ada arus kas tercatat. Kas akan muncul setelah ada pembayaran (SO Paid / PO Paid) atau jurnal umum yang melibatkan akun kas.</div>'
+        ? '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8125rem">Belum ada arus kas tercatat. Kas akan muncul setelah ada pembayaran (SO Paid / PO Paid) atau jurnal umum yang melibatkan akun kas.</div>'
         : cfSection('Aktivitas Operasional', operating, 'var(--primary)') +
           cfSection('Aktivitas Investasi', investing, 'var(--chart-4)') +
           cfSection('Aktivitas Pendanaan', financing, 'var(--warning)') +
@@ -772,7 +772,7 @@
           ';border-radius:10px;background:' +
           (netTotal >= 0 ? 'var(--success)' : 'var(--danger)') +
           '10">' +
-          '<span style="font-size:15px;font-weight:800">Kenaikan (Penurunan) Kas Bersih: <span style="color:' +
+          '<span style="font-size:.9375rem;font-weight:800">Kenaikan (Penurunan) Kas Bersih: <span style="color:' +
           (netTotal >= 0 ? 'var(--success)' : 'var(--danger)') +
           '">' +
           money(netTotal) +
@@ -798,15 +798,15 @@
         esc(title) +
         '</title>' +
         '<style>body{font-family:system-ui,-apple-system,sans-serif;padding:20px;color:#222}' +
-        'table{width:100%;border-collapse:collapse}td,th{padding:6px 10px;border-bottom:1px solid #ddd;font-size:12px;text-align:left}' +
+        'table{width:100%;border-collapse:collapse}td,th{padding:6px 10px;border-bottom:1px solid #ddd;font-size:.75rem;text-align:left}' +
         '.card{border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:16px}' +
         '.btn,.btn-ghost{display:none}' +
         '@media print{body{padding:0}}</style>' +
         '</head><body>' +
-        '<h2 style="font-size:18px;margin-bottom:4px">' +
+        '<h2 style="font-size:1.125rem;margin-bottom:4px">' +
         esc(title) +
         '</h2>' +
-        '<div style="font-size:12px;color:#666;margin-bottom:16px">Dicetak: ' +
+        '<div style="font-size:.75rem;color:#666;margin-bottom:16px">Dicetak: ' +
         new Date().toLocaleDateString('id-ID') +
         (periodFrom || periodTo
           ? ' | Periode: ' + (periodFrom || '...') + ' s/d ' + (periodTo || '...')

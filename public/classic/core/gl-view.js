@@ -70,17 +70,17 @@
       : { rows: [], totalDebit: 0, totalCredit: 0, balanced: true };
     const rows =
       tb.rows.length === 0
-        ? `<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--muted);font-size:13px">
+        ? `<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--muted);font-size:.8125rem">
              Belum ada jurnal. Saldo akun terbentuk saat dokumen diposting atau jurnal umum dicatat.
            </td></tr>`
         : tb.rows
             .map(
               r => `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:7px 10px;font-size:12px;font-family:monospace;color:var(--muted)">${esc(r.no)}</td>
-          <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(r.name)}
-            <span style="font-size:10px;color:var(--muted);font-weight:400"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
-          <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600">${r.debit ? money(r.debit) : '—'}</td>
-          <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:600">${r.credit ? money(r.credit) : '—'}</td>
+          <td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(r.no)}</td>
+          <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${esc(r.name)}
+            <span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
+          <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600">${r.debit ? money(r.debit) : '—'}</td>
+          <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600">${r.credit ? money(r.credit) : '—'}</td>
         </tr>`
             )
             .join('');
@@ -101,20 +101,20 @@
         : ''
     }
     <div class="card">
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Neraca Saldo</div>
+      <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Neraca Saldo</div>
       <div class="table-wrap">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:var(--bg)">
-            <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left;width:90px">Kode</th>
-            <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Nama Akun</th>
-            <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:150px">Debit</th>
-            <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:150px">Kredit</th>
+            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kode</th>
+            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama Akun</th>
+            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:150px">Debit</th>
+            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:150px">Kredit</th>
           </tr></thead>
           <tbody>${rows}</tbody>
           <tfoot><tr style="border-top:2px solid var(--border)">
-            <td colspan="2" style="padding:9px 10px;font-size:12px;font-weight:800;text-align:right">TOTAL</td>
-            <td style="padding:9px 10px;font-size:13px;font-weight:800;text-align:right">${money(tb.totalDebit)}</td>
-            <td style="padding:9px 10px;font-size:13px;font-weight:800;text-align:right">${money(tb.totalCredit)}</td>
+            <td colspan="2" style="padding:9px 10px;font-size:.75rem;font-weight:800;text-align:right">TOTAL</td>
+            <td style="padding:9px 10px;font-size:.8125rem;font-weight:800;text-align:right">${money(tb.totalDebit)}</td>
+            <td style="padding:9px 10px;font-size:.8125rem;font-weight:800;text-align:right">${money(tb.totalCredit)}</td>
           </tr></tfoot>
         </table>
       </div>
@@ -164,25 +164,25 @@
         const lines = (j.lines || [])
           .map(
             l => `<tr>
-            <td style="padding:4px 10px;font-size:11px;font-family:monospace;color:var(--muted)">${esc(l.accountNo)}</td>
-            <td style="padding:4px 10px;font-size:12px">${esc(l.accountName)}${l.memo ? `<span style="color:var(--muted);font-size:10px"> · ${esc(l.memo)}</span>` : ''}</td>
-            <td style="padding:4px 10px;font-size:12px;text-align:right">${l.debit ? money(l.debit) : ''}</td>
-            <td style="padding:4px 10px;font-size:12px;text-align:right">${l.credit ? money(l.credit) : ''}</td>
+            <td style="padding:4px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(l.accountNo)}</td>
+            <td style="padding:4px 10px;font-size:.75rem">${esc(l.accountName)}${l.memo ? `<span style="color:var(--muted);font-size:.75rem"> · ${esc(l.memo)}</span>` : ''}</td>
+            <td style="padding:4px 10px;font-size:.75rem;text-align:right">${l.debit ? money(l.debit) : ''}</td>
+            <td style="padding:4px 10px;font-size:.75rem;text-align:right">${l.credit ? money(l.credit) : ''}</td>
           </tr>`
           )
           .join('');
         return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg)">
-            <div style="font-size:12px;font-weight:700">${esc(j.number || j.id)}
-              <span style="font-size:11px;color:var(--muted);font-weight:400"> · ${esc(src)}</span></div>
-            <div style="font-size:11px;color:var(--muted)">${esc(j.date || '')}</div>
+            <div style="font-size:.75rem;font-weight:700">${esc(j.number || j.id)}
+              <span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(src)}</span></div>
+            <div style="font-size:.75rem;color:var(--muted)">${esc(j.date || '')}</div>
           </div>
           <table style="width:100%;border-collapse:collapse">
             <tbody>${lines}</tbody>
             <tfoot><tr style="border-top:1px solid var(--border)">
-              <td colspan="2" style="padding:5px 10px;font-size:11px;font-weight:700;text-align:right;color:var(--muted)">Total</td>
-              <td style="padding:5px 10px;font-size:12px;font-weight:800;text-align:right">${money(j.totals ? j.totals.debit : 0)}</td>
-              <td style="padding:5px 10px;font-size:12px;font-weight:800;text-align:right">${money(j.totals ? j.totals.credit : 0)}</td>
+              <td colspan="2" style="padding:5px 10px;font-size:.75rem;font-weight:700;text-align:right;color:var(--muted)">Total</td>
+              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right">${money(j.totals ? j.totals.debit : 0)}</td>
+              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right">${money(j.totals ? j.totals.credit : 0)}</td>
             </tr></tfoot>
           </table>
         </div>`;
@@ -197,21 +197,21 @@
     const rows = chart
       .map(
         a => `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:7px 10px;font-size:12px;font-family:monospace;color:var(--muted)">${esc(a.no)}</td>
-        <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(a.name)}</td>
-        <td style="padding:7px 10px;font-size:11px;color:var(--muted)">${esc(TYPE_LABEL[a.type] || a.type)}</td>
-        <td style="padding:7px 10px;font-size:11px;text-align:right;color:var(--muted)">${esc(a.currency || 'IDR')}</td>
+        <td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(a.no)}</td>
+        <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${esc(a.name)}</td>
+        <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${esc(TYPE_LABEL[a.type] || a.type)}</td>
+        <td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${esc(a.currency || 'IDR')}</td>
       </tr>`
       )
       .join('');
     return `<div class="card">
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Bagan Akun (${chart.length})</div>
+      <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Bagan Akun (${chart.length})</div>
       <div class="table-wrap"><table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:var(--bg)">
-          <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left;width:90px">Kode</th>
-          <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Nama Akun</th>
-          <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left;width:170px">Tipe</th>
-          <th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:70px">Mata Uang</th>
+          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kode</th>
+          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama Akun</th>
+          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:170px">Tipe</th>
+          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:70px">Mata Uang</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
@@ -266,19 +266,19 @@
   function jvRowHTML() {
     return `<tr>
       <td style="padding:4px 6px">
-        <select class="form-select jv-acc" style="font-size:12px;padding:5px 8px;width:100%">
+        <select class="form-select jv-acc" style="font-size:.75rem;padding:5px 8px;width:100%">
           <option value="">— Pilih Akun —</option>${accountOptions('')}
         </select>
       </td>
       <td style="padding:4px 6px">
-        <input class="form-input jv-debit" type="number" min="0" value="0" style="font-size:12px;padding:5px 8px;width:120px">
+        <input class="form-input jv-debit" type="number" min="0" value="0" style="font-size:.75rem;padding:5px 8px;width:120px">
       </td>
       <td style="padding:4px 6px">
-        <input class="form-input jv-credit" type="number" min="0" value="0" style="font-size:12px;padding:5px 8px;width:120px">
+        <input class="form-input jv-credit" type="number" min="0" value="0" style="font-size:.75rem;padding:5px 8px;width:120px">
       </td>
       <td style="padding:4px 6px;text-align:center">
         <button type="button" class="jv-del" title="Hapus baris"
-          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button>
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.125rem;line-height:1">×</button>
       </td>
     </tr>`;
   }
@@ -304,19 +304,19 @@
       </div>
       <div style="margin-top:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="form-label" style="margin:0;font-size:13px;font-weight:700">Baris Jurnal</span>
-          <button type="button" class="btn-ghost" id="jv-add" style="font-size:11px;padding:4px 10px">+ Tambah Baris</button>
+          <span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Baris Jurnal</span>
+          <button type="button" class="btn-ghost" id="jv-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:var(--bg)">
-            <th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left">Akun</th>
-            <th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:130px">Debit</th>
-            <th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:130px">Kredit</th>
+            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Akun</th>
+            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Debit</th>
+            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Kredit</th>
             <th style="width:30px"></th>
           </tr></thead>
           <tbody id="jv-body">${jvRowHTML()}${jvRowHTML()}</tbody>
         </table>
-        <div style="display:flex;justify-content:flex-end;gap:18px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:12px">
+        <div style="display:flex;justify-content:flex-end;gap:18px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:.75rem">
           <span>Debit: <strong id="jv-td">Rp 0</strong></span>
           <span>Kredit: <strong id="jv-tc">Rp 0</strong></span>
           <span id="jv-bal" style="font-weight:800"></span>

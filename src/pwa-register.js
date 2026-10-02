@@ -56,7 +56,7 @@ function showUpdateNotification() {
       </svg>
       <div style="flex: 1;">
         <div style="font-weight: 600; margin-bottom: 4px;">Update Available</div>
-        <div style="font-size: 13px; opacity: 0.9;">A new version of the app is ready.</div>
+        <div style="font-size: .8125rem; opacity: 0.9;">A new version of the app is ready.</div>
       </div>
       <button onclick="window.location.reload()" style="padding: 8px 16px; background: white; color: #4F46E5; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
         Reload

@@ -735,6 +735,7 @@
       // Here (not only in Pengaturan) so every role can install the PWA.
       item('installPwaApp', 'install', 'Instal Aplikasi') +
       item('toggleLang', 'globe', 'Bahasa', langEn ? 'EN' : 'ID') +
+      _textSizeControl() +
       '<div class="user-menu-sep"></div>' +
       item('logout', 'log-out', 'Keluar') +
       '</div>';
@@ -745,6 +746,57 @@
       document.addEventListener('click', _closeUserMenuOnOutside);
     }, 0);
   }
+
+  // ── Text size ("Ukuran teks") ──────────────────────────────────────────────
+  // The root font size scales every screen font (style.css uses rem); the choice
+  // is per device, like the theme. public/theme-init.js applies it before paint.
+  const TEXT_SIZES = [
+    ['normal', 'Normal'],
+    ['besar', 'Besar'],
+    ['sangat-besar', 'Sangat besar'],
+  ];
+
+  function _currentTextSize() {
+    return document.documentElement.getAttribute('data-text-size') || 'besar';
+  }
+
+  function _textSizeControl() {
+    const cur = _currentTextSize();
+    return (
+      '<div class="user-menu-textsize"><span class="user-menu-textsize-label">Ukuran teks</span>' +
+      '<div class="seg-tabs seg-tabs-sm" role="group" aria-label="Ukuran teks">' +
+      TEXT_SIZES.map(
+        ([value, label]) =>
+          `<button type="button" class="seg-tab${value === cur ? ' active' : ''}" data-text-size-option="${value}" aria-pressed="${value === cur}">${label}</button>`
+      ).join('') +
+      '</div></div>'
+    );
+  }
+
+  function setTextSize(value) {
+    if (!TEXT_SIZES.some(([v]) => v === value)) {
+      return;
+    }
+    document.documentElement.setAttribute('data-text-size', value);
+    try {
+      localStorage.setItem('erp_text_size', value);
+    } catch (_e) {
+      /* storage unavailable — the choice lasts for this visit */
+    }
+    document.querySelectorAll('[data-text-size-option]').forEach(btn => {
+      const on = btn.getAttribute('data-text-size-option') === value;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    window.dispatchEvent(new CustomEvent('nsa:textsizechange', { detail: { size: value } }));
+  }
+
+  document.addEventListener('click', function (e) {
+    const opt = e.target.closest && e.target.closest('[data-text-size-option]');
+    if (opt) {
+      setTextSize(opt.getAttribute('data-text-size-option'));
+    }
+  });
 
   function _closeUserMenu() {
     const panel = document.getElementById('user-menu-panel');
@@ -1059,6 +1111,7 @@
   };
 
   window.NSANav = {
+    setTextSize,
     // Open an entry by its menu label, as a sidebar click would.
     open(label) {
       const group = Object.keys(MENU_CONFIG).find(k =>

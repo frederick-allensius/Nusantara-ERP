@@ -21,7 +21,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   var VAT_RATE = 0.11;
 
   function injectView(html) {
@@ -155,9 +155,9 @@
         '<span class="report-card-icon" aria-hidden="true">' +
         reportIcon(r.cat) +
         '</span>' +
-        '<span style="min-width:0;flex:1"><span style="display:block;font-size:13px;font-weight:700">' +
+        '<span style="min-width:0;flex:1"><span style="display:block;font-size:.8125rem;font-weight:700">' +
         esc(r.name) +
-        '</span><span style="display:block;font-size:11px;color:var(--muted)">' +
+        '</span><span style="display:block;font-size:.75rem;color:var(--muted)">' +
         esc(r.desc) +
         '</span></span>' +
         '<svg style="flex:none;color:var(--muted)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>' +
@@ -171,10 +171,10 @@
         return (
           '<div class="report-cat-block" style="margin-bottom:18px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">' +
-          '<span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">' +
+          '<span style="font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">' +
           esc(cat) +
           '</span>' +
-          '<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:1px 8px">' +
+          '<span style="font-size:.75rem;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:1px 8px">' +
           cats[cat].length +
           '</span>' +
           '</div>' +
@@ -193,11 +193,11 @@
         '<div style="position:relative;max-width:380px;margin-bottom:18px">' +
         '<svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
         '<input id="report-search" type="text" placeholder="Cari laporan…" autocomplete="off" ' +
-        'style="width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text)">' +
+        'style="width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:9px;font-size:.8125rem;background:var(--surface);color:var(--text)">' +
         '</div>' +
         '<div id="report-list-body">' +
         sections +
-        '<div id="report-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:13px">Tidak ada laporan yang cocok dengan pencarian.</div>' +
+        '<div id="report-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:.8125rem">Tidak ada laporan yang cocok dengan pencarian.</div>' +
         '</div>'
     );
   }
@@ -346,12 +346,12 @@
         rows
           .map(function (r) {
             return (
-              '<tr><td class="td-p" style="font-size:11px">' +
+              '<tr><td class="td-p" style="font-size:.75rem">' +
               esc(r.date) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(r.number) +
-              '<div style="font-size:10px;color:var(--muted)">' +
+              '<div style="font-size:.75rem;color:var(--muted)">' +
               esc(r.kind) +
               '</div></td>' +
               '<td class="td-p">' +
@@ -378,7 +378,7 @@
     injectView(
       '<div class="sec-hdr"><div><h1>Rekap PPN</h1><p>PPN keluaran dan masukan per masa pajak dari dokumen yang sudah diposting. Faktur pajak dan pelaporan SPT tetap dilakukan melalui aplikasi DJP.</p></div>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
-        '<select class="form-select" id="spt-period" style="font-size:13px">' +
+        '<select class="form-select" id="spt-period" style="font-size:.8125rem">' +
         pOpts +
         '</select>' +
         '<button class="btn" data-action="refreshSPT">Tampilkan</button>' +
@@ -402,12 +402,12 @@
         '">' +
         money(Math.abs(ppnKurang)) +
         '</div><div class="stat-sub">PPN neto</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Periode</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Periode</div><div class="stat-val" style="font-size:1.125rem">' +
         period +
         '</div><div class="stat-sub">Masa Pajak</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
         'PPN Keluaran — Penjualan (' +
         soInPeriod.length +
         ' transaksi)</div>' +
@@ -427,7 +427,7 @@
         '<tbody>' +
         soRows +
         '</tbody>' +
-        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:12px">TOTAL</td>' +
+        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:.75rem">TOTAL</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700">' +
         money(outputDPP) +
         '</td>' +
@@ -436,7 +436,7 @@
         '</td></tr></tfoot>' +
         '</table></div></div>' +
         '<div class="card">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
         'PPN Masukan — Pembelian (' +
         poInPeriod.length +
         ' transaksi)</div>' +
@@ -456,7 +456,7 @@
         '<tbody>' +
         poRows +
         '</tbody>' +
-        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:12px">TOTAL</td>' +
+        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:.75rem">TOTAL</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700">' +
         money(inputDPP) +
         '</td>' +
@@ -703,7 +703,7 @@
           money(d.pur) +
           '"></div>' +
           '</div>' +
-          '<div style="font-size:10px;color:var(--muted)">' +
+          '<div style="font-size:.75rem;color:var(--muted)">' +
           d.month +
           '</div></div>'
         );
@@ -716,22 +716,22 @@
             var pct = salesTotal > 0 ? Math.round((c.total / salesTotal) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-              '<span style="font-size:14px;font-weight:800;color:var(--muted);width:18px">' +
+              '<span style="font-size:.875rem;font-weight:800;color:var(--muted);width:18px">' +
               (i + 1) +
               '</span>' +
-              '<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:2px">' +
+              '<div style="flex:1"><div style="font-size:.8125rem;font-weight:600;margin-bottom:2px">' +
               esc(c.name) +
               '</div>' +
               '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--primary);width:' +
               pct +
               '%"></div></div>' +
-              '</div><div style="font-size:12px;font-weight:700;text-align:right;white-space:nowrap">' +
+              '</div><div style="font-size:.75rem;font-weight:700;text-align:right;white-space:nowrap">' +
               money(c.total) +
               '</div></div>'
             );
           })
           .join('')
-      : '<div style="color:var(--muted);font-size:12px">Belum ada data penjualan.</div>';
+      : '<div style="color:var(--muted);font-size:.75rem">Belum ada data penjualan.</div>';
 
     var top5ItemHtml = top5Items.length
       ? top5Items
@@ -740,22 +740,22 @@
               top5Items[0].total > 0 ? Math.round((it.total / top5Items[0].total) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-              '<span style="font-size:14px;font-weight:800;color:var(--muted);width:18px">' +
+              '<span style="font-size:.875rem;font-weight:800;color:var(--muted);width:18px">' +
               (i + 1) +
               '</span>' +
-              '<div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:2px">' +
+              '<div style="flex:1"><div style="font-size:.8125rem;font-weight:600;margin-bottom:2px">' +
               esc(it.name) +
               '</div>' +
               '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--warning);width:' +
               pct +
               '%"></div></div>' +
-              '</div><div style="font-size:12px;font-weight:700;text-align:right;white-space:nowrap">' +
+              '</div><div style="font-size:.75rem;font-weight:700;text-align:right;white-space:nowrap">' +
               money(it.total) +
               '</div></div>'
             );
           })
           .join('')
-      : '<div style="color:var(--muted);font-size:12px">Belum ada data item terjual.</div>';
+      : '<div style="color:var(--muted);font-size:.75rem">Belum ada data item terjual.</div>';
 
     injectView(
       '<div class="sec-hdr"><div><h1>Analisis Bisnis</h1><p>Dihitung dari jurnal dan dokumen yang tercatat, per ' +
@@ -763,19 +763,19 @@
         '</p></div>' +
         '<button class="btn-ghost" data-action="refreshAI">Muat ulang</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Penjualan Tahun Ini</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Penjualan Tahun Ini</div><div class="stat-val" style="font-size:1.125rem">' +
         money(totalRevenue) +
         '</div><div class="stat-sub">' +
         sales.length.toLocaleString('id-ID') +
         ' dokumen penjualan</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Laba Kotor Tahun Ini</div><div class="stat-val" style="font-size:18px;color:' +
+        '<div class="card stat-card"><div class="stat-label">Laba Kotor Tahun Ini</div><div class="stat-val" style="font-size:1.125rem;color:' +
         (grossProfit >= 0 ? 'var(--success)' : 'var(--danger)') +
         '">' +
         money(grossProfit) +
         '</div><div class="stat-sub">Margin ' +
         profitMargin +
         '%</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="font-size:1.125rem">' +
         money(curMonthRevenue) +
         '</div><div class="stat-sub"' +
         (revenueGrowth === null
@@ -789,7 +789,7 @@
             prevDays +
             ' bulan lalu') +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Piutang Belum Lunas</div><div class="stat-val" style="font-size:18px' +
+        '<div class="card stat-card"><div class="stat-label">Piutang Belum Lunas</div><div class="stat-val" style="font-size:1.125rem' +
         (ar.overdueCount ? ';color:var(--warning)' : '') +
         '">' +
         money(ar.total) +
@@ -798,23 +798,23 @@
         '</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Temuan dari data transaksi</div>' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Temuan dari data transaksi</div>' +
         insightHtml +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">' +
-        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Pelanggan Teratas</div>' +
+        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Pelanggan Teratas</div>' +
         top5CustHtml +
         '</div>' +
-        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Barang Terlaris</div>' +
+        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Barang Terlaris</div>' +
         top5ItemHtml +
         '</div>' +
         '</div>' +
         '<div class="card">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Tren 6 Bulan Terakhir</div>' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Tren 6 Bulan Terakhir</div>' +
         '<div style="display:flex;align-items:flex-end;gap:6px;height:100px">' +
         trendBars +
         '</div>' +
-        '<div style="display:flex;gap:16px;font-size:11px;margin-top:8px">' +
+        '<div style="display:flex;gap:16px;font-size:.75rem;margin-top:8px">' +
         '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--primary);border-radius:2px;display:inline-block"></span>Penjualan</span>' +
         '<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--warning);border-radius:2px;display:inline-block"></span>Pembelian</span>' +
         '</div></div>'

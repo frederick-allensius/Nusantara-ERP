@@ -51,7 +51,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   var PAY_CATS = [
     'Transport',
     'ATK',
@@ -182,31 +182,31 @@
           .map(function (p) {
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(p.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(p.number || p.id) +
               '</td>' +
               '<td class="td-p">' +
               esc(p.payee || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(p.category || '—') +
-              '</span><div style="font-size:10px;color:var(--muted);margin-top:2px">' +
+              '</span><div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
               esc(accountLabel(p.accountNo || defaultAccountFor('expense', p.category))) +
               '</div></td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(p.method || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:right;font-weight:700;color:var(--danger)">' +
               money(p.amount) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(p.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delOP" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delOP" data-id="' +
               esc(p.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -348,31 +348,31 @@
           .map(function (d) {
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(d.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(d.number || d.id) +
               '</td>' +
               '<td class="td-p">' +
               esc(d.payer || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(d.category || '—') +
-              '</span><div style="font-size:10px;color:var(--muted);margin-top:2px">' +
+              '</span><div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
               esc(accountLabel(d.accountNo || defaultAccountFor('income', d.category))) +
               '</div></td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(d.method || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:right;font-weight:700;color:var(--success)">' +
               money(d.amount) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(d.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delOD" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delOD" data-id="' +
               esc(d.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -516,30 +516,30 @@
             });
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(t.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(t.number || t.id) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(fromAcc ? fromAcc.name : t.fromAccountId) +
               '</td>' +
               '<td class="td-p" style="color:var(--muted)">→</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(toAcc ? toAcc.name : t.toAccountId) +
               '</td>' +
               '<td class="td-p" style="text-align:right;font-weight:700">' +
               money(t.amount) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-size:11px;color:var(--danger)">' +
+              '<td class="td-p" style="text-align:right;font-size:.75rem;color:var(--danger)">' +
               (t.fee ? money(t.fee) : '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(t.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delBT" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delBT" data-id="' +
               esc(t.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -668,10 +668,10 @@
           '<td class="td-p">' +
           esc(a.bank) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(a.accountNumber) +
           '</td>' +
-          '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--warning-bg);color:var(--warning)">Manual</span></td>' +
+          '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--warning-bg);color:var(--warning)">Manual</span></td>' +
           '</tr>'
         );
       })
@@ -684,10 +684,10 @@
         '<div style="width:44px;height:44px;border-radius:10px;background:var(--info-bg);display:flex;align-items:center;justify-content:center">' +
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
         '<div><div style="font-weight:700">Status Koneksi</div>' +
-        '<div style="font-size:12px;color:var(--muted)">Koneksi API perbankan</div></div>' +
-        '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:4px 12px;background:var(--warning-bg);color:var(--warning);border-radius:6px">Belum Terhubung</span>' +
+        '<div style="font-size:.75rem;color:var(--muted)">Koneksi API perbankan</div></div>' +
+        '<span style="margin-left:auto;font-size:.75rem;font-weight:700;padding:4px 12px;background:var(--warning-bg);color:var(--warning);border-radius:6px">Belum Terhubung</span>' +
         '</div>' +
-        '<div style="padding:16px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">' +
+        '<div style="padding:16px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);line-height:1.6">' +
         '<strong>Untuk mengaktifkan SmartLink e-Banking:</strong><br>' +
         '1. Daftarkan perusahaan Anda ke program corporate banking bank terpilih<br>' +
         '2. Dapatkan API Key dan Webhook URL dari portal developer bank<br>' +
@@ -695,7 +695,7 @@
         '<em style="color:var(--danger)">Catatan: Integrasi langsung memerlukan kontrak bisnis dengan bank.</em>' +
         '</div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Konfigurasi API</div>' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Konfigurasi API</div>' +
         '<div class="form-row">' +
         '<div class="form-group"><label class="form-label">Kode Bank</label>' +
         '<input class="form-input" id="sl-bank" value="' +
@@ -713,7 +713,7 @@
         '<div style="display:flex;gap:10px;margin-top:12px">' +
         '<button class="btn" id="saveSmartLink">Simpan Konfigurasi</button>' +
         '<button class="btn-ghost" id="testSmartLink">Test Koneksi</button></div></div>' +
-        '<div class="card"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Rekening Terdaftar</div>' +
+        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Rekening Terdaftar</div>' +
         '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
         '<th style="' +
         TH +
@@ -770,13 +770,13 @@
             }, 0);
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
               esc(s.id) +
               '</td>' +
               '<td class="td-p">' +
               esc(acc ? acc.name : s.accountId) +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(s.period) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
@@ -789,10 +789,10 @@
               money(totalCredit) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="viewBS" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="viewBS" data-id="' +
               esc(s.id) +
               '">Detail</button> ' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delBS" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delBS" data-id="' +
               esc(s.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -839,11 +839,11 @@
         today().slice(0, 7) +
         '"></div>' +
         '</div>' +
-        '<div style="font-size:12px;font-weight:700;margin:12px 0 8px;color:var(--muted)">Entri Transaksi</div>' +
+        '<div style="font-size:.75rem;font-weight:700;margin:12px 0 8px;color:var(--muted)">Entri Transaksi</div>' +
         '<div id="bs-lines-wrap">' +
         _bsLineHTML() +
         '</div>' +
-        '<button type="button" class="btn-ghost" data-action="addBSLine" style="font-size:12px;margin-top:6px">+ Tambah Baris</button>',
+        '<button type="button" class="btn-ghost" data-action="addBSLine" style="font-size:.75rem;margin-top:6px">+ Tambah Baris</button>',
       '<button class="btn" id="saveBS">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
       true
     );
@@ -887,11 +887,11 @@
       '<div class="bs-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">' +
       '<input class="form-input bs-date" type="date" value="' +
       today() +
-      '" style="width:130px;font-size:12px">' +
-      '<input class="form-input bs-desc" placeholder="Keterangan" style="flex:1;font-size:12px">' +
-      '<input class="form-input bs-debit" type="number" min="0" placeholder="Debit" style="width:110px;font-size:12px">' +
-      '<input class="form-input bs-credit" type="number" min="0" placeholder="Kredit" style="width:110px;font-size:12px">' +
-      '<button type="button" class="btn-ghost" data-action="delBSLine" style="font-size:18px;padding:0 6px;line-height:1;flex:none">×</button></div>'
+      '" style="width:130px;font-size:.75rem">' +
+      '<input class="form-input bs-desc" placeholder="Keterangan" style="flex:1;font-size:.75rem">' +
+      '<input class="form-input bs-debit" type="number" min="0" placeholder="Debit" style="width:110px;font-size:.75rem">' +
+      '<input class="form-input bs-credit" type="number" min="0" placeholder="Kredit" style="width:110px;font-size:.75rem">' +
+      '<button type="button" class="btn-ghost" data-action="delBSLine" style="font-size:1.125rem;padding:0 6px;line-height:1;flex:none">×</button></div>'
     );
   }
 
@@ -1029,16 +1029,16 @@
           var prefix = e.flow === 'in' ? '+' : e.flow === 'out' ? '−' : '⇄';
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
             esc(e.date) +
             '</td>' +
-            '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+            '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
             esc(e.type) +
             '</span></td>' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(e.ref) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             esc(e.method) +
             '</td>' +
             '<td class="td-p" style="text-align:right;font-weight:700;color:' +
@@ -1048,7 +1048,7 @@
             ' ' +
             money(e.amount) +
             '</td>' +
-            '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             esc(e.note) +
             '</td>' +
             '</tr>'
@@ -1095,7 +1095,7 @@
         rows +
         '</tbody></table>' +
         (entries.length > 200
-          ? '<div style="text-align:center;padding:10px;font-size:11px;color:var(--muted)">Menampilkan 200 dari ' +
+          ? '<div style="text-align:center;padding:10px;font-size:.75rem;color:var(--muted)">Menampilkan 200 dari ' +
             entries.length +
             ' transaksi</div>'
           : '') +
@@ -1114,8 +1114,8 @@
       injectView(
         '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan buku besar</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
-          '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Rekening Koran</div>' +
+          '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
+          '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Rekening Koran</div>' +
           '<button class="btn" data-action="goToBankStatement">Buka Rekening Koran</button></div>'
       );
       return;
@@ -1140,10 +1140,10 @@
             '<tr style="' +
             (isRec ? 'opacity:.55' : '') +
             '">' +
-            '<td class="td-p" style="font-size:11px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(e.date) +
             '</td>' +
-            '<td class="td-p" style="font-size:12px">' +
+            '<td class="td-p" style="font-size:.75rem">' +
             esc(e.description) +
             '</td>' +
             '<td class="td-p" style="text-align:right;color:var(--danger)">' +
@@ -1175,13 +1175,13 @@
       '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan transaksi sistem</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
-        '<div><div style="font-size:12px;color:var(--muted)">Rekening</div><div style="font-weight:700">' +
+        '<div><div style="font-size:.75rem;color:var(--muted)">Rekening</div><div style="font-weight:700">' +
         esc(acc ? acc.name : latestBS.accountId) +
         '</div></div>' +
-        '<div><div style="font-size:12px;color:var(--muted)">Periode</div><div style="font-weight:700">' +
+        '<div><div style="font-size:.75rem;color:var(--muted)">Periode</div><div style="font-weight:700">' +
         esc(latestBS.period) +
         '</div></div>' +
-        '<div><div style="font-size:12px;color:var(--muted)">Progress</div><div style="font-weight:700">' +
+        '<div><div style="font-size:.75rem;color:var(--muted)">Progress</div><div style="font-weight:700">' +
         reconciledCount +
         '/' +
         bsEntries.length +
@@ -1298,7 +1298,7 @@
         var eRows = (s.entries || [])
           .map(function (e) {
             return (
-              '<tr><td class="td-p" style="font-size:11px">' +
+              '<tr><td class="td-p" style="font-size:.75rem">' +
               esc(e.date) +
               '</td><td class="td-p">' +
               esc(e.description) +

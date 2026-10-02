@@ -31,7 +31,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   function injectView(html) {
     window.invalidateView && window.invalidateView('assets');
@@ -79,8 +79,8 @@
       injectView(
         '<div class="sec-hdr"><div><h1>Aset per Lokasi</h1><p>Daftar aset dikelompokkan berdasarkan lokasi</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:15px;font-weight:700;margin-bottom:6px">Belum ada data aset</div>' +
-          '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Tambahkan aset melalui menu Fixed Assets atau tandai item inventory sebagai aset</div>' +
+          '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada data aset</div>' +
+          '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Tambahkan aset melalui menu Fixed Assets atau tandai item inventory sebagai aset</div>' +
           '<button class="btn-ghost" data-action="navAssets">Buka Daftar Aset</button></div>'
       );
       return;
@@ -105,16 +105,16 @@
             var statusColor = dep > 80 ? 'var(--danger)' : dep > 50 ? 'var(--warning)' : 'var(--success)';
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(a.name || a.itemName || a.description || a.id) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(a.category || a.assetType || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(a.serialNo || a.kodeAset || a.id || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(a.purchaseDate || a.tanggalBeli || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:right">' +
@@ -124,7 +124,7 @@
               money(nbv) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<span style="font-size:11px;font-weight:700;color:' +
+              '<span style="font-size:.75rem;font-weight:700;color:' +
               statusColor +
               '">' +
               dep +
@@ -140,20 +140,20 @@
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">' +
           '<div style="width:36px;height:36px;border-radius:8px;background:var(--info-bg);display:flex;align-items:center;justify-content:center;flex:none;color:var(--info)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>' +
           '<div style="flex:1">' +
-          '<div style="font-size:14px;font-weight:700">' +
+          '<div style="font-size:.875rem;font-weight:700">' +
           esc(loc) +
           '</div>' +
-          '<div style="font-size:11px;color:var(--muted)">' +
+          '<div style="font-size:.75rem;color:var(--muted)">' +
           locAssets.length +
           ' aset · Nilai buku neto ' +
           money(locNetBook) +
           '</div>' +
           '</div>' +
           '<div style="text-align:right">' +
-          '<div style="font-size:13px;font-weight:700">' +
+          '<div style="font-size:.8125rem;font-weight:700">' +
           money(locValue) +
           '</div>' +
-          '<div style="font-size:10px;color:var(--muted)">' +
+          '<div style="font-size:.75rem;color:var(--muted)">' +
           pct +
           '% dari total</div>' +
           '</div>' +
@@ -218,10 +218,10 @@
           pct +
           '%"></div>' +
           '</div>' +
-          '<div style="font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;margin:0 auto">' +
+          '<div style="font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;margin:0 auto">' +
           esc(loc.slice(0, 10)) +
           '</div>' +
-          '<div style="font-size:10px;font-weight:700">' +
+          '<div style="font-size:.75rem;font-weight:700">' +
           pct +
           '%</div>' +
           '</div>'
@@ -238,15 +238,15 @@
         '</div><div class="stat-sub">' +
         locations.length +
         ' lokasi</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Total Harga Perolehan</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Total Harga Perolehan</div><div class="stat-val" style="font-size:1.125rem">' +
         money(totalValue) +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Total Nilai Buku</div><div class="stat-val" style="font-size:18px">' +
+        '<div class="card stat-card"><div class="stat-label">Total Nilai Buku</div><div class="stat-val" style="font-size:1.125rem">' +
         money(totalNetBook) +
         '</div><div class="stat-sub">Setelah depresiasi</div></div>' +
         '</div>' +
         (locations.length > 1
-          ? '<div class="card" style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Distribusi per Lokasi</div>' +
+          ? '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Distribusi per Lokasi</div>' +
             '<div style="display:flex;gap:8px;align-items:flex-end">' +
             chartBars +
             '</div></div>'
@@ -320,7 +320,7 @@
           return (
             '<div class="card stat-card"><div class="stat-label">' +
             st[0] +
-            '</div><div class="stat-val" style="font-size:18px">' +
+            '</div><div class="stat-val" style="font-size:1.125rem">' +
             st[1] +
             '</div>' +
             (st[2] ? '<div class="stat-sub">' + st[2] + '</div>' : '') +
@@ -423,16 +423,16 @@
         }, 0);
         var ref = isFiscal ? fiscalRef(name) : null;
         var fiscalCells = isFiscal
-          ? '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          ? '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             (ref ? ref.life + ' · ' + ref.rate * 100 + '%' : '—') +
             '</td>' +
-            '<td class="td-p" style="text-align:right;font-size:12px">' +
+            '<td class="td-p" style="text-align:right;font-size:.75rem">' +
             (ref && totalCost > 0 ? money(Math.round(totalCost * ref.rate)) : '—') +
             '</td>'
           : '';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-weight:600;font-size:12px">' +
+          '<td class="td-p" style="font-weight:600;font-size:.75rem">' +
           esc(name) +
           '</td>' +
           '<td class="td-p" style="text-align:center">' +
@@ -443,13 +443,13 @@
           '</td>' +
           fiscalCells +
           '<td class="td-p" style="text-align:right;white-space:nowrap">' +
-          '<button class="btn-ghost" style="padding:4px 10px;font-size:11px" data-action="axRenCat" data-type="' +
+          '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem" data-action="axRenCat" data-type="' +
           cfg.type +
           '" data-cat="' +
           esc(name) +
           '">Ubah</button> ' +
           (catAssets.length === 0
-            ? '<button class="btn-ghost" style="padding:4px 10px;font-size:11px;color:var(--danger)" data-action="axDelCat" data-type="' +
+            ? '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem;color:var(--danger)" data-action="axDelCat" data-type="' +
               cfg.type +
               '" data-cat="' +
               esc(name) +
@@ -482,14 +482,14 @@
     var refCard = '';
     if (isFiscal) {
       refCard =
-        '<div class="card" style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Referensi Golongan Fiskal (Garis Lurus, UU PPh Pasal 11)</div>' +
+        '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Referensi Golongan Fiskal (Garis Lurus, UU PPh Pasal 11)</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         FISCAL_REF.map(function (r) {
           return (
             '<div style="flex:1;min-width:140px;padding:8px 12px;background:var(--bg);border-radius:8px">' +
-            '<div style="font-size:12px;font-weight:700">' +
+            '<div style="font-size:.75rem;font-weight:700">' +
             r.name +
-            '</div><div style="font-size:11px;color:var(--muted)">' +
+            '</div><div style="font-size:.75rem;color:var(--muted)">' +
             r.life +
             ' · tarif ' +
             r.rate * 100 +
@@ -573,7 +573,7 @@
         '</label><input class="form-input" id="axc-name" type="text" value="' +
         esc(oldName) +
         '"></div>' +
-        '<div style="font-size:11px;color:var(--muted)">Semua aset dengan ' +
+        '<div style="font-size:.75rem;color:var(--muted)">Semua aset dengan ' +
         cfg.noun +
         ' ini akan ikut diperbarui.</div>',
       '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="axc-save">Simpan</button>'
@@ -658,19 +658,19 @@
       .map(function (l) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted);white-space:nowrap">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
           esc(l.date || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
           esc(l.assetId + ' — ' + (l.assetName || '')) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(l.field || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;color:var(--danger)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--danger)">' +
           esc(l.from === '' ? '—' : l.from) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;color:var(--success);font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--success);font-weight:600">' +
           esc(l.to === '' ? '—' : l.to) +
           '</td>' +
           '</tr>'
@@ -820,13 +820,13 @@
         var gain = (a.disposalProceeds || 0) - (a.cost || 0);
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:12px;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
           esc(a.id + ' — ' + (a.name || '')) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted);white-space:nowrap">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
           esc(a.disposedAt || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(a.disposalMethod || '—') +
           '</td>' +
           '<td class="td-p" style="text-align:right">' +
@@ -842,7 +842,7 @@
           money(Math.abs(gain)) +
           '</td>' +
           '<td class="td-p" style="text-align:right">' +
-          '<button class="btn-ghost" style="padding:4px 10px;font-size:11px" data-action="axUndoDisp" data-id="' +
+          '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem" data-action="axUndoDisp" data-id="' +
           esc(a.id) +
           '">Batalkan</button>' +
           '</td>' +
@@ -973,19 +973,19 @@
       .map(function (t) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted);white-space:nowrap">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
           esc(t.date || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
           esc(t.assetId + ' — ' + (t.assetName || '')) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(t.from || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;font-weight:600;color:var(--success)">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:600;color:var(--success)">' +
           esc(t.to || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(t.note || '') +
           '</td>' +
           '</tr>'
@@ -1039,7 +1039,7 @@
         '<select class="form-select" id="axt-asset">' +
         assetOptions(list) +
         '</select>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:4px" id="axt-from-info"></div></div>' +
+        '<div style="font-size:.75rem;color:var(--muted);margin-top:4px" id="axt-from-info"></div></div>' +
         '<div class="form-row">' +
         '<div class="form-group"><label class="form-label">Lokasi Tujuan</label><input class="form-input" id="axt-to" type="text" list="axt-loc-list" placeholder="Gudang Utama">' +
         '<datalist id="axt-loc-list">' +

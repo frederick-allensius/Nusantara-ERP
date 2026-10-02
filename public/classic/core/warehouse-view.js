@@ -72,19 +72,19 @@
 
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:12px;font-weight:700;font-family:monospace;color:var(--primary)">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700;font-family:monospace;color:var(--primary)">' +
           esc(w.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:13px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.8125rem;font-weight:700">' +
           esc(w.name) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(w.location || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;text-align:right">' +
+          '<td class="td-p" style="font-size:.75rem;text-align:right">' +
           itemCount +
           ' item</td>' +
-          '<td class="td-p" style="font-size:12px;text-align:right;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;text-align:right;font-weight:700">' +
           totalQty +
           '</td>' +
           '<td class="td-p">' +
@@ -95,7 +95,7 @@
             ? '<button class="action-ghost" data-action="whEdit" data-id="' +
               esc(w.id) +
               '">Edit</button>'
-            : '<span style="font-size:11px;color:var(--muted)">Default</span>') +
+            : '<span style="font-size:.75rem;color:var(--muted)">Default</span>') +
           '</td>' +
           '</tr>'
         );
@@ -105,20 +105,20 @@
     return (
       '<div class="card">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div style="font-size:14px;font-weight:700">Daftar Gudang (' +
+      '<div style="font-size:.875rem;font-weight:700">Daftar Gudang (' +
       warehouses.length +
       ')</div>' +
-      '<button class="btn" data-action="whAdd" style="font-size:12px">+ Tambah Gudang</button>' +
+      '<button class="btn" data-action="whAdd" style="font-size:.75rem">+ Tambah Gudang</button>' +
       '</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">ID</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Nama</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Lokasi</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Jenis Item</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Total Qty</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Aksi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">ID</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Lokasi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Jenis Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Total Qty</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Status</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Aksi</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -135,14 +135,14 @@
     var items = db().inventoryItems || [];
 
     if (items.length === 0) {
-      return '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Belum ada item inventori.</div></div>';
+      return '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:.8125rem">Belum ada item inventori.</div></div>';
     }
 
     // Build warehouse columns
     var whCols = warehouses
       .map(function (w) {
         return (
-          '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right;min-width:90px">' +
+          '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;min-width:90px">' +
           esc(w.name) +
           '</th>'
         );
@@ -157,7 +157,7 @@
           .map(function (w) {
             var q = wh.stockAt(item, w.id);
             return (
-              '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:' +
+              '<td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:' +
               (q > 0 ? '700' : '400') +
               ';color:' +
               (q > 0 ? 'var(--text)' : 'var(--muted)') +
@@ -170,22 +170,22 @@
 
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:13px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.8125rem;font-weight:700">' +
           esc(item.name) +
           '</td>' +
           '<td class="td-p"><span class="cat">' +
           esc(item.category || '—') +
           '</span></td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(item.unit) +
           '</td>' +
           whCells +
-          '<td class="td-p" style="font-size:13px;font-weight:800;text-align:right;color:' +
+          '<td class="td-p" style="font-size:.8125rem;font-weight:800;text-align:right;color:' +
           (isLow ? 'var(--danger)' : 'var(--text)') +
           '">' +
           (item.stock || 0) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;text-align:right">' +
+          '<td class="td-p" style="font-size:.75rem;text-align:right">' +
           (item.min || 0) +
           '</td>' +
           '</tr>'
@@ -195,15 +195,15 @@
 
     return (
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:12px">Stok per Gudang</div>' +
+      '<div style="font-size:.875rem;font-weight:700;margin-bottom:12px">Stok per Gudang</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Item</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Kategori</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Satuan</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Kategori</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Satuan</th>' +
       whCols +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Total</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Min</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Total</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Min</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -218,7 +218,7 @@
 
     if (transfers.length === 0) {
       return (
-        '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">' +
+        '<div class="card"><div style="padding:20px;text-align:center;color:var(--muted);font-size:.8125rem">' +
         'Belum ada transfer item. Klik <strong>Transfer Item</strong>.' +
         '</div></div>'
       );
@@ -229,20 +229,20 @@
         var wh = WH();
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">' +
           esc(t.number || t.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(t.date) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(wh ? wh.warehouseName(t.fromWarehouse) : t.fromWarehouse) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px">→</td>' +
-          '<td class="td-p" style="font-size:12px">' +
+          '<td class="td-p" style="font-size:.75rem">→</td>' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(wh ? wh.warehouseName(t.toWarehouse) : t.toWarehouse) +
           '</td>' +
-          '<td class="td-p" style="font-size:12px;text-align:right">' +
+          '<td class="td-p" style="font-size:.75rem;text-align:right">' +
           (t.lines || []).length +
           ' item</td>' +
           '<td class="td-p">' +
@@ -258,19 +258,19 @@
 
     return (
       '<div class="card">' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:10px">Transfer Item (' +
+      '<div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Transfer Item (' +
       transfers.length +
       ')</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">No.</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Tanggal</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Dari</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left"></th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Ke</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:right">Item</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:11px;font-weight:700;text-align:left">Aksi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">No.</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Tanggal</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Dari</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left"></th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Ke</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Status</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Aksi</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -417,13 +417,13 @@
     function lineRow() {
       return (
         '<tr class="it-line">' +
-        '<td style="padding:4px 6px"><select class="form-select it-item" style="font-size:12px;padding:5px 8px;width:100%">' +
+        '<td style="padding:4px 6px"><select class="form-select it-item" style="font-size:.75rem;padding:5px 8px;width:100%">' +
         '<option value="">— Pilih Item —</option>' +
         itemOpts +
         '</select></td>' +
-        '<td style="padding:4px 6px"><span class="it-avail" style="font-size:11px;color:var(--muted)">—</span></td>' +
-        '<td style="padding:4px 6px"><input class="form-input it-qty" type="number" min="0" step="any" value="1" style="font-size:12px;padding:5px 8px;width:90px"></td>' +
-        '<td style="padding:4px 6px;text-align:center"><button type="button" class="it-del" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button></td>' +
+        '<td style="padding:4px 6px"><span class="it-avail" style="font-size:.75rem;color:var(--muted)">—</span></td>' +
+        '<td style="padding:4px 6px"><input class="form-input it-qty" type="number" min="0" step="any" value="1" style="font-size:.75rem;padding:5px 8px;width:90px"></td>' +
+        '<td style="padding:4px 6px;text-align:center"><button type="button" class="it-del" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.125rem;line-height:1">×</button></td>' +
         '</tr>'
       );
     }
@@ -450,13 +450,13 @@
         '</div>' +
         '<div style="margin-top:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<span class="form-label" style="margin:0;font-size:13px;font-weight:700">Item Transfer</span>' +
-        '<button type="button" class="btn-ghost" id="it-add" style="font-size:11px;padding:4px 10px">+ Tambah Item</button>' +
+        '<span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Item Transfer</span>' +
+        '<button type="button" class="btn-ghost" id="it-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Item</button>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)">' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left">Item</th>' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:80px">Tersedia</th>' +
-        '<th style="padding:6px 8px;font-size:11px;font-weight:700;text-align:left;width:90px">Qty Transfer</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Item</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:80px">Tersedia</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Qty Transfer</th>' +
         '<th style="width:30px"></th>' +
         '</tr></thead><tbody id="it-lines">' +
         lineRow() +
@@ -604,10 +604,10 @@
     var linesHtml = '';
     if (doc.lines && doc.lines.length > 0) {
       linesHtml =
-        '<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">Item Ditransfer (' +
+        '<div style="margin-top:12px"><div style="font-size:.75rem;font-weight:700;margin-bottom:6px">Item Ditransfer (' +
         doc.lines.length +
         ')</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr style="background:var(--bg)">' +
         '<th style="padding:6px 8px;text-align:left">Item</th>' +
         '<th style="padding:6px 8px;text-align:right">Qty</th>' +
         '</tr></thead><tbody>';

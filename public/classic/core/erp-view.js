@@ -59,10 +59,10 @@ function pagerHTML(total, view) {
   if (pages <= 1) {
     return '';
   }
-  return `<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px;font-size:12px;color:var(--muted)">
+  return `<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px;font-size:.75rem;color:var(--muted)">
     <span>${(cur - 1) * PAGE_SIZE + 1}–${Math.min(cur * PAGE_SIZE, total)} dari ${total}</span>
-    <button class="btn-ghost" data-action="pageNav" data-view="${view}" data-page="${cur - 1}" ${cur === 1 ? 'disabled' : ''} style="padding:3px 10px;font-size:12px${cur === 1 ? ';opacity:.35;cursor:not-allowed' : ''}">‹ Prev</button>
-    <button class="btn-ghost" data-action="pageNav" data-view="${view}" data-page="${cur + 1}" ${cur === pages ? 'disabled' : ''} style="padding:3px 10px;font-size:12px${cur === pages ? ';opacity:.35;cursor:not-allowed' : ''}">Next ›</button>
+    <button class="btn-ghost" data-action="pageNav" data-view="${view}" data-page="${cur - 1}" ${cur === 1 ? 'disabled' : ''} style="padding:3px 10px;font-size:.75rem${cur === 1 ? ';opacity:.35;cursor:not-allowed' : ''}">‹ Prev</button>
+    <button class="btn-ghost" data-action="pageNav" data-view="${view}" data-page="${cur + 1}" ${cur === pages ? 'disabled' : ''} style="padding:3px 10px;font-size:.75rem${cur === pages ? ';opacity:.35;cursor:not-allowed' : ''}">Next ›</button>
   </div>`;
 }
 
@@ -91,13 +91,13 @@ function dateFilterBar(view) {
   const df = dateFilters[view] || {};
   const active = df.from || df.to;
   return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-    <label style="font-size:11px;color:var(--muted)">Dari</label>
-    <input type="date" class="form-input" style="padding:4px 8px;font-size:12px;width:138px"
+    <label style="font-size:.75rem;color:var(--muted)">Dari</label>
+    <input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"
            value="${df.from || ''}" data-action="setDateFrom" data-view="${view}">
-    <label style="font-size:11px;color:var(--muted)">s/d</label>
-    <input type="date" class="form-input" style="padding:4px 8px;font-size:12px;width:138px"
+    <label style="font-size:.75rem;color:var(--muted)">s/d</label>
+    <input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"
            value="${df.to || ''}" data-action="setDateTo" data-view="${view}">
-    ${active ? `<button class="btn-ghost" data-action="clearDateFilter" data-view="${view}" style="font-size:11px;padding:3px 8px">× Hapus</button>` : ''}
+    ${active ? `<button class="btn-ghost" data-action="clearDateFilter" data-view="${view}" style="font-size:.75rem;padding:3px 8px">× Hapus</button>` : ''}
   </div>`;
 }
 
@@ -270,7 +270,7 @@ function sortTh(label, view, col) {
     data-action="sortCol" data-type="${view}" data-col="${col}"
     title="Klik untuk urut berdasarkan ${label}"
     style="cursor:pointer;user-select:none;white-space:nowrap">
-    ${escapeHtml(label)}<span style="font-size:10px;opacity:${active ? 1 : 0.3}">${arrow || ' ↕'}</span>
+    ${escapeHtml(label)}<span style="font-size:.75rem;opacity:${active ? 1 : 0.3}">${arrow || ' ↕'}</span>
   </th>`;
 }
 
@@ -292,7 +292,7 @@ function filterBtn(type) {
   const clearChip = isActive
     ? `<button data-action="clearFilter" data-type="${type}"
          style="background:rgba(255,255,255,0.25);border:none;border-radius:4px;
-                color:#fff;font-size:10px;font-weight:700;padding:1px 5px;
+                color:#fff;font-size:.75rem;font-weight:700;padding:1px 5px;
                 cursor:pointer;margin-left:2px;line-height:1.4" title="Hapus filter">×</button>`
     : '';
 
@@ -493,7 +493,7 @@ function exportXLSX(view) {
 // ── Export button helper ──────────────────────────────────────────────────────
 function exportBtn(view) {
   return `<button class="btn-ghost" data-action="exportCSV" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:12px">
+    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
       <polyline points="7 10 12 15 17 10"/>
@@ -505,7 +505,7 @@ function exportBtn(view) {
 // ── Export Excel button helper ────────────────────────────────────────────────
 function excelBtn(view) {
   return `<button class="btn-ghost" data-action="exportXLSX" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:12px">
+    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
@@ -520,7 +520,7 @@ function excelBtn(view) {
 // numbers.
 function importBtn(view) {
   return `<button class="btn-ghost" data-action="importXLSX" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:12px">
+    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
       <polyline points="17 8 12 3 7 8"/>
@@ -534,7 +534,7 @@ function importBtn(view) {
 // opens a period picker then prints a per-item + per-document recap as PDF.
 function summaryBtn(view) {
   return `<button class="btn-ghost" data-action="printSummary" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:12px">
+    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
       <rect x="6" y="14" width="12" height="8"/>
@@ -720,7 +720,7 @@ function renderPurchase() {
   ])}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:14px;font-weight:700">Daftar Purchase Order</div>
+      <div style="font-size:.875rem;font-weight:700">Daftar Purchase Order</div>
       <div style="display:flex;align-items:center;gap:8px">
         ${summaryBtn('purchase')}
         ${importBtn('purchase')}
@@ -747,10 +747,10 @@ function renderPurchase() {
               : paged
                   .map(
                     o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
-              <td class="td-p" style="font-size:13px;font-weight:600">${escapeHtml(o.supplier)}</td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(o.date)}</td>
-              <td class="td-p" style="font-size:13px;font-weight:800">${idr(o.amount)}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
+              <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.supplier)}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
+              <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
               <td class="td-p">${badge(o.status)}</td>
               <td class="td-p">${actionBtns('PO', o.id)}</td>
             </tr>`
@@ -803,7 +803,7 @@ function renderInventory() {
   ])}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700">Katalog Item</div>
+      <div style="font-size:.875rem;font-weight:700">Katalog Item</div>
       <div style="display:flex;align-items:center;gap:8px">
         ${exportBtn('inventory')}
         ${excelBtn('inventory')}
@@ -831,13 +831,13 @@ function renderInventory() {
                   .map(i => {
                     const isLow = i.stock < i.min;
                     return `<tr data-action="viewItem" data-id="${escapeHtml(i.id)}" style="cursor:pointer">
-                <td class="td-p" style="font-size:13px;font-weight:700">${escapeHtml(i.name)}</td>
+                <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(i.name)}</td>
                 <td class="td-p"><span class="cat">${escapeHtml(i.category)}</span></td>
-                <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(i.unit)}</td>
-                <td class="td-p" style="font-size:13px;font-weight:800;color:${isLow ? 'var(--danger)' : 'var(--text)'}">${i.stock}</td>
-                <td class="td-p" style="font-size:11px;color:var(--muted)">${i.min}</td>
-                <td class="td-p" style="font-size:12px">${idr(i.cost)}</td>
-                <td class="td-p" style="font-size:12px;font-weight:700">${idr(i.sell)}</td>
+                <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(i.unit)}</td>
+                <td class="td-p" style="font-size:.8125rem;font-weight:800;color:${isLow ? 'var(--danger)' : 'var(--text)'}">${i.stock}</td>
+                <td class="td-p" style="font-size:.75rem;color:var(--muted)">${i.min}</td>
+                <td class="td-p" style="font-size:.75rem">${idr(i.cost)}</td>
+                <td class="td-p" style="font-size:.75rem;font-weight:700">${idr(i.sell)}</td>
                 <td class="td-p">${badge(isLow ? 'Low' : 'OK')}</td>
                 <td class="td-p">${actionBtns('Item', i.id)}</td>
               </tr>`;
@@ -1024,12 +1024,12 @@ function renderAssets() {
   <div class="fin-2col">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Kategori Aset</div>
-        <button class="btn-ghost" data-action="addAssetCategory" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+        <div style="font-size:.8125rem;font-weight:700">Kategori Aset</div>
+        <button class="btn-ghost" data-action="addAssetCategory" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
         categories.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada kategori aset.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada kategori aset.</div>`
           : `<div style="display:flex;flex-wrap:wrap;gap:6px">${categories
               .map(c => `<span class="cat">${escapeHtml(c)}</span>`)
               .join('')}</div>`
@@ -1037,12 +1037,12 @@ function renderAssets() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Kategori Fiskal</div>
-        <button class="btn-ghost" data-action="addAssetFiscalCategory" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+        <div style="font-size:.8125rem;font-weight:700">Kategori Fiskal</div>
+        <button class="btn-ghost" data-action="addAssetFiscalCategory" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
         fiscalCategories.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada kategori fiskal.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada kategori fiskal.</div>`
           : `<div style="display:flex;flex-wrap:wrap;gap:6px">${fiscalCategories
               .map(c => `<span class="cat">${escapeHtml(c)}</span>`)
               .join('')}</div>`
@@ -1051,8 +1051,8 @@ function renderAssets() {
   </div>
   <div class="card" style="margin-top:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:700">Daftar Aset</div>
-      <div style="font-size:11px;color:var(--muted)">Berdasarkan data aset yang tersimpan</div>
+      <div style="font-size:.875rem;font-weight:700">Daftar Aset</div>
+      <div style="font-size:.75rem;color:var(--muted)">Berdasarkan data aset yang tersimpan</div>
     </div>
     <div class="table-wrap">
       <table>
@@ -1073,12 +1073,12 @@ function renderAssets() {
               : listAssets
                   .map(
                     a => `<tr data-action="viewAsset" data-id="${escapeHtml(a.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:11px;font-weight:700">${escapeHtml(a.id)}</td>
-              <td class="td-p" style="font-size:12px;font-weight:700">${escapeHtml(a.name)}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:700">${escapeHtml(a.id)}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:700">${escapeHtml(a.name)}</td>
               <td class="td-p"><span class="cat">${escapeHtml(a.category || '—')}</span></td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(a.location || '—')}</td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(a.acquired || '—')}</td>
-              <td class="td-p" style="font-size:12px;font-weight:700">${idrFull(a.cost || 0)}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(a.location || '—')}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(a.acquired || '—')}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:700">${idrFull(a.cost || 0)}</td>
               <td class="td-p">${badge(a.status || 'OK')}</td>
               <td class="td-p">${actionBtns('Asset', a.id)}</td>
             </tr>`
@@ -1092,20 +1092,20 @@ function renderAssets() {
   <div class="fin-2col" style="margin-top:16px">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Mutasi Aset</div>
-        <button class="btn-ghost" data-action="addAssetTransfer" style="font-size:11px;padding:4px 10px">+ Catat</button>
+        <div style="font-size:.8125rem;font-weight:700">Mutasi Aset</div>
+        <button class="btn-ghost" data-action="addAssetTransfer" style="font-size:.75rem;padding:4px 10px">+ Catat</button>
       </div>
       ${
         recentTransfers.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada mutasi aset.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada mutasi aset.</div>`
           : recentTransfers
               .map(
                 t => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:12px;font-weight:700">${escapeHtml(t.assetName || t.assetId)}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(t.from || '—')} → ${escapeHtml(t.to || '—')}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(t.assetName || t.assetId)}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(t.from || '—')} → ${escapeHtml(t.to || '—')}</div>
           </div>
-          <div style="font-size:11px;color:var(--muted)">${escapeHtml(t.date || '—')}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(t.date || '—')}</div>
         </div>`
               )
               .join('')
@@ -1113,20 +1113,20 @@ function renderAssets() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Disposisi Aset</div>
-        <button class="btn-ghost" data-action="addAssetDisposal" style="font-size:11px;padding:4px 10px">+ Catat</button>
+        <div style="font-size:.8125rem;font-weight:700">Disposisi Aset</div>
+        <button class="btn-ghost" data-action="addAssetDisposal" style="font-size:.75rem;padding:4px 10px">+ Catat</button>
       </div>
       ${
         recentDisposals.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada disposisi aset.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada disposisi aset.</div>`
           : recentDisposals
               .map(
                 d => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:12px;font-weight:700">${escapeHtml(d.assetName || d.assetId)}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(d.method || '—')}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(d.assetName || d.assetId)}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.method || '—')}</div>
           </div>
-          <div style="font-size:11px;color:var(--muted)">${escapeHtml(d.date || '—')}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date || '—')}</div>
         </div>`
               )
               .join('')
@@ -1135,20 +1135,20 @@ function renderAssets() {
   </div>
   <div class="card" style="margin-top:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700">Aset per Lokasi</div>
-      <div style="font-size:11px;color:var(--muted)">Berdasarkan lokasi pada aset</div>
+      <div style="font-size:.8125rem;font-weight:700">Aset per Lokasi</div>
+      <div style="font-size:.75rem;color:var(--muted)">Berdasarkan lokasi pada aset</div>
     </div>
     ${
       locationList.length === 0
-        ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada lokasi aset.</div>`
+        ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada lokasi aset.</div>`
         : locationList
             .map(
               ([
                 loc,
                 count,
               ]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700">${escapeHtml(loc)}</div>
-        <div style="font-size:12px;color:var(--muted)">${count} aset</div>
+        <div style="font-size:.75rem;font-weight:700">${escapeHtml(loc)}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${count} aset</div>
       </div>`
             )
             .join('')
@@ -1204,61 +1204,61 @@ function renderTax() {
   ])}
   <div class="fin-2col">
     <div class="card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Dasar Perhitungan</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px">
+      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Perhitungan</div>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.5;margin-bottom:10px">
         PPN dihitung dari total transaksi non-draft. Jika transaksi memiliki nilai <strong>tax</strong>,
         nilai tersebut dipakai. Jika tidak, sistem menghitung <strong>amount × tarif PPN</strong>.
       </div>
-      <div style="font-size:12px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:.75rem;display:flex;flex-direction:column;gap:6px">
         <div>Penjualan kena pajak: <strong>${idrFull(summary.salesBase)}</strong></div>
         <div>Pembelian kena pajak: <strong>${idrFull(summary.purchaseBase)}</strong></div>
         <div>Transaksi dengan tax eksplisit: <strong>${summary.salesWithTax + summary.purchaseWithTax}</strong></div>
       </div>
     </div>
     <div class="card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Status Kepatuhan</div>
-      <div style="font-size:12px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Status Kepatuhan</div>
+      <div style="font-size:.75rem;display:flex;flex-direction:column;gap:6px">
         <div>Status PKP: <strong>${tax.pkp ? 'Terdaftar' : 'Belum PKP'}</strong></div>
         <div>NPWP: <strong>${escapeHtml(tax.npwp)}</strong></div>
         <div>e-Faktur siap kirim: <strong>${efakturCount} transaksi</strong></div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+      <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">
         Berdasarkan transaksi penjualan berstatus Paid/Delivered.
       </div>
     </div>
   </div>
   <div class="fin-2col" style="margin-top:16px">
     <div class="card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Dasar Penjualan (PPN Keluaran)</div>
+      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Penjualan (PPN Keluaran)</div>
       ${
         salesRecent.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada penjualan tercatat.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada penjualan tercatat.</div>`
           : salesRecent
               .map(
                 o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:12px;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(o.customer || '—')} • ${escapeHtml(o.date || '—')}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.customer || '—')} • ${escapeHtml(o.date || '—')}</div>
           </div>
-          <div style="font-size:12px;font-weight:700">${idrFull(o.amount || 0)}</div>
+          <div style="font-size:.75rem;font-weight:700">${idrFull(o.amount || 0)}</div>
         </div>`
               )
               .join('')
       }
     </div>
     <div class="card">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Dasar Pembelian (PPN Masukan)</div>
+      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Pembelian (PPN Masukan)</div>
       ${
         purchaseRecent.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:14px">Belum ada pembelian tercatat.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada pembelian tercatat.</div>`
           : purchaseRecent
               .map(
                 o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:12px;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(o.supplier || '—')} • ${escapeHtml(o.date || '—')}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.supplier || '—')} • ${escapeHtml(o.date || '—')}</div>
           </div>
-          <div style="font-size:12px;font-weight:700">${idrFull(o.amount || 0)}</div>
+          <div style="font-size:.75rem;font-weight:700">${idrFull(o.amount || 0)}</div>
         </div>`
               )
               .join('')
@@ -1357,10 +1357,10 @@ function renderReports() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${escapeHtml(r.title)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml(r.sub)}</div>
+          <div style="font-size:.8125rem;font-weight:700">${escapeHtml(r.title)}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${escapeHtml(r.sub)}</div>
         </div>
-        <div style="font-size:13px;font-weight:800;color:var(--primary)">${escapeHtml(r.value)}</div>
+        <div style="font-size:.8125rem;font-weight:800;color:var(--primary)">${escapeHtml(r.value)}</div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`
       )
@@ -1410,21 +1410,21 @@ function renderLogistics() {
   <div class="log-2col">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Armada Kendaraan</div>
-        <button class="btn-ghost" data-action="addFleet" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+        <div style="font-size:.8125rem;font-weight:700">Armada Kendaraan</div>
+        <button class="btn-ghost" data-action="addFleet" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
         fleet.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Belum ada armada — tambah kendaraan di atas.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:16px">Belum ada armada — tambah kendaraan di atas.</div>`
           : fleet
               .map(
                 v => `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1">
-            <div style="font-size:12px;font-weight:700;font-family:monospace">${escapeHtml(v.plate)}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(v.type)} · ${escapeHtml(v.driver)}</div>
+            <div style="font-size:.75rem;font-weight:700;font-family:monospace">${escapeHtml(v.plate)}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(v.type)} · ${escapeHtml(v.driver)}</div>
           </div>
           ${badge(v.status === 'OK' ? 'OK' : 'In Transit')}
-          <button class="action-ghost" data-action="editFleet" data-id="${escapeHtml(v.id)}" style="font-size:11px">Edit</button>
+          <button class="action-ghost" data-action="editFleet" data-id="${escapeHtml(v.id)}" style="font-size:.75rem">Edit</button>
         </div>`
               )
               .join('')
@@ -1432,20 +1432,20 @@ function renderLogistics() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700">Ekspedisi Rekanan</div>
-        <button class="btn-ghost" data-action="addExpedition" style="font-size:11px;padding:4px 10px">+ Tambah</button>
+        <div style="font-size:.8125rem;font-weight:700">Ekspedisi Rekanan</div>
+        <button class="btn-ghost" data-action="addExpedition" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
         expedition.length === 0
-          ? `<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Belum ada ekspedisi — tambah rekanan di atas.</div>`
+          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:16px">Belum ada ekspedisi — tambah rekanan di atas.</div>`
           : expedition
               .map(
                 e => `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1">
-            <div style="font-size:12px;font-weight:700">${escapeHtml(e.name)}</div>
-            <div style="font-size:11px;color:var(--muted)">${escapeHtml(e.area)} · ${escapeHtml(e.rate)}</div>
+            <div style="font-size:.75rem;font-weight:700">${escapeHtml(e.name)}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(e.area)} · ${escapeHtml(e.rate)}</div>
           </div>
-          <button class="action-ghost" data-action="editExpedition" data-id="${escapeHtml(e.id)}" style="font-size:11px">Edit</button>
+          <button class="action-ghost" data-action="editExpedition" data-id="${escapeHtml(e.id)}" style="font-size:.75rem">Edit</button>
         </div>`
               )
               .join('')
@@ -1454,7 +1454,7 @@ function renderLogistics() {
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:14px;font-weight:700">Daftar Delivery Order</div>
+      <div style="font-size:.875rem;font-weight:700">Daftar Delivery Order</div>
       <div style="display:flex;align-items:center;gap:8px">
         ${importBtn('logistics')}
         ${exportBtn('logistics')}
@@ -1493,17 +1493,17 @@ function renderLogistics() {
                         ? 'var(--warning)'
                         : 'var(--muted)';
                     return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
-              <td class="td-p" style="font-size:10px;font-weight:600;color:${refColor}">${escapeHtml(ref)}</td>
-              <td class="td-p" style="font-size:12px;font-weight:600">${escapeHtml(d.customer)}</td>
-              <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(d.destination)}${
+              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:600;color:${refColor}">${escapeHtml(ref)}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:600">${escapeHtml(d.customer)}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.destination)}${
                 d.destChanged
-                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:9px;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
+                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:.75rem;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
                   : ''
               }</td>
-              <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(d.date)}</td>
-              <td class="td-p" style="font-size:12px">${escapeHtml(d.driver)}</td>
-              <td class="td-p" style="font-size:11px;font-family:monospace">${escapeHtml(d.vehicle)}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date)}</td>
+              <td class="td-p" style="font-size:.75rem">${escapeHtml(d.driver)}</td>
+              <td class="td-p" style="font-size:.75rem;font-family:monospace">${escapeHtml(d.vehicle)}</td>
               <td class="td-p">${badge(d.status)}</td>
               <td class="td-p">${actionBtns('DO', d.id)}</td>
             </tr>`;
@@ -1530,10 +1530,10 @@ function renderMasterData() {
   function custRow(c) {
     const orders = DB.salesOrders.filter(o => o.customer === c.name);
     return `<tr data-action="viewCustomer" data-id="${escapeHtml(c.id)}" style="cursor:pointer">
-      <td class="td-p" style="font-size:13px;font-weight:700">${escapeHtml(c.name)}</td>
-      <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(c.phone || '—')}</td>
-      <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(c.address || '—')}</td>
-      <td class="td-p" style="font-size:12px;font-weight:700">${orders.length} SO</td>
+      <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(c.name)}</td>
+      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(c.phone || '—')}</td>
+      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(c.address || '—')}</td>
+      <td class="td-p" style="font-size:.75rem;font-weight:700">${orders.length} SO</td>
       <td class="td-p">${actionBtns('Customer', c.id)}</td>
     </tr>`;
   }
@@ -1541,11 +1541,11 @@ function renderMasterData() {
   function suppRow(s) {
     const orders = DB.purchaseOrders.filter(o => o.supplier === s.name);
     return `<tr data-action="viewSupplier" data-id="${escapeHtml(s.id)}" style="cursor:pointer">
-      <td class="td-p" style="font-size:13px;font-weight:700">${escapeHtml(s.name)}</td>
-      <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(s.contact || '—')}</td>
-      <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(s.phone || '—')}</td>
-      <td class="td-p" style="font-size:12px;color:var(--muted)">${escapeHtml(s.address || '—')}</td>
-      <td class="td-p" style="font-size:12px;font-weight:700">${orders.length} PO</td>
+      <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(s.name)}</td>
+      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.contact || '—')}</td>
+      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.phone || '—')}</td>
+      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.address || '—')}</td>
+      <td class="td-p" style="font-size:.75rem;font-weight:700">${orders.length} PO</td>
       <td class="td-p">${actionBtns('Supplier', s.id)}</td>
     </tr>`;
   }
@@ -1565,8 +1565,8 @@ function renderMasterData() {
 
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:700">Pelanggan</div>
-      <button class="btn" data-action="addCustomer" style="font-size:12px">
+      <div style="font-size:.875rem;font-weight:700">Pelanggan</div>
+      <button class="btn" data-action="addCustomer" style="font-size:.75rem">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Tambah Pelanggan
       </button>
@@ -1588,8 +1588,8 @@ function renderMasterData() {
 
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:700">Supplier</div>
-      <button class="btn" data-action="addSupplier" style="font-size:12px">
+      <div style="font-size:.875rem;font-weight:700">Supplier</div>
+      <button class="btn" data-action="addSupplier" style="font-size:.75rem">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Tambah Supplier
       </button>
@@ -1718,8 +1718,8 @@ function renderSettings() {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
         </div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${escapeHtml(s.title)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml(s.sub)}</div>
+          <div style="font-size:.8125rem;font-weight:700">${escapeHtml(s.title)}</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${escapeHtml(s.sub)}</div>
         </div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`
@@ -1730,8 +1730,8 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">Ekspor Backup JSON</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Unduh seluruh data ERP sebagai file JSON</div>
+        <div style="font-size:.8125rem;font-weight:700">Ekspor Backup JSON</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Unduh seluruh data ERP sebagai file JSON</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
@@ -1740,8 +1740,8 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">Impor Backup JSON</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Pulihkan data dari file backup sebelumnya</div>
+        <div style="font-size:.8125rem;font-weight:700">Impor Backup JSON</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Pulihkan data dari file backup sebelumnya</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       <input type="file" accept=".json" id="importBackupInput" style="position:absolute;inset:0;opacity:0;cursor:pointer" data-action="importBackup">
@@ -1751,18 +1751,18 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:var(--info)">Sinkronisasi ke Firebase</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Upload data lokal ke cloud (Firestore)</div>
+        <div style="font-size:.8125rem;font-weight:700;color:var(--info)">Sinkronisasi ke Firebase</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Upload data lokal ke cloud (Firestore)</div>
       </div>
-      <span style="font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'var(--success-bg)' : 'var(--warning-bg)'};color:${window.__nsaDataMode === 'firestore' ? 'var(--success)' : 'var(--warning)'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
+      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'var(--success-bg)' : 'var(--warning-bg)'};color:${window.__nsaDataMode === 'firestore' ? 'var(--success)' : 'var(--warning)'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
     </div>
     <div class="card set-row" data-action="resetDB" style="border-color:var(--danger-light)">
       <div class="set-ico" style="background:var(--danger-light)">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.44"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:var(--danger)">Reset Data</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Kembalikan semua data ke kondisi awal</div>
+        <div style="font-size:.8125rem;font-weight:700;color:var(--danger)">Reset Data</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Kembalikan semua data ke kondisi awal</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
@@ -2181,8 +2181,8 @@ document.addEventListener('click', async e => {
         `
         <div id="sync-fb-body" style="text-align:center;padding:20px 0">
           <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
           <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
             <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
@@ -2230,8 +2230,8 @@ document.addEventListener('click', async e => {
         if (body)
           body.innerHTML = `
           <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
-          <div style="font-size:12px;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
+          <div style="font-size:.75rem;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
         showToast('Data berhasil disinkronisasi ke Firebase', 'success');
         setTimeout(() => {
           closeModal();
@@ -2242,8 +2242,8 @@ document.addEventListener('click', async e => {
         if (body)
           body.innerHTML = `
           <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--danger)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
-          <div style="font-size:12px;color:var(--muted)">${escapeHtml(e.message)}</div>`;
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
+          <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(e.message)}</div>`;
         showToast('Gagal: ' + e.message, 'danger');
       }
       break;
@@ -2516,10 +2516,10 @@ function handleSearch(query) {
               data-action="${r.action}" data-nav="${r.nav}" data-id="${esc(r.id)}"${r.type ? ` data-type="${r.type}"` : ''}
               style="width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left">
               <span style="flex:1;min-width:0">
-                <span class="t-strong" style="display:block;font-size:13px">${esc(r.title)}</span>
-                <span class="t-muted" style="display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.sub)}</span>
+                <span class="t-strong" style="display:block;font-size:.8125rem">${esc(r.title)}</span>
+                <span class="t-muted" style="display:block;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.sub)}</span>
               </span>
-              <span class="t-muted t-num" style="flex-shrink:0;font-size:12.5px">${esc(r.right)}</span>
+              <span class="t-muted t-num" style="flex-shrink:0;font-size:.78125rem">${esc(r.right)}</span>
             </button>`
           )
           .join('');
@@ -2556,7 +2556,7 @@ function handleSearch(query) {
       'border:none',
       'cursor:pointer',
       'color:var(--muted)',
-      'font-size:15px',
+      'font-size:.9375rem',
       'line-height:1',
       'padding:0 2px',
       'flex-shrink:0',
@@ -2764,18 +2764,18 @@ function renderSales() {
     align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;
     background:var(--bg);border:1.5px solid var(--primary);border-radius:10px;
     margin-bottom:10px">
-    <span id="bulkCount" style="font-size:12px;font-weight:700;color:var(--primary)">
+    <span id="bulkCount" style="font-size:.75rem;font-weight:700;color:var(--primary)">
       ${soSelection.size} SO dipilih
     </span>
     <div style="flex:1"></div>
-    <span style="font-size:11px;color:var(--muted)">Ubah semua ke:</span>
+    <span style="font-size:.75rem;color:var(--muted)">Ubah semua ke:</span>
     ${SO_STATUSES.map(
       ([v, l]) =>
         `<button class="btn-ghost" data-action="bulkSOStatus" data-status="${v}"
-         style="font-size:11px;padding:4px 10px">${escapeHtml(l)}</button>`
+         style="font-size:.75rem;padding:4px 10px">${escapeHtml(l)}</button>`
     ).join('')}
     <button class="btn-ghost" data-action="clearSOSelection"
-      style="font-size:11px;padding:4px 10px;color:var(--danger)">✕ Batal</button>
+      style="font-size:.75rem;padding:4px 10px;color:var(--danger)">✕ Batal</button>
   </div>`;
 
   const tableRows =
@@ -2789,13 +2789,13 @@ function renderSales() {
             <input type="checkbox" class="so-check" data-action="toggleSOCheck"
               data-id="${escapeHtml(o.id)}" ${checked} style="cursor:pointer;width:14px;height:14px">
           </td>
-          <td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
-          <td class="td-p" style="font-size:13px;font-weight:600">${escapeHtml(o.customer)}</td>
-          <td class="td-p" style="font-size:11px;color:var(--muted)">${escapeHtml(o.date)}</td>
-          <td class="td-p" style="font-size:13px;font-weight:800">${idr(o.amount)}</td>
+          <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
+          <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.customer)}</td>
+          <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
+          <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
           <td class="td-p" style="padding:4px 8px">
             <select class="form-select" data-action="inlineSOStatus" data-id="${escapeHtml(o.id)}"
-              style="font-size:11px;padding:4px 8px;min-width:130px;cursor:pointer">
+              style="font-size:.75rem;padding:4px 8px;min-width:130px;cursor:pointer">
               ${SO_STATUSES.filter(
                 ([v]) =>
                   v === o.status ||
@@ -2833,7 +2833,7 @@ function renderSales() {
   ])}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:14px;font-weight:700">Daftar Sales Order</div>
+      <div style="font-size:.875rem;font-weight:700">Daftar Sales Order</div>
       <div style="display:flex;align-items:center;gap:8px">
         ${summaryBtn('sales')}
         ${importBtn('sales')}

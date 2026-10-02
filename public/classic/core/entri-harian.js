@@ -164,14 +164,14 @@
         _icon(task.icon, task.color) +
         '</div>' +
         '<div style="flex:1">' +
-        '<div style="font-size:15px;font-weight:700;color:var(--text)">' +
+        '<div style="font-size:.9375rem;font-weight:700;color:var(--text)">' +
         esc(task.title) +
         '</div>' +
-        '<div style="font-size:13px;color:var(--muted);margin-top:3px">' +
+        '<div style="font-size:.8125rem;color:var(--muted);margin-top:3px">' +
         esc(task.desc) +
         '</div>' +
         '</div>' +
-        '<div style="font-size:20px;color:' +
+        '<div style="font-size:1.25rem;color:' +
         task.color +
         ';font-weight:700">+</div>' +
         '</button>'

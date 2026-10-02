@@ -146,7 +146,7 @@ export function showUndoToast(msg, onUndo, duration) {
     'color:#fff',
     'border-radius:5px',
     'padding:2px 10px',
-    'font-size:11px',
+    'font-size:.75rem',
     'font-weight:700',
     'cursor:pointer',
     'white-space:nowrap',

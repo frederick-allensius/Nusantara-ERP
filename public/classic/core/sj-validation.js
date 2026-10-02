@@ -588,7 +588,7 @@
       bg +
       ';color:' +
       fg +
-      ';font-size:13px;font-weight:700;padding:3px 9px;border-radius:6px">' +
+      ';font-size:.8125rem;font-weight:700;padding:3px 9px;border-radius:6px">' +
       esc(text) +
       '</span>'
     );
@@ -617,13 +617,13 @@
         };
         return (
           '<tr style="' + rowBg + '">' +
-          '<td class="td-p" style="font-size:14px;font-weight:700">' + esc(f.itemName || f.itemCode || f.itemId) + '</td>' +
-          '<td class="td-p" style="font-size:13px;color:var(--primary);font-weight:600">' + esc(f.poId || f.doId || '—') + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px">' + f.tonnage + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px">' + (r ? r.tonnage : '—') + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px;' + varColor(row.tonnageMismatch) + '">' + tv + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px">' + money(f.unitPrice) + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px;' + varColor(row.priceMismatch) + '">' + pv + '</td>' +
+          '<td class="td-p" style="font-size:.875rem;font-weight:700">' + esc(f.itemName || f.itemCode || f.itemId) + '</td>' +
+          '<td class="td-p" style="font-size:.8125rem;color:var(--primary);font-weight:600">' + esc(f.poId || f.doId || '—') + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem">' + f.tonnage + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem">' + (r ? r.tonnage : '—') + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem;' + varColor(row.tonnageMismatch) + '">' + tv + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem">' + money(f.unitPrice) + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem;' + varColor(row.priceMismatch) + '">' + pv + '</td>' +
           '<td class="td-p">' + status + '</td>' +
           '</tr>'
         );
@@ -637,18 +637,18 @@
       .map(function (r) {
         return (
           '<tr style="background:#FFFBEB">' +
-          '<td class="td-p" style="font-size:14px;font-weight:700">' + esc(r.itemName || r.itemCode) + '</td>' +
-          '<td class="td-p" style="font-size:13px">' + esc(r.poId || r.doId || '—') + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px">' + r.tonnage + '</td>' +
-          '<td class="td-p" style="text-align:right;font-size:14px">' + money(r.unitPrice) + '</td>' +
+          '<td class="td-p" style="font-size:.875rem;font-weight:700">' + esc(r.itemName || r.itemCode) + '</td>' +
+          '<td class="td-p" style="font-size:.8125rem">' + esc(r.poId || r.doId || '—') + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem">' + r.tonnage + '</td>' +
+          '<td class="td-p" style="text-align:right;font-size:.875rem">' + money(r.unitPrice) + '</td>' +
           '</tr>'
         );
       })
       .join('');
     return (
       '<div class="card" style="margin-top:16px;border-left:4px solid #F59E0B">' +
-      '<h3 style="font-size:16px;margin:0 0 4px">Baris Rekap Tanpa Padanan Lapangan</h3>' +
-      '<p style="font-size:13px;color:var(--muted);margin:0 0 10px">Baris rekap supplier ini tidak ada di data Surat Jalan / timbangan lapangan — potensi tagihan fiktif. Periksa sebelum faktur.</p>' +
+      '<h3 style="font-size:1rem;margin:0 0 4px">Baris Rekap Tanpa Padanan Lapangan</h3>' +
+      '<p style="font-size:.8125rem;color:var(--muted);margin:0 0 10px">Baris rekap supplier ini tidak ada di data Surat Jalan / timbangan lapangan — potensi tagihan fiktif. Periksa sebelum faktur.</p>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>Item</th><th>Dokumen</th><th style="text-align:right">Tonase Rekap</th><th style="text-align:right">Harga Rekap</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div></div>'
@@ -660,7 +660,7 @@
     if (!host) return;
     if (!_attachedRecap) {
       host.innerHTML =
-        '<div class="card" style="text-align:center;padding:26px;color:var(--muted);font-size:14px">Lampirkan rekap supplier untuk menjalankan validasi silang.</div>';
+        '<div class="card" style="text-align:center;padding:26px;color:var(--muted);font-size:.875rem">Lampirkan rekap supplier untuk menjalankan validasi silang.</div>';
       return;
     }
     var fieldLines = fieldLinesFromReceipts(_reconciledReceipts());
@@ -669,11 +669,11 @@
     var banner =
       s.mismatched > 0
         ? '<div class="card" style="background:#FEF2F2;border-left:4px solid #DC2626;padding:14px;margin-bottom:14px">' +
-          '<div style="font-size:16px;font-weight:800;color:#991B1B">⚠ ' + s.mismatched + ' baris bermasalah — JANGAN terbitkan faktur sebelum diperiksa</div>' +
-          '<div style="font-size:14px;color:#7F1D1D;margin-top:4px">Rekap supplier berbeda dari data timbangan lapangan (tonase/harga). Ini mencegah kurang-tagih / lebih-bayar.</div>' +
+          '<div style="font-size:1rem;font-weight:800;color:#991B1B">⚠ ' + s.mismatched + ' baris bermasalah — JANGAN terbitkan faktur sebelum diperiksa</div>' +
+          '<div style="font-size:.875rem;color:#7F1D1D;margin-top:4px">Rekap supplier berbeda dari data timbangan lapangan (tonase/harga). Ini mencegah kurang-tagih / lebih-bayar.</div>' +
           '</div>'
         : '<div class="card" style="background:#F0FDF4;border-left:4px solid #16A34A;padding:14px;margin-bottom:14px">' +
-          '<div style="font-size:16px;font-weight:800;color:#166534">✓ Semua baris cocok dalam toleransi — aman untuk difakturkan</div>' +
+          '<div style="font-size:1rem;font-weight:800;color:#166534">✓ Semua baris cocok dalam toleransi — aman untuk difakturkan</div>' +
           '</div>';
     var stats =
       typeof window.statRow === 'function'
@@ -729,14 +729,14 @@
     var controls =
       '<div class="card" style="margin-bottom:14px">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">' +
-      '<label style="display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700;color:var(--text-secondary)">Sumber Rekap Supplier' +
-      '<select id="sjv-source" style="padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--text)">' +
+      '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;font-weight:700;color:var(--text-secondary)">Sumber Rekap Supplier' +
+      '<select id="sjv-source" style="padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--surface);color:var(--text)">' +
       sourceOpts +
       '</select></label>' +
-      '<button class="btn-primary" data-action="sjvAttach" style="font-size:14px;padding:10px 16px">Lampirkan & Validasi</button>' +
-      (_attachedRecap ? '<button class="btn-ghost" data-action="sjvClear" style="font-size:14px;padding:10px 16px">Bersihkan</button>' : '') +
+      '<button class="btn-primary" data-action="sjvAttach" style="font-size:.875rem;padding:10px 16px">Lampirkan & Validasi</button>' +
+      (_attachedRecap ? '<button class="btn-ghost" data-action="sjvClear" style="font-size:.875rem;padding:10px 16px">Bersihkan</button>' : '') +
       '</div>' +
-      '<div style="font-size:13px;color:var(--muted);margin-top:8px">Sumber rekap bersifat pluggable — sumber email supplier dapat ditambahkan memakai kontrak yang sama tanpa mengubah alat ini.</div>' +
+      '<div style="font-size:.8125rem;color:var(--muted);margin-top:8px">Sumber rekap bersifat pluggable — sumber email supplier dapat ditambahkan memakai kontrak yang sama tanpa mengubah alat ini.</div>' +
       '</div>';
 
     injectView(

@@ -293,21 +293,21 @@
       totalErr += errRows;
       html += `<div class="card" style="margin-bottom:14px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-weight:800;font-size:14px">${esc(name)}</div>
-          <div style="font-size:12px;color:var(--muted)">${p.rows.length} baris${
+          <div style="font-weight:800;font-size:.875rem">${esc(name)}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${p.rows.length} baris${
             errRows
               ? ` · <span style="color:var(--danger);font-weight:700">${errRows} bermasalah</span>`
               : ''
           }</div>
         </div>`;
       if (p.unknown.length) {
-        html += `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(
+        html += `<div style="font-size:.75rem;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(
           p.unknown.join(', ')
         )}</div>`;
       }
       if (p.rows.length) {
         html +=
-          '<div class="table-wrap" style="overflow:auto;max-height:240px"><table style="width:100%;font-size:12px"><thead><tr>';
+          '<div class="table-wrap" style="overflow:auto;max-height:240px"><table style="width:100%;font-size:.75rem"><thead><tr>';
         html += '<th style="text-align:left;padding:4px 8px">#</th>';
         def.cols.forEach(c => {
           html += `<th style="text-align:left;padding:4px 8px;white-space:nowrap">${esc(c.h)}</th>`;
@@ -327,12 +327,12 @@
         });
         html += '</tbody></table></div>';
         if (p.rows.length > 50) {
-          html += `<div style="font-size:11px;color:var(--muted);margin-top:6px">…dan ${p.rows.length - 50} baris lagi</div>`;
+          html += `<div style="font-size:.75rem;color:var(--muted);margin-top:6px">…dan ${p.rows.length - 50} baris lagi</div>`;
         }
       }
       html += '</div>';
     });
-    const summary = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Total ${totalRows} baris${
+    const summary = `<div style="font-size:.75rem;color:var(--muted);margin-bottom:10px">Total ${totalRows} baris${
       totalErr ? ` · ${totalErr} baris bermasalah (akan dilewati)` : ''
     }</div>`;
     host.innerHTML = summary + html;
@@ -677,8 +677,8 @@
     const host = document.getElementById('excel-preview');
     if (!host) return;
     host.innerHTML = `<div class="card" style="padding:18px">
-      <div style="font-weight:800;font-size:15px;margin-bottom:10px">Ringkasan Import</div>
-      <ul style="font-size:13px;line-height:1.9;margin:0;padding-left:18px">
+      <div style="font-weight:800;font-size:.9375rem;margin-bottom:10px">Ringkasan Import</div>
+      <ul style="font-size:.8125rem;line-height:1.9;margin:0;padding-left:18px">
         <li>Dokumen/entri dibuat: <strong>${result.created}</strong></li>
         <li>Customer baru: <strong>${created.customers}</strong></li>
         <li>Supplier baru: <strong>${created.suppliers}</strong></li>
@@ -730,7 +730,7 @@
     const rows = parsedSheet.rows;
     const errRows = rows.filter(r => r._errors.length).length;
     let table =
-      '<div class="table-wrap" style="overflow:auto;max-height:300px"><table style="width:100%;font-size:12px"><thead><tr>' +
+      '<div class="table-wrap" style="overflow:auto;max-height:300px"><table style="width:100%;font-size:.75rem"><thead><tr>' +
       '<th style="text-align:left;padding:4px 8px">#</th>' +
       def.cols.map(c => `<th style="text-align:left;padding:4px 8px;white-space:nowrap">${esc(c.h)}</th>`).join('') +
       '<th style="text-align:left;padding:4px 8px">Validasi</th></tr></thead><tbody>';
@@ -747,16 +747,16 @@
     });
     table += '</tbody></table></div>';
     if (rows.length > 50) {
-      table += `<div style="font-size:11px;color:var(--muted);margin-top:6px">…dan ${rows.length - 50} baris lagi</div>`;
+      table += `<div style="font-size:.75rem;color:var(--muted);margin-top:6px">…dan ${rows.length - 50} baris lagi</div>`;
     }
     const body = `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:10px">
         ${rows.length} baris terbaca${errRows ? ` · <span style="color:var(--danger);font-weight:700">${errRows} bermasalah (dilewati)</span>` : ''}.
         Duplikat (data &amp; tanggal sama) otomatis dilewati${
           view === 'logistics' ? ', dan Nomor DO yang bentrok ditolak' : ''
         }.
       </div>
-      ${parsedSheet.unknown.length ? `<div style="font-size:11px;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(parsedSheet.unknown.join(', '))}</div>` : ''}
+      ${parsedSheet.unknown.length ? `<div style="font-size:.75rem;color:var(--warning);margin-bottom:8px">Kolom tak dikenal diabaikan: ${esc(parsedSheet.unknown.join(', '))}</div>` : ''}
       ${table}`;
     const footer =
       '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
@@ -832,8 +832,8 @@
       <div id="excel-dropzone" data-xls="pick"
         style="cursor:pointer;border:2px dashed var(--border);border-radius:var(--r);padding:34px 18px;text-align:center;transition:border-color .15s">
         <div style="margin-bottom:8px;color:var(--muted)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px">Tarik &amp; lepas file .xlsx di sini</div>
-        <div style="font-size:12px;color:var(--muted)">atau klik untuk memilih file</div>
+        <div style="font-weight:700;font-size:.875rem;margin-bottom:4px">Tarik &amp; lepas file .xlsx di sini</div>
+        <div style="font-size:.75rem;color:var(--muted)">atau klik untuk memilih file</div>
         <input id="excel-file" type="file" accept=".xlsx,.xls" style="display:none">
       </div>
     </div>

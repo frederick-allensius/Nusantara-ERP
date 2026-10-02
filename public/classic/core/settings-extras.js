@@ -43,7 +43,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  CURRENCY
@@ -73,11 +73,11 @@
           '</td>' +
           '<td class="td-p" style="text-align:center">' +
           (isBase
-            ? '<span style="font-size:10px;color:var(--muted)">Base</span>'
-            : '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="editCurrency" data-id="' +
+            ? '<span style="font-size:.75rem;color:var(--muted)">Base</span>'
+            : '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editCurrency" data-id="' +
               esc(c.code) +
               '">Edit</button> ' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delCurrency" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delCurrency" data-id="' +
               esc(c.code) +
               '">Hapus</button>') +
           '</td></tr>'
@@ -183,10 +183,10 @@
           t.days +
           ' hari</td>' +
           '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="editPT" data-id="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editPT" data-id="' +
           esc(t.id) +
           '">Edit</button> ' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delPT" data-id="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delPT" data-id="' +
           esc(t.id) +
           '">Hapus</button>' +
           '</td></tr>'
@@ -274,14 +274,14 @@
           '<td class="td-p">' +
           esc(m.carrier) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(m.notes || '—') +
           '</td>' +
           '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px" data-action="editShip" data-id="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editShip" data-id="' +
           esc(m.id) +
           '">Edit</button> ' +
-          '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delShip" data-id="' +
+          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delShip" data-id="' +
           esc(m.id) +
           '">Hapus</button>' +
           '</td></tr>'
@@ -389,14 +389,14 @@
               esc(h.name) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delHoliday" data-idx="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delHoliday" data-idx="' +
               i +
               '">Hapus</button>' +
               '</td></tr>'
             );
           })
           .join('')
-      : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Belum ada hari libur ditambahkan.</td></tr>';
+      : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted);font-size:.75rem">Belum ada hari libur ditambahkan.</td></tr>';
 
     var fsOpts = MONTH_NAMES.map(function (name, i) {
       var v = String(i + 1).padStart(2, '0');
@@ -415,15 +415,15 @@
       'settings',
       '<div class="sec-hdr"><div><h1>Kalender</h1><p>Periode fiskal dan hari libur nasional</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="font-size:12px;font-weight:700;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Tahun Fiskal</div>' +
+        '<div style="font-size:.75rem;font-weight:700;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Tahun Fiskal</div>' +
         '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<span style="font-size:13px">Bulan awal tahun fiskal:</span>' +
+        '<span style="font-size:.8125rem">Bulan awal tahun fiskal:</span>' +
         '<select class="form-select" id="cal-fiscal-start" style="width:160px">' +
         fsOpts +
         '</select>' +
         '<button class="btn" id="saveFiscal">Simpan</button></div></div>' +
         '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Hari Libur Nasional (' +
+        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Hari Libur Nasional (' +
         holidays.length +
         ')</div>' +
         '<button class="btn" data-action="addHoliday">+ Tambah</button></div>' +
@@ -522,19 +522,19 @@
           .map(function (e) {
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted);white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
               esc(e.ts) +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 7px;background:var(--bg);border-radius:4px;white-space:nowrap">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;text-transform:uppercase;padding:2px 7px;background:var(--bg);border-radius:4px;white-space:nowrap">' +
               esc(e.type) +
               '</span></td>' +
-              '<td class="td-p" style="font-weight:600;font-size:12px">' +
+              '<td class="td-p" style="font-weight:600;font-size:.75rem">' +
               esc(e.action) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(e.detail) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(e.user) +
               '</td>' +
               '</tr>'
@@ -585,10 +585,10 @@
         .map(function (cat, i) {
           return (
             '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">' +
-            '<span style="flex:1;font-size:13px">' +
+            '<span style="flex:1;font-size:.8125rem">' +
             esc(cat) +
             '</span>' +
-            '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delSaleCat" data-idx="' +
+            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delSaleCat" data-idx="' +
             i +
             '">Hapus</button>' +
             '</div>'
@@ -652,21 +652,21 @@
               '<td class="td-p" style="font-weight:700">' +
               esc(f.name) +
               '</td>' +
-              '<td class="td-p"><span style="font-size:10px;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
               esc(f.type || '—') +
               '</span></td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(f.description || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger)" data-action="delFav" data-id="' +
+              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delFav" data-id="' +
               esc(f.id) +
               '">Hapus</button>' +
               '</td></tr>'
             );
           })
           .join('')
-      : '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">' +
+      : '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted);font-size:.75rem">' +
         'Belum ada transaksi favorit.<br>Simpan SO atau PO sebagai template dari halaman detail dokumen.</td></tr>';
 
     injectView(

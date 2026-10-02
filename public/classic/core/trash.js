@@ -262,7 +262,7 @@
   }
 
   const TH =
-    'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   function openRecycleBin() {
     const entries = bin().slice().reverse();
@@ -277,8 +277,8 @@
           `<td class="td-p">${esc(t.label)}</td>` +
           `<td class="td-p">${esc(t.deletedBy)}</td>` +
           '<td class="td-p" style="text-align:right;white-space:nowrap">' +
-          `<button class="btn-ghost" data-action="trashRestore" data-id="${esc(t.id)}" style="font-size:11px;padding:4px 10px">Pulihkan</button> ` +
-          `<button class="btn-ghost" data-action="trashPurge" data-id="${esc(t.id)}" style="font-size:11px;padding:4px 10px;color:var(--danger)">Hapus</button>` +
+          `<button class="btn-ghost" data-action="trashRestore" data-id="${esc(t.id)}" style="font-size:.75rem;padding:4px 10px">Pulihkan</button> ` +
+          `<button class="btn-ghost" data-action="trashPurge" data-id="${esc(t.id)}" style="font-size:.75rem;padding:4px 10px;color:var(--danger)">Hapus</button>` +
           '</td></tr>'
         );
       })
@@ -288,18 +288,18 @@
       'settings',
       '<div class="card">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">' +
-        '<div><div style="font-size:15px;font-weight:800">Recycle Bin</div>' +
-        `<div style="font-size:11px;color:var(--muted)">Dokumen terhapus disimpan ${RETENTION_DAYS} hari (maks. ${MAX_ENTRIES} entri) dan bisa dipulihkan satu klik.</div></div>` +
+        '<div><div style="font-size:.9375rem;font-weight:800">Recycle Bin</div>' +
+        `<div style="font-size:.75rem;color:var(--muted)">Dokumen terhapus disimpan ${RETENTION_DAYS} hari (maks. ${MAX_ENTRIES} entri) dan bisa dipulihkan satu klik.</div></div>` +
         (entries.length > 0
-          ? '<button class="btn-ghost" data-action="trashPurgeAll" style="font-size:11px;padding:4px 10px;color:var(--danger)">Kosongkan Semua</button>'
+          ? '<button class="btn-ghost" data-action="trashPurgeAll" style="font-size:.75rem;padding:4px 10px;color:var(--danger)">Kosongkan Semua</button>'
           : '') +
         '</div>' +
         (entries.length === 0
           ? '<div style="text-align:center;padding:40px;color:var(--muted)">' +
             '<div class="empty-state-icon" style="margin:0 auto 8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>' +
-            '<div style="font-size:14px;font-weight:700;margin-bottom:4px">Recycle bin kosong</div>' +
-            '<div style="font-size:12px">Dokumen yang dihapus akan muncul di sini.</div></div>'
-          : '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
+            '<div style="font-size:.875rem;font-weight:700;margin-bottom:4px">Recycle bin kosong</div>' +
+            '<div style="font-size:.75rem">Dokumen yang dihapus akan muncul di sini.</div></div>'
+          : '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:.75rem">' +
             `<thead><tr><th style="${TH}">Dihapus</th><th style="${TH}">Koleksi</th><th style="${TH}">Dokumen</th><th style="${TH}">Keterangan</th><th style="${TH}">Oleh</th><th style="${TH};text-align:right">Aksi</th></tr></thead>` +
             `<tbody>${rows}</tbody></table></div>`) +
         '</div>'

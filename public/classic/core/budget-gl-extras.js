@@ -92,7 +92,7 @@
       .map(function (b) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(b.id) +
           '</td>' +
           '<td class="td-p">' +
@@ -106,7 +106,7 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(b.amount) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(b.notes || '—') +
           '</td>' +
           '<td class="td-p">' +
@@ -162,16 +162,16 @@
     var b = existing || {};
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Akun<select id="bg-account" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Akun<select id="bg-account" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Periode (YYYY-MM)<input id="bg-period" class="form-input" type="month" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Periode (YYYY-MM)<input id="bg-period" class="form-input" type="month" value="' +
       esc(b.period || thisMonth()) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Jumlah Anggaran<input id="bg-amount" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Jumlah Anggaran<input id="bg-amount" class="form-input" type="number" min="0" value="' +
       (b.amount || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="bg-notes" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="bg-notes" class="form-input" value="' +
       esc(b.notes || '') +
       '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
@@ -296,14 +296,14 @@
         '<tr>' +
         '<td class="td-p" style="font-weight:600">' + esc(g.code) + '</td>' +
         '<td class="td-p">' + esc(g.name) + '</td>' +
-        '<td class="td-p" style="font-size:11px;color:var(--muted)">' + esc(periodList) + '</td>' +
+        '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' + esc(periodList) + '</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700">' + money(g.budgetTotal) + '</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700">' + money(actual) + '</td>' +
         '<td class="td-p" style="text-align:right;font-weight:700;color:' + varColor + '">' + money(variance) + '</td>' +
         '<td class="td-p"><div style="display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden">' +
         '<div style="height:100%;width:' + Math.min(pct, 100) + '%;background:' + color + ';border-radius:4px"></div></div>' +
-        '<span style="font-size:11px;font-weight:700;color:' + color + '">' + pct + '%</span></div></td>' +
+        '<span style="font-size:.75rem;font-weight:700;color:' + color + '">' + pct + '%</span></div></td>' +
         '</tr>'
       );
     }).join('');
@@ -318,7 +318,7 @@
       '<td class="td-p" style="text-align:right;font-weight:700">' + money(totalBudget) + '</td>' +
       '<td class="td-p" style="text-align:right;font-weight:700">' + money(totalActual) + '</td>' +
       '<td class="td-p" style="text-align:right;font-weight:700;color:' + totalColor + '">' + money(totalVariance) + '</td>' +
-      '<td class="td-p" style="font-weight:700;font-size:11px">' + totalPct + '%</td>' +
+      '<td class="td-p" style="font-weight:700;font-size:.75rem">' + totalPct + '%</td>' +
       '</tr></tfoot>' : '';
 
     return { rows: rows, footer: footer, totalBudget: totalBudget, totalActual: totalActual, count: filtered.length };
@@ -350,11 +350,11 @@
     var filterBar =
       '<div class="card" style="margin-bottom:12px">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
-      '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Periode Dari</label>' +
+      '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Periode Dari</label>' +
       '<input class="form-input" id="bva-from" type="month" style="width:160px"></div>' +
-      '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Periode Sampai</label>' +
+      '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Periode Sampai</label>' +
       '<input class="form-input" id="bva-to" type="month" style="width:160px"></div>' +
-      '<button class="btn" data-action="bvaFilter" style="font-size:12px">Filter</button>' +
+      '<button class="btn" data-action="bvaFilter" style="font-size:.75rem">Filter</button>' +
       '</div></div>';
 
     var html =
@@ -402,7 +402,7 @@
       .map(function (t) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(t.date) +
           '</td>' +
           '<td class="td-p">' +
@@ -414,7 +414,7 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(t.amount) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
           esc(t.notes || '—') +
           '</td>' +
           '</tr>'
@@ -434,7 +434,7 @@
 
     var html =
       header +
-      '<div class="card"><div style="font-size:14px;font-weight:700;margin-bottom:10px">Riwayat Transfer</div>' +
+      '<div class="card"><div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Riwayat Transfer</div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>Tanggal</th><th>Dari Akun</th><th>Ke Akun</th><th style="text-align:right">Jumlah</th><th>Catatan</th></tr></thead>' +
       '<tbody>' +
@@ -473,14 +473,14 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Dari Budget<select id="bt-from" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Dari Budget<select id="bt-from" class="form-select" style="width:100%;margin-top:4px">' +
       opts +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Ke Budget<select id="bt-to" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Ke Budget<select id="bt-to" class="form-select" style="width:100%;margin-top:4px">' +
       opts +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Jumlah<input id="bt-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Catatan<input id="bt-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Jumlah<input id="bt-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="bt-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(
@@ -567,13 +567,13 @@
     var html =
       header +
       '<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-      '<label style="font-size:12px;font-weight:700">Pilih Akun</label>' +
+      '<label style="font-size:.75rem;font-weight:700">Pilih Akun</label>' +
       '<select id="ah-account" class="form-select" style="min-width:280px">' +
       acOptions +
       '</select>' +
       '<input id="ah-from" type="date" class="form-input" style="width:140px" placeholder="Dari">' +
       '<input id="ah-to" type="date" class="form-input" style="width:140px" placeholder="s/d">' +
-      '<button class="btn" data-action="ahFilter" style="font-size:12px">Tampilkan</button>' +
+      '<button class="btn" data-action="ahFilter" style="font-size:.75rem">Tampilkan</button>' +
       '</div></div>' +
       '<div id="ah-result"></div>';
 
@@ -616,13 +616,13 @@
             runningBalance += d - c;
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.date) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;font-weight:700;color:var(--primary)">' +
+              '<td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">' +
               esc(j.number || j.id || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:12px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(l.memo || j.memo || j.description || '—') +
               '</td>' +
               '<td class="td-p" style="text-align:right">' +
@@ -653,10 +653,10 @@
 
     result.innerHTML =
       '<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:10px">' +
-      '<div style="font-size:14px;font-weight:700">Riwayat Transaksi (' +
+      '<div style="font-size:.875rem;font-weight:700">Riwayat Transaksi (' +
       filtered.length +
       ' jurnal)</div>' +
-      '<div style="font-size:12px;color:var(--muted)">Saldo: <strong>' +
+      '<div style="font-size:.75rem;color:var(--muted)">Saldo: <strong>' +
       money(runningBalance) +
       '</strong></div></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
@@ -691,10 +691,10 @@
             : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(a.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(a.date) +
           '</td>' +
           '<td class="td-p">' +
@@ -721,7 +721,7 @@
             ? '<button class="action-ghost" data-action="delAccrual" data-id="' +
               esc(a.id) +
               '" style="color:var(--danger)">Hapus</button>'
-            : '<span style="font-size:11px;color:var(--muted)">' +
+            : '<span style="font-size:.75rem;color:var(--muted)">' +
               esc(a.journalNumber || 'Sudah dijurnal') +
               '</span>') +
           '</td>' +
@@ -755,15 +755,15 @@
   function addAccrualModal() {
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Tanggal<input id="ac-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tanggal<input id="ac-date" class="form-input" type="date" value="' +
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Akun Biaya<select id="ac-account" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Akun Biaya<select id="ac-account" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Keterangan<input id="ac-desc" class="form-input" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Jumlah<input id="ac-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Akun Hutang (kredit)<select id="ac-credit" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Keterangan<input id="ac-desc" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Jumlah<input id="ac-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Akun Hutang (kredit)<select id="ac-credit" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
       '</div>';
@@ -854,7 +854,7 @@
         var gross = (e.salary || 0) + (e.transportAllowance || 0) + (e.mealAllowance || 0);
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(e.id) +
           '</td>' +
           '<td class="td-p" style="font-weight:700">' +
@@ -910,7 +910,7 @@
         }
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:11px;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
           esc(r.id) +
           '</td>' +
           '<td class="td-p">' +
@@ -922,7 +922,7 @@
           '<td class="td-p" style="text-align:right;font-weight:700">' +
           money(r.totalAmount) +
           '</td>' +
-          '<td class="td-p" style="font-size:11px">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(r.date) +
           '</td>' +
           '<td class="td-p">' + statusBadge + '</td>' +
@@ -969,7 +969,7 @@
       header +
       stats +
       '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:14px;font-weight:700">Data Karyawan</div></div>' +
+      '<div style="font-size:.875rem;font-weight:700">Data Karyawan</div></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>ID</th><th>Nama</th><th>Jabatan</th><th style="text-align:right">Gaji Pokok</th><th style="text-align:right">T. Transport</th><th style="text-align:right">T. Makan</th><th style="text-align:right">Total</th><th>Aksi</th></tr></thead>' +
       '<tbody>' +
@@ -977,8 +977,8 @@
       '</tbody>' +
       '</table></div></div>' +
       '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:14px;font-weight:700">Riwayat Proses Gaji</div>' +
-      '<button class="btn" data-action="runPayroll" style="font-size:12px">Proses Gaji</button></div>' +
+      '<div style="font-size:.875rem;font-weight:700">Riwayat Proses Gaji</div>' +
+      '<button class="btn" data-action="runPayroll" style="font-size:.75rem">Proses Gaji</button></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>ID</th><th>Periode</th><th>Karyawan</th><th style="text-align:right">Total</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>' +
       '<tbody>' +
@@ -1015,25 +1015,25 @@
         .join('');
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Nama Lengkap<input id="emp-name" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Nama Lengkap<input id="emp-name" class="form-input" value="' +
       esc(e.name || '') +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Email (untuk akses login)<input id="emp-email" class="form-input" type="email" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Email (untuk akses login)<input id="emp-email" class="form-input" type="email" value="' +
       esc(e.email || '') +
       '" placeholder="nama@perusahaan.com" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Departemen<select id="emp-dept" class="form-input" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Departemen<select id="emp-dept" class="form-input" style="width:100%;margin-top:4px">' +
       deptOptions +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Jabatan<input id="emp-pos" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Jabatan<input id="emp-pos" class="form-input" value="' +
       esc(e.position || '') +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Gaji Pokok<input id="emp-salary" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Gaji Pokok<input id="emp-salary" class="form-input" type="number" min="0" value="' +
       (e.salary || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Tunjangan Transport<input id="emp-trans" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tunjangan Transport<input id="emp-trans" class="form-input" type="number" min="0" value="' +
       (e.transportAllowance || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:12px;font-weight:700">Tunjangan Makan<input id="emp-meal" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Tunjangan Makan<input id="emp-meal" class="form-input" type="number" min="0" value="' +
       (e.mealAllowance || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
@@ -1116,19 +1116,19 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:12px;font-weight:700">Periode<input id="pr-period" class="form-input" type="month" value="' +
+      '<label style="font-size:.75rem;font-weight:700">Periode<input id="pr-period" class="form-input" type="month" value="' +
       thisMonth() +
       '" style="width:100%;margin-top:4px"></label>' +
       '<div style="background:var(--bg);border-radius:8px;padding:12px">' +
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Ringkasan</div>' +
-      '<div style="font-size:12px">Jumlah karyawan: <strong>' +
+      '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Ringkasan</div>' +
+      '<div style="font-size:.75rem">Jumlah karyawan: <strong>' +
       employees.length +
       '</strong></div>' +
-      '<div style="font-size:12px">Total pembayaran: <strong>' +
+      '<div style="font-size:.75rem">Total pembayaran: <strong>' +
       money(total) +
       '</strong></div>' +
       '</div>' +
-      '<label style="font-size:12px"><input type="checkbox" id="pr-post" checked> Langsung posting ke jurnal</label>' +
+      '<label style="font-size:.75rem"><input type="checkbox" id="pr-post" checked> Langsung posting ke jurnal</label>' +
       '</div>';
 
     modal(
@@ -1183,16 +1183,16 @@
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
       '<div style="background:var(--bg);border-radius:8px;padding:12px">' +
-      '<div style="font-size:12px">Proses gaji: <strong>' + esc(run.id) + '</strong></div>' +
-      '<div style="font-size:12px">Periode: <strong>' + esc(run.period) + '</strong></div>' +
-      '<div style="font-size:12px">Total: <strong>' + money(run.totalAmount) + '</strong></div>' +
+      '<div style="font-size:.75rem">Proses gaji: <strong>' + esc(run.id) + '</strong></div>' +
+      '<div style="font-size:.75rem">Periode: <strong>' + esc(run.period) + '</strong></div>' +
+      '<div style="font-size:.75rem">Total: <strong>' + money(run.totalAmount) + '</strong></div>' +
       '</div>' +
-      '<label style="font-size:12px;font-weight:700">Metode Pembayaran<select id="pp-method" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:700">Metode Pembayaran<select id="pp-method" class="form-select" style="width:100%;margin-top:4px">' +
       '<option value="Tunai">Tunai — Kas</option>' +
       '<option value="Transfer BCA">Transfer BCA</option>' +
       '<option value="Transfer Mandiri">Transfer Mandiri</option>' +
       '</select></label>' +
-      '<label style="font-size:12px;font-weight:700">Tanggal Bayar<input id="pp-date" class="form-input" type="date" value="' + today() + '" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:700">Tanggal Bayar<input id="pp-date" class="form-input" type="date" value="' + today() + '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(
@@ -1422,22 +1422,22 @@
             var src = typeof j.source === 'object' ? (j.source.docType || '—') : (j.source || '—');
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:11px;white-space:nowrap">' +
+              '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(j.date || '') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;font-weight:700">' +
+              '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
               esc(j.number || j.ref || j.id || '') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.memo || j.description || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               accList +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;font-size:12px">' +
+              '<td class="td-p" style="text-align:right;font-weight:700;font-size:.75rem">' +
               money(debitTotal) +
               '</td>' +
-              '<td class="td-p" style="font-size:11px;color:var(--muted)">' +
+              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(src) +
               '</td>' +
               '</tr>'
@@ -1445,7 +1445,7 @@
           })
           .join('') +
         (total > 200
-          ? '<tr><td colspan="6" style="text-align:center;padding:8px;color:var(--muted);font-size:11px">Menampilkan 200 dari ' +
+          ? '<tr><td colspan="6" style="text-align:center;padding:8px;color:var(--muted);font-size:.75rem">Menampilkan 200 dari ' +
             total +
             ' jurnal. Gunakan filter untuk mempersempit.</td></tr>'
           : '')
@@ -1463,7 +1463,7 @@
         .join('');
 
     var TH =
-      'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+      'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
     injectView(
       'finance',
@@ -1472,15 +1472,15 @@
         ' total</p></div></div>' +
         '<div class="card" style="margin-bottom:12px">' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
-        '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Dari</label>' +
+        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Dari</label>' +
         '<input class="form-input" id="aj-from" type="date" style="width:140px"></div>' +
-        '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Sampai</label>' +
+        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Sampai</label>' +
         '<input class="form-input" id="aj-to" type="date" style="width:140px"></div>' +
-        '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Akun</label>' +
+        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Akun</label>' +
         '<select class="form-select" id="aj-acc" style="width:260px">' +
         accOpts +
         '</select></div>' +
-        '<div style="flex:1;min-width:140px"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Cari</label>' +
+        '<div style="flex:1;min-width:140px"><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Cari</label>' +
         '<input class="form-input" id="aj-q" placeholder="Ref, memo..."></div>' +
         '<button class="btn" id="aj-filter">Filter</button>' +
         '<button class="btn-ghost" id="aj-reset">Reset</button>' +

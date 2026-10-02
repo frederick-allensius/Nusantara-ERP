@@ -71,13 +71,13 @@ function editIdentity() {
   openModal(
     'Identitas Pengguna & Perusahaan',
     `
-  <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+  <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
     Pengguna
   </div>
   <div class="form-group">
     <label class="form-label">Foto Profil</label>
     <div style="display:flex;align-items:center;gap:12px">
-      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--primary);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center"></div>
+      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--primary);color:#fff;font-size:.875rem;font-weight:700;display:flex;align-items:center;justify-content:center"></div>
       <input type="file" id="id-photo-file" accept="image/*" style="display:none">
       <button class="btn-ghost" type="button" id="id-photo-upload">Upload Foto</button>
       <button class="btn-ghost" type="button" id="id-photo-remove" style="color:var(--danger)">Hapus</button>
@@ -96,10 +96,10 @@ function editIdentity() {
   <div class="form-group">
     <label class="form-label">Peran (Role)</label>
     <input class="form-input" id="id-role" type="text" value="${escapeHtml(((window.erpUsers && window.erpUsers.roleLabels) || {})[(window.__ERP_USER || {}).role] || (window.__ERP_USER || {}).role || '')}" readonly style="background:var(--surface);color:var(--muted)">
-    <div style="font-size:10px;color:var(--muted);margin-top:4px">Peran ditetapkan oleh Admin via Pengaturan → Manajemen Pengguna.</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:4px">Peran ditetapkan oleh Admin via Pengaturan → Manajemen Pengguna.</div>
   </div>
 
-  <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px">
+  <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px">
     Perusahaan
   </div>
   <div class="form-row">
@@ -324,7 +324,7 @@ function showChangePassword() {
       <label class="form-label">Konfirmasi Password Baru</label>
       <input class="form-input" id="pwd-confirm" type="password" autocomplete="new-password">
     </div>
-    <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--muted);margin-top:12px">
+    <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);margin-top:12px">
       <strong>Tips keamanan:</strong><br>
       • Gunakan minimal 8 karakter<br>
       • Kombinasikan huruf besar, kecil, angka, dan simbol<br>
@@ -374,7 +374,7 @@ function _groupSecret(s) {
 
 function _backupCodesHtml(codes) {
   return (
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:monospace;font-size:14px;' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:monospace;font-size:.875rem;' +
     'padding:14px;background:var(--bg);border:1px dashed var(--border);border-radius:10px;margin:12px 0">' +
     codes
       .map(c => '<div style="text-align:center;letter-spacing:1px">' + escapeHtml(c) + '</div>')
@@ -386,11 +386,11 @@ function _backupCodesHtml(codes) {
 function _showBackupCodes(codes, note) {
   openModal(
     'Kode Cadangan 2FA',
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:4px">' +
+    '<p style="font-size:.8125rem;color:var(--muted);margin-bottom:4px">' +
       (note || 'Simpan kode berikut di tempat aman.') +
       ' Setiap kode hanya bisa dipakai <strong>satu kali</strong> jika kamu kehilangan akses ke aplikasi authenticator.</p>' +
       _backupCodesHtml(codes) +
-      '<div style="font-size:12px;color:var(--danger)">Kode ini tidak akan ditampilkan lagi.</div>',
+      '<div style="font-size:.75rem;color:var(--danger)">Kode ini tidak akan ditampilkan lagi.</div>',
     '<button class="btn-ghost" data-action="closeModal">Tutup</button>' +
       '<button class="btn" id="tfa-copy-codes">Salin Semua</button>'
   );
@@ -410,7 +410,7 @@ function showTwoFactorEnroll() {
   const { secret, otpauthUrl } = window.erpAuth.begin2FAEnrollment();
   openModal(
     'Aktifkan Verifikasi 2 Langkah',
-    '<ol style="font-size:13px;color:var(--text);padding-left:18px;margin:0 0 12px;line-height:1.8">' +
+    '<ol style="font-size:.8125rem;color:var(--text);padding-left:18px;margin:0 0 12px;line-height:1.8">' +
       '<li>Buka aplikasi authenticator (Google Authenticator, Authy, dll).</li>' +
       '<li>Pilih <strong>“Enter a setup key”</strong> lalu masukkan kunci di bawah.</li>' +
       '<li>Masukkan kode 6 digit yang muncul untuk mengonfirmasi.</li>' +
@@ -418,12 +418,12 @@ function showTwoFactorEnroll() {
       '<label class="form-label">Kunci Setup (manual)</label>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
       '<code id="tfa-secret" style="flex:1;padding:12px;background:var(--bg);border:1px solid var(--border);' +
-      'border-radius:10px;font-size:15px;letter-spacing:2px;user-select:all">' +
+      'border-radius:10px;font-size:.9375rem;letter-spacing:2px;user-select:all">' +
       _groupSecret(secret) +
       '</code>' +
       '<button class="btn-ghost" id="tfa-copy-secret" type="button">Salin</button>' +
       '</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:14px;word-break:break-all">Atau buka URI: ' +
+      '<div style="font-size:.75rem;color:var(--muted);margin-bottom:14px;word-break:break-all">Atau buka URI: ' +
       '<a href="' +
       escapeHtml(otpauthUrl) +
       '" style="color:var(--primary)">' +
@@ -431,7 +431,7 @@ function showTwoFactorEnroll() {
       '</a></div>' +
       '<div class="form-group"><label class="form-label">Kode Verifikasi (6 digit)</label>' +
       '<input class="form-input" id="tfa-token" inputmode="numeric" autocomplete="one-time-code" ' +
-      'placeholder="123456" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:18px"></div>',
+      'placeholder="123456" maxlength="6" style="letter-spacing:4px;text-align:center;font-size:1.125rem"></div>',
     '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
       '<button class="btn" id="tfa-confirm">Aktifkan</button>'
   );
@@ -469,11 +469,11 @@ function showTwoFactorManage(status) {
     'Verifikasi 2 Langkah',
     '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:14px">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>' +
-      '<div><div style="font-size:14px;font-weight:700">2FA Aktif</div>' +
-      '<div style="font-size:12px;color:var(--muted)">' +
+      '<div><div style="font-size:.875rem;font-weight:700">2FA Aktif</div>' +
+      '<div style="font-size:.75rem;color:var(--muted)">' +
       status.backupCodesRemaining +
       ' kode cadangan tersisa</div></div></div>' +
-      '<p style="font-size:12px;color:var(--muted)">Nonaktifkan 2FA atau buat ulang kode cadangan. ' +
+      '<p style="font-size:.75rem;color:var(--muted)">Nonaktifkan 2FA atau buat ulang kode cadangan. ' +
       'Konfirmasi dengan password atau kode 2FA.</p>' +
       '<div class="form-group" style="margin-top:12px"><label class="form-label">Konfirmasi (password / kode 2FA)</label>' +
       '<input class="form-input" id="tfa-confirm-val" type="password" autocomplete="current-password"></div>',
@@ -538,14 +538,14 @@ function showBackupManager() {
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">Backup Otomatis Aktif</div>
-          <div style="font-size:11px;color:var(--muted)">
+          <div style="font-size:.8125rem;font-weight:700">Backup Otomatis Aktif</div>
+          <div style="font-size:.75rem;color:var(--muted)">
             Terakhir: ${status.lastBackupDate} • 
             Backup berikutnya dalam ${status.hoursUntilNext} jam
           </div>
         </div>
       </div>`
-    : `<div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--warning)">
+    : `<div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;margin-bottom:16px;font-size:.75rem;color:var(--warning)">
         Belum ada backup otomatis. Backup pertama akan dibuat dalam 24 jam.
       </div>`;
 
@@ -556,17 +556,17 @@ function showBackupManager() {
             b => `
         <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700">${b.date}</div>
-            <div style="font-size:11px;color:var(--muted)">${b.sizeFormatted}</div>
+            <div style="font-size:.8125rem;font-weight:700">${b.date}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${b.sizeFormatted}</div>
           </div>
-          <button class="btn-ghost" data-action="restoreBackup" data-key="${b.key}" style="font-size:11px;padding:4px 12px">
+          <button class="btn-ghost" data-action="restoreBackup" data-key="${b.key}" style="font-size:.75rem;padding:4px 12px">
             Pulihkan
           </button>
         </div>
       `
           )
           .join('')
-      : `<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">
+      : `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.75rem">
         Belum ada backup tersimpan
       </div>`;
 
@@ -604,7 +604,7 @@ function showBackupManager() {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
-      <span style="font-size:12px;font-weight:600">Import dari Excel</span>
+      <span style="font-size:.75rem;font-weight:600">Import dari Excel</span>
     </button>
 
     <button class="btn" id="syncFirebase" style="width:100%;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
@@ -612,13 +612,13 @@ function showBackupManager() {
         <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
         <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
       </svg>
-      <span style="font-size:12px;font-weight:600;color:#fff">Sinkronisasi ke Firebase</span>
-      <span style="font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.2)'};color:#fff">${window.__nsaDataMode === 'firestore' ? '● Cloud' : '● Lokal'}</span>
+      <span style="font-size:.75rem;font-weight:600;color:#fff">Sinkronisasi ke Firebase</span>
+      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.2)'};color:#fff">${window.__nsaDataMode === 'firestore' ? '● Cloud' : '● Lokal'}</span>
     </button>
 
     <input type="file" id="backupFileInput" accept=".json" style="display:none">
 
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
       Backup Otomatis (${backups.length})
     </div>
     ${backupListHtml}
@@ -682,8 +682,8 @@ function showBackupManager() {
         'Sinkronisasi ke Firebase',
         `<div id="sync-fb-body" style="text-align:center;padding:20px 0">
           <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
           <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
             <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
@@ -706,8 +706,8 @@ function showBackupManager() {
         if (body)
           body.innerHTML = `
           <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
-          <div style="font-size:12px;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:6px;color:var(--success)">Sinkronisasi Berhasil!</div>
+          <div style="font-size:.75rem;color:var(--muted)">Data tersimpan di Firebase Cloud. Dashboard akan reload.</div>`;
         showToast('Data berhasil disinkronisasi ke Firebase', 'success');
         setTimeout(() => { closeModal(); location.reload(); }, 2000);
       } catch (e) {
@@ -715,8 +715,8 @@ function showBackupManager() {
         if (body)
           body.innerHTML = `
           <div class="empty-state-icon" style="margin:0 auto 12px;color:var(--danger)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
-          <div style="font-size:12px;color:var(--muted)">${e.message}</div>`;
+          <div style="font-size:.875rem;font-weight:600;margin-bottom:6px;color:var(--danger)">Gagal Sinkronisasi</div>
+          <div style="font-size:.75rem;color:var(--muted)">${e.message}</div>`;
         showToast('Gagal: ' + e.message, 'danger');
       }
     });
@@ -781,8 +781,8 @@ function showInstallApp() {
       .map(
         (s, i) => `
       <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px">
-        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
-        <div style="font-size:12.5px;line-height:1.5">${s}</div>
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
+        <div style="font-size:.78125rem;line-height:1.5">${s}</div>
       </div>`
       )
       .join('');
@@ -791,7 +791,7 @@ function showInstallApp() {
   let body = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
       <img src="/icon-192.png" alt="Nusantara ERP" style="width:48px;height:48px;border-radius:12px">
-      <div style="font-size:12px;color:var(--muted);line-height:1.5">
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.5">
         Pasang Nusantara ERP sebagai aplikasi: dibuka langsung dari homescreen/desktop,
         tampil layar penuh tanpa address bar, dan tetap bisa diakses saat offline.
       </div>
@@ -801,20 +801,20 @@ function showInstallApp() {
     body += `
     <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--success-bg);border:1px solid transparent;border-radius:10px;color:var(--success)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      <div style="font-size:13px;font-weight:600">Aplikasi sudah terpasang — Anda sedang menggunakannya dalam mode aplikasi.</div>
+      <div style="font-size:.8125rem;font-weight:600">Aplikasi sudah terpasang — Anda sedang menggunakannya dalam mode aplikasi.</div>
     </div>`;
   } else if (canPrompt) {
     body += `
-    <button class="btn" id="pwa-install-now" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:13px;font-weight:700">
+    <button class="btn" id="pwa-install-now" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:.8125rem;font-weight:700">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Pasang Sekarang
     </button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">
+    <div style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px">
       Browser akan menampilkan dialog konfirmasi pemasangan.
     </div>`;
   } else if (isIOS) {
     body += `
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">iPhone / iPad</div>
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">iPhone / iPad</div>
     ${steps([
       'Buka aplikasi ini di <strong>Safari</strong> (Chrome iOS juga bisa)',
       `Ketuk tombol <strong>Bagikan</strong> ${shareIcon} di bagian bawah layar`,
@@ -823,7 +823,7 @@ function showInstallApp() {
     ])}`;
   } else if (isSafariDesktop) {
     body += `
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Safari (Mac)</div>
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Safari (Mac)</div>
     ${steps([
       'Buka menu <strong>File</strong> di bar menu Safari',
       'Pilih <strong>"Tambahkan ke Dock"</strong> <em>(Add to Dock)</em> — perlu Safari 17 / macOS Sonoma ke atas',
@@ -831,13 +831,13 @@ function showInstallApp() {
     ])}`;
   } else if (isFirefox) {
     body += `
-    <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--warning);line-height:1.5">
+    <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:.75rem;color:var(--warning);line-height:1.5">
       Firefox desktop tidak mendukung pemasangan PWA. Gunakan <strong>Chrome</strong> atau <strong>Edge</strong> untuk memasang aplikasi.
       Di Firefox Android: menu <strong>⋮</strong> → <strong>"Tambahkan ke Layar Utama"</strong>.
     </div>`;
   } else if (isAndroid) {
     body += `
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Android (Chrome)</div>
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Android (Chrome)</div>
     ${steps([
       'Ketuk menu <strong>⋮</strong> di kanan atas Chrome',
       'Pilih <strong>"Tambahkan ke Layar utama"</strong> atau <strong>"Instal aplikasi"</strong>',
@@ -845,12 +845,12 @@ function showInstallApp() {
     ])}`;
   } else {
     body += `
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Chrome / Edge (Desktop)</div>
+    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Chrome / Edge (Desktop)</div>
     ${steps([
       'Cari ikon <strong>install</strong> (layar dengan panah ke bawah) di ujung kanan <strong>address bar</strong>, lalu klik <strong>"Instal"</strong>',
       'Atau: menu <strong>⋮</strong> → <strong>"Simpan dan bagikan"</strong> → <strong>"Instal Nusantara ERP…"</strong>',
     ])}
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">
+    <div style="font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.5">
       Jika ikon install tidak muncul, kemungkinan aplikasi sudah pernah dipasang —
       buka dari ikon Nusantara ERP di desktop/launcher. Pastikan juga halaman dibuka via
       <strong>https</strong> (bukan alamat IP lokal).
@@ -893,35 +893,35 @@ function showNotificationSettings() {
   let statusHtml = '';
   if (!supported) {
     statusHtml = `
-      <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--warning);line-height:1.5">
+      <div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;font-size:.75rem;color:var(--warning);line-height:1.5">
         Browser ini tidak mendukung notifikasi sistem.
       </div>`;
   } else if (perm === 'granted') {
     statusHtml = `
       <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--success-bg);border:1px solid transparent;border-radius:10px;color:var(--success);margin-bottom:12px">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <div style="font-size:13px;font-weight:600">Notifikasi aktif untuk perangkat ini.</div>
+        <div style="font-size:.8125rem;font-weight:600">Notifikasi aktif untuk perangkat ini.</div>
       </div>
-      <button class="btn" id="notif-test" style="width:100%;padding:11px;font-size:13px">Kirim Notifikasi Percobaan</button>`;
+      <button class="btn" id="notif-test" style="width:100%;padding:11px;font-size:.8125rem">Kirim Notifikasi Percobaan</button>`;
   } else if (perm === 'denied') {
     statusHtml = `
-      <div style="padding:12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:12px;color:var(--danger);line-height:1.6">
+      <div style="padding:12px;background:var(--danger-bg);border:1px solid transparent;border-radius:8px;font-size:.75rem;color:var(--danger);line-height:1.6">
         Notifikasi <strong>diblokir</strong> untuk situs ini. Buka pengaturan situs di browser
         (ikon gembok di address bar → Notifikasi → Izinkan), lalu muat ulang halaman.
       </div>`;
   } else {
     statusHtml = `
-      <button class="btn" id="notif-enable" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:13px;font-weight:700">
+      <button class="btn" id="notif-enable" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:.8125rem;font-weight:700">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         Aktifkan Notifikasi
       </button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">
+      <div style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px">
         Browser akan meminta izin menampilkan notifikasi.
       </div>`;
   }
 
   const body = `
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+    <div style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:14px">
       Dapatkan peringatan di perangkat Anda — juga saat aplikasi sedang tidak dibuka
       (mode terpasang/PWA): piutang &amp; hutang jatuh tempo, invoice outstanding,
       stok di bawah minimum, dan anggaran terlampaui. Pemeriksaan berjalan otomatis

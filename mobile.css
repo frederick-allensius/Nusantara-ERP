@@ -273,7 +273,7 @@
   select,
   textarea {
     min-height: var(--tap-min);
-    font-size: 16px; /* Prevents iOS zoom on focus + readable floor */
+    font-size: 1rem; /* Prevents iOS zoom on focus + readable floor */
     padding: 12px 14px;
   }
 
@@ -294,7 +294,7 @@
     font-size: var(--fs-sm);
   }
   thead th {
-    font-size: 12px;
+    font-size: .75rem;
   }
 
   /* ── Grid adjustments ───────────────────────────────────────────────────────── */
@@ -355,7 +355,7 @@
     gap: 8px;
   }
   .sec-title {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   /* ── Dashboard header ───────────────────────────────────────────────────────── */
@@ -365,7 +365,7 @@
     gap: 10px;
   }
   .dash-title {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
 
   /* ── Toast repositioned for mobile ──────────────────────────────────────────── */
@@ -425,7 +425,7 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px 12px;
-    font-size: 12px;
+    font-size: .75rem;
   }
 
   /* ── Empty state compact ────────────────────────────────────────────────────── */
@@ -442,7 +442,7 @@
 
   /* ── Activity timeline ──────────────────────────────────────────────────────── */
   .activity-date-big {
-    font-size: 32px;
+    font-size: 2rem;
   }
 
   /* ── Print doc ──────────────────────────────────────────────────────────────── */
@@ -465,13 +465,13 @@
     gap: 8px;
   }
   .kpi-val {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
   .kpi-card {
     padding: 14px 16px;
   }
   .kpi-label {
-    font-size: 10px;
+    font-size: .75rem;
   }
   .kpi-ico {
     width: 30px;
@@ -484,7 +484,7 @@
     gap: 8px;
   }
   .stat-value {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   /* ── Finance KPI grid stacks ────────────────────────────────────────────────── */
@@ -515,10 +515,10 @@
 
   /* ── Section titles smaller ─────────────────────────────────────────────────── */
   .sec-title {
-    font-size: 16px;
+    font-size: 1rem;
   }
   .dash-title {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
 
   /* ── Denser tables (keep a readable floor) ──────────────────────────────────── */
@@ -527,7 +527,7 @@
   }
   thead th {
     padding: 9px 10px;
-    font-size: 12px;
+    font-size: .75rem;
   }
   td {
     padding: 11px 10px;
@@ -590,7 +590,7 @@
   select,
   textarea {
     min-height: 44px;
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    font-size: 1rem; /* Prevents iOS zoom on focus */
     padding: 10px 14px;
   }
 
@@ -616,7 +616,7 @@
 
   .dash-tab {
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: .75rem;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -638,7 +638,7 @@
 
   /* ── Summary values compact ─────────────────────────────────────────────────── */
   .summary-value {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   /* ── Settings grid single column ────────────────────────────────────────────── */
@@ -653,7 +653,7 @@
 
   /* ── Pager more compact ─────────────────────────────────────────────────────── */
   .pager {
-    font-size: 11px;
+    font-size: .75rem;
     gap: 4px;
   }
 }
@@ -687,15 +687,15 @@
   }
 
   .dash-title {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   .sec-title {
-    font-size: 15px;
+    font-size: .9375rem;
   }
 
   .kpi-val {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
 
   /* Make modal even more full-screen on tiny devices */
@@ -756,7 +756,7 @@
   }
 
   .kpi-val {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
 }
 
@@ -979,20 +979,20 @@
 /* ── MOBILE TYPOGRAPHY ADJUSTMENTS ───────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sec-sub {
-    font-size: 12px;
+    font-size: .75rem;
   }
 
   .dash-greeting {
-    font-size: 12px;
+    font-size: .75rem;
   }
 
   .dash-date {
-    font-size: 11px;
+    font-size: .75rem;
     padding: 5px 10px;
   }
 
   .widget-title {
-    font-size: 13px;
+    font-size: .8125rem;
   }
 
   /* Prevent text overflow on small screens */
@@ -1004,7 +1004,7 @@
   /* Monospace values slightly larger for readability */
   .activity-time,
   .jt-id {
-    font-size: 12px;
+    font-size: .75rem;
   }
 }
 
@@ -1020,7 +1020,7 @@
   input[type='search'],
   select,
   textarea {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   /* Stack form rows on mobile */
@@ -1037,7 +1037,7 @@
 
   /* Full-width select dropdowns */
   select.inline-status {
-    font-size: 12px;
+    font-size: .75rem;
     min-height: 36px;
   }
 }
@@ -1050,12 +1050,12 @@
   }
   .nav-group-head {
     height: 42px;
-    font-size: 15px;
+    font-size: .9375rem;
   }
   .nav-item {
     height: 40px;
     line-height: 40px;
-    font-size: 14.5px;
+    font-size: .90625rem;
   }
   .sidebar .nav-item,
   .sidebar .nav-group-head {
@@ -1066,7 +1066,7 @@
 /* ── MOBILE BADGE ADJUSTMENTS ────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .badge {
-    font-size: 10px;
+    font-size: .75rem;
     padding: 2px 7px;
   }
 }
@@ -1087,7 +1087,7 @@
   #login-email,
   #login-password,
   #login-2fa {
-    font-size: 16px;
+    font-size: 1rem;
     min-height: 46px;
   }
   .login-submit {
@@ -1146,10 +1146,10 @@
     padding: 14px;
   }
   .widget-title {
-    font-size: 14px;
+    font-size: .875rem;
   }
   .summary-value {
-    font-size: 22px;
+    font-size: 1.375rem;
     word-break: break-word;
   }
 
@@ -1196,13 +1196,13 @@
     font: inherit;
   }
   .chart-summary-value {
-    font-size: 22px;
+    font-size: 1.375rem;
     font-weight: 800;
     color: var(--text);
     line-height: 1.1;
   }
   .chart-summary-delta {
-    font-size: 13px;
+    font-size: .8125rem;
     font-weight: 600;
     color: var(--muted);
   }
@@ -1213,7 +1213,7 @@
     color: #ef4444;
   }
   .chart-summary-hint {
-    font-size: 11px;
+    font-size: .75rem;
     color: var(--muted);
     opacity: 0.7;
     margin-top: 4px;
@@ -1255,7 +1255,7 @@
   border: 1px solid var(--glass-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: .78125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
