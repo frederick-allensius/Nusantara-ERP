@@ -159,7 +159,7 @@
         { label: 'Transfer Anggaran', view: 'finance' },
         { heading: 'Pajak' },
         { label: 'Pajak & PPN', view: 'tax', module: 'tax' },
-        { label: 'Ekspor e-Faktur', view: 'tax', module: 'tax' },
+        { label: 'Ekspor Coretax', view: 'tax', module: 'tax' },
       ],
     },
     assets: {

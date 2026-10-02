@@ -61,7 +61,7 @@
     Anggaran: ['_budgetGLExtras', 'openBudget'],
     'Realisasi Anggaran': ['_budgetGLExtras', 'openBudgetMonitor'],
     'Transfer Anggaran': ['_budgetGLExtras', 'openBudgetTransfer'],
-    'Ekspor e-Faktur': ['_taxExtras', 'openEFakturCTAS'],
+    'Ekspor Coretax': ['_taxExtras', 'openEFakturCTAS'],
 
     // ── Aset Tetap ───────────────────────────────────────────────────────────
     'Kategori Aset': ['_assetExtras', 'openAssetCategory'],

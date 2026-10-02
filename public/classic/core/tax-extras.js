@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════
-//  TAX EXTRAS  — e-Faktur CTAS, Tax Invoice Email, e-Faktur Legacy
+//  TAX EXTRAS  — Ekspor Coretax (faktur pajak keluaran), Tax Invoice Email,
+//  e-Faktur format lama
 // ══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -31,7 +32,6 @@
 
   var TH =
     'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
-  var VAT_RATE = 0.11; // PPN 11%
 
   function injectView(html) {
     window.invalidateView && window.invalidateView('tax');
@@ -42,84 +42,314 @@
     }, 0);
   }
 
-  // ── Get all invoices with VAT info ────────────────────────────────────────
-  // Coretax-readiness note: the per-invoice record assembled below already carries
-  // the fields a future Coretax (DJP) export would map — party/customer (customerName),
-  // tax id (npwp), tax rate (VAT_RATE / PPN), document number (id / efakturNo), date,
-  // and line qty/price/tax (dpp, ppn, total). The Coretax export format spec is not yet
-  // available, so no format-specific serializer is implemented here; a future exporter
-  // only needs to add a format adapter over this existing structure (no schema change).
-  function getVatInvoices() {
-    var sis = db().salesInvoices || [];
-    var sos = db().salesOrders || [];
-    var customers = db().customers || [];
+  // ── Output tax documents ──────────────────────────────────────────────────
+  // The documents that post PPN Keluaran to the ledger, with the same rules as
+  // Rekap PPN (report-extras.js): active sales invoices, and delivered sales
+  // orders that have no active invoice yet. Drafts and cancelled documents never
+  // count. DPP and PPN come from the lines and the stored tax (tax-inclusive
+  // prices handled), so they match the journals.
+  //
+  // Each row also carries per-line DPP, which the Coretax export needs.
+  function docTax(d) {
+    var rate = Number(d.taxRate) || 0;
+    var lines = d.lines || [];
+    var net = lines.reduce(function (s, l) {
+      return s + (Number(l.subtotal) || 0);
+    }, 0);
+    if (rate <= 0) return { rate: 0, dpp: net, ppn: 0, incl: false };
+    var incl = !!d.taxInclusive;
+    var ppn =
+      typeof d.tax === 'number'
+        ? Math.round(d.tax)
+        : Math.round(incl ? (net * rate) / (1 + rate) : net * rate);
+    return { rate: rate, dpp: incl ? net - ppn : net, ppn: ppn, incl: incl };
+  }
 
-    var result = [];
-
-    sis.forEach(function (si) {
-      var so = sos.find(function (o) {
-        return o.id === si.orderId;
-      });
-      var cust = customers.find(function (c) {
-        return c.id === (so ? so.customerId : si.customerId);
-      });
-      var dpp = si.amount || (so ? so.amount : 0) || 0;
-      var ppn = Math.round(dpp * VAT_RATE);
-      result.push({
-        id: si.id || si.invoiceId,
-        date: si.date || si.invoiceDate || '',
-        orderId: si.orderId || '',
-        customerName: cust ? cust.name || cust.companyName : so ? so.customerName : '—',
-        npwp: cust ? cust.npwp || '—' : '—',
-        dpp: dpp,
-        ppn: ppn,
-        total: dpp + ppn,
-        status: si.status || 'Issued',
-        efakturNo: si.efakturNo || '',
-        emailSent: si.emailSent || false,
-      });
-    });
-
-    sos.forEach(function (so) {
-      if (
-        sis.find(function (si) {
-          return si.orderId === so.id;
-        })
-      )
-        return;
-      if (so.status === 'Paid' || so.status === 'Completed') {
-        var cust = customers.find(function (c) {
-          return c.id === so.customerId;
-        });
-        var dpp = so.amount || 0;
-        var ppn = Math.round(dpp * VAT_RATE);
-        result.push({
-          id: 'SO-' + so.id,
-          date: so.date || '',
-          orderId: so.id,
-          customerName: so.customerName || (cust ? cust.name || cust.companyName : '—'),
-          npwp: cust ? cust.npwp || '—' : '—',
-          dpp: dpp,
-          ppn: ppn,
-          total: dpp + ppn,
-          status: so.status,
-          efakturNo: so.efakturNo || '',
-          emailSent: so.emailSent || false,
-        });
+  function taxLines(d, t) {
+    return (d.lines || []).map(function (l) {
+      var qty = Number(l.qty) || 0;
+      var sub = Number(l.subtotal) || 0;
+      var price = Number(l.price) || 0;
+      if (t.incl && t.rate > 0) {
+        sub = sub / (1 + t.rate);
+        price = price / (1 + t.rate);
       }
+      return {
+        itemId: l.itemId,
+        name: l.itemName || l.name || '',
+        unit: l.unit || '',
+        qty: qty,
+        price: price,
+        discount: Math.max(0, qty * price - sub),
+        dpp: sub,
+      };
     });
+  }
 
-    return result.sort(function (a, b) {
+  function getVatInvoices(period) {
+    var B = window.Balances;
+    var customers = db().customers || [];
+    var invoices = db().salesInvoices || [];
+    var rows = [];
+    function inPeriod(d) {
+      return !period || (d.date || '').slice(0, 7) === period;
+    }
+    function add(d, docType) {
+      var t = docTax(d);
+      if (t.ppn <= 0) return;
+      var cust =
+        customers.find(function (c) {
+          return String(c.id) === String(d.customerId);
+        }) ||
+        customers.find(function (c) {
+          return c.name === d.customer;
+        }) ||
+        null;
+      rows.push({
+        key: docType + ':' + d.id,
+        docType: docType,
+        docId: d.id,
+        id: d.number || d.id,
+        number: d.number || d.id,
+        orderId: docType === 'SO' ? d.id : d.sourceId || '',
+        date: d.date || '',
+        customerId: cust ? cust.id : d.customerId || '',
+        customerName: d.customer || (cust ? cust.name : '—'),
+        npwp: (cust && cust.npwp) || '',
+        address: (cust && cust.address) || '',
+        email: (cust && cust.email) || '',
+        rate: t.rate,
+        dpp: t.dpp,
+        ppn: t.ppn,
+        total: t.dpp + t.ppn,
+        status: d.status,
+        efakturNo: d.efakturNo || '',
+        emailSent: !!d.emailSent,
+        lines: taxLines(d, t),
+      });
+    }
+    invoices.forEach(function (inv) {
+      var active = B
+        ? B.isActiveInvoice(inv)
+        : inv.status === 'Outstanding' || inv.status === 'Paid';
+      if (active && inPeriod(inv)) add(inv, 'SI');
+    });
+    (db().salesOrders || []).forEach(function (so) {
+      if (so.status !== 'Delivered' || !inPeriod(so)) return;
+      var invoiced = B
+        ? B.activeInvoiceFor('sales', so.id)
+        : invoices.some(function (i) {
+            return i.sourceId === so.id && i.status !== 'Draft' && i.status !== 'Cancelled';
+          });
+      if (!invoiced) add(so, 'SO');
+    });
+    return rows.sort(function (a, b) {
       return a.date > b.date ? -1 : a.date < b.date ? 1 : 0;
     });
   }
 
+  // ── Coretax (DJP) XML ─────────────────────────────────────────────────────
+  // Layout of the "Faktur Pajak Keluaran" import file, following DJP's sample
+  // XML that ships with the Excel template/converter (TaxInvoiceBulk → TaxInvoice →
+  // ListOfGoodService → GoodService). DJP publishes no XSD; the first export must
+  // be checked by importing it in Coretax (Faktur Keluaran → Impor). PPN 11% is
+  // reported the Coretax way for kode 04: VATRate 12 on a DPP Nilai Lain of
+  // 11/12 × DPP, which gives the same PPN.
+  var CORETAX_DEFAULTS = {
+    trxCode: '04',
+    goodsCode: '000000',
+    otherUnitCode: 'UM.0033', // "Lainnya"
+    unitCodes: {
+      ton: 'UM.0001',
+      kg: 'UM.0003',
+      liter: 'UM.0007',
+      unit: 'UM.0018',
+      pcs: 'UM.0021',
+    },
+  };
+
+  function digits(s) {
+    return String(s || '').replace(/\D/g, '');
+  }
+
+  // NPWP for Coretax is 16 digits; a 15-digit (old format) NPWP gets a leading 0.
+  function tin16(npwp) {
+    var d = digits(npwp);
+    return d.length === 15 ? '0' + d : d;
+  }
+
+  function xmlText(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function dec(n) {
+    return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
+  }
+
+  function coretaxCfg() {
+    var s = db().settings || {};
+    var cfg = s.efakturCfg || {};
+    return {
+      npwp: cfg.npwp || (s.tax && s.tax.npwp) || '',
+      nitku: cfg.nitku || '',
+      trxCode: cfg.trxCode || CORETAX_DEFAULTS.trxCode,
+      unitCodes: cfg.unitCodes || {},
+      goodsCodes: cfg.goodsCodes || {},
+    };
+  }
+
+  function unitCode(unit, cfg) {
+    var u = String(unit || '').trim();
+    return (
+      (cfg.unitCodes && cfg.unitCodes[u]) ||
+      CORETAX_DEFAULTS.unitCodes[u.toLowerCase()] ||
+      CORETAX_DEFAULTS.otherUnitCode
+    );
+  }
+
+  // Problems that would make Coretax reject the file or leave the data incomplete.
+  function coretaxWarnings(rows, cfg) {
+    var out = [];
+    if (tin16(cfg.npwp).length !== 16) {
+      out.push('NPWP perusahaan belum diisi atau bukan 16 digit (lihat Konfigurasi).');
+    }
+    var noNpwp = {};
+    var otherUnits = {};
+    rows.forEach(function (r) {
+      if (tin16(r.npwp).length !== 16) noNpwp[r.customerName] = true;
+      r.lines.forEach(function (l) {
+        if (unitCode(l.unit, cfg) === CORETAX_DEFAULTS.otherUnitCode) {
+          otherUnits[l.unit || '(kosong)'] = true;
+        }
+      });
+    });
+    var names = Object.keys(noNpwp);
+    if (names.length) {
+      out.push(
+        'Pelanggan tanpa NPWP 16 digit: ' +
+          names.join(', ') +
+          '. Fakturnya diekspor dengan dokumen "Other ID"; lengkapi NPWP di data pelanggan bila ada.'
+      );
+    }
+    var units = Object.keys(otherUnits);
+    if (units.length) {
+      out.push(
+        'Satuan tanpa kode Coretax (dipakai UM.0033 "Lainnya"): ' + units.join(', ') + '.'
+      );
+    }
+    return out;
+  }
+
+  function coretaxXml(rows, cfg) {
+    cfg = cfg || coretaxCfg();
+    var tin = tin16(cfg.npwp);
+    var sellerIdtku = digits(cfg.nitku) || tin + '000000';
+    var x = [];
+    x.push('<?xml version="1.0" encoding="utf-8"?>');
+    x.push(
+      '<TaxInvoiceBulk xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+    );
+    x.push('  <TIN>' + xmlText(tin) + '</TIN>');
+    x.push('  <ListOfTaxInvoice>');
+    rows.forEach(function (r) {
+      var buyerTin = tin16(r.npwp);
+      var hasTin = buyerTin.length === 16;
+      x.push('    <TaxInvoice>');
+      x.push('      <TaxInvoiceDate>' + xmlText(r.date) + '</TaxInvoiceDate>');
+      x.push('      <TaxInvoiceOpt>Normal</TaxInvoiceOpt>');
+      x.push('      <TrxCode>' + xmlText(cfg.trxCode) + '</TrxCode>');
+      x.push('      <AddInfo></AddInfo>');
+      x.push('      <CustomDoc></CustomDoc>');
+      x.push('      <RefDesc>' + xmlText(r.number) + '</RefDesc>');
+      x.push('      <FacilityStamp></FacilityStamp>');
+      x.push('      <SellerIDTKU>' + xmlText(sellerIdtku) + '</SellerIDTKU>');
+      x.push('      <BuyerTin>' + (hasTin ? buyerTin : '0000000000000000') + '</BuyerTin>');
+      x.push('      <BuyerDocument>' + (hasTin ? 'TIN' : 'Other ID') + '</BuyerDocument>');
+      x.push('      <BuyerCountry>IDN</BuyerCountry>');
+      x.push(
+        '      <BuyerDocumentNumber>' +
+          xmlText(hasTin ? '-' : r.customerId || '-') +
+          '</BuyerDocumentNumber>'
+      );
+      x.push('      <BuyerName>' + xmlText(r.customerName) + '</BuyerName>');
+      x.push('      <BuyerAdress>' + xmlText(r.address) + '</BuyerAdress>');
+      x.push('      <BuyerEmail>' + xmlText(r.email) + '</BuyerEmail>');
+      x.push('      <BuyerIDTKU>' + (hasTin ? buyerTin + '000000' : '000000') + '</BuyerIDTKU>');
+      x.push('      <ListOfGoodService>');
+      // Lines share the document's PPN in proportion to their DPP; the last line
+      // takes the rounding remainder, so the file totals equal the ledger.
+      var left = r.ppn;
+      r.lines.forEach(function (l, i) {
+        var vat =
+          i === r.lines.length - 1 ? left : Math.round(r.dpp ? (r.ppn * l.dpp) / r.dpp : 0);
+        left -= vat;
+        var other = r.rate >= 0.12 ? l.dpp : (l.dpp * 11) / 12;
+        var code = (cfg.goodsCodes && cfg.goodsCodes[l.itemId]) || CORETAX_DEFAULTS.goodsCode;
+        x.push('        <GoodService>');
+        x.push('          <Opt>A</Opt>');
+        x.push('          <Code>' + xmlText(code) + '</Code>');
+        x.push('          <Name>' + xmlText(l.name) + '</Name>');
+        x.push('          <Unit>' + xmlText(unitCode(l.unit, cfg)) + '</Unit>');
+        x.push('          <Price>' + dec(l.price) + '</Price>');
+        x.push('          <Qty>' + (Number(l.qty) || 0) + '</Qty>');
+        x.push('          <TotalDiscount>' + dec(l.discount) + '</TotalDiscount>');
+        x.push('          <TaxBase>' + dec(l.dpp) + '</TaxBase>');
+        x.push('          <OtherTaxBase>' + dec(other) + '</OtherTaxBase>');
+        x.push('          <VATRate>12</VATRate>');
+        x.push('          <VAT>' + dec(vat) + '</VAT>');
+        x.push('          <STLGRate>0</STLGRate>');
+        x.push('          <STLG>0</STLG>');
+        x.push('        </GoodService>');
+      });
+      x.push('      </ListOfGoodService>');
+      x.push('    </TaxInvoice>');
+    });
+    x.push('  </ListOfTaxInvoice>');
+    x.push('</TaxInvoiceBulk>');
+    return x.join('\n');
+  }
+
+  function downloadFile(content, filename, type) {
+    var blob = new Blob([content], { type: type });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('File ' + filename + ' diunduh', 'success');
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
-  // § 1  e-FAKTUR CTAS (format upload ke DJP)
+  // § 1  FAKTUR PAJAK KELUARAN — ekspor Coretax (dan CSV format lama)
   // ══════════════════════════════════════════════════════════════════════════
+  var _efPeriod = null;
+
+  function efPeriods() {
+    var set = {};
+    set[today().slice(0, 7)] = true;
+    (db().salesInvoices || []).concat(db().salesOrders || []).forEach(function (d) {
+      if (d.date) set[d.date.slice(0, 7)] = true;
+    });
+    return Object.keys(set).sort().reverse();
+  }
+
+  function periodLabel(p) {
+    var m = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return m[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(0, 4);
+  }
+
   function openEFakturCTAS() {
-    var invoices = getVatInvoices();
-    var cfg = (db().settings && db().settings.efakturCfg) || {};
+    var period = _efPeriod || today().slice(0, 7);
+    var invoices = getVatInvoices(period);
+    var cfg = coretaxCfg();
+    var warnings = coretaxWarnings(invoices, cfg);
     var totalDPP = invoices.reduce(function (s, i) {
       return s + i.dpp;
     }, 0);
@@ -129,93 +359,132 @@
 
     var rows =
       invoices
-        .slice(0, 100)
         .map(function (inv) {
+          var tinOk = tin16(inv.npwp).length === 16;
           return (
             '<tr>' +
-            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
+            '<td class="td-p" style="white-space:nowrap">' +
             esc(inv.date) +
             '</td>' +
-            '<td class="td-p" style="font-size:.75rem">' +
-            esc(inv.id) +
+            '<td class="td-p">' +
+            esc(inv.number) +
+            (inv.docType === 'SO'
+              ? ' <span class="badge badge-neutral" title="Pesanan terkirim yang belum difakturkan">Belum difakturkan</span>'
+              : '') +
             '</td>' +
             '<td class="td-p">' +
             esc(inv.customerName) +
             '</td>' +
-            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-            esc(inv.npwp) +
+            '<td class="td-p">' +
+            (tinOk ? esc(inv.npwp) : '<span class="badge badge-warning">Tanpa NPWP</span>') +
             '</td>' +
             '<td class="td-p" style="text-align:right">' +
             money(inv.dpp) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:var(--info)">' +
+            '<td class="td-p" style="text-align:right">' +
             money(inv.ppn) +
             '</td>' +
-            '<td class="td-p" style="font-size:.75rem">' +
+            '<td class="td-p">' +
             esc(inv.efakturNo || '—') +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="setEfakturNo" data-id="' +
-            esc(inv.orderId) +
-            '">Set No.</button>' +
+            '<button class="btn-ghost btn-sm" data-action="setEfakturNo" data-key="' +
+            esc(inv.key) +
+            '">No. Faktur Pajak</button>' +
             '</td></tr>'
           );
         })
         .join('') ||
-      '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada faktur PPN.</td></tr>';
+      '<tr><td colspan="8" class="td-empty">Tidak ada faktur ber-PPN pada periode ini.</td></tr>';
+
+    var options = efPeriods()
+      .map(function (p) {
+        return (
+          '<option value="' +
+          p +
+          '"' +
+          (p === period ? ' selected' : '') +
+          '>' +
+          periodLabel(p) +
+          '</option>'
+        );
+      })
+      .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Ekspor e-Faktur</h1><p>Laporan faktur pajak — format upload ke aplikasi e-Faktur DJP</p></div>' +
-        '<div style="display:flex;gap:8px">' +
+      '<div class="sec-hdr"><div><h1>Ekspor Coretax</h1><p>Faktur pajak keluaran per masa pajak — ' +
+        'file XML untuk diimpor di Coretax DJP (Faktur Keluaran → Impor)</p></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
-        '<button class="btn" data-action="exportCTAS">Export CSV</button></div></div>' +
-        '<div class="card" style="background:var(--info-bg);border:1px solid transparent;padding:14px 18px;margin-bottom:16px">' +
-        '<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:.8125rem">' +
-        '<div><span style="color:var(--info);font-weight:700">' +
+        '<button class="btn-ghost" data-action="exportCTAS" title="Format CSV aplikasi e-Faktur lama">CSV format lama</button>' +
+        '<button class="btn" data-action="exportCoretax"' +
+        (invoices.length ? '' : ' disabled') +
+        '>Ekspor XML Coretax</button></div></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+        '<label class="form-label" for="ef-period" style="margin:0">Masa pajak</label>' +
+        '<select class="form-select" id="ef-period" style="width:auto">' +
+        options +
+        '</select></div>' +
+        '<div class="stat-row">' +
+        '<div class="card stat-card"><div class="stat-label">Faktur</div><div class="stat-val">' +
         invoices.length.toLocaleString('id-ID') +
-        '</span><span style="color:var(--muted)"> faktur</span></div>' +
-        '<div><span style="font-weight:700">DPP:</span> ' +
-        money(totalDPP) +
-        '</div>' +
-        '<div><span style="font-weight:700;color:var(--info)">PPN (11%):</span> ' +
-        money(totalPPN) +
-        '</div>' +
-        '<div style="margin-left:auto;font-size:.75rem;color:var(--muted)">NPWP Perusahaan: <strong>' +
-        esc(cfg.npwp || 'Belum diatur') +
-        '</strong></div>' +
+        '</div><div class="stat-sub">' +
+        esc(periodLabel(period)) +
         '</div></div>' +
-        '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr>' +
-        '<th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">No. Faktur</th><th style="' +
-        TH +
-        '">Nama Lawan Transaksi</th>' +
-        '<th style="' +
-        TH +
-        '">NPWP</th><th style="' +
-        TH +
-        'text-align:right">DPP</th><th style="' +
-        TH +
-        'text-align:right">PPN</th>' +
-        '<th style="' +
-        TH +
-        '">No. e-Faktur</th><th style="' +
-        TH +
-        '"></th>' +
-        '</tr></thead><tbody>' +
-        rows +
-        '</tbody></table>' +
-        (invoices.length > 100
-          ? '<div style="text-align:center;padding:10px;font-size:.75rem;color:var(--muted)">Menampilkan 100 dari ' +
-            invoices.length +
-            ' faktur</div>'
+        '<div class="card stat-card"><div class="stat-label">DPP</div><div class="stat-val">' +
+        money(totalDPP) +
+        '</div></div>' +
+        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val">' +
+        money(totalPPN) +
+        '</div><div class="stat-sub">Sama dengan Rekap PPN</div></div>' +
+        '<div class="card stat-card"><div class="stat-label">NPWP perusahaan</div><div class="stat-val" style="font-size:var(--fs-md)">' +
+        esc(cfg.npwp || 'Belum diatur') +
+        '</div></div></div>' +
+        (warnings.length
+          ? '<div class="notice notice-warning"><div><strong>Periksa sebelum ekspor</strong><ul style="margin:6px 0 0 18px">' +
+            warnings
+              .map(function (w) {
+                return '<li>' + esc(w) + '</li>';
+              })
+              .join('') +
+            '</ul></div></div>'
           : '') +
-        '</div>'
+        '<div class="notice notice-info">Format XML mengikuti contoh dari template konverter DJP. ' +
+        'Uji impor pertama di Coretax sebelum dipakai rutin, dan cocokkan kode barang (6 digit) serta kode satuan di Konfigurasi.</div>' +
+        '<div class="card" style="overflow-x:auto"><table class="data-table" style="width:100%">' +
+        '<thead><tr><th>Tanggal</th><th>No. Dokumen</th><th>Pelanggan</th><th>NPWP</th>' +
+        '<th style="text-align:right">DPP</th><th style="text-align:right">PPN</th><th>No. Faktur Pajak</th><th></th></tr></thead><tbody>' +
+        rows +
+        '</tbody></table></div>'
     );
   }
+
+  function exportCoretax() {
+    var period = _efPeriod || today().slice(0, 7);
+    var rows = getVatInvoices(period);
+    if (!rows.length) {
+      toast('Tidak ada faktur ber-PPN pada periode ini', 'warning');
+      return;
+    }
+    var cfg = coretaxCfg();
+    if (tin16(cfg.npwp).length !== 16) {
+      toast('Isi NPWP perusahaan (16 digit) di Konfigurasi terlebih dahulu', 'warning');
+      cfgEfakturModal();
+      return;
+    }
+    downloadFile(
+      coretaxXml(rows, cfg),
+      'coretax_faktur_keluaran_' + period.replace('-', '') + '.xml',
+      'application/xml;charset=utf-8'
+    );
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'ef-period') {
+      _efPeriod = e.target.value;
+      openEFakturCTAS();
+    }
+  });
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 2  TAX INVOICE EMAIL
@@ -234,10 +503,7 @@
       pending
         .slice(0, 50)
         .map(function (inv) {
-          var cust = (db().customers || []).find(function (c) {
-            return c.id === (inv.orderId || inv.id);
-          });
-          var email = cust ? cust.email || '—' : '—';
+          var email = inv.email || '—';
           return (
             '<tr>' +
             '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
@@ -257,7 +523,7 @@
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
             '<button class="btn" style="font-size:.75rem;padding:4px 10px" data-action="sendTaxEmail" data-id="' +
-            esc(inv.orderId) +
+            esc(inv.key) +
             '" data-invid="' +
             esc(inv.id) +
             '" data-cust="' +
@@ -455,41 +721,38 @@
   // HELPERS
   // ══════════════════════════════════════════════════════════════════════════
   function exportCTAScsv() {
-    var invoices = getVatInvoices();
-    var cfg = (db().settings && db().settings.efakturCfg) || {};
+    var period = _efPeriod || today().slice(0, 7);
+    var invoices = getVatInvoices(period);
     var header =
       'FK,KD_JENIS_TRANSAKSI,FG_PENGGANTI,NOMOR_FAKTUR,MASA_PAJAK,TAHUN_PAJAK,TANGGAL_FAKTUR,NPWP,NAMA,ALAMAT_LENGKAP,JUMLAH_DPP,JUMLAH_PPN,JUMLAH_PPNBM,ID_KETERANGAN_TAMBAHAN,FG_UANG_MUKA,UANG_MUKA_DPP,UANG_MUKA_PPN,UANG_MUKA_PPNBM,REFERENSI';
     var lines = [header];
     invoices.forEach(function (inv) {
       var d = inv.date || today();
-      var masa = d.slice(5, 7);
-      var tahun = d.slice(0, 4);
-      var tgl = d.replace(/-/g, '');
       lines.push(
         [
           'FK',
           '01',
           '0',
-          inv.efakturNo || '000.' + tahun + '-' + String(lines.length).padStart(8, '0'),
-          masa,
-          tahun,
-          tgl,
-          inv.npwp.replace(/\D/g, '') || '000000000000000',
-          '"' + inv.customerName.replace(/"/g, '""') + '"',
-          '""',
-          inv.dpp,
-          inv.ppn,
+          inv.efakturNo || '',
+          d.slice(5, 7),
+          d.slice(0, 4),
+          d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4),
+          digits(inv.npwp) || '000000000000000',
+          '"' + String(inv.customerName).replace(/"/g, '""') + '"',
+          '"' + String(inv.address || '').replace(/"/g, '""') + '"',
+          Math.round(inv.dpp),
+          Math.round(inv.ppn),
           0,
           '',
           '0',
           0,
           0,
           0,
-          '"' + inv.id + '"',
+          '"' + inv.number + '"',
         ].join(',')
       );
     });
-    downloadCSV(lines.join('\r\n'), 'efaktur_ctas_' + today().replace(/-/g, '') + '.csv');
+    downloadCSV(lines.join('\r\n'), 'efaktur_' + period.replace('-', '') + '.csv');
   }
 
   function exportLegacyCSV() {
@@ -512,56 +775,149 @@
   }
 
   function downloadCSV(content, filename) {
-    var blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast('File ' + filename + ' diunduh', 'success');
+    downloadFile(content, filename, 'text/csv;charset=utf-8;');
   }
 
+  // Seller identity and the Coretax codes. Unit and goods codes are per company:
+  // check them against the REF sheet of DJP's template (REQUIRES USER CONFIRMATION
+  // for the codes that fit this business's goods).
   function cfgEfakturModal() {
     if (!db().settings) window.DB.settings = {};
     var cfg = db().settings.efakturCfg || {};
+    var unitCodes = cfg.unitCodes || {};
+    var goodsCodes = cfg.goodsCodes || {};
+    var units = (db().settings.units || []).slice();
+    (db().inventoryItems || []).forEach(function (i) {
+      if (i.unit && units.indexOf(i.unit) === -1) units.push(i.unit);
+    });
+    var unitRows = units
+      .map(function (u) {
+        return (
+          '<tr><td class="td-p">' +
+          esc(u) +
+          '</td><td class="td-p"><input class="form-input ef-unit" data-unit="' +
+          esc(u) +
+          '" value="' +
+          esc(unitCodes[u] || unitCode(u, { unitCodes: {} })) +
+          '" placeholder="UM.0033" style="width:130px"></td></tr>'
+        );
+      })
+      .join('');
+    var itemRows = (db().inventoryItems || [])
+      .map(function (i) {
+        return (
+          '<tr><td class="td-p">' +
+          esc(i.name) +
+          '</td><td class="td-p"><input class="form-input ef-goods" data-item="' +
+          esc(i.id) +
+          '" value="' +
+          esc(goodsCodes[i.id] || '') +
+          '" placeholder="000000" maxlength="6" inputmode="numeric" style="width:110px"></td></tr>'
+        );
+      })
+      .join('');
     modal(
-      'Konfigurasi e-Faktur',
-      '<div class="form-group"><label class="form-label">NPWP Perusahaan (15 digit)</label><input class="form-input" id="ef-npwp" value="' +
-        esc(cfg.npwp || '') +
-        '" placeholder="00.000.000.0-000.000" maxlength="20"></div>' +
-        '<div class="form-group"><label class="form-label">Nama Perusahaan PKP</label><input class="form-input" id="ef-name" value="' +
+      'Konfigurasi Faktur Pajak',
+      '<div class="form-row">' +
+        '<div class="form-group"><label class="form-label">NPWP perusahaan (16 digit)</label><input class="form-input" id="ef-npwp" value="' +
+        esc(cfg.npwp || (db().settings.tax && db().settings.tax.npwp) || '') +
+        '" placeholder="0000000000000000" maxlength="20" inputmode="numeric"></div>' +
+        '<div class="form-group"><label class="form-label">NITKU penjual (22 digit)</label><input class="form-input" id="ef-nitku" value="' +
+        esc(cfg.nitku || '') +
+        '" placeholder="Kosong = NPWP + 000000 (kantor pusat)" maxlength="22" inputmode="numeric"></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+        '<div class="form-group"><label class="form-label">Nama PKP</label><input class="form-input" id="ef-name" value="' +
         esc(cfg.companyName || '') +
-        '" placeholder="PT. ..."></div>' +
-        '<div class="form-group"><label class="form-label">KPP Terdaftar</label><input class="form-input" id="ef-kpp" value="' +
+        '" placeholder="PT ..."></div>' +
+        '<div class="form-group"><label class="form-label">Kode transaksi</label><select class="form-select" id="ef-trx">' +
+        [
+          ['04', '04 — DPP nilai lain (PPN 12% × 11/12), penyerahan umum'],
+          ['01', '01 — Penyerahan kepada selain pemungut PPN'],
+          ['02', '02 — Kepada pemungut instansi pemerintah'],
+          ['03', '03 — Kepada pemungut selain instansi pemerintah'],
+        ]
+          .map(function (o) {
+            return (
+              '<option value="' +
+              o[0] +
+              '"' +
+              ((cfg.trxCode || CORETAX_DEFAULTS.trxCode) === o[0] ? ' selected' : '') +
+              '>' +
+              esc(o[1]) +
+              '</option>'
+            );
+          })
+          .join('') +
+        '</select></div></div>' +
+        '<div class="form-group"><label class="form-label">KPP terdaftar</label><input class="form-input" id="ef-kpp" value="' +
         esc(cfg.kpp || '') +
-        '" placeholder="KPP Pratama ..."></div>',
-      '<button class="btn" id="saveEfakturCfg">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+        '" placeholder="KPP Pratama ..."></div>' +
+        '<div class="form-label" style="margin-top:8px">Kode satuan Coretax</div>' +
+        '<table class="data-table" style="width:100%;margin-bottom:12px"><tbody>' +
+        (unitRows || '<tr><td class="td-empty">Belum ada satuan.</td></tr>') +
+        '</tbody></table>' +
+        '<div class="form-label">Kode barang Coretax (6 digit, kosong = 000000)</div>' +
+        '<table class="data-table" style="width:100%"><tbody>' +
+        (itemRows || '<tr><td class="td-empty">Belum ada barang.</td></tr>') +
+        '</tbody></table>',
+      '<button class="btn" id="saveEfakturCfg">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
+      true
     );
     setTimeout(function () {
       var btn = document.getElementById('saveEfakturCfg');
       if (!btn) return;
       btn.addEventListener('click', function () {
+        var npwp = digits(document.getElementById('ef-npwp').value);
+        if (npwp && tin16(npwp).length !== 16) {
+          toast('NPWP harus 16 digit (atau 15 digit format lama)', 'warning');
+          return;
+        }
+        var nitku = digits(document.getElementById('ef-nitku').value);
+        if (nitku && nitku.length !== 22) {
+          toast('NITKU harus 22 digit, atau kosongkan', 'warning');
+          return;
+        }
+        var nextUnits = {};
+        document.querySelectorAll('.ef-unit').forEach(function (el) {
+          var v = el.value.trim().toUpperCase();
+          if (v) nextUnits[el.getAttribute('data-unit')] = v;
+        });
+        var nextGoods = {};
+        var badGoods = false;
+        document.querySelectorAll('.ef-goods').forEach(function (el) {
+          var v = digits(el.value);
+          if (!v) return;
+          if (v.length !== 6) badGoods = true;
+          nextGoods[el.getAttribute('data-item')] = v;
+        });
+        if (badGoods) {
+          toast('Kode barang Coretax harus 6 digit', 'warning');
+          return;
+        }
         db().settings.efakturCfg = {
-          npwp: document.getElementById('ef-npwp').value.trim(),
+          npwp: npwp,
+          nitku: nitku,
           companyName: document.getElementById('ef-name').value.trim(),
           kpp: document.getElementById('ef-kpp').value.trim(),
+          trxCode: document.getElementById('ef-trx').value,
+          unitCodes: nextUnits,
+          goodsCodes: nextGoods,
         };
         save();
         closeM();
-        toast('Konfigurasi e-Faktur disimpan', 'success');
+        toast('Konfigurasi faktur pajak disimpan', 'success');
+        if (window.activeView === 'tax') openEFakturCTAS();
       });
     }, 60);
   }
 
-  function sendTaxEmailModal(orderId, invoiceId, custName, ppnAmount) {
-    var customers = db().customers || [];
-    var cust = customers.find(function (c) {
-      return c.id === orderId;
+  // `key` is the row key from getVatInvoices ('SI:<id>' or 'SO:<id>').
+  function sendTaxEmailModal(key, invoiceId, custName, ppnAmount) {
+    var row = getVatInvoices().find(function (r) {
+      return r.key === key;
     });
-    var defEmail = cust ? cust.email || '' : '';
+    var defEmail = row ? row.email : '';
     modal(
       'Kirim Tax Invoice',
       '<div class="form-group"><label class="form-label">Faktur</label><input class="form-input" value="' +
@@ -596,17 +952,14 @@
           sentAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
           note: document.getElementById('tax-note').value.trim(),
         });
-        // Mark SO or invoice as email sent
-        var sos = db().salesOrders || [];
-        var so = sos.find(function (o) {
-          return o.id === orderId;
-        });
-        if (so) so.emailSent = true;
-        var sis = db().salesInvoices || [];
-        var si = sis.find(function (i) {
-          return i.orderId === orderId;
-        });
-        if (si) si.emailSent = true;
+        // Mark the invoice (or the uninvoiced order) as sent.
+        if (row) {
+          var coll = row.docType === 'SO' ? 'salesOrders' : 'salesInvoices';
+          var doc = (db()[coll] || []).find(function (d) {
+            return String(d.id) === String(row.docId);
+          });
+          if (doc) doc.emailSent = true;
+        }
         save();
         closeM();
         toast('Tax invoice dikirim ke ' + email, 'success');
@@ -626,6 +979,9 @@
     switch (action) {
       case 'exportCTAS':
         exportCTAScsv();
+        break;
+      case 'exportCoretax':
+        exportCoretax();
         break;
       case 'exportLegacyCSV':
         exportLegacyCSV();
@@ -647,33 +1003,35 @@
         break;
       }
       case 'setEfakturNo': {
-        var orderId = btn.dataset.id;
+        var key = btn.dataset.key || '';
+        var parts = key.split(':');
+        var coll = parts[0] === 'SO' ? 'salesOrders' : 'salesInvoices';
+        var docId = parts.slice(1).join(':');
+        var doc = (db()[coll] || []).find(function (d) {
+          return String(d.id) === docId;
+        });
+        if (!doc) {
+          toast('Dokumen tidak ditemukan', 'warning');
+          break;
+        }
         modal(
-          'Set Nomor e-Faktur',
-          '<div class="form-group"><label class="form-label">No. e-Faktur (13 digit)</label>' +
-            '<input class="form-input" id="efno-input" placeholder="000.00-00.00000000" maxlength="20"></div>',
+          'Nomor Faktur Pajak',
+          '<div class="form-group"><label class="form-label">Nomor faktur pajak dari Coretax untuk ' +
+            esc(doc.number || doc.id) +
+            '</label>' +
+            '<input class="form-input" id="efno-input" value="' +
+            esc(doc.efakturNo || '') +
+            '" placeholder="Nomor faktur pajak" maxlength="30"></div>',
           '<button class="btn" id="saveEFNo">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
         );
         setTimeout(function () {
           var sb = document.getElementById('saveEFNo');
           if (!sb) return;
           sb.addEventListener('click', function () {
-            var val = document.getElementById('efno-input').value.trim();
-            if (!val) {
-              toast('No. e-Faktur wajib diisi', 'warning');
-              return;
-            }
-            var so = (db().salesOrders || []).find(function (o) {
-              return o.id === orderId;
-            });
-            if (so) so.efakturNo = val;
-            var si = (db().salesInvoices || []).find(function (i) {
-              return i.orderId === orderId;
-            });
-            if (si) si.efakturNo = val;
+            doc.efakturNo = document.getElementById('efno-input').value.trim();
             save();
             closeM();
-            toast('No. e-Faktur disimpan', 'success');
+            toast('Nomor faktur pajak disimpan', 'success');
             openEFakturCTAS();
           });
         }, 60);
@@ -684,6 +1042,9 @@
 
   window._taxExtras = {
     openEFakturCTAS: openEFakturCTAS,
+    getVatInvoices: getVatInvoices,
+    coretaxXml: coretaxXml,
+    coretaxWarnings: coretaxWarnings,
     openTaxInvoiceEmail: openTaxInvoiceEmail,
     openEFakturLegacy: openEFakturLegacy,
   };
