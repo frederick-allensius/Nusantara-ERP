@@ -224,7 +224,8 @@ body {
   font-size: 14px;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  font-size: var(--fs-base);
+  line-height: 1.55;
   /* `dvh` tracks the *dynamic* viewport so the app fits the visible area on
      iOS Safari, where `100vh` is the large viewport — taller than what's
      visible while the toolbars show. With everything `overflow:hidden` the
@@ -1462,6 +1463,32 @@ tfoot td {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
+}
+
+/* Inline row action button (Post / Send / Convert / Reconcile / Invoice …).
+   Rendered in generated HTML strings across the doc views; give it a proper
+   readable, comfortably-tappable base so it inherits the senior-friendly scale. */
+.action-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  min-height: 38px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r);
+  background: var(--glass-bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+.action-primary:active {
+  transform: scale(0.96);
 }
 
 .th-sort {

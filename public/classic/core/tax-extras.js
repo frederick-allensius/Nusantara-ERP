@@ -43,6 +43,12 @@
   }
 
   // ── Get all invoices with VAT info ────────────────────────────────────────
+  // Coretax-readiness note: the per-invoice record assembled below already carries
+  // the fields a future Coretax (DJP) export would map — party/customer (customerName),
+  // tax id (npwp), tax rate (VAT_RATE / PPN), document number (id / efakturNo), date,
+  // and line qty/price/tax (dpp, ppn, total). The Coretax export format spec is not yet
+  // available, so no format-specific serializer is implemented here; a future exporter
+  // only needs to add a format adapter over this existing structure (no schema change).
   function getVatInvoices() {
     var sis = db().salesInvoices || [];
     var sos = db().salesOrders || [];

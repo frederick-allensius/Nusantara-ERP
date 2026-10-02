@@ -53,6 +53,9 @@
   var TH =
     'text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   var PAY_CATS = [
+    'Transport',
+    'ATK',
+    'Entertain',
     'Utilities',
     'Sewa',
     'Gaji',

@@ -235,6 +235,68 @@
     display: none;
   }
 
+  /* ── Senior-friendly (50s-club) sizing on phones ────────────────────────────── */
+  /* Mirror the desktop large-type / large-target treatment so every phone gets
+     the same clutter-free, comfortably-tappable UI regardless of pointer type. */
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger {
+    min-height: var(--tap-min);
+    padding: 12px 18px;
+    font-size: var(--fs-md);
+  }
+
+  .action-primary {
+    min-height: 42px;
+    padding: 10px 16px;
+    font-size: var(--fs-sm);
+  }
+  .action-edit {
+    width: 42px;
+    height: 42px;
+  }
+
+  .filter-btn {
+    min-height: var(--tap-min);
+    padding: 10px 14px;
+    font-size: var(--fs-sm);
+  }
+
+  .form-input,
+  input[type='text'],
+  input[type='number'],
+  input[type='date'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='search'],
+  select,
+  textarea {
+    min-height: var(--tap-min);
+    font-size: 16px; /* Prevents iOS zoom on focus + readable floor */
+    padding: 12px 14px;
+  }
+
+  .rail-item {
+    min-height: var(--tap-min);
+  }
+
+  .flyout-item {
+    min-height: var(--tap-min);
+    padding: 12px 10px;
+  }
+  .flyout-item span {
+    font-size: var(--fs-sm);
+  }
+
+  /* Readable table content on phones (kept scrollable via .table-wrap) */
+  table {
+    font-size: var(--fs-sm);
+  }
+  thead th {
+    font-size: 12px;
+  }
+
   /* ── Grid adjustments ───────────────────────────────────────────────────────── */
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -444,11 +506,11 @@
     gap: 6px;
   }
   .search-wrap {
-    height: 34px;
+    height: 38px;
     padding: 0 12px 0 14px;
   }
   .search-input {
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 
   /* ── Section titles smaller ─────────────────────────────────────────────────── */
@@ -459,16 +521,16 @@
     font-size: 20px;
   }
 
-  /* ── Denser tables ──────────────────────────────────────────────────────────── */
+  /* ── Denser tables (keep a readable floor) ──────────────────────────────────── */
   table {
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   thead th {
-    padding: 8px 10px;
-    font-size: 10px;
+    padding: 9px 10px;
+    font-size: 12px;
   }
   td {
-    padding: 9px 10px;
+    padding: 11px 10px;
   }
 
   /* ── Card compact ───────────────────────────────────────────────────────────── */
@@ -506,14 +568,15 @@
   .btn-primary,
   .btn-ghost,
   .btn-danger {
-    min-height: 44px;
-    padding: 10px 16px;
-    font-size: 13px;
+    min-height: var(--tap-min);
+    padding: 11px 16px;
+    font-size: var(--fs-md);
   }
 
   .filter-btn {
-    min-height: 40px;
-    padding: 8px 12px;
+    min-height: var(--tap-min);
+    padding: 9px 12px;
+    font-size: var(--fs-sm);
   }
 
   /* ── Form inputs touch-friendly ─────────────────────────────────────────────── */
@@ -968,7 +1031,7 @@
 
   /* Larger labels for mobile */
   label {
-    font-size: 13px;
+    font-size: var(--fs-sm);
     margin-bottom: 8px;
   }
 

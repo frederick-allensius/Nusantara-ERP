@@ -71,6 +71,13 @@
       module: 'dashboard',
       items: [],
     },
+    entri: {
+      title: 'Entri Harian',
+      icon: 'edit-3',
+      view: 'entriHarian',
+      module: 'purchases',
+      items: [],
+    },
     sales: {
       title: 'Penjualan',
       icon: 'trending-up',
@@ -95,6 +102,8 @@
         { label: 'Penawaran Pembelian', view: 'quotations' },
         { label: 'Pesanan Pembelian', view: 'purchase' },
         { label: 'Penerimaan Barang', view: 'purchase' },
+        { label: 'Rekonsiliasi Timbangan', view: 'purchase' },
+        { label: 'Validasi SJ Supplier', view: 'purchase' },
         { label: 'Faktur Pembelian', view: 'invoices' },
         { label: 'Pembayaran ke Supplier', view: 'invoices' },
         { label: 'Uang Muka Pembelian', view: 'purchase' },
@@ -173,6 +182,7 @@
       module: 'reports',
       items: [
         { label: 'Daftar Laporan', view: 'reports' },
+        { label: 'Laporan per Periode', view: 'reports' },
         { label: 'Laba Rugi', view: 'financials' },
         { label: 'Neraca', view: 'financials' },
         { label: 'Arus Kas', view: 'financials' },
@@ -256,6 +266,7 @@
       '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
     refresh:
       '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+    'edit-3': '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
   };
 
   function _svg(name, size, cls) {

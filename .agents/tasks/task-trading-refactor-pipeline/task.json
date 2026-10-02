@@ -1,0 +1,14 @@
+{
+  "task_id": "task-trading-refactor-pipeline",
+  "task_description": "Execute the Trading Ubin & Material Alam project handoff end-to-end on Nusantara ERP: Section 1 core refactor + end-to-end pipeline (PO -> Surat Jalan & Timbangan -> Reconciliation -> Multi-Invoice -> Payment), Section 3 dashboard funnel analytics + custom-range reporting, Section 5 dual-view role-based access (Admin/Accounting entry vs Owner/Management executive), Section 6 senior-friendly (50s-club) UI, and Section 2 Supplier SJ validation cross-check + mismatch alert + demo (live email ingestion deferred as a pluggable interface). Section 4 (Coretax export) is explicitly DEFERRED (format spec unavailable). Preserve existing patterns (classic IIFE bundle + src ES modules); keep build/tests green; add tests for new logic. No agent self-attribution anywhere.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006", "FEAT-007"],
+  "blocked_reason": null,
+  "verification": {
+    "build": "pass",
+    "tests": "pass",
+    "test_quality": "pass",
+    "docker_build": "skipped",
+    "summary": "npm run test:run = 273 pass / 22 files (269 prior + 4 new from the 2026-09-22-020713 review follow-up). npm run build succeeds (dist/classic/bundle.js emitted). npm run lint clean (only the harmless .eslintignore deprecation warning). npm run type-check = exactly 12 pre-existing baseline errors (rbac.test.ts x11 + twofa-flow.test.ts x1), zero new. Test quality reviewed: tests/pipeline-reconciliation.test.ts and tests/sj-validation.test.ts seed real DB state and assert derived netto, variance, reconciledQty-as-invoice-basis, multi-invoice DO transitions, a balanced DERIVED GL journal, and tonnage/price mismatch flagging within configurable tolerance; they would fail if the corresponding logic were reverted. Review follow-up (see 2026-09-22-020713-review-fixes.md) addressed all 4 non-blocking findings: SJ crossCheck now exposes a disjoint `clean` count (matched && !mismatch) consumed by the 'Cocok' widget; salesFunnel pickup uses an explicit positive sales marker (drops the misattributing 'no poId => sales' fallback and excludes purchase-linked DOs); the receive-modal save routes through the pure computeWeighing so a single-netto receipt no longer zeroes netQty. No Dockerfile in repo, so docker build skipped. No self-attribution in code, docs, or commit trailers (git author identity is environment-set, separate from content attribution)."
+  }
+}

@@ -104,20 +104,64 @@
   // Sidebar group key → module (ui/nav.js). Entries inside a group are gated by
   // their own data-module; this map gates groups without entries (Ringkasan).
   const GROUP_MODULE = {
-    dashboard: 'dashboard', sales: 'sales', purchases: 'purchases', inventory: 'inventory',
+    dashboard: 'dashboard', entri: 'purchases', sales: 'sales', purchases: 'purchases', inventory: 'inventory',
     cashbank: 'gl', accounting: 'gl', assets: 'assets', reports: 'reports',
     master: 'master', settings: 'admin', tax: 'tax',
   };
 
   // View id → module (click-guard / button gating). Ambiguous shared views
   // (invoices/returns/quotations) map leniently; the saveDB net is authoritative.
+  // entriHarian is the focused daily-entry surface — treated as 'purchases' for
+  // button gating (its create buttons post PO/DO/receipt-side documents).
   const VIEW_MODULE = {
     dashboard: 'dashboard', settings: 'admin', tax: 'tax', master: 'master',
     ledger: 'gl', finance: 'gl', financials: 'reports', reports: 'reports',
     sales: 'sales', quotations: 'sales', logistics: 'sales', invoices: 'sales',
     returns: 'sales', purchase: 'purchases', inventory: 'inventory',
     warehouse: 'inventory', adjustments: 'inventory', assets: 'assets',
+    entriHarian: 'purchases',
   };
+
+  // ── Dual-view surfaces (Section 5) ────────────────────────────────────────
+  // Two handoff personas are layered on top of the resolved role WITHOUT
+  // weakening the server-enforced rbac boundary:
+  //   • 'entri'     — the Admin/Accounting daily data-entry surface (Entri
+  //                   Harian): PO, Surat Jalan (DO), Timbangan (weighbridge
+  //                   reconciliation) and Biaya Operasional (Transport / ATK /
+  //                   Entertain via Other Payment). Minimal, distraction-free.
+  //   • 'executive' — the Owner/Management surface: the Executive Dashboard with
+  //                   pipeline funnels, real-time margin (revenue vs COGS),
+  //                   outstanding invoices (piutang aging) and the full
+  //                   financial reports.
+  // A role can be granted either or both surfaces. This is a UI-composition
+  // concept only — every actual mutation is still checked by can()/the saveDB
+  // net and, on the server, by firestore.rules.
+  const ROLE_SURFACES = {
+    admin: ['entri', 'executive'],
+    manajer: ['entri', 'executive'],
+    akunting: ['entri'],
+    penjualan: ['entri'],
+    viewer: ['executive'],
+    pending: [],
+  };
+
+  // The operational entry actions the Entri Harian surface exposes, in order.
+  // Kept here (beside the surface map) so entri-harian.js and the tests share a
+  // single source of truth for "exactly the operational entry tasks".
+  const ENTRI_ACTIONS = ['po', 'suratJalan', 'timbangan', 'biayaOperasional'];
+
+  // The executive analytics the management surface exposes.
+  const EXECUTIVE_ANALYTICS = ['funnels', 'margin', 'piutang', 'financials'];
+
+  // Surfaces granted to a role (falls back to the resolved current role).
+  function surfaceFor(role) {
+    const r = role || currentRole();
+    return (ROLE_SURFACES[r] || []).slice();
+  }
+  // Does the (current or given) role get a named surface?
+  function canViewSurface(surface, role) {
+    return surfaceFor(role).indexOf(surface) !== -1;
+  }
 
   // ── Role accessors ───────────────────────────────────────────────────────────
   function user() {
@@ -535,9 +579,14 @@
     refreshSnapshot,
     guardView,
     applyNavGating,
+    surfaceFor,
+    canViewSurface,
     PERMISSIONS,
     GROUP_MODULE,
     VIEW_MODULE,
+    ROLE_SURFACES,
+    ENTRI_ACTIONS,
+    EXECUTIVE_ANALYTICS,
   };
 
   console.log('[RBAC] active — role:', currentRole());

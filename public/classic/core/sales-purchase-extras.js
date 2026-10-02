@@ -2,6 +2,12 @@
 // Nusantara ERP — Sales & Purchase Extras  (sales-purchase-extras.js)
 // Implements: Sales Down Payment, Sales Target, Receive Item,
 //             Purchase Down Payment, Supplier Price
+//
+// Receive Item (Penerimaan Barang) captures per-line weighbridge (Timbangan)
+// readings alongside the received qty: surat-jalan qty, bruto, tara and a
+// derived netto (netQty = grossQty − tareQty) plus unit price, persisted on
+// each goodsReceipt line as a `weighing` object. The reconciliation +
+// multi-invoice steps live in pipeline-extras.js.
 // ═══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -916,7 +922,47 @@
           var max = parseFloat(el.max);
           if (!isNaN(max) && qty > max) qty = max; // never receive more than is still open
           if (qty > 0) {
-            items.push({ itemId: el.dataset.itemid, itemName: el.dataset.itemname, qty: qty });
+            var row = el.closest('tr');
+            var sjEl = row ? row.querySelector('.ri-line-sj') : null;
+            var grossEl = row ? row.querySelector('.ri-line-gross') : null;
+            var tareEl = row ? row.querySelector('.ri-line-tare') : null;
+            var priceEl = row ? row.querySelector('.ri-line-price') : null;
+            var netEl = row ? row.querySelector('.ri-line-net') : null;
+            var sj = sjEl ? parseFloat(sjEl.value) || 0 : 0;
+            var gross = grossEl ? parseFloat(grossEl.value) || 0 : 0;
+            var tare = tareEl ? parseFloat(tareEl.value) || 0 : 0;
+            // Netto is derived from Bruto − Tara, but when the operator records
+            // only a netto (no Bruto — e.g. a trusted supplier weighbridge
+            // ticket) we honor that direct figure. Routing through
+            // computeWeighing keeps this identical to the pure engine so the
+            // receive path and reconciliation cannot drift.
+            var netInput = netEl ? parseFloat(netEl.value) : NaN;
+            var weighInput = { suratJalanQty: sj, grossQty: gross, tareQty: tare };
+            if (gross > 0) {
+              // Bruto present → netto is strictly derived (gross − tare).
+              weighInput.grossQty = gross;
+            } else {
+              // No Bruto → omit grossQty so a single netto figure is accepted.
+              delete weighInput.grossQty;
+              weighInput.netQty = isNaN(netInput) ? 0 : netInput;
+            }
+            var weighing =
+              window._pipelineExtras && typeof window._pipelineExtras.computeWeighing === 'function'
+                ? window._pipelineExtras.computeWeighing(weighInput)
+                : {
+                    suratJalanQty: sj,
+                    grossQty: gross,
+                    tareQty: tare,
+                    netQty: gross > 0 ? Math.max(0, gross - tare) : isNaN(netInput) ? 0 : netInput,
+                  };
+            var unitPrice = priceEl ? parseFloat(priceEl.value) || 0 : 0;
+            items.push({
+              itemId: el.dataset.itemid,
+              itemName: el.dataset.itemname,
+              qty: qty,
+              unitPrice: unitPrice,
+              weighing: weighing,
+            });
           }
         });
 
@@ -1003,8 +1049,35 @@
         ' style="width:90px;font-size:12px;padding:4px 6px;text-align:right"></td>' +
         '</tr>';
     });
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     container.innerHTML = html;
+
+    // Netto = Bruto − Tara when a Bruto is entered (derived, field locked). When
+    // no Bruto is recorded, the Netto field is editable so an operator can enter
+    // a single trusted netto figure directly (mirrors computeWeighing).
+    container.querySelectorAll('tr').forEach(function (tr) {
+      var grossEl = tr.querySelector('.ri-line-gross');
+      var tareEl = tr.querySelector('.ri-line-tare');
+      var netEl = tr.querySelector('.ri-line-net');
+      if (!grossEl || !tareEl || !netEl) return;
+      function recalc() {
+        var g = parseFloat(grossEl.value) || 0;
+        var t = parseFloat(tareEl.value) || 0;
+        if (g > 0) {
+          // Bruto present → Netto is derived and read-only.
+          netEl.value = Math.max(0, Math.round((g - t) * 100) / 100);
+          netEl.readOnly = true;
+          netEl.style.opacity = '0.75';
+        } else {
+          // No Bruto → let the operator type the netto directly.
+          netEl.readOnly = false;
+          netEl.style.opacity = '1';
+        }
+      }
+      grossEl.addEventListener('input', recalc);
+      tareEl.addEventListener('input', recalc);
+      recalc();
+    });
   }
 
   function postReceipt(id) {
@@ -1335,12 +1408,23 @@
         if (r) {
           var itemList = (r.items || [])
             .map(function (i) {
+              var w = i.weighing || {};
+              var wInfo =
+                w.suratJalanQty || w.grossQty || w.netQty
+                  ? ' <span style="color:var(--muted);font-size:11px">(SJ: ' +
+                    (w.suratJalanQty || 0) +
+                    ', Netto: ' +
+                    (w.netQty || 0) +
+                    ')</span>'
+                  : '';
               return (
                 '<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">' +
                 esc(i.itemName) +
                 ' — Qty: <strong>' +
                 i.qty +
-                '</strong></div>'
+                '</strong>' +
+                wInfo +
+                '</div>'
               );
             })
             .join('');

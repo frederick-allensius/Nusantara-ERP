@@ -53,13 +53,31 @@ const classicAll = [
   'public/classic/core/xlsx-export.js',
   'public/classic/core/budget-gl-extras.js',
   'public/classic/core/sales-purchase-extras.js',
+  // pipeline-extras.js: weighbridge reconciliation + multi-invoice generation.
+  // Depends on the goodsReceipts shape written by sales-purchase-extras.js, so
+  // it loads right after it (and before menu-router.js which routes to it).
+  'public/classic/core/pipeline-extras.js',
+  // sj-validation.js: Section 2 supplier Surat Jalan cross-check (anti under-
+  // invoicing). Reads the reconciled goodsReceipts / weighing shape written by
+  // sales-purchase-extras.js + pipeline-extras.js and is routed via
+  // menu-router.js, so it loads after them and before rbac.js/lazy-views.js.
+  'public/classic/core/sj-validation.js',
   'public/classic/core/settings-extras.js',
   'public/classic/core/inventory-extras.js',
   'public/classic/core/master-extras.js',
   'public/classic/core/bank-extras.js',
   'public/classic/core/tax-extras.js',
   'public/classic/core/report-extras.js',
+  // funnel-report.js: pipeline funnel analytics (dashboard) + custom-range
+  // report (Reports menu). Depends on the goodsReceipts/reconciled shape and is
+  // routed via menu-router.js, so it loads before it (and before rbac.js).
+  'public/classic/core/funnel-report.js',
   'public/classic/core/asset-extras.js',
+  // entri-harian.js: the Section 5 daily data-entry surface (Entri Harian). It
+  // routes to the PO/DO create handlers, _pipelineExtras (Timbangan) and
+  // _bankExtras (Biaya Operasional) at click time, so it only needs to load
+  // before menu-router.js (which routes to it) and rbac.js (which gates it).
+  'public/classic/core/entri-harian.js',
   'public/classic/core/menu-router.js',
   'public/classic/core/gl-sync.js',
   // trash.js between gl-sync and integrity: integrity wraps OUTERMOST, so a

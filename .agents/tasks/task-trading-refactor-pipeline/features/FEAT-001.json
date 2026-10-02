@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Environment setup and baseline verification. Confirm the toolchain builds and the existing test suite is green BEFORE any feature work, so later regressions are attributable. Also perform a lightweight audit of what pipeline pieces already exist vs. what the handoff requires, recorded as findings for later features.",
+  "status": "completed",
+  "steps": [
+    "Run `npm install` (Node >=20.19.0; sandbox has Node 22). Confirm it completes.",
+    "Run `npm run test:run` and confirm the baseline is green (expected: 224 tests pass / 18 files).",
+    "Run `npm run type-check` and record the output. Expected PRE-EXISTING errors ONLY in tests/rbac.test.ts (~11: Property 'RBAC' does not exist on Window) and tests/twofa-flow.test.ts (1: Property 'twoFactor'). These are the documented baseline — do NOT fix them and do NOT let later features add new type errors.",
+    "Run `npm run lint` and confirm it is clean (only a harmless '.eslintignore is no longer supported' config warning; zero rule violations).",
+    "Run `npm run build` and confirm it succeeds (emits dist/ + classic/bundle.js).",
+    "Audit and record in findings: grep public/classic and src for the pipeline stages named in the handoff (PO, Surat Jalan/Delivery Order, Timbangan/weighbridge, reconciliation, multi-invoice, payment) and note which already exist (DO doc type in doc-registry.js; goodsReceipts/Penerimaan Barang in sales-purchase-extras.js) and which are absent (weighbridge/timbangan capture, SJ-vs-supplier reconciliation cross-check, pipeline funnel diagram, SJ validation tool). This confirms the scope of FEAT-002..006."
+  ],
+  "acceptance_criteria": [
+    "`npm run test:run` exits 0 with all baseline tests passing.",
+    "`npm run build` exits 0.",
+    "`npm run lint` reports zero rule violations.",
+    "findings field records the baseline test count, the exact set of pre-existing type-check errors, and the existing-vs-missing pipeline audit."
+  ],
+  "verification": [
+    "npm run test:run",
+    "npm run build",
+    "npm run lint"
+  ],
+  "blocked_reason": null,
+  "findings": "BASELINE CONFIRMED (Node v22.23.2, npm install OK — added 54 packages, 800 audited).\n\n- npm run test:run: PASS. 18 test files passed, 224 tests passed (exit 0). Matches expected baseline exactly.\n- npm run type-check: 12 PRE-EXISTING errors, all in test files, matching the documented baseline exactly. Do NOT fix; do NOT let later features add new ones. Exact set:\n    tests/rbac.test.ts lines 46,47,48,49,50,53,54,55,61,62,107 — TS2339 \"Property 'RBAC' does not exist on type 'Window & typeof globalThis'\" (11 errors).\n    tests/twofa-flow.test.ts line 56 — TS2339 \"Property 'twoFactor' does not exist\" (1 error).\n  Total = 12 errors across 2 files. No errors in src/ or public/classic/ sources. (tsc --noEmit exits 0 because the script does not fail the process on TS errors; treat the printed error list as the gate.)\n- npm run lint: CLEAN. Zero rule violations. Only a harmless Node warning: 'The \".eslintignore\" file is no longer supported' (ESLintIgnoreWarning). Exit 0.\n- npm run build: SUCCESS (exit 0). Emits dist/ including dist/classic/bundle.js (707.75 kB) and lazy dist/classic/view-*.js chunks, main-*.js/css, vendor-firebase/vendor-chart. Built in ~6.3s.\n\nPIPELINE AUDIT (grep of public/classic and src) — existing vs. missing for FEAT-002..006 scope:\nEXISTS:\n- Doc types in src/classic/core/doc-registry.js (window.DocRegistry): SO (line 160, flowsTo ['DO','SI']), PO (line 174, flowsTo ['DO','PI']), DO 'Delivery Order' (line 286-290, idPrefix/numberPrefix 'DO'), SI (188), PI (202). So PO -> DO (Surat Jalan) -> SI/PI doc chain is already modeled.\n- Goods Receipt / 'Penerimaan Barang' (collection goodsReceipts) in public/classic/core/sales-purchase-extras.js via openReceiveItem; also referenced in menu-router.js (routing), integrity.js, rbac.js, trash.js, and src/core/db.js (collection registration).\n- Invoice handling (SI/PI) and payment logic present across erp-crud.js, invoice-view.js, bank-extras.js, doc-flow.js, gl.js, financial-reports.js.\nMISSING (to be built by later features):\n- Weighbridge / Timbangan capture: NO matches for timbangan|weighbridge|jembatan timbang|netto|bruto|tare anywhere in public/classic. Absent.\n- SJ-vs-supplier reconciliation cross-check: NO matches for rekonsiliasi|reconcil|cross-check. Absent.\n- Pipeline funnel diagram: NO matches for funnel; dashboard.js has KPI cards + Chart.js but no funnel. Absent.\n- SJ (Surat Jalan / DO) validation tool: no validation/validasi helper in sales-purchase-extras.js. Absent.\n\nNO source code was modified by FEAT-001 (verification-only). package-lock.json was already modified in the working tree at session start (from the routing npm install); not caused by this feature."
+}

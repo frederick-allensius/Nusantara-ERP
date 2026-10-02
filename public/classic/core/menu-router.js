@@ -26,6 +26,8 @@
     // ── Pembelian ────────────────────────────────────────────────────────────
     'Penawaran Pembelian': ['_quotationExtras', 'openPurchaseQuotation'],
     'Penerimaan Barang': ['_salesPurchaseExtras', 'openReceiveItem'],
+    'Rekonsiliasi Timbangan': ['_pipelineExtras', 'openReconciliation'],
+    'Validasi SJ Supplier': ['SJValidation', 'openValidation'],
     'Faktur Pembelian': ['_invoiceExtras', 'openPurchaseInvoice'],
     'Pembayaran ke Supplier': ['_invoiceExtras', 'openPurchasePayment'],
     'Uang Muka Pembelian': ['_salesPurchaseExtras', 'openPurchaseDP'],
@@ -101,6 +103,8 @@
     'Kirim Faktur Pajak via Email': ['_taxExtras', 'openTaxInvoiceEmail'],
     'e-Faktur Format Lama': ['_taxExtras', 'openEFakturLegacy'],
     'Analisis Bisnis': ['_reportExtras', 'openAIAnalysis'],
+    'Laporan per Periode': ['_funnelReport', 'openCustomRange'],
+    'Entri Harian': ['_entriHarian', 'open'],
   };
 
   // Opener globals defined inside a lazily-loaded view chunk → that view id.
