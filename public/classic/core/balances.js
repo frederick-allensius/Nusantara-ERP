@@ -11,6 +11,9 @@
 //   • A trading trip (trading.js) not yet on an invoice of that side is an open
 //     item too ("belum ditagih"): the ledger already carries it as receivable or
 //     payable (gl.js buildPickupJournals).
+//   • A PO invoiced per goods receipt counts each invoice plus what is received
+//     but not invoiced yet (gl.js receivedNotInvoiced); payments and returns
+//     booked on the PO itself are counted once across them.
 // Document `amount` already includes PPN, so balances include PPN too.
 //
 // Read-only (never mutates DB) except recalcInvoiceStatus().
@@ -125,6 +128,61 @@
     return (db()[side.orders] || []).find(o => same(o.id, inv.sourceId)) || null;
   }
 
+  // ── Purchase orders invoiced per goods receipt ──────────────────────────────
+  // Such a PO has several active invoices (each with receiptId) plus what was
+  // received but not invoiced yet — the same figure gl.js posts
+  // (GL.receivedNotInvoiced). Credits booked on the PO itself (payments logged on
+  // it, returns against it) count once: oldest invoice first, then the
+  // uninvoiced part; whatever is left stays on the last invoice as overpayment.
+  // Returns null for any other order.
+  function perReceiptOrder(sideKey, order) {
+    const side = SIDES[sideKey];
+    if (sideKey !== 'purchases' || !order) {
+      return null;
+    }
+    const invoices = (db()[side.invoices] || [])
+      .filter(
+        inv =>
+          isActiveInvoice(inv) &&
+          !!inv.receiptId &&
+          same(inv.sourceId, order.id) &&
+          (!inv.sourceType || inv.sourceType === side.orderType)
+      )
+      .sort(
+        (a, b) =>
+          String(a.date || '').localeCompare(String(b.date || '')) ||
+          String(a.number || a.id).localeCompare(String(b.number || b.id))
+      );
+    if (invoices.length === 0) {
+      return null;
+    }
+    const G = window.GL;
+    const pending =
+      G && typeof G.receivedNotInvoiced === 'function' ? G.receivedNotInvoiced(order) : [];
+    const pendingTotal = pending.reduce((s, p) => s + num(p.doc && p.doc.amount), 0);
+    let pay = orderPaid(side, order.id);
+    let ret = returned(side, side.orderType, order.id);
+    const charges = invoices.map(inv => ({
+      inv,
+      total: num(inv.amount),
+      own: settled(side, inv.id) + returned(side, side.invoiceType, inv.id),
+    }));
+    charges.push({ inv: null, total: pendingTotal, own: 0 });
+    const shares = charges.map(c => {
+      let room = Math.max(0, c.total - c.own);
+      const p = Math.min(pay, room);
+      pay -= p;
+      room -= p;
+      const r = Math.min(ret, room);
+      ret -= r;
+      return { inv: c.inv, payments: p, returns: r };
+    });
+    const last = shares[shares.length - 2];
+    last.payments += pay;
+    last.returns += ret;
+    return { invoices, pending, pendingTotal, shares, pendingShare: shares[shares.length - 1] };
+  }
+
   function result(total, payments, settlements, returns) {
     const credited = payments + settlements + returns;
     return {
@@ -141,6 +199,16 @@
   function invoiceBalance(sideKey, inv) {
     const side = SIDES[sideKey];
     const src = sourceOrder(sideKey, inv);
+    const multi = src && inv.receiptId ? perReceiptOrder(sideKey, src) : null;
+    const share = multi && multi.shares.find(s => s.inv && same(s.inv.id, inv.id));
+    if (share) {
+      return result(
+        num(inv.amount),
+        share.payments,
+        settled(side, inv.id),
+        returned(side, side.invoiceType, inv.id) + share.returns
+      );
+    }
     return result(
       num(inv.amount),
       src ? orderPaid(side, src.id) : 0,
@@ -151,6 +219,22 @@
 
   function orderBalance(sideKey, order) {
     const side = SIDES[sideKey];
+    const multi = perReceiptOrder(sideKey, order);
+    if (multi) {
+      // The whole order: its invoices plus what is received but not invoiced.
+      let total = multi.pendingTotal;
+      let settlements = 0;
+      let returns = returned(side, side.orderType, order.id);
+      multi.invoices.forEach(i => {
+        total += num(i.amount);
+        settlements += settled(side, i.id);
+        returns += returned(side, side.invoiceType, i.id);
+      });
+      return Object.assign(
+        { invoice: multi.invoices[0], invoices: multi.invoices, uninvoiced: multi.pendingTotal },
+        result(total, orderPaid(side, order.id), settlements, returns)
+      );
+    }
     const inv = activeInvoiceFor(sideKey, order.id);
     if (inv) {
       return Object.assign({ invoice: inv }, invoiceBalance(sideKey, inv));
@@ -250,6 +334,18 @@
       }
     });
     (db()[side.orders] || []).forEach(o => {
+      const multi = perReceiptOrder(sideKey, o);
+      if (multi) {
+        // Received but not invoiced yet (its invoices are listed above).
+        const sh = multi.pendingShare;
+        const bal = result(multi.pendingTotal, sh.payments, 0, sh.returns);
+        if (multi.pendingTotal > 0 && keep(bal)) {
+          const item = makeItem(sideKey, side.orderType, o, bal, asOf);
+          item.unbilled = true;
+          items.push(item);
+        }
+        return;
+      }
       if (o.status !== side.postedStatus || activeInvoiceFor(sideKey, o.id)) {
         return;
       }
@@ -336,6 +432,10 @@
       if (o.status === side.postedStatus && !activeInvoiceFor(sideKey, o.id)) {
         entries.push({ date: o.date || '', docType: side.orderType, id: o.id, number: o.number || o.id, debit: num(o.amount), credit: 0 });
       }
+      const multi = perReceiptOrder(sideKey, o);
+      (multi ? multi.pending : []).forEach(p => {
+        entries.push({ date: p.date || o.date || '', docType: side.orderType, id: o.id, number: o.number || o.id, receiptId: p.receiptId, unbilled: true, debit: num(p.doc.amount), credit: 0 });
+      });
     });
     unbilledTrips(sideKey).forEach(t => {
       if (mine(t)) {
