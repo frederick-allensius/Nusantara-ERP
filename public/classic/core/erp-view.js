@@ -2413,9 +2413,17 @@ function handleSearch(query) {
   const match = (...vals) => vals.some(v => v != null && String(v).toLowerCase().includes(q));
 
   const groups = [];
+  // A user narrowed by Akses menu (rbac.js) only finds records of the modules
+  // they may use; without a list every module is allowed.
+  const rbac = window.RBAC;
+  const allowed = mods =>
+    !rbac || typeof rbac.moduleAllowed !== 'function' || mods.some(m => rbac.moduleAllowed(m));
   // Documents store the party name in `customer` / `supplier` (older imports used *Name).
   const party = (d, key) => d[key] || d[key + 'Name'] || '';
   const docGroup = (label, list, cfg) => {
+    if (!allowed(cfg.modules)) {
+      return;
+    }
     const rows = (list || [])
       .filter(d => match(d.number, d.id, party(d, cfg.party), d.notes, d.note, d.sourceNumber))
       .slice(0, LIMIT)
@@ -2433,29 +2441,38 @@ function handleSearch(query) {
     }
   };
 
-  docGroup('Pesanan Penjualan', db.salesOrders, { action: 'viewSO', nav: 'sales', party: 'customer' });
+  docGroup('Pesanan Penjualan', db.salesOrders, {
+    action: 'viewSO',
+    nav: 'sales',
+    party: 'customer',
+    modules: ['sales'],
+  });
   docGroup('Faktur Penjualan', db.salesInvoices, {
     action: 'invView',
     type: 'SI',
     nav: 'invoices',
     party: 'customer',
+    modules: ['sales'],
   });
   docGroup('Surat Jalan', db.deliveryOrders, {
     action: 'viewDO',
     nav: 'logistics',
     party: 'customer',
     amount: false,
+    modules: ['sales'],
   });
   docGroup('Pesanan Pembelian', db.purchaseOrders, {
     action: 'viewPO',
     nav: 'purchase',
     party: 'supplier',
+    modules: ['purchases'],
   });
   docGroup('Faktur Pembelian', db.purchaseInvoices, {
     action: 'invView',
     type: 'PI',
     nav: 'invoices',
     party: 'supplier',
+    modules: ['purchases'],
   });
 
   const items = (db.inventoryItems || [])
@@ -2469,7 +2486,7 @@ function handleSearch(query) {
       sub: [i.sku, i.category].filter(Boolean).join(' · '),
       right: 'Stok: ' + (Number(i.stock) || 0) + ' ' + (i.unit || ''),
     }));
-  if (items.length) {
+  if (items.length && allowed(['inventory'])) {
     groups.push({ label: 'Barang', rows: items });
   }
 
@@ -2484,7 +2501,7 @@ function handleSearch(query) {
       sub: [c.phone, c.email].filter(Boolean).join(' · '),
       right: '',
     }));
-  if (customers.length) {
+  if (customers.length && allowed(['sales', 'master'])) {
     groups.push({ label: 'Pelanggan', rows: customers });
   }
 
@@ -2499,7 +2516,7 @@ function handleSearch(query) {
       sub: [s.phone, s.email].filter(Boolean).join(' · '),
       right: '',
     }));
-  if (suppliers.length) {
+  if (suppliers.length && allowed(['purchases', 'master'])) {
     groups.push({ label: 'Supplier', rows: suppliers });
   }
 

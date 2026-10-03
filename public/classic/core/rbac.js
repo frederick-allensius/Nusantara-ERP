@@ -12,7 +12,10 @@
 //                           depth for local mode and any button we didn't hide.
 //
 // The active role is resolved in src/core/user-role.js before the classic bundle
-// loads and published as window.__ERP_USER = { role, active, ... }.
+// loads and published as window.__ERP_USER = { role, active, modules, ... }.
+//
+// Per-user "Akses menu": `modules` (set by an admin in Manajemen Pengguna) is an
+// allowlist that can only NARROW the role — see moduleAllowed() below.
 //
 // Load order (vite.config.js classicOrder): rbac.js is LAST so its saveDB wrap is
 // OUTERMOST — an unauthorized mutation is reverted before integrity.js/trash.js
@@ -123,6 +126,39 @@
     pickups: 'purchases',
   };
 
+  // ── Per-user module allowlist ("Akses menu") ─────────────────────────────────
+  // An admin can limit a user to some modules: users/{uid}.modules in the cloud,
+  // the local user record offline, published as window.__ERP_USER.modules.
+  // Effective permission = role permission AND (no list OR module in the list),
+  // so the list only narrows the role and never widens it. Missing or empty =
+  // no restriction. Admins are never restricted (no lock-out of the last admin).
+  // Always open: 'dashboard' (Ringkasan) and 'config' — the shared settings doc
+  // also holds reference data of other modules (fixed assets, item categories,
+  // units, tax settings) and is filled in lazily by several pages, so narrowing
+  // it would block saves in modules the user may use. firestore.rules mirrors
+  // this in moduleAllowed().
+  const ALWAYS_ALLOWED = ['dashboard', 'config'];
+
+  // The choices in Manajemen Pengguna → Akses menu: one per restrictable module,
+  // named after the sidebar groups it opens (ui/nav.js MENU_CONFIG; see
+  // accessMenus()). 'master' opens no menu of its own: it is the customer /
+  // supplier / employee data behind Pelanggan, Supplier and Karyawan.
+  const ACCESS_GROUPS = [
+    { module: 'sales', label: 'Penjualan' },
+    { module: 'purchases', label: 'Pembelian & Entri Harian' },
+    { module: 'inventory', label: 'Persediaan' },
+    { module: 'gl', label: 'Kas & Bank dan Akuntansi' },
+    { module: 'tax', label: 'Pajak' },
+    { module: 'assets', label: 'Aset Tetap' },
+    { module: 'reports', label: 'Laporan' },
+    {
+      module: 'master',
+      label: 'Data pelanggan, supplier & karyawan',
+      hint: 'Menambah dan mengubah pelanggan, supplier, karyawan, armada dan ekspedisi',
+    },
+    { module: 'admin', label: 'Pengaturan' },
+  ];
+
   // ── Dual-view surfaces (Section 5) ────────────────────────────────────────
   // Two handoff personas are layered on top of the resolved role WITHOUT
   // weakening the server-enforced rbac boundary:
@@ -185,12 +221,38 @@
     return perms[module] || NONE;
   }
 
-  /** Can the current role perform `action` on `module`? */
-  function can(action, module) {
+  // The user's module allowlist, or null when there is none (no restriction).
+  function moduleList() {
+    const list = user().modules;
+    if (!Array.isArray(list)) {
+      return null;
+    }
+    const mods = list.filter(m => typeof m === 'string');
+    return mods.length ? mods : null;
+  }
+  /** Is the current user narrowed by a module allowlist? Admins never are. */
+  function isRestricted() {
+    return !isAdmin() && moduleList() !== null;
+  }
+  /** Does the user's allowlist (if any) include `module`? Ignores the role. */
+  function moduleAllowed(module) {
+    if (!isRestricted() || ALWAYS_ALLOWED.indexOf(module) !== -1) {
+      return true;
+    }
+    return moduleList().indexOf(module) !== -1;
+  }
+
+  // The role matrix alone, without the allowlist.
+  function roleCan(action, module) {
     if (isAdmin()) {
       return true;
     }
     return actionsFor(module).indexOf(action) !== -1;
+  }
+
+  /** Can the current user perform `action` on `module`? (role AND allowlist) */
+  function can(action, module) {
+    return roleCan(action, module) && moduleAllowed(module);
   }
   function canView(module) {
     return can('view', module);
@@ -201,6 +263,84 @@
   function canViewGroup(groupKey) {
     const m = GROUP_MODULE[groupKey];
     return m ? canView(m) : true;
+  }
+
+  // ── Pages and menu entries per module (allowlist helpers) ────────────────────
+  function menuConfig() {
+    return window.__NSA_MENU_CONFIG || {};
+  }
+  function modulesOf(value) {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return value ? [value] : [];
+  }
+
+  // Modules a view serves: its VIEW_MODULE plus the module(s) of every menu entry
+  // that opens it — shared views such as invoices serve sales AND purchases.
+  function viewModules(viewId) {
+    const mods = modulesOf(VIEW_MODULE[viewId]).slice();
+    const add = m => {
+      if (mods.indexOf(m) === -1) {
+        mods.push(m);
+      }
+    };
+    const cfg = menuConfig();
+    Object.keys(cfg).forEach(key => {
+      const g = cfg[key];
+      if (g.view === viewId) {
+        modulesOf(g.module).forEach(add);
+      }
+      (g.items || []).forEach(it => {
+        if (it.view === viewId) {
+          modulesOf(it.module || g.module).forEach(add);
+        }
+      });
+    });
+    return mods;
+  }
+
+  /** May the user open the page `viewId`? Only an allowlist closes pages: a
+   *  restricted user needs one module the page serves (unclaimed pages stay open). */
+  function viewAllowed(viewId) {
+    if (!isRestricted()) {
+      return true;
+    }
+    const mods = viewModules(viewId);
+    return !mods.length || mods.some(moduleAllowed);
+  }
+
+  // Sidebar entries opened through `module`, one string per group: the group
+  // title when the module opens all of it, "Group: Entry, Entry" for a few
+  // entries, "Group (kecuali Entry, Entry)" when only a few are left out.
+  function accessMenus(module) {
+    const cfg = menuConfig();
+    const out = [];
+    Object.keys(cfg).forEach(key => {
+      const g = cfg[key];
+      const items = (g.items || []).filter(it => it.label);
+      if (!items.length) {
+        if (modulesOf(g.module).indexOf(module) !== -1) {
+          out.push(g.title);
+        }
+        return;
+      }
+      const hit = items.filter(it => modulesOf(it.module || g.module).indexOf(module) !== -1);
+      if (!hit.length) {
+        return;
+      }
+      if (hit.length === items.length) {
+        out.push(g.title);
+        return;
+      }
+      const miss = items.filter(it => hit.indexOf(it) === -1);
+      out.push(
+        hit.length > 3 && miss.length <= 3
+          ? `${g.title} (kecuali ${miss.map(it => it.label).join(', ')})`
+          : `${g.title}: ${hit.map(it => it.label).join(', ')}`
+      );
+    });
+    return out;
   }
 
   // Capabilities (admin-only): user management, settings, period lock, permanent delete.
@@ -374,8 +514,17 @@
   const MODULE_LABEL = {
     sales: 'Penjualan', purchases: 'Pembelian', inventory: 'Inventory', gl: 'Buku Besar',
     tax: 'Pajak', assets: 'Aset', master: 'Master Data', admin: 'Pengaturan/Admin',
-    config: 'Pengaturan',
+    config: 'Pengaturan', reports: 'Laporan',
   };
+
+  // Toast text for a refused action: the role, or the user's Akses menu.
+  function denyMessage(action, module) {
+    const label = MODULE_LABEL[module] || module;
+    if (roleCan(action, module)) {
+      return `Akses ditolak — akses menu Anda tidak mencakup ${label}.`;
+    }
+    return `Akses ditolak — peran "${currentRole()}" tidak boleh ${ACTION_LABEL[action] || action} data ${label}.`;
+  }
 
   function installSaveHook() {
     if (typeof window.saveDB !== 'function') {
@@ -389,9 +538,7 @@
           const v = findViolation();
           if (v) {
             revertToSnapshot();
-            const msg =
-              `Akses ditolak — peran "${currentRole()}" tidak boleh ` +
-              `${ACTION_LABEL[v.action] || v.action} data ${MODULE_LABEL[v.module] || v.module}.`;
+            const msg = denyMessage(v.action, v.module);
             console.warn('[RBAC] ' + msg, v);
             if (typeof window.showToast === 'function') {
               window.showToast(msg, 'danger');
@@ -432,6 +579,20 @@
     return VIEW_MODULE[v] || 'dashboard';
   }
 
+  // May the user do `need` on the page on screen? The role is checked against the
+  // page's module as before; a restricted user also needs `need` on one module
+  // the page serves (Faktur Pembelian lives in the shared invoices view).
+  function canOnPage(need) {
+    const module = activeModule();
+    if (!roleCan(need, module)) {
+      return false;
+    }
+    if (!isRestricted()) {
+      return true;
+    }
+    return viewModules(window.activeView || 'dashboard').some(m => can(need, m));
+  }
+
   function installClickGuard() {
     document.addEventListener(
       'click',
@@ -458,15 +619,11 @@
         if (!need) {
           return;
         }
-        const module = activeModule();
-        if (!can(need, module)) {
+        if (!canOnPage(need)) {
           e.preventDefault();
           e.stopPropagation();
           if (typeof window.showToast === 'function') {
-            window.showToast(
-              `Akses ditolak — peran "${currentRole()}" tidak boleh ${ACTION_LABEL[need]} data ${MODULE_LABEL[module] || module}.`,
-              'danger'
-            );
+            window.showToast(denyMessage(need, activeModule()), 'danger');
           }
         }
       },
@@ -480,7 +637,6 @@
       if (isAdmin()) {
         return;
       }
-      const module = activeModule();
       const scope = document.querySelector('.main-content') || document.body;
       scope.querySelectorAll('[data-action]').forEach(el => {
         const action = el.getAttribute('data-action') || '';
@@ -495,7 +651,7 @@
         } else if (EDIT_RE.test(action)) {
           need = 'edit';
         }
-        if (need && !can(need, module)) {
+        if (need && !canOnPage(need)) {
           el.style.display = 'none';
         }
       });
@@ -504,11 +660,12 @@
     }
   }
 
-  // Hide sidebar entries the current role can't view: an entry lists its
-  // module(s) in data-module, a sub-heading goes when none of its entries is
-  // left, and a group goes when it has no visible entry (a group without entries
-  // is gated by GROUP_MODULE). Called by nav.js after it renders the menu and
-  // from rbac.js boot (which loads after nav.js). Idempotent.
+  // Hide sidebar entries the current user can't view (role and Akses menu, both
+  // through canView): an entry lists its module(s) in data-module, a sub-heading
+  // goes when none of its entries is left, and a group goes when it has no
+  // visible entry (a group without entries is gated by GROUP_MODULE). Called by
+  // nav.js after it renders the menu and from rbac.js boot (which loads after
+  // nav.js). Idempotent.
   function applyNavGating() {
     try {
       document.querySelectorAll('.nav-item[data-module]').forEach(item => {
@@ -541,13 +698,29 @@
     }
   }
 
+  let lastPageNotice = 0;
+  function noticeBlockedPage() {
+    const now = Date.now();
+    if (now - lastPageNotice > 1500 && typeof window.showToast === 'function') {
+      window.showToast('Halaman ini tidak termasuk akses menu Anda.', 'warning');
+    }
+    lastPageNotice = now;
+  }
+
   function installNavigateHook() {
     if (typeof window.navigate !== 'function') {
       return;
     }
     const _orig = window.navigate;
-    window.navigate = function rbacNavigate() {
-      const r = _orig.apply(this, arguments);
+    window.navigate = function rbacNavigate(id, ...rest) {
+      let target = id;
+      // A page outside the user's Akses menu — reached through a link, the
+      // search or a notification, as its menu entry is hidden — opens Ringkasan.
+      if (target && !viewAllowed(target)) {
+        noticeBlockedPage();
+        target = 'dashboard';
+      }
+      const r = _orig.call(this, target, ...rest);
       // Run after the view renders.
       requestAnimationFrame(guardView);
       return r;
@@ -582,12 +755,19 @@
     applyNavGating,
     surfaceFor,
     canViewSurface,
+    isRestricted,
+    moduleAllowed,
+    viewAllowed,
+    viewModules,
+    accessMenus,
     PERMISSIONS,
     GROUP_MODULE,
     VIEW_MODULE,
     ROLE_SURFACES,
     ENTRI_ACTIONS,
     EXECUTIVE_ANALYTICS,
+    ACCESS_GROUPS,
+    ALWAYS_ALLOWED,
   };
 
   console.log('[RBAC] active — role:', currentRole());

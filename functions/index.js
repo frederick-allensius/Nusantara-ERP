@@ -31,6 +31,7 @@ export {
   adminCreateUser,
   adminSetPassword,
   adminSetRole,
+  adminSetModules,
   adminSetActive,
   adminDeleteUser,
 } from './auth.js';

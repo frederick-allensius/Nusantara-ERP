@@ -33,6 +33,7 @@ import {
   resolveUserRole,
   listUsers,
   setUserRole,
+  setUserModules,
   createUser,
   resetUserPassword,
   removeUser,
@@ -120,6 +121,7 @@ window.erpMobile = { triggerHaptic, getDeviceType };
 window.erpUsers = {
   list: listUsers,
   setRole: setUserRole,
+  setModules: setUserModules,
   create: createUser,
   resetPassword: resetUserPassword,
   remove: removeUser,

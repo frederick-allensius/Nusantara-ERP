@@ -162,6 +162,7 @@ export function listLocalUsers() {
     active: u.active !== false,
     mustChangePassword: !!u.mustChangePassword,
     createdAt: u.createdAt || null,
+    modules: Array.isArray(u.modules) ? u.modules.slice() : [],
   }));
 }
 
@@ -271,6 +272,41 @@ export function setUserRoleLocal(username, role) {
     throw new Error('User tidak ditemukan');
   }
   u.role = role;
+  // Admins are never restricted: drop a leftover Akses menu.
+  if (role === 'admin') {
+    delete u.modules;
+  }
+  writeUsers(users);
+  return true;
+}
+
+// ── Akses menu (per-user module allowlist) ─────────────────────────────────────
+// u.modules lists the RBAC modules the user may use; it only narrows the role
+// (public/classic/core/rbac.js). Absent/empty = no restriction. Callers pass a
+// list already validated against the known module keys (user-role.js).
+
+/** The user's module allowlist ([] when unrestricted or unknown). */
+export function getUserModulesLocal(username) {
+  const u = findUser(username);
+  return u && Array.isArray(u.modules) ? u.modules.slice() : [];
+}
+
+/** Set (or clear with []) a user's module allowlist. Admins can't be restricted. */
+export function setUserModulesLocal(username, modules) {
+  const users = readUsers() || [];
+  const u = users.find(x => x.username === normUsername(username));
+  if (!u) {
+    throw new Error('User tidak ditemukan');
+  }
+  const list = Array.isArray(modules) ? modules.slice() : [];
+  if (list.length && u.role === 'admin') {
+    throw new Error('Akses menu Admin tidak dapat dibatasi');
+  }
+  if (list.length) {
+    u.modules = list;
+  } else {
+    delete u.modules;
+  }
   writeUsers(users);
   return true;
 }

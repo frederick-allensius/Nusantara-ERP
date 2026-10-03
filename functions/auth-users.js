@@ -16,6 +16,7 @@
 
 import { randomBytes, pbkdf2 as _pbkdf2, createHash } from 'node:crypto';
 import { adminDb } from './admin.js';
+import { MODULE_KEYS, normalizeModules } from './user-modules.js';
 
 // OWASP-recommended cost for PBKDF2-HMAC-SHA256; keep in sync with local-users.js.
 const PBKDF2_ITERATIONS = 600000;
@@ -97,6 +98,7 @@ export async function getUser(username) {
 
 export async function listUsers() {
   const snap = await db().collection(COLLECTION).get();
+  const modules = await readModules(snap.docs.map(d => d.id));
   return snap.docs.map(d => {
     const u = d.data();
     // Strip secrets before returning to any caller.
@@ -108,8 +110,62 @@ export async function listUsers() {
       mustChangePassword: !!u.mustChangePassword,
       twoFactorEnabled: !!(u.twoFactor && u.twoFactor.enabled),
       createdAt: u.createdAt || null,
+      modules: modules.get(d.id) || [],
     };
   });
+}
+
+// ── Akses menu (per-user module allowlist) ─────────────────────────────────────
+// Stored on users/u_<username>.modules — the document firestore.rules reads in
+// moduleAllowed() — not on authUsers, so the rules see it without a claim and a
+// change applies to the user's next write.
+function userDocRef(username) {
+  return db().collection('users').doc(uidFor(username));
+}
+
+async function readModules(usernames) {
+  const out = new Map();
+  if (!usernames.length) {
+    return out;
+  }
+  const snaps = await db().getAll(...usernames.map(userDocRef));
+  snaps.forEach((s, i) => {
+    const list = s.exists ? s.get('modules') : null;
+    if (Array.isArray(list)) {
+      out.set(
+        usernames[i],
+        list.filter(m => MODULE_KEYS.includes(m))
+      );
+    }
+  });
+  return out;
+}
+
+/**
+ * Set a user's Akses menu. `modules` must be known module keys; [] removes the
+ * restriction. An admin account is never restricted. Returns the stored list.
+ */
+export async function setModules(username, modules) {
+  const user = await getUser(username);
+  if (!user) {
+    throw new Error('User tidak ditemukan');
+  }
+  const list = normalizeModules(modules);
+  if (list.length && user.role === 'admin') {
+    throw new Error('Akses menu Admin tidak dapat dibatasi');
+  }
+  await userDocRef(user.username).set({ modules: list }, { merge: true });
+  return list;
+}
+
+// Drop a leftover restriction (the account became admin, or was deleted).
+async function clearModules(username) {
+  const ref = userDocRef(username);
+  const snap = await ref.get();
+  const list = snap.exists ? snap.get('modules') : null;
+  if (Array.isArray(list) && list.length) {
+    await ref.update({ modules: [] });
+  }
 }
 
 async function writeUser(username, data) {
@@ -262,6 +318,10 @@ export async function setRole(username, role) {
     throw new Error('User tidak ditemukan');
   }
   await writeUser(username, { role });
+  // Admins are never restricted: drop a leftover Akses menu.
+  if (role === 'admin') {
+    await clearModules(username);
+  }
   return true;
 }
 
@@ -282,6 +342,8 @@ export async function deleteUser(username) {
     throw new Error('User tidak ditemukan');
   }
   await db().collection(COLLECTION).doc(key).delete();
+  // A new account with the same username must not inherit the old Akses menu.
+  await clearModules(key);
   return true;
 }
 

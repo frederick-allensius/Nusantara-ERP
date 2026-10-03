@@ -24,6 +24,7 @@ import {
   setPassword,
   setRole,
   setActive,
+  setModules,
   deleteUser,
   uidFor,
   getTwoFactor,
@@ -34,6 +35,7 @@ import {
 } from './auth-users.js';
 import { verifyTOTP } from './totp.js';
 import { appendAccessLog } from './access-log.js';
+import { normalizeModules } from './user-modules.js';
 
 const CALL_OPTS = { cors: true, maxInstances: 10 };
 
@@ -316,6 +318,24 @@ export const adminSetRole = onCall(CALL_OPTS, async request => {
   await guard(() => setRole(username, need(d.role, 'Role wajib diisi')));
   await revokeSessions(username); // stale role claim must not outlive the change
   return { ok: true };
+});
+
+// Akses menu: the modules a user may use, narrowing their role ([] = all their
+// role allows). Stored on users/u_<username>, which firestore.rules reads on
+// every write, so no session revoke is needed. Unknown module keys and
+// restricting an admin are rejected.
+export const adminSetModules = onCall(CALL_OPTS, async request => {
+  requireAdmin(request);
+  const d = request.data || {};
+  const username = need(d.username, 'Username wajib diisi');
+  let modules;
+  try {
+    modules = normalizeModules(d.modules);
+  } catch (e) {
+    throw new HttpsError('invalid-argument', e.message);
+  }
+  const stored = await guard(() => setModules(username, modules));
+  return { ok: true, modules: stored };
 });
 
 export const adminSetActive = onCall(CALL_OPTS, async request => {
