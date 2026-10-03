@@ -1264,13 +1264,26 @@ function initLineItems(priceField, existingLines) {
         priceInp.value = opt?.dataset.price || 0;
         // Supplier Price override: when in PO context, check for a supplier-specific price
         if (priceField === 'cost') {
+          // The latest price in effect on the PO date (Harga Supplier keeps history).
           const supplierName = (document.getElementById('po-supplier')?.value || '').trim();
+          const poDate = document.getElementById('po-date')?.value || '';
           if (supplierName && DB.supplierPrices) {
-            const sp = DB.supplierPrices.find(
-              p =>
-                String(p.itemId) === String(sel.value) &&
-                String(p.supplierName || '').toLowerCase() === supplierName.toLowerCase()
-            );
+            let sp = null;
+            DB.supplierPrices.forEach(p => {
+              if (
+                String(p.itemId) !== String(sel.value) ||
+                String(p.supplierName || '').toLowerCase() !== supplierName.toLowerCase()
+              ) {
+                return;
+              }
+              const eff = p.effectiveDate || '';
+              if (eff && poDate && eff > poDate) {
+                return;
+              }
+              if (!sp || eff > (sp.effectiveDate || '')) {
+                sp = p;
+              }
+            });
             if (sp) priceInp.value = sp.price;
           }
         }
@@ -2268,9 +2281,19 @@ function deleteItem(id) {
 // _wireSoRefSelect) and showAddDO/editDO/viewDO live in the merged erp-patch
 // section at the bottom of this file. Only deleteDO remains here.
 
+// Pickup surat jalan (trading trips) are changed only from Pengambilan, which
+// keeps slots, weights, invoices and the PO quota consistent.
+function pickupDOGuard(o) {
+  if (o && o.pickup === true) {
+    showToast('Surat jalan pengambilan diubah dari menu Pengambilan', 'warning');
+    return true;
+  }
+  return false;
+}
+
 function deleteDO(id) {
   const idx = DB.deliveryOrders.findIndex(o => o.id === id);
-  if (idx === -1) {
+  if (idx === -1 || pickupDOGuard(DB.deliveryOrders[idx])) {
     return;
   }
   const deleted = DB.deliveryOrders.splice(idx, 1)[0];
@@ -5694,6 +5717,9 @@ function editDO(id) {
   const o = DB.deliveryOrders.find(o => o.id === id);
   if (!o) {
     showToast('DO tidak ditemukan', 'danger');
+    return;
+  }
+  if (pickupDOGuard(o)) {
     return;
   }
   openModal(

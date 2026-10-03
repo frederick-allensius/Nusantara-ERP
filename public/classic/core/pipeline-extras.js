@@ -667,9 +667,9 @@
 
   // Reflect multi-invoice progress onto delivery orders linked to the PO:
   // 'Partially invoiced' when some (but not all) reconciled receipts have an
-  // active invoice, 'Invoiced' when all of them do. Trading pickup slots
-  // (pickup: true, trading.js) keep their own trip status, and cancelled
-  // delivery orders stay cancelled.
+  // active invoice, 'Invoiced' when all of them do, back to 'Delivered' when the
+  // last one is cancelled. Trading pickup slots (pickup: true, trading.js) keep
+  // their own trip status, and cancelled delivery orders stay cancelled.
   function updatePODeliveryInvoiceStatus(poId) {
     var receipts = (db().goodsReceipts || []).filter(function (r) {
       return sameId(r.poId, poId) && r.reconciled;
@@ -680,7 +680,6 @@
     }).length;
     var newStatus =
       invoicedCount === 0 ? null : invoicedCount >= receipts.length ? 'Invoiced' : 'Partially invoiced';
-    if (!newStatus) return;
     (db().deliveryOrders || [])
       .filter(function (d) {
         return (
@@ -691,7 +690,8 @@
         );
       })
       .forEach(function (d) {
-        d.status = newStatus;
+        if (newStatus) d.status = newStatus;
+        else if (d.status === 'Invoiced' || d.status === 'Partially invoiced') d.status = 'Delivered';
       });
   }
 

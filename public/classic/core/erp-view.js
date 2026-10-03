@@ -356,7 +356,8 @@ function exportCSV(view) {
     ]);
   } else if (view === 'logistics') {
     const f = filters.logistics;
-    let data = f === 'all' ? DB.deliveryOrders : DB.deliveryOrders.filter(o => o.status === f);
+    const dos = stockDeliveries();
+    let data = f === 'all' ? dos : dos.filter(o => o.status === f);
     data = applyDateFilter(data, 'logistics');
     data = applySorted(data, 'logistics');
     headers = ['No. DO', 'Pelanggan', 'Tujuan', 'Tanggal', 'Driver', 'Kendaraan', 'Status'];
@@ -462,7 +463,8 @@ function exportXLSX(view) {
     ]);
   } else if (view === 'logistics') {
     const f = filters.logistics;
-    let data = f === 'all' ? DB.deliveryOrders : DB.deliveryOrders.filter(o => o.status === f);
+    const dos = stockDeliveries();
+    let data = f === 'all' ? dos : dos.filter(o => o.status === f);
     data = applyDateFilter(data, 'logistics');
     data = applySorted(data, 'logistics');
     sheetName = 'Delivery Order';
@@ -1374,19 +1376,28 @@ function renderReports() {
 }
 
 // ── View: Logistics ───────────────────────────────────────────────────────────
+// Surat jalan for goods sent from stock. Pickup surat jalan (trading trips,
+// pickup: true) live in Pengambilan, where their slots, weights and invoices
+// are kept consistent.
+function stockDeliveries() {
+  return (DB.deliveryOrders || []).filter(o => o && o.pickup !== true);
+}
+
 function renderLogistics() {
   const f = filters.logistics;
-  let orders = f === 'all' ? DB.deliveryOrders : DB.deliveryOrders.filter(o => o.status === f);
+  const dos = stockDeliveries();
+  const pickupCount = (DB.deliveryOrders || []).length - dos.length;
+  let orders = f === 'all' ? dos : dos.filter(o => o.status === f);
   orders = applyDateFilter(orders, 'logistics');
   orders = applySorted(orders, 'logistics');
 
-  const invoiced = DB.deliveryOrders.filter(o => o.status === 'Invoiced').length;
-  const sent = DB.deliveryOrders.filter(o => o.status === 'Sent').length;
-  const partialInv = DB.deliveryOrders.filter(o => o.status === 'Partially invoiced').length;
+  const invoiced = dos.filter(o => o.status === 'Invoiced').length;
+  const sent = dos.filter(o => o.status === 'Sent').length;
+  const partialInv = dos.filter(o => o.status === 'Partially invoiced').length;
   // Fix #4: compute from real data — count unique drivers dispatched this month
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const thisMthDO = DB.deliveryOrders.filter(o => o.date && o.date.startsWith(thisMonth));
+  const thisMthDO = dos.filter(o => o.date && o.date.startsWith(thisMonth));
   const uniqueDrivers = new Set(thisMthDO.map(o => o.driver).filter(d => d && d !== '—')).size;
 
   const fleet = DB.fleet || [];
@@ -1467,6 +1478,11 @@ function renderLogistics() {
       </div>
     </div>
     <div style="margin-bottom:12px">${dateFilterBar('logistics')}</div>
+    ${
+      pickupCount > 0
+        ? `<div class="empty-inline" style="margin-bottom:12px;text-align:left">Surat jalan pengambilan dari supplier (${pickupCount}) ada di menu <button class="link-btn" data-action="openPickupOrders">Pengambilan → PO Pengambilan</button>.</div>`
+        : ''
+    }
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -2015,6 +2031,11 @@ document.addEventListener('click', async e => {
     // ── Delivery Orders ───────────────────────────────────────────────────────
     case 'addDO':
       showAddDO();
+      break;
+    case 'openPickupOrders':
+      if (window.NSAMenu) {
+        window.NSAMenu.handle('pickups', 'PO Pengambilan');
+      }
       break;
     case 'viewDO':
       viewDO(id);

@@ -238,6 +238,11 @@ describe('invoiceFromReceipt (multi-invoice + derived GL)', () => {
 
     // Only reconciled receipt → all invoiced → DO becomes 'Invoiced'.
     expect((window as any).DB.deliveryOrders[0].status).toBe('Invoiced');
+
+    // Cancelling that invoice puts the DO back to Delivered.
+    pis[0].status = 'Cancelled';
+    P().updatePODeliveryInvoiceStatus('PO-1');
+    expect((window as any).DB.deliveryOrders[0].status).toBe('Delivered');
   });
 
   it('produces MULTIPLE invoices across staged receipts for one PO (partial invoicing)', () => {

@@ -732,6 +732,12 @@
     if (window.Trading && typeof window.Trading.releaseInvoice === 'function') {
       window.Trading.releaseInvoice(type === 'SI' ? 'sales' : 'purchases', inv);
     }
+    // A per-receipt purchase invoice (Rekonsiliasi Timbangan): the PO's
+    // delivery orders follow how many of its receipts are still invoiced.
+    const pipe = window._pipelineExtras;
+    if (inv.receiptId && inv.sourceId && pipe && typeof pipe.updatePODeliveryInvoiceStatus === 'function') {
+      pipe.updatePODeliveryInvoiceStatus(inv.sourceId);
+    }
     save();
     if (typeof window.closeModal === 'function') {
       window.closeModal();

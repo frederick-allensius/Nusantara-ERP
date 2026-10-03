@@ -22,6 +22,7 @@ beforeAll(async () => {
   await import('../public/classic/core/gl.js');
   await import('../public/classic/core/balances.js');
   await import('../public/classic/core/trading.js');
+  await import('../public/classic/core/funnel-report.js');
 });
 
 const ITEM = { itemId: '1', itemName: 'Batu Split 1-2', unit: 'Ton' };
@@ -337,6 +338,25 @@ describe('ledger', () => {
     T().createInvoice('sales', [slot(1).id], { date: '2026-09-09' });
     const after = w().Balances.summary('sales', { asOf: '2026-09-10' });
     expect(after.items.map((i: any) => i.docType).sort()).toEqual(['DO', 'SI']);
+  });
+
+  it('lists trips in Laporan per Periode apart from the order totals', () => {
+    T().createInvoice('sales', [slot(1).id], { date: '2026-09-09' });
+    const r = w()._funnelReport.filterTransactions(w().DB, { month: '2026-09', kind: 'trip' });
+    expect(r.rows.map((x: any) => [x.number, x.qty, x.status])).toEqual([
+      [slot(2).sjNo, 30, 'Delivered'],
+      [slot(1).sjNo, 35, 'Invoiced'],
+    ]);
+    expect(r.totals.tripQty).toEqual({ Ton: 65 });
+    expect(r.totals.sales).toBe(0);
+    const byPO = w()._funnelReport.filterTransactions(w().DB, { po: w().DB.salesOrders[0].number });
+    expect(byPO.rows.filter((x: any) => x.kind === 'trip')).toHaveLength(2);
+  });
+
+  it('never counts an uninvoiced trip as overdue (the term runs from the invoice)', () => {
+    const ar = w().Balances.summary('sales', { asOf: '2026-12-31' });
+    expect(ar.items.filter((i: any) => i.unbilled && i.overdue)).toHaveLength(0);
+    expect(ar.overdue).toBe(0);
   });
 
   it('keeps an order-level status change from posting the pickup order again', () => {

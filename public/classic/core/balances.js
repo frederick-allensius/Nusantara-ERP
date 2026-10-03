@@ -354,12 +354,18 @@
         items.push(makeItem(sideKey, side.orderType, o, bal, asOf));
       }
     });
+    // A trip has no due date until it is invoiced (the term runs from the
+    // invoice), so it is never overdue here; a billing delay shows as the
+    // "belum ditagih" alert instead.
     unbilledTrips(sideKey).forEach(t => {
       const bal = result(tripTotal(sideKey, t), 0, 0, 0);
       if (keep(bal)) {
         const item = makeItem(sideKey, 'DO', t, bal, asOf);
         item.number = t.sjNo || item.number;
         item.unbilled = true;
+        item.dueDate = '';
+        item.overdue = false;
+        item.daysOverdue = 0;
         items.push(item);
       }
     });

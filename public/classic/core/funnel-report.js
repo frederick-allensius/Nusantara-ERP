@@ -175,8 +175,11 @@
   //   customer   (substring, case-insensitive, matched on customerName)
   //   supplier   (substring, case-insensitive, matched on supplierName)
   //   po         (substring, matched on number/id — "per PO number")
-  //   kind       ('purchase' | 'sales' | '' for both)
-  // Returns { rows, totals: { purchase, sales, count } }.
+  //   kind       ('purchase' | 'sales' | 'trip' | '' for all)
+  // Trips (trading pickups, trading.js) are listed as their own kind with their
+  // netto and sale value; they are totalled apart from the orders they belong
+  // to (tripQty per unit, trip value) so nothing is counted twice.
+  // Returns { rows, totals: { purchase, sales, trip, tripQty, count } }.
   function filterTransactions(dbArg, filters) {
     var db = dbArg || window.DB || {};
     var f = filters || {};
@@ -204,7 +207,7 @@
 
     var rows = [];
 
-    if (kind !== 'sales') {
+    if (kind === '' || kind === 'purchase') {
       (db.purchaseOrders || []).forEach(function (o) {
         if (isCancelled(o)) return;
         if (!inRange(dateOf(o))) return;
@@ -224,7 +227,7 @@
       });
     }
 
-    if (kind !== 'purchase') {
+    if (kind === '' || kind === 'sales') {
       (db.salesOrders || []).forEach(function (o) {
         if (isCancelled(o)) return;
         if (!inRange(dateOf(o))) return;
@@ -244,14 +247,48 @@
       });
     }
 
+    var T = window.Trading;
+    if ((kind === '' || kind === 'trip') && T && typeof T.isTrip === 'function') {
+      (db.deliveryOrders || []).forEach(function (d) {
+        if (!T.isTrip(d) || d.status === 'Cancelled') return;
+        if (!inRange(dateOf(d))) return;
+        var customer = d.customer || '';
+        var supplier = d.supplier || '';
+        if (cust && customer.toLowerCase().indexOf(cust) === -1) return;
+        if (supp && supplier.toLowerCase().indexOf(supp) === -1) return;
+        if (
+          poq &&
+          [d.sjNo, d.poNumber, d.soNumber].every(function (n) {
+            return String(n || '').toLowerCase().indexOf(poq) === -1;
+          })
+        )
+          return;
+        var line = (d.lines && d.lines[0]) || {};
+        rows.push({
+          kind: 'trip',
+          date: dateOf(d),
+          number: d.sjNo || numberOf(d),
+          sub: [d.poNumber, d.soNumber].filter(Boolean).join(' · '),
+          party: customer + (supplier ? ' ← ' + supplier : ''),
+          status: T.coveringInvoice('sales', d.id) ? 'Invoiced' : 'Delivered',
+          qty: T.netOf(d),
+          unit: line.unit || '',
+          amount: num(T.amounts(d).sale.total),
+        });
+      });
+    }
+
     rows.sort(function (a, b) {
       return String(b.date).localeCompare(String(a.date));
     });
 
-    var totals = { purchase: 0, sales: 0, count: rows.length };
+    var totals = { purchase: 0, sales: 0, trip: 0, tripQty: {}, count: rows.length };
     rows.forEach(function (r) {
       if (r.kind === 'purchase') totals.purchase += r.amount;
-      else totals.sales += r.amount;
+      else if (r.kind === 'trip') {
+        totals.trip += r.amount;
+        totals.tripQty[r.unit] = Math.round(((totals.tripQty[r.unit] || 0) + r.qty) * 1000) / 1000;
+      } else totals.sales += r.amount;
     });
 
     return { rows: rows, totals: totals };
@@ -266,6 +303,17 @@
   // not by colour.
   var PURCHASE_COLOR = 'var(--chart-3)';
   var SALES_COLOR = 'var(--chart-1)';
+  var TRIP_COLOR = 'var(--chart-2)';
+  var KIND = {
+    purchase: { label: 'Pembelian', color: PURCHASE_COLOR },
+    sales: { label: 'Penjualan', color: SALES_COLOR },
+    trip: { label: 'Pengambilan', color: TRIP_COLOR },
+  };
+  function qtyText(q, unit) {
+    return (
+      (Number(q) || 0).toLocaleString('id-ID', { maximumFractionDigits: 3 }) + (unit ? ' ' + unit : '')
+    );
+  }
 
   function _funnelBars(stages, color) {
     var max = stages.reduce(function (m, s) {
@@ -361,18 +409,27 @@
     }
     return result.rows
       .map(function (r) {
+        var k = KIND[r.kind] || KIND.sales;
         var tag =
           '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600">' +
           '<i style="width:8px;height:8px;border-radius:50%;background:' +
-          (r.kind === 'purchase' ? PURCHASE_COLOR : SALES_COLOR) +
+          k.color +
           '"></i>' +
-          (r.kind === 'purchase' ? 'Pembelian' : 'Penjualan') +
+          k.label +
           '</span>';
+        var numberCell =
+          esc(r.number) +
+          (r.kind === 'trip'
+            ? '<div style="font-size:var(--fs-xs);color:var(--muted)">' +
+              esc(qtyText(r.qty, r.unit)) +
+              (r.sub ? ' · ' + esc(r.sub) : '') +
+              '</div>'
+            : '');
         return (
           '<tr>' +
           '<td style="' + TD + '">' + esc(r.date) + '</td>' +
           '<td style="' + TD + '">' + tag + '</td>' +
-          '<td style="' + TD + '">' + esc(r.number) + '</td>' +
+          '<td style="' + TD + '">' + numberCell + '</td>' +
           '<td style="' + TD + '">' + esc(r.party || '—') + '</td>' +
           '<td style="' + TD + '">' +
           (r.status && typeof window.badge === 'function' ? window.badge(r.status) : esc(r.status || '—')) +
@@ -386,7 +443,7 @@
 
   function _resultHtml(result) {
     return (
-      '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">' +
+      '<div class="stat-row" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:14px">' +
       '<div class="card stat-card"><div class="stat-label">Total Pembelian</div><div class="stat-val" style="font-size:1.125rem;color:' +
       PURCHASE_COLOR +
       '">' +
@@ -397,6 +454,21 @@
       '">' +
       money(result.totals.sales) +
       '</div></div>' +
+      (Object.keys(result.totals.tripQty).length
+        ? '<div class="card stat-card"><div class="stat-label">Pengambilan</div><div class="stat-val" style="font-size:1.125rem;color:' +
+          TRIP_COLOR +
+          '">' +
+          esc(
+            Object.keys(result.totals.tripQty)
+              .map(function (u) {
+                return qtyText(result.totals.tripQty[u], u);
+              })
+              .join(' + ')
+          ) +
+          '</div><div class="stat-sub">' +
+          money(result.totals.trip) +
+          ' nilai jual</div></div>'
+        : '') +
       '<div class="card stat-card"><div class="stat-label">Jumlah Transaksi</div><div class="stat-val" style="font-size:1.125rem">' +
       result.totals.count +
       '</div></div>' +
@@ -455,7 +527,7 @@
       'padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.8125rem;background:var(--surface);color:var(--text)';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring transaksi PO / SO per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Dari Tanggal' +
@@ -469,6 +541,7 @@
         '<option value=""' + (_state.kind === '' ? ' selected' : '') + '>Semua</option>' +
         '<option value="purchase"' + (_state.kind === 'purchase' ? ' selected' : '') + '>Pembelian</option>' +
         '<option value="sales"' + (_state.kind === 'sales' ? ' selected' : '') + '>Penjualan</option>' +
+        '<option value="trip"' + (_state.kind === 'trip' ? ' selected' : '') + '>Pengambilan</option>' +
         '</select></label>' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Pelanggan' +
         '<select id="cr-customer" style="' + inputCss + '">' +
