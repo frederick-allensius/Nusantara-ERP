@@ -435,6 +435,41 @@ function orderStageBadge(side, o) {
   return st ? `<span class="badge badge-${st[0]}">${escapeHtml(st[1])}</span>` : badge(o.status);
 }
 
+// Inline delete confirmation in a dialog footer. The footer's own buttons are
+// only hidden (not re-rendered) so their listeners, e.g. Simpan, keep working.
+function armDelete(btn) {
+  const footer = btn.closest('.modal-footer');
+  if (!footer || footer.querySelector('.confirm-inline')) {
+    return;
+  }
+  Array.from(footer.children).forEach(el => {
+    el.hidden = true;
+  });
+  const row = document.createElement('div');
+  row.className = 'confirm-inline';
+  row.setAttribute('role', 'alert');
+  row.innerHTML = `<span>Hapus ${escapeHtml(btn.dataset.label || 'dokumen ini')}? Sesaat setelah dihapus, Anda masih bisa mengurungkannya.</span>
+    <button type="button" class="btn-ghost" data-action="disarmDelete">Batal</button>
+    <button type="button" class="btn-danger" data-action="${escapeHtml(btn.dataset.do || '')}" data-id="${escapeHtml(btn.dataset.id || '')}">Ya, hapus</button>`;
+  footer.appendChild(row);
+  row.querySelector('.btn-danger').focus();
+}
+function disarmDelete(btn) {
+  const footer = btn.closest('.modal-footer');
+  const row = footer && footer.querySelector('.confirm-inline');
+  if (!row) {
+    return;
+  }
+  row.remove();
+  Array.from(footer.children).forEach(el => {
+    el.hidden = false;
+  });
+  const again = footer.querySelector('[data-action="armDelete"]');
+  if (again) {
+    again.focus();
+  }
+}
+
 // Confirmation before deleting an order from its row menu.
 function confirmOrderDelete(type, id) {
   const list = type === 'SO' ? DB.salesOrders : DB.purchaseOrders;
@@ -2309,6 +2344,14 @@ document.addEventListener('click', async e => {
 
   switch (action) {
     // ── Modal ─────────────────────────────────────────────────────────────────
+    // Hapus in an edit dialog asks inside the dialog footer first, so the form
+    // stays as typed; "Ya, hapus" runs the real delete action (data-do).
+    case 'armDelete':
+      armDelete(btn);
+      break;
+    case 'disarmDelete':
+      disarmDelete(btn);
+      break;
     case 'closeModal':
       closeModal();
       break;

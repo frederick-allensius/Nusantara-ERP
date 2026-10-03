@@ -462,6 +462,36 @@ describe('row menu', () => {
     delPO.mockRestore();
   });
 
+  it('edit dialog Hapus asks inside the footer and keeps the form buttons', async () => {
+    const del = vi.spyOn(w(), 'deleteSO').mockImplementation(() => {});
+    const modal = document.createElement('div');
+    modal.innerHTML = `<div class="modal-footer">
+      <button class="btn-ghost" data-action="closeModal">Batal</button>
+      <button class="btn-danger" data-action="armDelete" data-do="deleteSO" data-id="SO-D" data-label="SO.X">Hapus</button>
+      <button class="btn" id="updateSO-test">Simpan</button></div>`;
+    document.body.appendChild(modal);
+    const footer = modal.querySelector('.modal-footer') as HTMLElement;
+    const save = footer.querySelector('#updateSO-test') as HTMLElement;
+
+    click(footer.querySelector('[data-action="armDelete"]'));
+    const row = footer.querySelector('.confirm-inline')!;
+    expect(row.textContent).toContain('Hapus SO.X?');
+    expect(save.hidden).toBe(true);
+    expect(del).not.toHaveBeenCalled();
+
+    click(row.querySelector('[data-action="disarmDelete"]'));
+    expect(footer.querySelector('.confirm-inline')).toBeNull();
+    expect(save.hidden).toBe(false);
+    expect(footer.querySelector('#updateSO-test')).toBe(save); // same element, listeners kept
+
+    click(footer.querySelector('[data-action="armDelete"]'));
+    click(footer.querySelector('.confirm-inline [data-action="deleteSO"]'));
+    await tick();
+    expect(del).toHaveBeenCalledWith('SO-D');
+    del.mockRestore();
+    modal.remove();
+  });
+
   it('closes on Escape (focus back on the button) and on an outside click', () => {
     const trigger = rowTrigger('sales', 'SO-C');
     click(trigger);

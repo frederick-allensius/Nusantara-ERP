@@ -1503,6 +1503,24 @@ tfoot td {
   outline: none;
 }
 
+/* "Hapus …? Batal / Ya, hapus" inside a dialog footer (erp-view.js armDelete) */
+.confirm-inline {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 10px;
+  font-size: var(--fs-sm);
+  color: var(--danger);
+}
+.confirm-inline > span {
+  flex: 1 1 260px;
+}
+.modal-footer > [hidden] {
+  display: none !important;
+}
+
 /* One-line summary under a page header (instead of a row of stat tiles) */
 .list-summary {
   margin: -8px 0 14px;

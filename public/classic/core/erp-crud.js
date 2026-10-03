@@ -1639,7 +1639,7 @@ function editPO(id) {
     ${lineItemsHTML()}
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deletePO" data-id="${escapeHtml(id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deletePO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
    <button class="btn" id="updatePO">Simpan</button>`,
     true
   );
@@ -6498,7 +6498,7 @@ function editSO(id) {
     ${lineItemsHTML()}
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteSO" data-id="${escapeHtml(id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteSO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
    <button class="btn" id="updateSO">Simpan</button>`,
     true
   );
