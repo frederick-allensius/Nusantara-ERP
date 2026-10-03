@@ -628,7 +628,8 @@
   //   • the purchase — Inventory + PPN Masukan / Payable — unless a purchase
   //     invoice made from trips covers it (the invoice posts it then);
   //   • the cost of sales at the trip's purchase price — HPP / Inventory; goods
-  //     go straight from supplier to customer, so inventory nets to zero;
+  //     go straight from supplier to customer, so inventory nets to zero (once a
+  //     supplier invoice covers the trip, at what that invoice booked);
   //   • the sale — Receivable / Sales + PPN Keluaran — unless a sales invoice
   //     made from trips covers it.
   function tripCovered(collection, doId) {
@@ -638,6 +639,32 @@
         Array.isArray(inv.doIds) &&
         inv.doIds.some(x => String(x) === String(doId))
     );
+  }
+
+  // What a covering purchase invoice booked into inventory for this trip (its
+  // lines carrying the trip's doId) — the trip's cost once a supplier invoice
+  // exists, so a later weight change can't leave inventory off zero. null when
+  // no active purchase invoice has a line for the trip.
+  function tripInvoicedCost(doId) {
+    const inv = (db().purchaseInvoices || []).find(
+      i =>
+        isActiveInvoice(i) &&
+        Array.isArray(i.doIds) &&
+        i.doIds.some(x => String(x) === String(doId))
+    );
+    const lines = inv ? (inv.lines || []).filter(l => String(l.doId) === String(doId)) : [];
+    if (!lines.length) {
+      return null;
+    }
+    let cost = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+    if (inv.taxInclusive) {
+      const gross = (inv.lines || []).reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+      const ppn = docPPN(inv, gross);
+      if (ppn > 0 && gross > 0) {
+        cost = (cost * (gross - ppn)) / gross;
+      }
+    }
+    return round(cost);
   }
 
   function buildPickupJournals(d) {
@@ -653,7 +680,10 @@
     const customer = (db().customers || []).find(c => String(c.id) === String(d.customerId)) || null;
     const label = d.sjNo || d.number || d.id;
     const raw = [];
-    if (!tripCovered('purchaseInvoices', d.id)) {
+    const purchased = tripCovered('purchaseInvoices', d.id);
+    const invoicedCost = purchased ? tripInvoicedCost(d.id) : null;
+    const cost = invoicedCost != null ? invoicedCost : a.purchase.dpp;
+    if (!purchased) {
       raw.push(
         { accountNo: resolveAccount('inventory', { party: supplier }), debit: a.purchase.dpp, memo: `Pembelian ${label}` },
         { accountNo: resolveAccount('ppnIn', { party: supplier }), debit: a.purchase.tax, memo: `PPN Masukan ${label}` },
@@ -661,8 +691,8 @@
       );
     }
     raw.push(
-      { accountNo: resolveAccount('cogs', { party: customer }), debit: a.purchase.dpp, memo: `HPP ${label}` },
-      { accountNo: resolveAccount('inventory', { party: customer }), credit: a.purchase.dpp, memo: `Pengambilan ${label}` }
+      { accountNo: resolveAccount('cogs', { party: customer }), debit: cost, memo: `HPP ${label}` },
+      { accountNo: resolveAccount('inventory', { party: customer }), credit: cost, memo: `Pengambilan ${label}` }
     );
     if (!tripCovered('salesInvoices', d.id)) {
       raw.push(

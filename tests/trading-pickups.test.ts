@@ -321,6 +321,15 @@ describe('ledger', () => {
     expect(tb.balanced).toBe(true);
   });
 
+  it('keeps inventory at zero when a weight changes after the supplier invoice', () => {
+    T().createInvoice('purchases', [slot(1).id, slot(2).id], { date: '2026-09-10' });
+    T().updateWeight(slot(1).id, { net: 36 }, { source: 'recap' });
+    const { tb, bal } = balanceOf('110401');
+    expect(bal).toBe(0);
+    expect(tb.balanced).toBe(true);
+    expect(T().openAlerts()).toHaveLength(1); // the supplier invoice still needs correcting
+  });
+
   it('lists uninvoiced trips as open receivables and payables', () => {
     const ar = w().Balances.summary('sales', { asOf: '2026-09-10' });
     expect(ar.items.filter((i: any) => i.unbilled)).toHaveLength(2);
