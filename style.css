@@ -5092,8 +5092,17 @@ button.dash-fl-row:hover {
   }
 }
 @media (max-width: 560px) {
+  /* Two KPI tiles per row on phones: shorter page, figures still full */
   .dash-kpis {
-    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .kpi-tile {
+    padding: 12px;
+  }
+  .kpi-tile-value {
+    font-size: .9375rem;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 }
 
