@@ -2770,6 +2770,303 @@ select.inline-status {
   background-size: 10px;
 }
 
+/* ── 21b. ORDER LISTS: status strip, row menu, export/import menu ────────────── */
+/* Status strip on Pesanan Penjualan / Pembelian: five equal segments joined by
+   chevrons. It scrolls inside its own box when the screen is too narrow. */
+.ostrip {
+  margin-bottom: 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.ostrip-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(132px, 1fr));
+  grid-template-rows: auto auto auto;
+  gap: 0 18px;
+  padding: 3px;
+}
+.ostrip-seg {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ostrip-seg:hover {
+  border-color: var(--border-strong);
+}
+.ostrip-seg:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ostrip-seg.is-active {
+  border-color: var(--primary);
+  background: var(--primary-muted);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.ostrip-seg.is-active:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--primary),
+    var(--focus-ring);
+}
+/* Chevron in the gap to the next stage */
+.ostrip-seg:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid var(--muted-light);
+  border-right: 1.5px solid var(--muted-light);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+}
+/* Label, count and value line up across the segments even when a label wraps */
+@supports (grid-template-rows: subgrid) {
+  .ostrip-seg {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 2px;
+    align-content: start;
+    justify-items: start;
+  }
+}
+.ostrip-label {
+  max-width: 100%;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.ostrip-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 0.1em;
+  background: var(--ostrip-dot, var(--muted-light));
+}
+.ostrip-seg[data-stage='confirmed'] {
+  --ostrip-dot: var(--info);
+}
+.ostrip-seg[data-stage='delivered'] {
+  --ostrip-dot: var(--chart-4);
+}
+.ostrip-seg[data-stage='unpaid'] {
+  --ostrip-dot: var(--warning);
+}
+.ostrip-seg[data-stage='paid'] {
+  --ostrip-dot: var(--success);
+}
+.ostrip-count {
+  font-size: var(--fs-xl);
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ostrip-seg.is-empty .ostrip-count {
+  color: var(--muted);
+}
+.ostrip-value {
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ostrip-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.ostrip-note strong {
+  font-weight: 600;
+  color: var(--text);
+}
+.ostrip-note .link-btn {
+  font-size: inherit;
+}
+/* "Pengambilan" tag beside the number of a trading pickup order */
+.ostrip-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  background: var(--info-bg);
+  color: var(--info);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+/* Row "⋯" button and the toolbar "Ekspor / impor" button */
+.row-menu-cell {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+.row-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.row-menu-btn:hover,
+.row-menu-btn[aria-expanded='true'] {
+  background: var(--surface-active);
+  color: var(--text);
+}
+.row-menu-btn:focus-visible,
+.tool-menu-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.tool-menu-btn[aria-expanded='true'] {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* The open menu: a fixed popover on <body>, placed by erp-view.js */
+.row-menu,
+.tool-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  min-width: 184px;
+  max-width: calc(100vw - 16px);
+  padding: 6px;
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-lg);
+}
+.row-menu[hidden],
+.tool-menu[hidden],
+.row-menu-panel[hidden] {
+  display: none;
+}
+.row-menu-panel {
+  display: flex;
+  flex-direction: column;
+}
+.row-menu-item,
+.tool-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--text);
+  font: 400 var(--fs-sm) var(--font-sans);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.row-menu-item:hover,
+.row-menu-item:focus,
+.tool-menu-item:hover,
+.tool-menu-item:focus {
+  outline: none;
+  background: var(--surface-hover);
+}
+.row-menu-item:focus-visible,
+.tool-menu-item:focus-visible {
+  background: var(--surface-active);
+}
+.tool-menu-item svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.row-menu-item.is-danger {
+  color: var(--danger);
+}
+.row-menu-item.is-danger:hover,
+.row-menu-item.is-danger:focus {
+  background: var(--danger-bg);
+}
+.row-menu-back {
+  color: var(--text-secondary);
+}
+.row-menu-item[role='menuitemradio']::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.row-menu-item.is-current {
+  color: var(--primary);
+  font-weight: 600;
+  cursor: default;
+}
+.row-menu-item.is-current::before {
+  background: currentColor;
+}
+.row-menu-item.is-current:hover {
+  background: none;
+}
+.row-menu-head {
+  padding: 8px 10px 4px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.row-menu-note {
+  max-width: 220px;
+  padding: 4px 10px 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: normal;
+}
+.row-menu-sep,
+.tool-menu-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border-light);
+}
+@media (pointer: coarse) {
+  .row-menu-item,
+  .tool-menu-item {
+    min-height: var(--tap-min);
+  }
+}
+
 /* ── 22. SCROLLBARS ──────────────────────────────────────────────────────────── */
 * {
   scrollbar-width: thin;

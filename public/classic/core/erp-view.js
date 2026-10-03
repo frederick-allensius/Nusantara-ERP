@@ -36,6 +36,11 @@ const dateFilters = {
   logistics: { from: '', to: '' },
 };
 
+// ── Order stage filters ───────────────────────────────────────────────────────
+// Stage picked on the status strip of Pesanan Penjualan / Pembelian: an
+// OrderPipeline stage key (draft, confirmed, delivered, unpaid, paid), '' = none.
+const stageFilters = { sales: '', purchase: '' };
+
 // ── Pagination ────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 15;
 const pageState = {
@@ -305,6 +310,433 @@ function filterBtn(type) {
   </div>`;
 }
 
+// ── Order lists (Pesanan Penjualan / Pesanan Pembelian) ───────────────────────
+// view 'sales' | 'purchase' → OrderPipeline side 'sales' | 'purchases'.
+function _orderSide(view) {
+  return view === 'purchase' ? 'purchases' : 'sales';
+}
+
+function _orderStageLabel(view, key) {
+  const P = window.OrderPipeline;
+  const st = P ? P.stages(_orderSide(view)).find(s => s.key === key) : null;
+  return st ? st.label : key;
+}
+
+// Rows of an order list as shown: status filter, date filter, stage filter,
+// then the column sort. The table, Export CSV and Export Excel all use it.
+function orderRows(view) {
+  const list = (view === 'purchase' ? DB.purchaseOrders : DB.salesOrders) || [];
+  const f = filters[view];
+  let rows = !f || f === 'all' ? list : list.filter(o => o.status === f);
+  rows = applyDateFilter(rows, view);
+  const stage = stageFilters[view];
+  const P = window.OrderPipeline;
+  if (stage && P) {
+    const side = _orderSide(view);
+    rows = rows.filter(o => P.stageOf(side, o) === stage);
+  }
+  return applySorted(rows, view);
+}
+
+// Status strip: the five stages of OrderPipeline.summary (within the page's date
+// filter) as one row of connected segments. A segment filters the table to its
+// stage; clicking it again clears the filter.
+function orderStrip(view) {
+  const P = window.OrderPipeline;
+  if (!P) {
+    return '';
+  }
+  const df = dateFilters[view] || {};
+  const sum = P.summary(_orderSide(view), { from: df.from || '', to: df.to || '' });
+  const active = stageFilters[view];
+  const noun = view === 'purchase' ? 'PO' : 'SO';
+  const short = typeof window.idrShort === 'function' ? window.idrShort : idr;
+  const segs = sum.stages
+    .map(s => {
+      const on = active === s.key;
+      const unpaid = s.key === 'unpaid';
+      const money = unpaid ? s.outstanding : s.value;
+      const moneyText = (unpaid ? 'sisa ' : '') + short(money);
+      const title = `${s.label}: ${s.count} ${noun} · ${unpaid ? 'sisa ' : ''}${idr(money)}`;
+      return `<button type="button" class="ostrip-seg${on ? ' is-active' : ''}${s.count ? '' : ' is-empty'}"
+        data-action="orderStage" data-type="${view}" data-stage="${s.key}" aria-pressed="${on}"
+        title="${escapeHtml(title)}">
+        <span class="ostrip-label">${escapeHtml(s.label)}</span>
+        <span class="ostrip-count">${s.count}</span>
+        <span class="ostrip-value">${escapeHtml(moneyText)}</span>
+      </button>`;
+    })
+    .join('');
+  const label = view === 'purchase' ? 'Status pesanan pembelian' : 'Status pesanan penjualan';
+  return `<div class="ostrip" role="group" aria-label="${label}"><div class="ostrip-track">${segs}</div></div>`;
+}
+
+// "Menampilkan: <tahap> · Hapus filter" above the table while a stage is picked.
+function orderStageNote(view) {
+  const key = stageFilters[view];
+  if (!key) {
+    return '';
+  }
+  return `<div class="ostrip-note" role="status">Menampilkan: <strong>${escapeHtml(_orderStageLabel(view, key))}</strong>
+    <span aria-hidden="true">·</span>
+    <button type="button" class="link-btn" data-action="clearOrderStage" data-type="${view}">Hapus filter</button>
+  </div>`;
+}
+
+function setOrderStage(view, key) {
+  if (!Object.prototype.hasOwnProperty.call(stageFilters, view)) {
+    return;
+  }
+  const P = window.OrderPipeline;
+  const valid = !!key && !!P && P.KEYS.indexOf(key) !== -1;
+  stageFilters[view] = valid && stageFilters[view] !== key ? key : '';
+  pageState[view] = 1;
+  refreshActiveView();
+}
+
+// Opens Pesanan Penjualan (side 'sales') or Pesanan Pembelian ('purchases')
+// filtered to one stage — used by the Ringkasan funnel. The status filter is
+// reset so the list shows the whole stage; opts { from, to } sets the date
+// filter (left as it is when omitted).
+function openOrderStage(side, stageKey, opts) {
+  const view = side === 'purchases' || side === 'purchase' ? 'purchase' : 'sales';
+  const P = window.OrderPipeline;
+  stageFilters[view] = P && P.KEYS.indexOf(stageKey) !== -1 ? stageKey : '';
+  filters[view] = 'all';
+  if (opts && (opts.from !== undefined || opts.to !== undefined)) {
+    dateFilters[view] = { from: opts.from || '', to: opts.to || '' };
+  }
+  pageState[view] = 1;
+  if (window.invalidateView) {
+    window.invalidateView(view);
+  }
+  const label = view === 'purchase' ? 'Pesanan Pembelian' : 'Pesanan Penjualan';
+  if (!(window.NSANav && window.NSANav.open(label))) {
+    window.navigate(view);
+  }
+  // Show the list, not a document tab left open in that module.
+  if (window.docTabs && typeof window.docTabs.activate === 'function') {
+    window.docTabs.activate(view, '__list__');
+  }
+  return true;
+}
+window.openOrderStage = openOrderStage;
+
+// Small "Pengambilan" tag beside the number of a trading pickup order.
+function pickupTag(o) {
+  return o && o.pickupFlow ? '<span class="ostrip-tag">Pengambilan</span>' : '';
+}
+
+// ── Pop-up menus: row "⋯" and toolbar "Ekspor / impor" ─────────────────────────
+// The menu is rendered hidden right after its trigger button, so RBAC's button
+// gating (guardView) applies to its items like to any other button. Opening it
+// clones that markup into one fixed popover on <body> — outside the table's
+// scroll box and the card — placed so it stays inside the viewport. Items are
+// ordinary data-action buttons handled by the click delegation below.
+let _popMenu = null; // { el, trigger, openedAt }
+
+function _popItems() {
+  if (!_popMenu) {
+    return [];
+  }
+  return Array.from(_popMenu.el.querySelectorAll('[role^="menuitem"]')).filter(
+    b => !b.disabled && !b.closest('[hidden]') && b.style.display !== 'none'
+  );
+}
+
+function _focusPopItem(index) {
+  const items = _popItems();
+  if (!items.length) {
+    return;
+  }
+  const i = ((index % items.length) + items.length) % items.length;
+  items[i].focus();
+}
+
+function _placePopMenu() {
+  if (!_popMenu) {
+    return;
+  }
+  const { el, trigger } = _popMenu;
+  const gap = 4;
+  const margin = 8;
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = window.innerHeight;
+  el.style.maxHeight = `${Math.max(120, vh - margin * 2)}px`;
+  const r = trigger.getBoundingClientRect();
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  // Right edge on the trigger's right edge, kept inside the viewport.
+  let left = r.right - w;
+  left = Math.max(margin, Math.min(left, vw - w - margin));
+  // Below the trigger; above it when there is no room below.
+  let top = r.bottom + gap;
+  if (top + h > vh - margin) {
+    const above = r.top - gap - h;
+    top = above >= margin ? above : Math.max(margin, vh - margin - h);
+  }
+  el.style.left = `${Math.round(left)}px`;
+  el.style.top = `${Math.round(top)}px`;
+}
+
+function _closePopMenu(focusTrigger) {
+  const m = _popMenu;
+  if (!m) {
+    return;
+  }
+  _popMenu = null;
+  m.el.remove();
+  m.trigger.setAttribute('aria-expanded', 'false');
+  m.trigger.removeAttribute('aria-controls');
+  if (focusTrigger && m.trigger.isConnected) {
+    m.trigger.focus();
+  }
+}
+
+function _popMenuKeys(e) {
+  if (!_popMenu) {
+    return;
+  }
+  const items = _popItems();
+  const i = items.indexOf(document.activeElement);
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      _focusPopItem(i + 1);
+      break;
+    case 'ArrowUp':
+      e.preventDefault();
+      _focusPopItem(i < 0 ? -1 : i - 1);
+      break;
+    case 'Home':
+      e.preventDefault();
+      _focusPopItem(0);
+      break;
+    case 'End':
+      e.preventDefault();
+      _focusPopItem(-1);
+      break;
+    case 'ArrowLeft': {
+      const back = _popMenu.el.querySelector(
+        '.row-menu-panel:not([hidden]) [data-action="rowMenuPanel"][data-panel="main"]'
+      );
+      if (back) {
+        e.preventDefault();
+        _showPopPanel('main');
+      }
+      break;
+    }
+    case 'Tab':
+      // Leave the menu: focus returns to its button and Tab moves on from there.
+      _closePopMenu(true);
+      break;
+    default:
+      break;
+  }
+}
+
+function _openPopMenu(trigger) {
+  const src = trigger.nextElementSibling;
+  if (!src || !src.matches('.row-menu, .tool-menu')) {
+    return;
+  }
+  _closePopMenu(false);
+  const el = src.cloneNode(true);
+  el.hidden = false;
+  el.id = 'nsa-pop-menu';
+  document.body.appendChild(el);
+  trigger.setAttribute('aria-expanded', 'true');
+  trigger.setAttribute('aria-controls', el.id);
+  _popMenu = { el, trigger, openedAt: Date.now() };
+  el.addEventListener('keydown', _popMenuKeys);
+  _placePopMenu();
+  _focusPopItem(0);
+}
+
+function _togglePopMenu(trigger) {
+  if (_popMenu && _popMenu.trigger === trigger) {
+    _closePopMenu(false);
+    return;
+  }
+  _openPopMenu(trigger);
+}
+
+// Row menu: switch between the action list and the status picker.
+function _showPopPanel(name) {
+  if (!_popMenu) {
+    return;
+  }
+  _popMenu.el.querySelectorAll('.row-menu-panel').forEach(p => {
+    p.hidden = p.dataset.panel !== name;
+  });
+  _placePopMenu();
+  const items = _popItems();
+  const pick = items.findIndex(b => b.getAttribute('role') === 'menuitemradio');
+  _focusPopItem(pick > -1 ? pick : 0);
+}
+
+// Outside click closes; a click on a menu item runs its action, then closes.
+document.addEventListener(
+  'click',
+  e => {
+    if (!_popMenu) {
+      return;
+    }
+    const t = e.target;
+    if (_popMenu.trigger.contains(t)) {
+      return; // the trigger toggles itself
+    }
+    if (_popMenu.el.contains(t)) {
+      const item = t.closest('[data-action]');
+      if (item && item.dataset.action !== 'rowMenuPanel' && !item.disabled) {
+        setTimeout(() => _closePopMenu(false), 0);
+      }
+      return;
+    }
+    _closePopMenu(false);
+  },
+  true
+);
+document.addEventListener(
+  'keydown',
+  e => {
+    if (_popMenu && e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      _closePopMenu(true);
+    }
+  },
+  true
+);
+// Scrolling or resizing the page moves the button away, so the menu closes. Scroll
+// events land a frame late, so the ones from just before the menu opened are skipped.
+function _popMenuSettled() {
+  return !!_popMenu && Date.now() - _popMenu.openedAt > 150;
+}
+document.addEventListener(
+  'scroll',
+  e => {
+    if (_popMenuSettled() && !(e.target instanceof Node && _popMenu.el.contains(e.target))) {
+      _closePopMenu(false);
+    }
+  },
+  true
+);
+window.addEventListener('resize', () => {
+  if (_popMenuSettled()) {
+    _closePopMenu(false);
+  }
+});
+
+function _menuItem(label, attrs, cls, role) {
+  return `<button type="button" role="${role || 'menuitem'}" tabindex="-1" class="row-menu-item${cls ? ' ' + cls : ''}" ${attrs}>${escapeHtml(label)}</button>`;
+}
+
+// Row "⋯" menu of a SO / PO: every action the order offers. "Ubah status" (SO)
+// opens a picker with the current status and the ones DocEngine allows from it;
+// picking one runs inlineSOStatus with its transition checks and stock effects.
+function orderRowMenu(view, o) {
+  const isSO = view !== 'purchase';
+  const T = isSO ? 'SO' : 'PO';
+  const id = escapeHtml(o.id);
+  const num = escapeHtml(docNum(o.number, o.id));
+  const cancelled = o.status === 'Cancelled';
+  const canCancel =
+    !cancelled && (!window.DocEngine || window.DocEngine.canTransition(T, o.status, 'Cancelled'));
+  const main = [
+    _menuItem('Lihat detail', `data-action="view${T}" data-id="${id}"`),
+    isSO ? _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"') : '',
+    _menuItem('Edit', `data-action="edit${T}" data-id="${id}"`),
+    _menuItem('Duplikat', `data-action="duplicate${T}" data-id="${id}"`),
+    _menuItem('Cetak', `data-action="print${T}" data-id="${id}"`),
+    '<div class="row-menu-sep" role="separator"></div>',
+    canCancel ? _menuItem('Batalkan', `data-action="cancel${T}" data-id="${id}"`, 'is-danger') : '',
+    _menuItem('Hapus', `data-action="delete${T}" data-id="${id}"`, 'is-danger'),
+  ].join('');
+
+  let statusPanel = '';
+  if (isSO) {
+    const options = SO_STATUSES.filter(
+      ([v]) =>
+        v === o.status || (window.DocEngine && window.DocEngine.canTransition('SO', o.status, v))
+    );
+    const choices = options
+      .map(([v, l]) =>
+        v === o.status
+          ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+          : _menuItem(
+              l,
+              `aria-checked="false" data-action="setOrderStatus" data-id="${id}" data-status="${escapeHtml(v)}"`,
+              '',
+              'menuitemradio'
+            )
+      )
+      .join('');
+    const none =
+      options.filter(([v]) => v !== o.status).length === 0
+        ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+        : '';
+    statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+      ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+      <div class="row-menu-head" role="presentation">Ubah status</div>
+      ${choices}${none}
+    </div>`;
+  }
+
+  return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+      aria-label="Aksi ${num}" title="Aksi">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button><div class="row-menu" role="menu" aria-label="Aksi ${num}" hidden>
+      <div class="row-menu-panel" data-panel="main">${main}</div>${statusPanel}
+    </div>`;
+}
+
+// ── Toolbar "Ekspor / impor" menu ─────────────────────────────────────────────
+// One menu button for a list's import/export options (keys in display order):
+// csv → Export CSV, excel → Export Excel (xlsx), summary → Ringkasan PDF
+// (order-summary.js), import → Import Excel (excel-import.js).
+const IO_MENU_ITEMS = {
+  csv: {
+    action: 'exportCSV',
+    label: 'Ekspor CSV',
+    icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  },
+  excel: {
+    action: 'exportXLSX',
+    label: 'Ekspor Excel',
+    icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/>',
+  },
+  summary: {
+    action: 'printSummary',
+    label: 'Ringkasan PDF',
+    icon: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  },
+  import: {
+    action: 'importXLSX',
+    label: 'Impor Excel',
+    icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  },
+};
+
+function ioMenu(view, keys) {
+  const item = key => {
+    const it = IO_MENU_ITEMS[key];
+    return `<button type="button" role="menuitem" tabindex="-1" class="tool-menu-item" data-action="${it.action}" data-type="${view}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${it.icon}</svg>
+      ${escapeHtml(it.label)}</button>`;
+  };
+  const out = keys.filter(k => k !== 'import' && IO_MENU_ITEMS[k]).map(item);
+  const inn = keys.indexOf('import') !== -1 ? [item('import')] : [];
+  const sep = out.length && inn.length ? '<div class="tool-menu-sep" role="separator"></div>' : '';
+  return `<div class="tool-menu-wrap">
+    <button type="button" class="filter-btn tool-menu-btn" data-action="toolMenu" aria-haspopup="menu" aria-expanded="false">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Ekspor / impor
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button><div class="tool-menu" role="menu" aria-label="Ekspor / impor" hidden>${out.join('')}${sep}${inn.join('')}</div>
+  </div>`;
+}
+
 // ── Export CSV ────────────────────────────────────────────────────────────────
 // FIX (export CSV): downloads the current view's filtered+sorted data as a
 // UTF-8 CSV with BOM so Excel auto-detects encoding correctly.
@@ -312,17 +744,11 @@ function exportCSV(view) {
   let headers, rows;
 
   if (view === 'sales') {
-    const f = filters.sales;
-    let data = f === 'all' ? DB.salesOrders : DB.salesOrders.filter(o => o.status === f);
-    data = applyDateFilter(data, 'sales');
-    data = applySorted(data, 'sales');
+    const data = orderRows('sales');
     headers = ['No. SO', 'Pelanggan', 'Tanggal', 'Total (Rp)', 'Status'];
     rows = data.map(o => [docNum(o.number, o.id), o.customer, o.date, o.amount, o.status]);
   } else if (view === 'purchase') {
-    const f = filters.purchase;
-    let data = f === 'all' ? DB.purchaseOrders : DB.purchaseOrders.filter(o => o.status === f);
-    data = applyDateFilter(data, 'purchase');
-    data = applySorted(data, 'purchase');
+    const data = orderRows('purchase');
     headers = ['No. PO', 'Supplier', 'Tanggal', 'Total (Rp)', 'Status'];
     rows = data.map(o => [docNum(o.number, o.id), o.supplier, o.date, o.amount, o.status]);
   } else if (view === 'inventory') {
@@ -404,10 +830,7 @@ function exportXLSX(view) {
   let columns, rows, sheetName;
 
   if (view === 'sales') {
-    const f = filters.sales;
-    let data = f === 'all' ? DB.salesOrders : DB.salesOrders.filter(o => o.status === f);
-    data = applyDateFilter(data, 'sales');
-    data = applySorted(data, 'sales');
+    const data = orderRows('sales');
     sheetName = 'Sales Order';
     columns = [
       { header: 'No. SO', width: 16 },
@@ -418,10 +841,7 @@ function exportXLSX(view) {
     ];
     rows = data.map(o => [docNum(o.number, o.id), o.customer, o.date, o.amount, o.status]);
   } else if (view === 'purchase') {
-    const f = filters.purchase;
-    let data = f === 'all' ? DB.purchaseOrders : DB.purchaseOrders.filter(o => o.status === f);
-    data = applyDateFilter(data, 'purchase');
-    data = applySorted(data, 'purchase');
+    const data = orderRows('purchase');
     sheetName = 'Purchase Order';
     columns = [
       { header: 'No. PO', width: 16 },
@@ -492,62 +912,17 @@ function exportXLSX(view) {
   }
 }
 
-// ── Export button helper ──────────────────────────────────────────────────────
-function exportBtn(view) {
-  return `<button class="btn-ghost" data-action="exportCSV" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg> Export CSV
-  </button>`;
-}
-
-// ── Export Excel button helper ────────────────────────────────────────────────
-function excelBtn(view) {
-  return `<button class="btn-ghost" data-action="exportXLSX" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/>
-    </svg> Export Excel
-  </button>`;
-}
-
-// ── Import Excel button helper ────────────────────────────────────────────────
-// Per-module import (Sales / Purchase / Logistics). Wired to importModuleExcel()
-// in excel-import.js, which dedups re-uploads by date and rejects duplicate DO
-// numbers.
-function importBtn(view) {
-  return `<button class="btn-ghost" data-action="importXLSX" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
-    </svg> Import Excel
-  </button>`;
-}
-
-// ── PDF summary button helper ─────────────────────────────────────────────────
-// Sales / Purchase only. Wired to printOrderSummary() in order-summary.js, which
-// opens a period picker then prints a per-item + per-document recap as PDF.
-function summaryBtn(view) {
-  return `<button class="btn-ghost" data-action="printSummary" data-type="${view}"
-    style="display:flex;align-items:center;gap:5px;font-size:.75rem">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-      <rect x="6" y="14" width="12" height="8"/>
-    </svg> Ringkasan PDF
-  </button>`;
-}
-
 // ── Empty state helper ────────────────────────────────────────────────────────
 // FIX (empty states): when a filter is active and returns no rows the message
 // names the filter and offers a one-click dismiss link.
 function emptyRow(colspan, view) {
+  const stage = stageFilters[view];
+  if (stage) {
+    return `<tr><td colspan="${colspan}" class="td-empty">
+    Tidak ada pesanan di tahap "<strong>${escapeHtml(_orderStageLabel(view, stage))}</strong>" —
+    <button type="button" class="link-btn" data-action="clearOrderStage" data-type="${view}">hapus filter</button>
+  </td></tr>`;
+  }
   const f = filters[view];
   if (!f || f === 'all') {
     return `<tr><td colspan="${colspan}" class="td-empty">Belum ada data — tambah entri baru di atas.</td></tr>`;
@@ -659,83 +1034,29 @@ function navigate(id) {
 // picks up dashboard.js's version at runtime via late binding.
 
 // ── View: Sales ───────────────────────────────────────────────────────────────
-// renderSales() (checkbox selection, inline status dropdown, bulk status bar)
+// renderSales() (status strip, checkbox selection, row menu, bulk status bar)
 // lives in the merged erp-patch section at the bottom of this file. The
 // getRenderer() switch references it by name via late binding.
 
 // ── View: Purchase ────────────────────────────────────────────────────────────
 function renderPurchase() {
-  const f = filters.purchase;
-  const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const MONTH_NAMES = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ];
-  const monthLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
-
-  let orders = f === 'all' ? DB.purchaseOrders : DB.purchaseOrders.filter(o => o.status === f);
-  orders = applyDateFilter(orders, 'purchase');
-  orders = applySorted(orders, 'purchase');
-
-  const _isPInv = o => !o._type || o._type === 'invoice';
-  const stats = DB.purchaseOrders.reduce(
-    (acc, o) => {
-      if (!_isPInv(o) || o.status === 'Draft' || o.status === 'Cancelled') return acc;
-      acc.totalVal += o.amount || 0;
-      if (o.date && o.date.startsWith(thisMonth)) {
-        acc.thisMthOrders.push(o);
-        acc.thisMthVal += o.amount || 0;
-      }
-      if (o.status === 'Confirmed') {
-        acc.pendingCnt++;
-        acc.hutangVal += o.owing != null ? o.owing : Math.max(0, (o.amount || 0) - (o.paid || 0));
-      }
-      return acc;
-    },
-    { totalVal: 0, thisMthOrders: [], thisMthVal: 0, pendingCnt: 0, hutangVal: 0 }
-  );
-
-  const { totalVal, thisMthOrders, thisMthVal, pendingCnt, hutangVal } = stats;
-
+  const orders = orderRows('purchase');
   const totalFiltered = orders.length;
   const paged = applyPage(orders, 'purchase');
 
   return `
   ${secHdr('Pesanan Pembelian', 'Purchase order ke supplier beserta penerimaan barang dan pembayarannya', 'Buat PO', 'addPO')}
-  ${statRow([
-    { label: 'PO Bulan Ini', value: String(thisMthOrders.length), sub: monthLabel },
-    { label: 'Nilai Bulan Ini', value: idr(thisMthVal), sub: `Total all-time: ${idr(totalVal)}` },
-    {
-      label: 'Menunggu Barang',
-      value: `${pendingCnt} PO`,
-      sub: 'Belum diterima',
-      color: 'var(--warning)',
-    },
-    { label: 'Hutang Belum Lunas', value: idr(hutangVal), sub: 'Ke supplier', color: 'var(--danger)' },
-  ])}
+  ${orderStrip('purchase')}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
       <div style="font-size:.875rem;font-weight:700">Daftar Purchase Order</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${summaryBtn('purchase')}
-        ${importBtn('purchase')}
-        ${exportBtn('purchase')}
-        ${excelBtn('purchase')}
+        ${ioMenu('purchase', ['csv', 'excel', 'summary', 'import'])}
         ${filterBtn('purchase')}
       </div>
     </div>
     <div style="margin-bottom:12px">${dateFilterBar('purchase')}</div>
+    ${orderStageNote('purchase')}
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -744,7 +1065,7 @@ function renderPurchase() {
           ${sortTh('Tanggal', 'purchase', 'date')}
           ${sortTh('Total', 'purchase', 'amount')}
           ${sortTh('Status', 'purchase', 'status')}
-          <th>Aksi</th>
+          <th class="row-menu-cell"><span class="sr-only">Aksi</span></th>
         </tr></thead>
         <tbody>
           ${
@@ -753,12 +1074,12 @@ function renderPurchase() {
               : paged
                   .map(
                     o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary);white-space:nowrap">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
               <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.supplier)}</td>
               <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
               <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
               <td class="td-p">${badge(o.status)}</td>
-              <td class="td-p">${actionBtns('PO', o.id)}</td>
+              <td class="td-p row-menu-cell">${orderRowMenu('purchase', o)}</td>
             </tr>`
                   )
                   .join('')
@@ -808,11 +1129,10 @@ function renderInventory() {
     { label: 'Kategori', value: String(cats.length), sub: 'Kelompok barang' },
   ])}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
       <div style="font-size:.875rem;font-weight:700">Katalog Item</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${exportBtn('inventory')}
-        ${excelBtn('inventory')}
+        ${ioMenu('inventory', ['csv', 'excel'])}
         ${filterBtn('inventory')}
       </div>
     </div>
@@ -1468,12 +1788,10 @@ function renderLogistics() {
     </div>
   </div>
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
       <div style="font-size:.875rem;font-weight:700">Daftar Delivery Order</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${importBtn('logistics')}
-        ${exportBtn('logistics')}
-        ${excelBtn('logistics')}
+        ${ioMenu('logistics', ['csv', 'excel', 'import'])}
         ${filterBtn('logistics')}
       </div>
     </div>
@@ -1851,6 +2169,7 @@ function _closeFilterDrop(drop) {
 // its filter. _unparkFilterDrop handles a detached home (e.g. a view that did get
 // re-rendered) by simply dropping the element out of the document.
 function _cleanupParkedFilters() {
+  _closePopMenu(false);
   document.querySelectorAll('body > .filter-drop').forEach(d => {
     d.classList.remove('open');
     if (d._homeParent) {
@@ -2139,6 +2458,30 @@ document.addEventListener('click', async e => {
     case 'printSummary':
       if (typeof window.printOrderSummary === 'function') {
         window.printOrderSummary(type);
+      }
+      break;
+
+    // ── Pop-up menus (row ⋯ / Ekspor / impor) ─────────────────────────────────
+    case 'rowMenu':
+    case 'toolMenu':
+      _togglePopMenu(btn);
+      break;
+    case 'rowMenuPanel':
+      _showPopPanel(btn.dataset.panel);
+      break;
+
+    // ── Order lists: status strip + row status picker ────────────────────────
+    case 'orderStage':
+      setOrderStage(type, btn.dataset.stage);
+      break;
+    case 'clearOrderStage':
+      setOrderStage(type, '');
+      break;
+    case 'setOrderStatus':
+      // inlineSOStatus: transition checks, cancel flow, stock reservation /
+      // delivery effects, save and re-render.
+      if (!btn.disabled && id && btn.dataset.status) {
+        inlineSOStatus(id, btn.dataset.status);
       }
       break;
 
@@ -2758,42 +3101,11 @@ function handleSearch(query) {
 // Aging section (called directly from renderFinance above, replacing the old
 // monkey-patch wrapper).
 // ═══════════════════════════════════════════════════════════════════════════════
-// § 11  OVERRIDE: renderSales — checkbox column + inline status + bulk bar
+// § 11  OVERRIDE: renderSales — checkbox column + status strip + row menu + bulk bar
 // ════════════════════════════════════════════════════════════════════════════════
 
 function renderSales() {
-  const f = filters.sales;
-  const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const MONTH_NAMES = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ];
-  const monthLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
-
-  let orders = f === 'all' ? DB.salesOrders : DB.salesOrders.filter(o => o.status === f);
-  orders = applyDateFilter(orders, 'sales');
-  orders = applySorted(orders, 'sales');
-
-  const _isInvoice = o => !o._type || o._type === 'invoice';
-  const invoices = DB.salesOrders.filter(o => _isInvoice(o) && o.status !== 'Draft' && o.status !== 'Cancelled');
-  const thisMthOrders = invoices.filter(o => o.date && o.date.startsWith(thisMonth));
-  const totalVal = invoices.reduce((s, o) => s + (o.amount || 0), 0);
-  const thisMthVal = thisMthOrders.reduce((s, o) => s + (o.amount || 0), 0);
-  const pendingCnt = invoices.filter(o => o.status === 'Confirmed').length;
-  const unpaidVal = invoices
-    .filter(o => o.status === 'Confirmed' || o.status === 'Delivered')
-    .reduce((s, o) => s + (o.owing != null ? o.owing : Math.max(0, (o.amount || 0) - (o.paid || 0))), 0);
+  const orders = orderRows('sales');
 
   const totalFiltered = orders.length;
   const paged = applyPage(orders, 'sales');
@@ -2831,59 +3143,29 @@ function renderSales() {
             <input type="checkbox" class="so-check" data-action="toggleSOCheck"
               data-id="${escapeHtml(o.id)}" ${checked} style="cursor:pointer;width:14px;height:14px">
           </td>
-          <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(o.number, o.id))}</td>
+          <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary);white-space:nowrap">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
           <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.customer)}</td>
           <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
           <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
-          <td class="td-p" style="padding:4px 8px">
-            <select class="form-select" data-action="inlineSOStatus" data-id="${escapeHtml(o.id)}"
-              style="font-size:.75rem;padding:4px 8px;min-width:130px;cursor:pointer">
-              ${SO_STATUSES.filter(
-                ([v]) =>
-                  v === o.status ||
-                  (window.DocEngine && window.DocEngine.canTransition('SO', o.status, v))
-              )
-                .map(
-                  ([v, l]) =>
-                    `<option value="${v}"${o.status === v ? ' selected' : ''}>${escapeHtml(l)}</option>`
-                )
-                .join('')}
-            </select>
-          </td>
-          <td class="td-p">${actionBtns('SO', o.id)}</td>
+          <td class="td-p">${badge(o.status)}</td>
+          <td class="td-p row-menu-cell">${orderRowMenu('sales', o)}</td>
         </tr>`;
           })
           .join('');
 
   return `
   ${secHdr('Pesanan Penjualan', 'Sales order dari pelanggan beserta pengiriman, faktur, dan pembayarannya', 'Buat SO', 'addSO')}
-  ${statRow([
-    { label: 'SO Bulan Ini', value: String(thisMthOrders.length), sub: monthLabel },
-    { label: 'Nilai Bulan Ini', value: idr(thisMthVal), sub: `Total all-time: ${idr(totalVal)}` },
-    {
-      label: 'Menunggu Pengiriman',
-      value: `${pendingCnt} SO`,
-      sub: 'Status Confirmed',
-      color: 'var(--warning)',
-    },
-    {
-      label: 'Piutang Belum Lunas',
-      value: idr(unpaidVal),
-      sub: 'Confirmed + Delivered',
-      color: 'var(--danger)',
-    },
-  ])}
+  ${orderStrip('sales')}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
       <div style="font-size:.875rem;font-weight:700">Daftar Sales Order</div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${summaryBtn('sales')}
-        ${importBtn('sales')}
-        ${exportBtn('sales')}
+        ${ioMenu('sales', ['csv', 'summary', 'import'])}
         ${filterBtn('sales')}
       </div>
     </div>
     <div style="margin-bottom:12px">${dateFilterBar('sales')}</div>
+    ${orderStageNote('sales')}
     ${bulkBar}
     <div class="table-wrap">
       <table>
@@ -2899,7 +3181,7 @@ function renderSales() {
           ${sortTh('Tanggal', 'sales', 'date')}
           ${sortTh('Total', 'sales', 'amount')}
           <th>Status</th>
-          <th>Aksi</th>
+          <th class="row-menu-cell"><span class="sr-only">Aksi</span></th>
         </tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
