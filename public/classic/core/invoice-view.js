@@ -24,6 +24,9 @@
   'use strict';
 
   let activeTab = 'SI'; // 'SI' | 'PI' | 'SR' | 'PP'
+  // Lists show one page at a time (same size as the other lists).
+  const PAGE_SIZE = 15;
+  const pageOf = { SI: 1, PI: 1, SR: 1, PP: 1 };
 
   const TYPES = {
     SI: {
@@ -232,12 +235,29 @@
     </div></div>`;
   }
 
+  function pagerHTML(type, total) {
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (pages <= 1) {
+      return '';
+    }
+    const cur = Math.min(pageOf[type] || 1, pages);
+    const btn = (page, label, off) =>
+      `<button class="btn-ghost" data-action="invPage" data-type="${type}" data-val="${page}"${off ? ' disabled' : ''}>${label}</button>`;
+    return `<div class="inv-pager">
+      <span>${(cur - 1) * PAGE_SIZE + 1}–${Math.min(cur * PAGE_SIZE, total)} dari ${total}</span>
+      ${btn(cur - 1, '‹ Prev', cur === 1)}${btn(cur + 1, 'Next ›', cur === pages)}
+    </div>`;
+  }
+
   function listHTML(type) {
     const t = TYPES[type];
-    const docs = (db()[t.coll] || []).slice().sort(byDateDesc);
-    if (docs.length === 0) {
+    const all = (db()[t.coll] || []).slice().sort(byDateDesc);
+    if (all.length === 0) {
       return emptyHTML(type);
     }
+    const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+    pageOf[type] = Math.min(Math.max(1, pageOf[type] || 1), pages);
+    const docs = all.slice((pageOf[type] - 1) * PAGE_SIZE, pageOf[type] * PAGE_SIZE);
     const today = todayStr();
     let head;
     let rows;
@@ -282,7 +302,7 @@
     }
     return `<div class="card card-flush"><div class="table-wrap"><table class="data-table">
       <thead><tr>${head}</tr></thead><tbody>${rows}</tbody>
-    </table></div></div>`;
+    </table></div>${pagerHTML(type, all.length)}</div>`;
   }
 
   function renderInvoices() {
@@ -1010,6 +1030,14 @@
         activeTab = val;
         refresh();
         syncMenu();
+      }
+      return true;
+    });
+    window.ERP.registerAction('invPage', function (_id, type, val) {
+      const page = Number(val);
+      if (TYPES[type] && page >= 1) {
+        pageOf[type] = page;
+        refresh();
       }
       return true;
     });

@@ -1464,6 +1464,24 @@ tfoot td {
   font-weight: 600;
 }
 
+/* Pager under a flush list card (invoice-view.js) */
+.inv-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-light);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.inv-pager .btn-ghost {
+  height: auto;
+  min-height: 0;
+  padding: 3px 10px;
+  font-size: var(--fs-xs);
+}
+
 .data-table.compact th,
 .data-table.compact td {
   padding: 7px 10px;
