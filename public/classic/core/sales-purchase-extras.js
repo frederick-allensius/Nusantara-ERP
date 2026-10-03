@@ -917,6 +917,7 @@
 
         var lineEls = document.querySelectorAll('.ri-line-qty');
         var items = [];
+        var tareOverGross = false;
         lineEls.forEach(function (el) {
           var qty = parseFloat(el.value) || 0;
           var max = parseFloat(el.max);
@@ -928,33 +929,20 @@
             var tareEl = row ? row.querySelector('.ri-line-tare') : null;
             var priceEl = row ? row.querySelector('.ri-line-price') : null;
             var netEl = row ? row.querySelector('.ri-line-net') : null;
-            var sj = sjEl ? parseFloat(sjEl.value) || 0 : 0;
             var gross = grossEl ? parseFloat(grossEl.value) || 0 : 0;
             var tare = tareEl ? parseFloat(tareEl.value) || 0 : 0;
+            if (gross > 0 && tare > gross) tareOverGross = true;
             // Netto is derived from Bruto − Tara, but when the operator records
             // only a netto (no Bruto — e.g. a trusted supplier weighbridge
-            // ticket) we honor that direct figure. Routing through
-            // computeWeighing keeps this identical to the pure engine so the
-            // receive path and reconciliation cannot drift.
-            var netInput = netEl ? parseFloat(netEl.value) : NaN;
-            var weighInput = { suratJalanQty: sj, grossQty: gross, tareQty: tare };
-            if (gross > 0) {
-              // Bruto present → netto is strictly derived (gross − tare).
-              weighInput.grossQty = gross;
-            } else {
-              // No Bruto → omit grossQty so a single netto figure is accepted.
-              delete weighInput.grossQty;
-              weighInput.netQty = isNaN(netInput) ? 0 : netInput;
-            }
-            var weighing =
-              window._pipelineExtras && typeof window._pipelineExtras.computeWeighing === 'function'
-                ? window._pipelineExtras.computeWeighing(weighInput)
-                : {
-                    suratJalanQty: sj,
-                    grossQty: gross,
-                    tareQty: tare,
-                    netQty: gross > 0 ? Math.max(0, gross - tare) : isNaN(netInput) ? 0 : netInput,
-                  };
+            // ticket) that direct figure is kept. gridWeighing goes through
+            // _pipelineExtras.computeWeighing, so the receive path and the
+            // reconciliation cannot drift.
+            var weighing = gridWeighing({
+              suratJalanQty: sjEl ? parseFloat(sjEl.value) || 0 : 0,
+              grossQty: gross,
+              tareQty: tare,
+              netQty: netEl ? parseFloat(netEl.value) || 0 : 0,
+            });
             var unitPrice = priceEl ? parseFloat(priceEl.value) || 0 : 0;
             items.push({
               itemId: el.dataset.itemid,
@@ -966,6 +954,10 @@
           }
         });
 
+        if (tareOverGross) {
+          toast('Tara tidak boleh lebih besar dari Bruto', 'warning');
+          return;
+        }
         if (items.length === 0) {
           toast('Minimal 1 item harus diterima', 'warning');
           return;
@@ -1000,6 +992,28 @@
     }, 60);
   }
 
+  // Weighing as the save handler stores it (computeWeighing when loaded).
+  function gridWeighing(f) {
+    var P = window._pipelineExtras;
+    if (P && typeof P.weighingFromFields === 'function') return P.weighingFromFields(f);
+    var gross = Number(f.grossQty) || 0;
+    var tare = Number(f.tareQty) || 0;
+    return {
+      suratJalanQty: Number(f.suratJalanQty) || 0,
+      grossQty: gross,
+      tareQty: tare,
+      netQty: gross > 0 ? Math.round((gross - tare) * 100) / 100 : Number(f.netQty) || 0,
+    };
+  }
+
+  // PO line price after its line discount: the default receive price, so an
+  // invoice made from the receipt keeps the PO's discount.
+  function poNetUnitPrice(l) {
+    var qty = Number(l.qty) || 0;
+    if (qty > 0 && l.subtotal != null) return Math.round(((Number(l.subtotal) || 0) / qty) * 100) / 100;
+    return l.price != null ? Number(l.price) || 0 : Number(l.cost) || 0;
+  }
+
   function loadPOLines(poId) {
     var po = (db().purchaseOrders || []).find(function (o) {
       return o.id === poId;
@@ -1014,29 +1028,44 @@
       return;
     }
 
+    // Per line: what was ordered and received so far, the qty received now
+    // (capped at what is still open) and the weighbridge reading — Surat Jalan
+    // qty, Bruto, Tara, Netto (Bruto − Tara; typed directly when there is no
+    // Bruto) — plus the unit price.
     var got = receivedQtyMap(poId);
     var html =
       '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Barang dari PO ' +
       esc(po.number || poId) +
-      '</div>' +
-      '<table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr><th style="text-align:left;font-size:.75rem;padding:4px 6px">Barang</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Qty PO</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Sudah diterima</th><th style="text-align:right;font-size:.75rem;padding:4px 6px">Qty Terima</th></tr></thead>' +
+      ' <span style="font-weight:400;color:var(--muted)">· Timbangan: Netto = Bruto − Tara</span></div>' +
+      '<div class="table-wrap"><table class="line-items-table">' +
+      '<thead><tr>' +
+      '<th>Barang</th>' +
+      '<th class="t-num">Qty PO</th>' +
+      '<th class="t-num">Sudah diterima</th>' +
+      '<th class="t-num">Qty Terima</th>' +
+      '<th class="t-num">Surat Jalan</th>' +
+      '<th class="t-num">Bruto</th>' +
+      '<th class="t-num">Tara</th>' +
+      '<th class="t-num">Netto</th>' +
+      '<th class="t-num">Harga</th>' +
+      '</tr></thead>' +
       '<tbody>';
     lines.forEach(function (l) {
       var ordered = Number(l.qty) || 0;
       var done = got[String(l.itemId)] || 0;
       var open = Math.max(0, ordered - done);
+      var off = open <= 0 ? ' disabled' : '';
       html +=
-        '<tr><td style="padding:4px 6px;font-size:.75rem">' +
+        '<tr><td>' +
         esc(l.itemName || l.itemId) +
         '</td>' +
-        '<td style="padding:4px 6px;text-align:right;font-size:.75rem">' +
+        '<td class="t-num">' +
         ordered +
         '</td>' +
-        '<td style="padding:4px 6px;text-align:right;font-size:.75rem;color:var(--muted)">' +
+        '<td class="t-num t-muted">' +
         (done || '—') +
         '</td>' +
-        '<td style="padding:4px 6px"><input class="form-input ri-line-qty" type="number" min="0" step="any" max="' +
+        '<td><input class="form-input t-num ri-line-qty" type="number" min="0" step="any" max="' +
         open +
         '" value="' +
         open +
@@ -1045,8 +1074,27 @@
         '" data-itemname="' +
         esc(l.itemName || '') +
         '"' +
-        (open <= 0 ? ' disabled' : '') +
-        ' style="width:90px;font-size:.75rem;padding:4px 6px;text-align:right"></td>' +
+        off +
+        ' style="min-width:4.5rem"></td>' +
+        '<td><input class="form-input t-num ri-line-sj" type="number" min="0" step="any" value="' +
+        open +
+        '"' +
+        off +
+        ' style="min-width:4.5rem"></td>' +
+        '<td><input class="form-input t-num ri-line-gross" type="number" min="0" step="any" placeholder="0"' +
+        off +
+        ' style="min-width:4.5rem"></td>' +
+        '<td><input class="form-input t-num ri-line-tare" type="number" min="0" step="any" placeholder="0"' +
+        off +
+        ' style="min-width:4.5rem"></td>' +
+        '<td><input class="form-input t-num ri-line-net" type="number" min="0" step="any" placeholder="0" title="Isi langsung bila tanpa Bruto"' +
+        off +
+        ' style="min-width:4.5rem;font-weight:600"></td>' +
+        '<td><input class="form-input t-num ri-line-price" type="number" min="0" step="any" value="' +
+        poNetUnitPrice(l) +
+        '"' +
+        off +
+        ' style="min-width:6.5rem"></td>' +
         '</tr>';
     });
     html += '</tbody></table></div>';
@@ -1054,24 +1102,22 @@
 
     // Netto = Bruto − Tara when a Bruto is entered (derived, field locked). When
     // no Bruto is recorded, the Netto field is editable so an operator can enter
-    // a single trusted netto figure directly (mirrors computeWeighing).
+    // a single trusted netto figure directly. The value shown is the one the
+    // save handler stores (computeWeighing).
     container.querySelectorAll('tr').forEach(function (tr) {
       var grossEl = tr.querySelector('.ri-line-gross');
       var tareEl = tr.querySelector('.ri-line-tare');
       var netEl = tr.querySelector('.ri-line-net');
-      if (!grossEl || !tareEl || !netEl) return;
+      if (!grossEl || !tareEl || !netEl || netEl.disabled) return;
       function recalc() {
         var g = parseFloat(grossEl.value) || 0;
-        var t = parseFloat(tareEl.value) || 0;
         if (g > 0) {
           // Bruto present → Netto is derived and read-only.
-          netEl.value = Math.max(0, Math.round((g - t) * 100) / 100);
+          netEl.value = gridWeighing({ grossQty: g, tareQty: parseFloat(tareEl.value) || 0 }).netQty;
           netEl.readOnly = true;
-          netEl.style.opacity = '0.75';
         } else {
           // No Bruto → let the operator type the netto directly.
           netEl.readOnly = false;
-          netEl.style.opacity = '1';
         }
       }
       grossEl.addEventListener('input', recalc);
@@ -1459,6 +1505,17 @@
         var grPO = (db().purchaseOrders || []).find(function (o) {
           return String(o.id) === String(gr.poId);
         });
+        // A receipt invoiced on its own (Rekonsiliasi Timbangan) is undone after its invoice.
+        var grInv = (db().purchaseInvoices || []).find(function (p) {
+          return (p.status === 'Outstanding' || p.status === 'Paid') && String(p.receiptId) === String(gr.id);
+        });
+        if (grInv) {
+          toast(
+            'Penerimaan ini sudah difakturkan (' + (grInv.number || grInv.id) + '). Batalkan fakturnya terlebih dahulu.',
+            'warning'
+          );
+          break;
+        }
         if (gr.posted) {
           if (grPO && grPO.status === 'Received') {
             toast(

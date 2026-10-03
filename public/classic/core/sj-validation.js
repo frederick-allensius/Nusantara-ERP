@@ -582,16 +582,9 @@
     });
   }
 
-  function _badge(text, bg, fg) {
-    return (
-      '<span class="badge" style="background:' +
-      bg +
-      ';color:' +
-      fg +
-      ';font-size:.8125rem;font-weight:700;padding:3px 9px;border-radius:6px">' +
-      esc(text) +
-      '</span>'
-    );
+  // kind: success | warning | danger (style.css .badge-*).
+  function _badge(text, kind) {
+    return '<span class="badge badge-' + kind + '">' + esc(text) + '</span>';
   }
 
   function _resultRowsHtml(result) {
@@ -604,16 +597,16 @@
       .map(function (row) {
         var f = row.field;
         var r = row.recap;
-        var rowBg = row.mismatch ? 'background:#FEF2F2' : '';
-        var okBadge = _badge('Sesuai', '#DCFCE7', '#166534');
-        var flagT = row.tonnageMismatch ? _badge('Selisih Tonase', '#FEE2E2', '#991B1B') : '';
-        var flagP = row.priceMismatch ? _badge('Selisih Harga', '#FEE2E2', '#991B1B') : '';
-        var flagU = !row.matched ? _badge('Tidak Cocok', '#FEF3C7', '#92400E') : '';
+        var rowBg = row.mismatch ? 'background:var(--danger-bg)' : '';
+        var okBadge = _badge('Sesuai', 'success');
+        var flagT = row.tonnageMismatch ? _badge('Selisih Tonase', 'danger') : '';
+        var flagP = row.priceMismatch ? _badge('Selisih Harga', 'danger') : '';
+        var flagU = !row.matched ? _badge('Tidak ada di rekap', 'warning') : '';
         var status = row.mismatch ? flagT + ' ' + flagP + ' ' + flagU : okBadge;
         var tv = row.tonnageVariance == null ? '—' : (row.tonnageVariance > 0 ? '+' : '') + row.tonnageVariance;
         var pv = row.priceVariance == null ? '—' : (row.priceVariance > 0 ? '+' : '') + money(row.priceVariance);
         var varColor = function (mm) {
-          return mm ? 'color:#DC2626;font-weight:800' : 'color:var(--muted)';
+          return mm ? 'color:var(--danger);font-weight:700' : 'color:var(--muted)';
         };
         return (
           '<tr style="' + rowBg + '">' +
@@ -636,7 +629,7 @@
     var rows = result.unmatchedRecap
       .map(function (r) {
         return (
-          '<tr style="background:#FFFBEB">' +
+          '<tr style="background:var(--warning-bg)">' +
           '<td class="td-p" style="font-size:.875rem;font-weight:700">' + esc(r.itemName || r.itemCode) + '</td>' +
           '<td class="td-p" style="font-size:.8125rem">' + esc(r.poId || r.doId || '—') + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem">' + r.tonnage + '</td>' +
@@ -646,7 +639,7 @@
       })
       .join('');
     return (
-      '<div class="card" style="margin-top:16px;border-left:4px solid #F59E0B">' +
+      '<div class="card" style="margin-top:16px;border-left:4px solid var(--warning)">' +
       '<h3 style="font-size:1rem;margin:0 0 4px">Baris Rekap Tanpa Padanan Lapangan</h3>' +
       '<p style="font-size:.8125rem;color:var(--muted);margin:0 0 10px">Baris rekap supplier ini tidak ada di data Surat Jalan / timbangan lapangan — potensi tagihan fiktif. Periksa sebelum faktur.</p>' +
       '<div class="table-wrap"><table style="width:100%">' +
@@ -666,22 +659,27 @@
     var fieldLines = fieldLinesFromReceipts(_reconciledReceipts());
     var result = crossCheck(fieldLines, _attachedRecap);
     var s = result.summary;
+    // Safe to invoice only when every field line matches within tolerance AND
+    // the recap has no rows without a field counterpart (possible phantom charges).
+    var problems = [];
+    if (s.mismatched > 0) problems.push(s.mismatched + ' baris bermasalah');
+    if (s.unmatchedRecap > 0) problems.push(s.unmatchedRecap + ' baris rekap tanpa padanan');
     var banner =
-      s.mismatched > 0
-        ? '<div class="card" style="background:#FEF2F2;border-left:4px solid #DC2626;padding:14px;margin-bottom:14px">' +
-          '<div style="font-size:1rem;font-weight:800;color:#991B1B">⚠ ' + s.mismatched + ' baris bermasalah — JANGAN terbitkan faktur sebelum diperiksa</div>' +
-          '<div style="font-size:.875rem;color:#7F1D1D;margin-top:4px">Rekap supplier berbeda dari data timbangan lapangan (tonase/harga). Ini mencegah kurang-tagih / lebih-bayar.</div>' +
-          '</div>'
-        : '<div class="card" style="background:#F0FDF4;border-left:4px solid #16A34A;padding:14px;margin-bottom:14px">' +
-          '<div style="font-size:1rem;font-weight:800;color:#166534">✓ Semua baris cocok dalam toleransi — aman untuk difakturkan</div>' +
-          '</div>';
+      s.total === 0
+        ? '<div class="notice notice-info">Belum ada penerimaan yang direkonsiliasi untuk dicocokkan dengan rekap ini.</div>'
+        : problems.length > 0
+          ? '<div class="notice" style="display:block;background:var(--danger-bg);border-color:transparent;color:var(--text)">' +
+            '<div style="font-size:.9375rem;font-weight:700;color:var(--danger)">' + problems.join(' dan ') + ' — jangan terbitkan faktur sebelum diperiksa</div>' +
+            '<div style="margin-top:4px">Rekap supplier berbeda dari data timbangan lapangan (tonase/harga) atau memuat baris yang tidak ada di lapangan. Ini mencegah kurang tagih atau lebih bayar.</div>' +
+            '</div>'
+          : '<div class="notice notice-success"><strong>Semua baris cocok dalam toleransi — aman untuk difakturkan</strong></div>';
     var stats =
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Baris Divalidasi', value: String(s.total), sub: 'Dari data lapangan' },
-            { label: 'Cocok', value: String(s.clean != null ? s.clean : 0), sub: 'Cocok & dalam toleransi', color: '#16A34A' },
-            { label: 'Bermasalah', value: String(s.mismatched), sub: 'Selisih / tak cocok', color: '#DC2626' },
-            { label: 'Rekap Tanpa Padanan', value: String(s.unmatchedRecap), sub: 'Cek tagihan fiktif', color: '#F59E0B' },
+            { label: 'Cocok', value: String(s.clean != null ? s.clean : 0), sub: 'Cocok & dalam toleransi', color: 'var(--success)' },
+            { label: 'Bermasalah', value: String(s.mismatched), sub: 'Selisih / tidak ada di rekap', color: 'var(--danger)' },
+            { label: 'Rekap Tanpa Padanan', value: String(s.unmatchedRecap), sub: 'Cek tagihan fiktif', color: 'var(--warning)' },
           ])
         : '';
     host.innerHTML =
@@ -721,8 +719,8 @@
     var stats =
       typeof window.statRow === 'function'
         ? window.statRow([
-            { label: 'Penerimaan Terekonsiliasi', value: String(receipts.length), sub: 'Sumber data lapangan' },
-            { label: 'Sumber Rekap', value: String(sources.length), sub: 'Adapter terdaftar' },
+            { label: 'Penerimaan Direkonsiliasi', value: String(receipts.length), sub: 'Sumber data lapangan' },
+            { label: 'Sumber Rekap', value: String(sources.length), sub: 'Cara memuat rekap' },
           ])
         : '';
 
@@ -736,7 +734,7 @@
       '<button class="btn-primary" data-action="sjvAttach" style="font-size:.875rem;padding:10px 16px">Lampirkan & Validasi</button>' +
       (_attachedRecap ? '<button class="btn-ghost" data-action="sjvClear" style="font-size:.875rem;padding:10px 16px">Bersihkan</button>' : '') +
       '</div>' +
-      '<div style="font-size:.8125rem;color:var(--muted);margin-top:8px">Sumber rekap bersifat pluggable — sumber email supplier dapat ditambahkan memakai kontrak yang sama tanpa mengubah alat ini.</div>' +
+      '<div style="font-size:.8125rem;color:var(--muted);margin-top:8px">Pilih sumber rekap, lalu lampirkan rekap supplier untuk dicocokkan dengan data timbangan lapangan.</div>' +
       '</div>';
 
     injectView(

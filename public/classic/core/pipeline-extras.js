@@ -7,19 +7,20 @@
 // The weighbridge (Timbangan) capture lives on goods receipts (collection
 // goodsReceipts), extending the shape written by sales-purchase-extras.js so a
 // receipt line can carry:
-//   { itemId, itemName, qty (ordered basis), unitPrice,
+//   { itemId, itemName, qty (received into stock), unitPrice,
 //     weighing: { suratJalanQty, grossQty, tareQty, netQty },
 //     reconciledQty }
 // and the receipt itself carries { reconciled, reconciledAt }.
 //
-// The Rekonsiliasi screen compares ordered vs. surat-jalan vs. weighed (netto)
-// per line, computes variances, and lets the operator confirm a reconciledQty
-// that becomes the invoice basis (NOT the raw ordered qty).
+// The Rekonsiliasi Timbangan screen compares ordered vs. surat-jalan vs.
+// weighed (netto) per line, computes variances, and lets the operator confirm a
+// reconciledQty that becomes the invoice basis (NOT the raw ordered qty).
 //
 // Purchase invoices are generated from reconciled receipts (partial /
-// multi-invoice across staged receipts). GL journals are DERIVED by
-// gl-sync.js → GL.reconcileAll() from the PI documents — this module never
-// hand-writes a journal.
+// multi-invoice across staged receipts), one per receipt (receiptId). GL
+// journals are DERIVED by gl-sync.js → GL.reconcileAll() from the PI documents
+// and, for receipts not invoiced yet, from the receipts themselves
+// (GL.receivedNotInvoiced) — this module never hand-writes a journal.
 //
 // The pure calculation helpers (weighing / variance / invoice-basis) are
 // exposed on window._pipelineExtras so they are unit-testable without a DOM.
@@ -99,14 +100,16 @@
   // Normalize a weighing capture into { suratJalanQty, grossQty, tareQty, netQty }.
   // netQty is always derived as gross − tare (never trusted from input), unless
   // no gross is supplied, in which case an explicit netQty is honored (single
-  // netto tonnage capture).
+  // netto tonnage capture). A gross of 0 counts as no gross reading: a stored
+  // single-netto weighing carries grossQty 0, and normalizing it again must keep
+  // its netto (computeWeighing(computeWeighing(x)) equals computeWeighing(x)).
   function computeWeighing(w) {
     w = w || {};
     var suratJalanQty = num(w.suratJalanQty);
     var grossQty = num(w.grossQty);
     var tareQty = num(w.tareQty);
     var netQty;
-    if (w.grossQty === undefined || w.grossQty === null || w.grossQty === '') {
+    if (!(grossQty > 0)) {
       // No gross reading — accept an explicit single netto figure if present.
       netQty = w.netQty === undefined || w.netQty === null || w.netQty === '' ? 0 : num(w.netQty);
     } else {
@@ -186,42 +189,113 @@
     return lines;
   }
 
+  // Weighing from form fields (receive grid, reconciliation): with a Bruto
+  // reading the netto is derived (Bruto − Tara); without one the netto typed by
+  // the operator is kept. Always goes through computeWeighing.
+  function weighingFromFields(f) {
+    f = f || {};
+    var input = { suratJalanQty: f.suratJalanQty, tareQty: f.tareQty };
+    if (num(f.grossQty) > 0) {
+      input.grossQty = num(f.grossQty);
+    } else {
+      input.netQty = f.netQty;
+    }
+    return computeWeighing(input);
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
-  // RECONCILIATION VIEW  (Rekonsiliasi Penerimaan)
+  // DOCUMENT LOOKUPS
+  // ════════════════════════════════════════════════════════════════════════════
+  function sameId(a, b) {
+    return a !== null && a !== undefined && String(a) === String(b);
+  }
+  function isActiveInvoice(inv) {
+    return !!inv && (inv.status === 'Outstanding' || inv.status === 'Paid');
+  }
+  function poOf(receipt) {
+    return (
+      (db().purchaseOrders || []).find(function (o) {
+        return sameId(o.id, receipt && receipt.poId);
+      }) || null
+    );
+  }
+  function poLinesOf(po) {
+    return po ? (po.lines && po.lines.length ? po.lines : po.items || []) : [];
+  }
+  function poLineFor(po, it) {
+    return (
+      poLinesOf(po).find(function (l) {
+        return (l.itemId != null && sameId(l.itemId, it.itemId)) || (l.itemName && l.itemName === it.itemName);
+      }) || null
+    );
+  }
+  // PO line price after its line discount (what one unit costs on the PO).
+  function netUnitPrice(l) {
+    if (!l) return 0;
+    var qty = num(l.qty);
+    return qty > 0 && l.subtotal != null ? round2(num(l.subtotal) / qty) : num(l.price);
+  }
+  // The active purchase invoice made from a goods receipt, if any.
+  function receiptInvoice(receiptId) {
+    return (
+      (db().purchaseInvoices || []).find(function (inv) {
+        return isActiveInvoice(inv) && sameId(inv.receiptId, receiptId);
+      }) || null
+    );
+  }
+  // An active invoice that bills the whole PO (made from the PO, not a receipt).
+  function wholeOrderInvoice(poId) {
+    return (
+      (db().purchaseInvoices || []).find(function (inv) {
+        return (
+          isActiveInvoice(inv) &&
+          !inv.receiptId &&
+          sameId(inv.sourceId, poId) &&
+          (!inv.sourceType || inv.sourceType === 'PO')
+        );
+      }) || null
+    );
+  }
+  function currentUser() {
+    try {
+      var u = window.erpAuth && window.erpAuth.getCurrentUser && window.erpAuth.getCurrentUser();
+      return (u && (u.username || u.displayName || u.email)) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // RECONCILIATION VIEW  (Rekonsiliasi Timbangan)
   // ════════════════════════════════════════════════════════════════════════════
   function openReconciliation() {
     var receipts = ensureArr('goodsReceipts');
-    var pis = db().purchaseInvoices || [];
 
     var rows = receipts
       .slice()
       .reverse()
       .map(function (r) {
-        var invoicedCount = pis.filter(function (p) {
-          return p.receiptId === r.id;
-        }).length;
+        var po = poOf(r);
+        var inv = receiptInvoice(r.id);
         var statusBadge = r.reconciled
-          ? '<span class="badge" style="background:#DCFCE7;color:#166534">Terekonsiliasi</span>'
-          : '<span class="badge" style="background:#FEF3C7;color:#92400E">Belum</span>';
-        var invBadge =
-          invoicedCount > 0
-            ? '<span class="badge" style="background:#DBEAFE;color:#1E40AF">' +
-              invoicedCount +
-              ' faktur</span>'
-            : '<span style="font-size:.8125rem;color:var(--muted)">—</span>';
+          ? '<span class="badge badge-success">Direkonsiliasi</span>'
+          : '<span class="badge badge-warning">Belum</span>';
+        var invCell = inv
+          ? '<span class="badge badge-info">' + esc(inv.number || inv.id) + '</span>'
+          : '<span class="t-muted">—</span>';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.8125rem;font-weight:700">' +
+          '<td class="td-p t-strong">' +
           esc(r.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:.8125rem">' +
+          '<td class="td-p">' +
           esc(r.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
-          esc(r.poId) +
+          esc(po ? po.number || po.id : r.poId) +
           '</td>' +
           '<td class="td-p">' +
-          esc(r.supplierName || '—') +
+          esc(r.supplierName || (po && po.supplier) || '—') +
           '</td>' +
           '<td class="td-p">' +
           (r.items || []).length +
@@ -230,16 +304,18 @@
           statusBadge +
           '</td>' +
           '<td class="td-p">' +
-          invBadge +
+          invCell +
           '</td>' +
           '<td class="td-p">' +
           '<button class="action-primary" data-action="reconcileReceipt" data-id="' +
           esc(r.id) +
-          '" style="font-size:.8125rem;padding:8px 12px;border-radius:6px;border:none;background:var(--primary);color:#fff;cursor:pointer">Rekonsiliasi</button> ' +
-          (r.reconciled
+          '">' +
+          (inv ? 'Lihat' : 'Rekonsiliasi') +
+          '</button> ' +
+          (r.reconciled && !inv
             ? '<button class="action-primary" data-action="invoiceReceipt" data-id="' +
               esc(r.id) +
-              '" style="font-size:.8125rem;padding:8px 12px;border-radius:6px;border:none;background:#10B981;color:#fff;cursor:pointer">Buat Faktur</button>'
+              '">Buat Faktur</button>'
             : '') +
           '</td>' +
           '</tr>'
@@ -255,28 +331,28 @@
     var header =
       typeof window.secHdr === 'function'
         ? window.secHdr(
-            'Rekonsiliasi Penerimaan',
+            'Rekonsiliasi Timbangan',
             'Bandingkan qty pesanan, surat jalan, dan timbangan sebelum faktur',
             '',
             ''
           )
-        : '<h1>Rekonsiliasi</h1>';
+        : '<h1>Rekonsiliasi Timbangan</h1>';
 
     var stats =
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total Penerimaan', value: String(receipts.length), sub: 'Dokumen' },
             {
-              label: 'Terekonsiliasi',
+              label: 'Direkonsiliasi',
               value: String(reconciledCount),
               sub: 'Siap difakturkan',
-              color: '#10B981',
+              color: 'var(--success)',
             },
             {
-              label: 'Belum Rekonsiliasi',
+              label: 'Belum Direkonsiliasi',
               value: String(pendingCount),
               sub: 'Menunggu',
-              color: '#F59E0B',
+              color: 'var(--warning)',
             },
           ])
         : '';
@@ -297,69 +373,69 @@
 
   function reconcileModal(receiptId) {
     var receipt = ensureArr('goodsReceipts').find(function (r) {
-      return r.id === receiptId;
+      return sameId(r.id, receiptId);
     });
     if (!receipt) {
       toast('Penerimaan tidak ditemukan', 'warning');
       return;
     }
-    var po = (db().purchaseOrders || []).find(function (o) {
-      return o.id === receipt.poId;
-    });
-    var poLines = po ? (po.lines && po.lines.length ? po.lines : po.items || []) : [];
-
-    function orderedFor(it) {
-      var pl = poLines.find(function (l) {
-        return (
-          (l.itemId != null && l.itemId === it.itemId) ||
-          (l.itemName && l.itemName === it.itemName)
-        );
-      });
-      return pl ? num(pl.qty) : num(it.qty);
-    }
+    var po = poOf(receipt);
+    // A receipt on an active invoice is read-only: the invoice was built from
+    // these figures. Cancel the invoice first to change them.
+    var inv = receiptInvoice(receipt.id);
+    var lock = inv ? ' disabled' : '';
 
     var rowsHtml = (receipt.items || [])
       .map(function (it, idx) {
-        var ordered = orderedFor(it);
+        var pl = poLineFor(po, it);
+        var ordered = pl ? num(pl.qty) : num(it.qty);
         var w = computeWeighing(it.weighing);
         var basis = invoiceBasisQty(it);
+        var price = num(it.unitPrice != null ? it.unitPrice : it.price);
+        if (!(price > 0)) price = netUnitPrice(pl);
         return (
           '<tr data-idx="' +
           idx +
           '">' +
-          '<td style="padding:4px 6px;font-size:.8125rem">' +
+          '<td>' +
           esc(it.itemName || it.itemId) +
           '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:.8125rem">' +
+          '<td class="t-num">' +
           ordered +
           '</td>' +
-          '<td style="padding:4px 6px"><input class="form-input rec-sj" type="number" min="0" step="0.01" value="' +
+          '<td><input class="form-input t-num rec-sj" type="number" min="0" step="any" value="' +
           (w.suratJalanQty || 0) +
-          '" style="width:88px;font-size:.875rem;padding:4px 6px;text-align:right"></td>' +
-          '<td style="padding:4px 6px"><input class="form-input rec-gross" type="number" min="0" step="0.01" value="' +
-          (w.grossQty || 0) +
-          '" style="width:88px;font-size:.875rem;padding:4px 6px;text-align:right"></td>' +
-          '<td style="padding:4px 6px"><input class="form-input rec-tare" type="number" min="0" step="0.01" value="' +
-          (w.tareQty || 0) +
-          '" style="width:78px;font-size:.875rem;padding:4px 6px;text-align:right"></td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:.8125rem;font-weight:700" class="rec-net">' +
-          (w.netQty || 0) +
-          '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-size:.8125rem;font-weight:700" class="rec-var"></td>' +
-          '<td style="padding:4px 6px"><input class="form-input rec-final" type="number" min="0" step="0.01" value="' +
+          '" style="min-width:4.5rem"' +
+          lock +
+          '></td>' +
+          '<td><input class="form-input t-num rec-gross" type="number" min="0" step="any" value="' +
+          (w.grossQty || '') +
+          '" placeholder="0" style="min-width:4.5rem"' +
+          lock +
+          '></td>' +
+          '<td><input class="form-input t-num rec-tare" type="number" min="0" step="any" value="' +
+          (w.tareQty || '') +
+          '" placeholder="0" style="min-width:4.5rem"' +
+          lock +
+          '></td>' +
+          '<td><input class="form-input t-num rec-net" type="number" min="0" step="any" value="' +
+          (w.netQty || '') +
+          '" placeholder="0" title="Isi langsung bila tanpa Bruto" style="min-width:4.5rem;font-weight:600"' +
+          lock +
+          '></td>' +
+          '<td class="t-num rec-var" style="font-weight:600"></td>' +
+          '<td><input class="form-input t-num rec-final" type="number" min="0" step="any" value="' +
           basis +
-          '" data-itemid="' +
-          esc(it.itemId != null ? it.itemId : '') +
-          '" data-itemname="' +
-          esc(it.itemName || '') +
-          '" data-unit="' +
-          esc(it.unit || '') +
           '" data-ordered="' +
           ordered +
-          '" style="width:88px;font-size:.875rem;padding:4px 6px;text-align:right;background:#FEF9C3"></td>' +
-          '<td style="padding:4px 6px"><input class="form-input rec-price" type="number" min="0" step="1" value="' +
-          num(it.unitPrice != null ? it.unitPrice : it.price) +
-          '" style="width:98px;font-size:.875rem;padding:4px 6px;text-align:right"></td>' +
+          '" style="min-width:4.5rem;background:var(--warning-bg)"' +
+          lock +
+          '></td>' +
+          '<td><input class="form-input t-num rec-price" type="number" min="0" step="any" value="' +
+          price +
+          '" style="min-width:6.5rem"' +
+          lock +
+          '></td>' +
           '</tr>'
         );
       })
@@ -367,59 +443,81 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:8px">' +
+      (inv
+        ? '<div class="notice notice-info">Penerimaan ini sudah difakturkan (' +
+          esc(inv.number || inv.id) +
+          '). Batalkan fakturnya terlebih dahulu untuk mengubah rekonsiliasi.</div>'
+        : '') +
       '<div style="font-size:.875rem">PO <strong>' +
-      esc(receipt.poId) +
+      esc(po ? po.number || po.id : receipt.poId) +
       '</strong> — Supplier <strong>' +
-      esc(receipt.supplierName || '—') +
+      esc(receipt.supplierName || (po && po.supplier) || '—') +
       '</strong></div>' +
-      '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
+      '<div class="table-wrap"><table class="line-items-table" id="rec-table">' +
       '<thead><tr>' +
-      '<th style="text-align:left;font-size:.8125rem;padding:6px">Item</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Qty PO</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Surat Jalan</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Bruto</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Tara</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Netto</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Selisih</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Qty Rekonsiliasi</th>' +
-      '<th style="text-align:right;font-size:.8125rem;padding:6px">Harga</th>' +
+      '<th>Barang</th>' +
+      '<th class="t-num">Qty PO</th>' +
+      '<th class="t-num">Surat Jalan</th>' +
+      '<th class="t-num">Bruto</th>' +
+      '<th class="t-num">Tara</th>' +
+      '<th class="t-num">Netto</th>' +
+      '<th class="t-num">Selisih</th>' +
+      '<th class="t-num">Qty Rekonsiliasi</th>' +
+      '<th class="t-num">Harga</th>' +
       '</tr></thead><tbody>' +
       rowsHtml +
       '</tbody></table></div>' +
-      '<div style="font-size:.8125rem;color:var(--muted)">Netto = Bruto − Tara. Qty Rekonsiliasi (kuning) menjadi dasar faktur.</div>' +
+      '<div style="font-size:.8125rem;color:var(--muted)">Netto = Bruto − Tara; tanpa Bruto, Netto diisi langsung. Selisih = Netto − Surat Jalan. Qty Rekonsiliasi (kolom berwarna) menjadi dasar faktur.</div>' +
       '</div>';
 
     modal(
       'Rekonsiliasi ' + receipt.id,
       body,
-      '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
-        '<button class="btn" id="rec-save" data-recid="' +
-        esc(receipt.id) +
-        '">Simpan Rekonsiliasi</button>',
+      inv
+        ? '<button class="btn-ghost" data-action="closeModal">Tutup</button>'
+        : '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
+            '<button class="btn" id="rec-save" data-recid="' +
+            esc(receipt.id) +
+            '">Simpan Rekonsiliasi</button>',
       true
     );
 
     setTimeout(function () {
-      function recompute(tr) {
-        var gross = num(tr.querySelector('.rec-gross').value);
-        var tare = num(tr.querySelector('.rec-tare').value);
-        var sj = num(tr.querySelector('.rec-sj').value);
-        var net = round2(gross - tare);
-        tr.querySelector('.rec-net').textContent = net;
-        var ordered = num(tr.querySelector('.rec-final').dataset.ordered);
-        var v = tr.querySelector('.rec-var');
-        var diff = round2(net - sj);
-        v.textContent = diff;
-        v.style.color = diff === 0 ? 'var(--muted)' : diff < 0 ? '#EF4444' : '#10B981';
+      var table = document.getElementById('rec-table');
+      if (!table) return;
+      function fields(tr) {
+        return {
+          suratJalanQty: num(tr.querySelector('.rec-sj').value),
+          grossQty: num(tr.querySelector('.rec-gross').value),
+          tareQty: num(tr.querySelector('.rec-tare').value),
+          netQty: num(tr.querySelector('.rec-net').value),
+        };
       }
-      var trs = document.querySelectorAll('tr[data-idx]');
+      function recompute(tr) {
+        var f = fields(tr);
+        var netEl = tr.querySelector('.rec-net');
+        if (f.grossQty > 0) {
+          // Bruto present → Netto is derived and read-only.
+          netEl.value = weighingFromFields(f).netQty;
+          netEl.readOnly = true;
+        } else if (!inv) {
+          netEl.readOnly = false;
+        }
+        var w = weighingFromFields(f);
+        var v = tr.querySelector('.rec-var');
+        var diff = round2(w.netQty - w.suratJalanQty);
+        v.textContent = diff;
+        v.style.color = diff === 0 ? 'var(--muted)' : diff < 0 ? 'var(--danger)' : 'var(--success)';
+      }
+      var trs = table.querySelectorAll('tr[data-idx]');
       trs.forEach(function (tr) {
         recompute(tr);
-        ['.rec-gross', '.rec-tare', '.rec-sj'].forEach(function (sel) {
+        ['.rec-gross', '.rec-tare', '.rec-sj', '.rec-net'].forEach(function (sel) {
           var el = tr.querySelector(sel);
-          if (el) el.addEventListener('input', function () {
-            recompute(tr);
-          });
+          if (el)
+            el.addEventListener('input', function () {
+              recompute(tr);
+            });
         });
       });
 
@@ -428,20 +526,27 @@
         saveBtn.addEventListener('click', function () {
           var recId = saveBtn.dataset.recid;
           var rec = ensureArr('goodsReceipts').find(function (r) {
-            return r.id === recId;
+            return sameId(r.id, recId);
           });
           if (!rec) return;
-          document.querySelectorAll('tr[data-idx]').forEach(function (tr, i) {
-            var it = rec.items[i];
+          if (receiptInvoice(rec.id)) {
+            toast('Penerimaan ini sudah difakturkan', 'warning');
+            return;
+          }
+          var rowsEl = table.querySelectorAll('tr[data-idx]');
+          var bad = false;
+          rowsEl.forEach(function (tr) {
+            var f = fields(tr);
+            if (f.grossQty > 0 && f.tareQty > f.grossQty) bad = true;
+          });
+          if (bad) {
+            toast('Tara tidak boleh lebih besar dari Bruto', 'warning');
+            return;
+          }
+          rowsEl.forEach(function (tr) {
+            var it = rec.items[Number(tr.dataset.idx)];
             if (!it) return;
-            var gross = num(tr.querySelector('.rec-gross').value);
-            var tare = num(tr.querySelector('.rec-tare').value);
-            var sj = num(tr.querySelector('.rec-sj').value);
-            it.weighing = computeWeighing({
-              suratJalanQty: sj,
-              grossQty: gross,
-              tareQty: tare,
-            });
+            it.weighing = weighingFromFields(fields(tr));
             it.reconciledQty = round2(num(tr.querySelector('.rec-final').value));
             it.unitPrice = num(tr.querySelector('.rec-price').value);
           });
@@ -459,83 +564,131 @@
   // ════════════════════════════════════════════════════════════════════════════
   // MULTI-INVOICE  (create a Purchase Invoice from a reconciled receipt)
   // ════════════════════════════════════════════════════════════════════════════
+  // The invoice follows the app's purchase-invoice model (invoice-view.js): a
+  // DocEngine number as id and number, the PO as source (sourceType 'PO'), PPN
+  // from the PO, a due date from the supplier's payment term and no stored
+  // `paid` — balances come from payments (balances.js). receiptId ties it to the
+  // goods receipt; gl.js then posts the PO's other receipts on their own until
+  // they are invoiced too (GL.receivedNotInvoiced).
   function invoiceFromReceipt(receiptId) {
     var receipt = ensureArr('goodsReceipts').find(function (r) {
-      return r.id === receiptId;
+      return sameId(r.id, receiptId);
     });
     if (!receipt) {
       toast('Penerimaan tidak ditemukan', 'warning');
-      return;
+      return null;
     }
     if (!receipt.reconciled) {
       toast('Rekonsiliasi dulu sebelum membuat faktur', 'warning');
-      return;
+      return null;
+    }
+    var po = poOf(receipt);
+    if (!po || po.status === 'Cancelled') {
+      toast('PO dari penerimaan ini tidak ditemukan atau sudah dibatalkan', 'warning');
+      return null;
+    }
+    var existing = receiptInvoice(receipt.id);
+    if (existing) {
+      toast('Penerimaan ' + receipt.id + ' sudah difakturkan (' + (existing.number || existing.id) + ')', 'info');
+      return null;
+    }
+    var whole = wholeOrderInvoice(po.id);
+    if (whole) {
+      toast(
+        'PO ' + (po.number || po.id) + ' sudah difakturkan utuh (' + (whole.number || whole.id) + ')',
+        'warning'
+      );
+      return null;
     }
     var lines = buildInvoiceLinesFromReceipt(receipt);
     if (lines.length === 0) {
       toast('Tidak ada qty untuk difakturkan', 'warning');
-      return;
+      return null;
     }
-    var po = (db().purchaseOrders || []).find(function (o) {
-      return o.id === receipt.poId;
-    });
-    var subtotal = lines.reduce(function (s, l) {
+
+    var data = db();
+    if (!data.numberSequences || typeof data.numberSequences !== 'object') data.numberSequences = {};
+    var date = today();
+    var number =
+      window.DocEngine && typeof window.DocEngine.nextNumber === 'function'
+        ? window.DocEngine.nextNumber('PI', date, { sequences: data.numberSequences, commit: true })
+        : 'PI-' + Date.now();
+    var net = lines.reduce(function (s, l) {
       return s + num(l.subtotal);
     }, 0);
-    var taxRate = po && po.taxRate ? po.taxRate : 0;
-    var tax = round2(subtotal * taxRate);
-
-    var invoices = ensureArr('purchaseInvoices');
-    var maxId = invoices.reduce(function (m, i) {
-      return Math.max(m, Number(i.id) || 0);
-    }, 0);
+    var rate = num(po.taxRate) > 0 ? num(po.taxRate) : 0;
+    var incl = rate > 0 && !!po.taxInclusive;
+    var tax = rate > 0 ? Math.round(incl ? (net * rate) / (1 + rate) : net * rate) : 0;
+    var supplier =
+      (data.suppliers || []).find(function (s) {
+        return sameId(s.id, po.supplierId);
+      }) ||
+      (data.suppliers || []).find(function (s) {
+        return s.name && s.name === po.supplier;
+      }) ||
+      null;
+    var B = window.Balances;
+    var dueDate =
+      B && typeof B.addDays === 'function' && typeof B.termDays === 'function'
+        ? B.addDays(date, B.termDays(supplier))
+        : null;
 
     var inv = {
-      id: maxId + 1,
-      poId: receipt.poId,
-      sourceId: receipt.poId,
-      receiptId: receipt.id,
-      supplier: receipt.supplierName || (po ? po.supplier : ''),
-      supplierId: po ? po.supplierId : undefined,
-      date: today(),
-      dueDate: today(),
+      id: number,
+      number: number,
+      date: date,
+      dueDate: dueDate || null,
       status: 'Outstanding',
-      taxRate: taxRate,
-      tax: tax,
-      amount: round2(subtotal + tax),
-      paid: 0,
+      supplier: po.supplier || receipt.supplierName || '',
+      supplierId: po.supplierId != null ? String(po.supplierId) : null,
+      sourceId: po.id,
+      sourceType: 'PO',
+      sourceNumber: po.number || po.id,
+      receiptId: receipt.id,
       lines: lines,
-      createdAt: today(),
+      taxRate: rate,
+      taxInclusive: incl,
+      tax: tax,
+      amount: Math.round(incl ? net : net + tax),
+      note: 'Penerimaan ' + receipt.id + (receipt.date ? ' (' + receipt.date + ')' : ''),
+      createdBy: currentUser(),
     };
-    invoices.push(inv);
+    ensureArr('purchaseInvoices').push(inv);
 
-    // Mark the receipt invoiced; update DO / receipt status to reflect
-    // partial vs. full invoicing across staged receipts for this PO.
+    // Kept for older readers; the active invoice (receiptId) is the record.
     receipt.invoiced = true;
-    updatePODeliveryInvoiceStatus(receipt.poId);
+    updatePODeliveryInvoiceStatus(po.id);
 
     save();
-    toast('Faktur pembelian dibuat: PI-' + inv.id, 'success');
+    toast('Faktur pembelian ' + number + ' dibuat dari ' + receipt.id, 'success');
     openReconciliation();
+    return inv;
   }
 
-  // Reflect multi-invoice progress onto any Delivery Order linked to the PO:
-  // 'Partially invoiced' when some (but not all) reconciled receipts are
-  // invoiced, 'Invoiced' when every reconciled receipt for the PO is invoiced.
+  // Reflect multi-invoice progress onto delivery orders linked to the PO:
+  // 'Partially invoiced' when some (but not all) reconciled receipts have an
+  // active invoice, 'Invoiced' when all of them do. Trading pickup slots
+  // (pickup: true, trading.js) keep their own trip status, and cancelled
+  // delivery orders stay cancelled.
   function updatePODeliveryInvoiceStatus(poId) {
     var receipts = (db().goodsReceipts || []).filter(function (r) {
-      return r.poId === poId && r.reconciled;
+      return sameId(r.poId, poId) && r.reconciled;
     });
     if (receipts.length === 0) return;
     var invoicedCount = receipts.filter(function (r) {
-      return r.invoiced;
+      return !!receiptInvoice(r.id);
     }).length;
     var newStatus =
       invoicedCount === 0 ? null : invoicedCount >= receipts.length ? 'Invoiced' : 'Partially invoiced';
     if (!newStatus) return;
     (db().deliveryOrders || [])
       .filter(function (d) {
-        return d.poId === poId || d.sourceId === poId;
+        return (
+          d &&
+          d.pickup !== true &&
+          d.status !== 'Cancelled' &&
+          (sameId(d.poId, poId) || sameId(d.sourceId, poId))
+        );
       })
       .forEach(function (d) {
         d.status = newStatus;
@@ -570,6 +723,7 @@
     updatePODeliveryInvoiceStatus: updatePODeliveryInvoiceStatus,
     // pure calc helpers (unit-testable)
     computeWeighing: computeWeighing,
+    weighingFromFields: weighingFromFields,
     computeVariance: computeVariance,
     invoiceBasisQty: invoiceBasisQty,
     buildInvoiceLinesFromReceipt: buildInvoiceLinesFromReceipt,

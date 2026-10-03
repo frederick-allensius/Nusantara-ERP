@@ -16,6 +16,9 @@
 //   • PO 'Received'    → Dr Inventory / Expense + PPN Masukan / Cr Payable — only
 //                        while the order has no active Purchase Invoice.
 //   • Purchase Invoice → Dr Inventory / Expense + PPN Masukan / Cr Payable.
+//   • PO invoiced per goods receipt (invoices with receiptId) → each posted
+//                        receipt not invoiced yet posts the same entry itself
+//                        (see receivedNotInvoiced).
 //   • Payments         → SO/PO payment logs, Sales Receipts, Purchase Payments:
 //                        Cash/Bank vs Receivable/Payable. Payment-log rows created by
 //                        applying a down payment are skipped — the down-payment
@@ -403,6 +406,100 @@
     return out;
   }
 
+  // ── Purchase orders invoiced per goods receipt ──────────────────────────────
+  // A PO can be billed one goods receipt at a time (pipeline-extras
+  // invoiceFromReceipt: the invoice carries receiptId). From its first such
+  // invoice the PO has an active invoice, so the PO-level receipt journal stops.
+  // Instead, every posted goods receipt that no active invoice covers yet posts
+  // on its own, and a PO marked Received with more than its receipts brought in
+  // posts that remainder. Inventory and payable then carry everything received:
+  // invoiced receipts through their invoices, the rest at receipt qty × unit
+  // price (the receipt's price, else the PO's net price) and the PO's PPN.
+  function sameId(a, b) {
+    return a !== null && a !== undefined && String(a) === String(b);
+  }
+
+  function receiptInvoices(poId) {
+    return (db().purchaseInvoices || []).filter(
+      inv =>
+        isActiveInvoice(inv) &&
+        !!inv.receiptId &&
+        sameId(inv.sourceId, poId) &&
+        (!inv.sourceType || inv.sourceType === 'PO')
+    );
+  }
+
+  function netUnitPrice(l) {
+    const qty = Number(l.qty) || 0;
+    return qty > 0 && l.subtotal != null ? (Number(l.subtotal) || 0) / qty : Number(l.price) || 0;
+  }
+
+  // A purchase-shaped document (lines, PPN, amount) for received quantities.
+  function receivedDoc(po, lines) {
+    const rate = docTaxRate(po);
+    const incl = rate > 0 && !!po.taxInclusive;
+    const net = round(lines.reduce((s, l) => s + l.subtotal, 0));
+    const tax = rate > 0 ? round(incl ? (net * rate) / (1 + rate) : net * rate) : 0;
+    return { lines, taxRate: rate, taxInclusive: incl, tax, amount: incl ? net : net + tax };
+  }
+
+  // What a PO invoiced per goods receipt has received but not invoiced yet:
+  // [{ id, date, receiptId, doc }] (doc.amount includes PPN). Empty for any other
+  // PO — those post through the PO-level journal or a PO-level invoice.
+  function receivedNotInvoiced(po) {
+    if (!po || po.pickupFlow || isCancelled(po)) {
+      return [];
+    }
+    const invoiced = new Set(receiptInvoices(po.id).map(inv => String(inv.receiptId)));
+    if (invoiced.size === 0) {
+      return [];
+    }
+    const poLines = po.lines || [];
+    const receipts = (db().goodsReceipts || []).filter(r => r.posted && sameId(r.poId, po.id));
+    const out = [];
+    receipts.forEach(r => {
+      if (invoiced.has(String(r.id))) {
+        return;
+      }
+      const lines = (r.items || []).map(it => {
+        const pl =
+          poLines.find(l => sameId(l.itemId, it.itemId)) ||
+          poLines.find(l => l.itemName && l.itemName === it.itemName) ||
+          {};
+        const qty = Number(it.qty) || 0;
+        const price = Number(it.unitPrice) > 0 ? Number(it.unitPrice) : netUnitPrice(pl);
+        return { itemId: it.itemId || pl.itemId, qty, price, subtotal: qty * price };
+      });
+      out.push({ id: r.id, date: r.date || po.date, receiptId: r.id, doc: receivedDoc(po, lines) });
+    });
+    if (po.status === 'Received') {
+      // Quantities the receipts did not bring in (PO set to Received directly).
+      const got = new Map();
+      receipts.forEach(r =>
+        (r.items || []).forEach(it => {
+          const key = String(it.itemId);
+          got.set(key, (got.get(key) || 0) + (Number(it.qty) || 0));
+        })
+      );
+      const rest = [];
+      poLines.forEach(l => {
+        const key = String(l.itemId);
+        const qty = Number(l.qty) || 0;
+        const have = got.get(key) || 0;
+        const take = Math.min(have, qty);
+        got.set(key, have - take);
+        if (qty - take > 1e-9) {
+          const price = netUnitPrice(l);
+          rest.push({ itemId: l.itemId, qty: qty - take, price, subtotal: (qty - take) * price });
+        }
+      });
+      if (rest.length) {
+        out.push({ id: po.id, date: po.receivedAt || po.date, receiptId: null, doc: receivedDoc(po, rest) });
+      }
+    }
+    return out;
+  }
+
   // ── Purchase Order posting ──────────────────────────────────────────────────
   function buildPOJournals(o) {
     const out = [];
@@ -424,6 +521,27 @@
         out.push(j);
       }
     }
+
+    receivedNotInvoiced(o).forEach(p => {
+      const j = p.receiptId
+        ? makeJournal(
+            `J:GR:${p.receiptId}:recv`,
+            p.receiptId,
+            p.date,
+            { docType: 'GR', docId: p.receiptId },
+            purchaseLines(p.doc, party, `${p.receiptId} (${o.number || o.id})`, false)
+          )
+        : makeJournal(
+            `J:PO:${o.id}:recv`,
+            o.id,
+            p.date,
+            { docType: 'PO', docId: o.id },
+            purchaseLines(p.doc, party, o.id, false)
+          );
+      if (j) {
+        out.push(j);
+      }
+    });
 
     (db().paymentLogs || [])
       .filter(p => p.type === 'PO' && p.orderId === o.id && !isDownPaymentLog(p))
@@ -987,6 +1105,7 @@
     accountName,
     bankAccountGL,
     hasActiveInvoice,
+    receivedNotInvoiced,
     buildSOJournals,
     buildPOJournals,
     buildSIJournals,

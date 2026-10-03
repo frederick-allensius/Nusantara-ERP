@@ -5,10 +5,11 @@
 // custom-range report.
 //
 // PURCHASE FUNNEL stages (operational pipeline from FEAT-002):
-//   Open PO Supplier → Surat Jalan / Truk Jalan → Tiba/Timbang → Reconciled →
-//   Invoiced Supplier
+//   PO supplier terbuka → Surat Jalan / Truk Jalan → Tiba/Timbang →
+//   Direkonsiliasi → Difakturkan supplier
 // SALES FUNNEL stages:
-//   Open PO Customer → Pengambilan Bertahap → Draft Invoice → Invoiced → Paid
+//   PO pelanggan terbuka → Pengambilan Bertahap → Draf faktur → Difakturkan →
+//   Lunas
 //
 // Counts are derived from window.DB collections:
 //   purchaseOrders / salesOrders (by status), deliveryOrders,
@@ -99,7 +100,7 @@
       return r && r.reconciled === true;
     }).length;
 
-    // Invoiced Supplier: purchase invoices raised (Draft/Outstanding/Paid alike),
+    // Difakturkan supplier: purchase invoices raised (Draft/Outstanding/Paid alike),
     // falling back to receipts stamped invoiced when no PI collection exists.
     var invoiced = pis.filter(function (i) {
       return i && !isCancelled(i);
@@ -111,11 +112,11 @@
     }
 
     return [
-      { key: 'openPO', label: 'Open PO Supplier', count: openPO },
+      { key: 'openPO', label: 'PO supplier terbuka', count: openPO },
       { key: 'suratJalan', label: 'Surat Jalan / Truk Jalan', count: suratJalan },
       { key: 'weighed', label: 'Tiba/Timbang', count: weighed },
-      { key: 'reconciled', label: 'Reconciled', count: reconciled },
-      { key: 'invoiced', label: 'Invoiced Supplier', count: invoiced },
+      { key: 'reconciled', label: 'Direkonsiliasi', count: reconciled },
+      { key: 'invoiced', label: 'Difakturkan supplier', count: invoiced },
     ];
   }
 
@@ -159,11 +160,11 @@
     }
 
     return [
-      { key: 'openSO', label: 'Open PO Customer', count: openSO },
+      { key: 'openSO', label: 'PO pelanggan terbuka', count: openSO },
       { key: 'pickups', label: 'Pengambilan Bertahap', count: pickups },
-      { key: 'draftInv', label: 'Draft Invoice', count: draftInv },
-      { key: 'invoiced', label: 'Invoiced', count: invoiced },
-      { key: 'paid', label: 'Paid', count: paid },
+      { key: 'draftInv', label: 'Draf faktur', count: draftInv },
+      { key: 'invoiced', label: 'Difakturkan', count: invoiced },
+      { key: 'paid', label: 'Lunas', count: paid },
     ];
   }
 
@@ -260,10 +261,13 @@
   // FUNNEL HTML  (embedded by dashboard.js)
   // ════════════════════════════════════════════════════════════════════════════
 
-  var PURCHASE_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#EC4899'];
-  var SALES_COLORS = ['#10B981', '#14B8A6', '#0EA5E9', '#6366F1', '#22C55E'];
+  // Theme tokens, matching the dashboard chart (Penjualan --chart-1,
+  // Pembelian --chart-3). One colour per funnel: the stages differ by position,
+  // not by colour.
+  var PURCHASE_COLOR = 'var(--chart-3)';
+  var SALES_COLOR = 'var(--chart-1)';
 
-  function _funnelBars(stages, colors) {
+  function _funnelBars(stages, color) {
     var max = stages.reduce(function (m, s) {
       return Math.max(m, s.count);
     }, 0);
@@ -273,22 +277,22 @@
       );
     }
     return stages
-      .map(function (s, i) {
+      .map(function (s) {
         var pct = Math.max(6, Math.round((s.count / max) * 100));
-        var color = colors[i % colors.length];
         return (
           '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-          '<div style="flex:0 0 140px;font-size:.875rem;color:var(--text-secondary);text-align:right">' +
+          '<div style="flex:0 0 9rem;font-size:.875rem;color:var(--text-secondary);text-align:right">' +
           esc(s.label) +
           '</div>' +
-          '<div style="flex:1;background:var(--border);border-radius:6px;overflow:hidden;height:22px">' +
+          '<div style="flex:1;background:var(--surface-sunken);border-radius:6px;overflow:hidden;height:22px">' +
           '<div style="height:100%;width:' +
           pct +
           '%;background:' +
           color +
-          ';border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:.8125rem;font-weight:700">' +
-          s.count +
+          ';border-radius:6px"></div>' +
           '</div>' +
+          '<div class="t-num" style="flex:0 0 3rem;font-size:.8125rem;font-weight:700;color:var(--text)">' +
+          s.count +
           '</div>' +
           '</div>'
         );
@@ -298,18 +302,18 @@
 
   function renderPurchaseFunnelHtml(dbArg) {
     return (
-      '<div class="widget-header"><div class="widget-title">Purchase Funnel</div></div>' +
+      '<div class="widget-header"><div class="widget-title">Alur Pembelian</div></div>' +
       '<div style="margin-top:10px">' +
-      _funnelBars(purchaseFunnel(dbArg), PURCHASE_COLORS) +
+      _funnelBars(purchaseFunnel(dbArg), PURCHASE_COLOR) +
       '</div>'
     );
   }
 
   function renderSalesFunnelHtml(dbArg) {
     return (
-      '<div class="widget-header"><div class="widget-title">Sales Funnel</div></div>' +
+      '<div class="widget-header"><div class="widget-title">Alur Penjualan</div></div>' +
       '<div style="margin-top:10px">' +
-      _funnelBars(salesFunnel(dbArg), SALES_COLORS) +
+      _funnelBars(salesFunnel(dbArg), SALES_COLOR) +
       '</div>'
     );
   }
@@ -358,16 +362,21 @@
     return result.rows
       .map(function (r) {
         var tag =
-          r.kind === 'purchase'
-            ? '<span style="color:#8B5CF6;font-weight:700">Pembelian</span>'
-            : '<span style="color:#10B981;font-weight:700">Penjualan</span>';
+          '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600">' +
+          '<i style="width:8px;height:8px;border-radius:50%;background:' +
+          (r.kind === 'purchase' ? PURCHASE_COLOR : SALES_COLOR) +
+          '"></i>' +
+          (r.kind === 'purchase' ? 'Pembelian' : 'Penjualan') +
+          '</span>';
         return (
           '<tr>' +
           '<td style="' + TD + '">' + esc(r.date) + '</td>' +
           '<td style="' + TD + '">' + tag + '</td>' +
           '<td style="' + TD + '">' + esc(r.number) + '</td>' +
           '<td style="' + TD + '">' + esc(r.party || '—') + '</td>' +
-          '<td style="' + TD + '">' + esc(r.status || '—') + '</td>' +
+          '<td style="' + TD + '">' +
+          (r.status && typeof window.badge === 'function' ? window.badge(r.status) : esc(r.status || '—')) +
+          '</td>' +
           '<td style="' + TD + ';text-align:right">' + money(r.amount) + '</td>' +
           '</tr>'
         );
@@ -378,10 +387,14 @@
   function _resultHtml(result) {
     return (
       '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">' +
-      '<div class="card stat-card"><div class="stat-label">Total Pembelian</div><div class="stat-val" style="font-size:1.125rem;color:#8B5CF6">' +
+      '<div class="card stat-card"><div class="stat-label">Total Pembelian</div><div class="stat-val" style="font-size:1.125rem;color:' +
+      PURCHASE_COLOR +
+      '">' +
       money(result.totals.purchase) +
       '</div></div>' +
-      '<div class="card stat-card"><div class="stat-label">Total Penjualan</div><div class="stat-val" style="font-size:1.125rem;color:#10B981">' +
+      '<div class="card stat-card"><div class="stat-label">Total Penjualan</div><div class="stat-val" style="font-size:1.125rem;color:' +
+      SALES_COLOR +
+      '">' +
       money(result.totals.sales) +
       '</div></div>' +
       '<div class="card stat-card"><div class="stat-label">Jumlah Transaksi</div><div class="stat-val" style="font-size:1.125rem">' +
@@ -442,14 +455,14 @@
       'padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.8125rem;background:var(--surface);color:var(--text)';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Laporan Custom Range</h1><p>Filter transaksi PO / SO per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring transaksi PO / SO per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Dari Tanggal' +
         '<input type="date" id="cr-from" value="' + esc(_state.from) + '" style="' + inputCss + '"></label>' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Sampai Tanggal' +
         '<input type="date" id="cr-to" value="' + esc(_state.to) + '" style="' + inputCss + '"></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Bulan (shortcut)' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Bulan' +
         '<input type="month" id="cr-month" value="' + esc(_state.month) + '" style="' + inputCss + '"></label>' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Jenis' +
         '<select id="cr-kind" style="' + inputCss + '">' +

@@ -35,11 +35,11 @@ describe('funnel-report — purchase funnel', () => {
   it('returns the five named purchase stages in order', () => {
     const labels = window._funnelReport.purchaseFunnel(window.DB).map((s: any) => s.label);
     expect(labels).toEqual([
-      'Open PO Supplier',
+      'PO supplier terbuka',
       'Surat Jalan / Truk Jalan',
       'Tiba/Timbang',
-      'Reconciled',
-      'Invoiced Supplier',
+      'Direkonsiliasi',
+      'Difakturkan supplier',
     ]);
   });
 
@@ -70,11 +70,11 @@ describe('funnel-report — purchase funnel', () => {
     window.DB.purchaseInvoices = [{ id: 'PI-1', status: 'Outstanding', supplierName: 'Sup A' }];
 
     const c = countsByLabel(window._funnelReport.purchaseFunnel(window.DB));
-    expect(c['Open PO Supplier']).toBe(2); // Confirmed + Draft (not Received, not Cancelled)
+    expect(c['PO supplier terbuka']).toBe(2); // Confirmed + Draft (not Received, not Cancelled)
     expect(c['Surat Jalan / Truk Jalan']).toBe(3); // 2 receipts w/ SJ + 1 purchase DO
     expect(c['Tiba/Timbang']).toBe(1); // only GR-1 has netQty > 0
-    expect(c['Reconciled']).toBe(1); // only GR-1 reconciled
-    expect(c['Invoiced Supplier']).toBe(1); // one PI
+    expect(c['Direkonsiliasi']).toBe(1); // only GR-1 reconciled
+    expect(c['Difakturkan supplier']).toBe(1); // one PI
   });
 });
 
@@ -82,11 +82,11 @@ describe('funnel-report — sales funnel', () => {
   it('returns the five named sales stages in order', () => {
     const labels = window._funnelReport.salesFunnel(window.DB).map((s: any) => s.label);
     expect(labels).toEqual([
-      'Open PO Customer',
+      'PO pelanggan terbuka',
       'Pengambilan Bertahap',
-      'Draft Invoice',
-      'Invoiced',
-      'Paid',
+      'Draf faktur',
+      'Difakturkan',
+      'Lunas',
     ]);
   });
 
@@ -108,11 +108,11 @@ describe('funnel-report — sales funnel', () => {
     ];
 
     const c = countsByLabel(window._funnelReport.salesFunnel(window.DB));
-    expect(c['Open PO Customer']).toBe(1); // only Confirmed
+    expect(c['PO pelanggan terbuka']).toBe(1); // only Confirmed
     expect(c['Pengambilan Bertahap']).toBe(2); // two staged DOs
-    expect(c['Draft Invoice']).toBe(1);
-    expect(c['Invoiced']).toBe(1); // Outstanding
-    expect(c['Paid']).toBe(2);
+    expect(c['Draf faktur']).toBe(1);
+    expect(c['Difakturkan']).toBe(1); // Outstanding
+    expect(c['Lunas']).toBe(2);
   });
 
   it('does NOT count a purchase-side DO (no poId, only sourceId) as a sales pickup', () => {
