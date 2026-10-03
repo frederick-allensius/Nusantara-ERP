@@ -103,6 +103,9 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 - `core/gl.js` — bagan akun bawaan, pemetaan akun (barang → pihak → default perusahaan), pembentuk jurnal per tipe dokumen, `reconcileAll()`, `trialBalance()`, `postJournalVoucher()`.
 - `reconcileAll()` menyusun ulang **semua jurnal otomatis** dengan ID stabil (`J:SO:<id>:rev`, `J:PO:<id>:recv`, …) setiap kali `saveDB`. Jurnal manual (`source: 'manual'`) dan jurnal impor dipertahankan.
 - Konsumen jurnal: `core/gl-view.js` (neraca saldo, jurnal, bagan akun), `core/financial-reports.js` (laporan keuangan), `core/budget-gl-extras.js` (anggaran, riwayat akun, biaya akrual, penggajian), dashboard.
+- `core/balances.js` (`window.Balances`) — saldo piutang/hutang per dokumen, open items, umur, kartu pihak; membaca aturan yang sama dengan `gl.js` sehingga angka Piutang/Hutang sama dengan buku besar.
+- **Pengambilan (trading):** `core/trading.js` (`window.Trading`) memegang aturan PO pengambilan — slot surat jalan (`deliveryOrders` dengan `pickup: true`), kuota, cut-off, trip (bruto/tara/netto), harga supplier per tanggal, faktur dari trip (`inv.doIds`, baris membawa `doId`), rekap timbangan, dan peringatan perubahan berat. Tidak ada koleksi Firestore baru. `gl.js` `buildPickupJournals` membukukan per trip (`J:DO:<id>:trip`): pembelian bila belum ada faktur supplier, HPP/Persediaan, penjualan bila belum ada faktur pelanggan; pesanan berstatus `pickupFlow` tidak membukukan di level pesanan. `core/trading-summary.js` (`window.TradingSummary`) menghitung angka Ringkasan, Entri Harian, dan notifikasi dari data yang sama.
+- **Penerimaan per tahap:** PO yang difakturkan per penerimaan barang (`pipeline-extras.js`) membukukan penerimaan yang belum difakturkan lewat `GL.receivedNotInvoiced` (`J:GR:<id>:recv`).
 - Aturan posting lengkap: [04-AKUNTANSI.md](04-AKUNTANSI.md).
 
 ## 8. Keamanan dan kontrol
@@ -126,6 +129,8 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 - **Komponen:** `src/core/helpers.js` (`idr`, `badge`, `secHdr`, `statRow`, …), `src/core/modal.js` (`openModal`, `closeModal`, `showToast`, `confirmDialog`).
 - **Gaya:** `style.css` (token warna & komponen, tema terang/gelap via `data-theme`), `mobile.css`, `public/theme-init.js` (tema sebelum render), `public/mobile-ui.js`.
 - **Bahasa:** `src/core/i18n.js` menerjemahkan teks Indonesia → Inggris di DOM saat bahasa Inggris dipilih.
+- **Halaman bersama:** `#view-pickups` dipakai `pickup-view.js` dan `pickup-billing.js`. Selama halaman tagihan terbuka, `renderPickups()` mengembalikan halaman tagihan (`_pickupBilling.isActive()/html()`), sehingga render ulang (mis. setelah penyimpanan ditolak) tidak mengganti halaman.
+- **Ukuran teks:** semua ukuran memakai `rem`; `html[data-text-size]` (Normal / Besar / Sangat besar, disimpan di `localStorage` `erp_text_size`, dipasang `public/theme-init.js`) mengubah skala seluruh aplikasi. Token `--fs-*` dan `--tap-min` di `style.css`.
 - **Tab dokumen:** `ui/doc-tabs.js` — detail dokumen dibuka sebagai tab hanya di dalam modulnya (maks. 5); dari halaman lain tampil sebagai dialog. Tab halaman bergaya browser sudah dihapus — keputusan di [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
 
 ## 10. Cloud Functions (`functions/`)
@@ -153,6 +158,10 @@ Vitest + happy-dom (`tests/`). Tes yang memuat skrip klasik mengevaluasi file as
 | `rbac.test.ts`, `integrity.test.ts` | Hak akses dan log audit/kunci periode |
 | `user-module-access.test.ts` | Akses menu per pengguna: hanya mempersempit, halaman bersama, pengalihan, editor, kunci modul sama di klien/functions/rules |
 | `trading-pickups.test.ts` | Pengambilan: slot SJ, kuota & cut-off, harga supplier, tagihan dari trip, rekap timbangan, jurnal per trip |
+| `pickup-view.test.ts`, `pickup-billing.test.ts` | Layar Pengambilan (PO, catat, impor rekap, perubahan timbangan, rekap) dan Tagih Pelanggan / Tagihan Supplier; halaman bersama `#view-pickups` |
+| `trading-summary.test.ts`, `dashboard-trading.test.ts`, `notifications.test.ts`, `dual-view.test.ts` | Angka pengambilan di Ringkasan, Entri Harian, dan notifikasi |
+| `pipeline-reconciliation.test.ts`, `sj-validation.test.ts`, `funnel-report.test.ts` | Rekonsiliasi Timbangan dan faktur per penerimaan (neraca saldo), Validasi SJ Supplier, alur & Laporan per Periode |
+| `kas-bank-recap.test.ts` | Kategori biaya, rekap per kategori & ekspor, biaya/bunga dari rekening koran, selisih saldo |
 | `coretax-export.test.ts`, `archive-export.test.ts` | XML Coretax; Arsip Excel per tahun |
 | `auth.test.ts`, `twofa-flow.test.ts`, `totp.test.ts` | Login lokal & 2FA |
 | `db-dirty-save.test.ts`, `indexeddb-sync.test.ts` | Penyimpanan & sinkronisasi |
@@ -164,7 +173,7 @@ Vitest + happy-dom (`tests/`). Tes yang memuat skrip klasik mengevaluasi file as
 1. File klasik baru → daftarkan di `classicAll` (`vite.config.js`) setelah dependensinya.
 2. Halaman baru → kontainer `<div id="view-x" class="view">` di `app.html` **dan** renderer di `getRenderer` (diwajibkan smoke test).
 3. Menu → `MENU_CONFIG` (`ui/nav.js`); bila membuka fungsi modul tambahan, tambahkan rute di `core/menu-router.js`.
-4. Hak akses → petakan modul di `core/rbac.js`.
+4. Hak akses → petakan modul di `core/rbac.js` (dan `firestore.rules` `moduleOf`). Dokumen yang boleh ditulis dari dua modul (trip pengambilan: penjualan atau pembelian) memakai `recordModules()` / `canWriteDoc()`.
 5. Koleksi baru → nilai default (`src/core/db.js`), `COLLECTIONS` (sinkron), `firestore.rules` (`moduleOf`), `functions/backup.js`.
 6. Efek stok → lewat `core/warehouse.js`; efek akuntansi → pembentuk jurnal di `core/gl.js` + tes di `tests/gl.test.ts`.
 7. Tanpa event handler inline (CSP); gunakan `data-action`.

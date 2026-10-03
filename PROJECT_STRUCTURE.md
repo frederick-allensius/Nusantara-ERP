@@ -44,6 +44,9 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `core/cost-ledger.js` | Harga pokok rata-rata bergerak |
 | `core/gl.js` | Buku besar: bagan akun, jurnal otomatis, neraca saldo, jurnal umum |
 | `core/gl-sync.js` | Menyusun ulang jurnal setiap `saveDB` |
+| `core/balances.js` | Saldo piutang/hutang, open items, umur, kartu pihak (`Balances`) |
+| `core/trading.js` | Aturan pengambilan: PO pengambilan, surat jalan, trip, kuota, cut-off, faktur dari trip, rekap timbangan (`Trading`) |
+| `core/trading-summary.js` | Angka pengambilan untuk Ringkasan, Entri Harian, notifikasi (`TradingSummary`) |
 | `core/integrity.js` | Log audit, kunci periode, cek buku besar |
 | `core/trash.js` | Recycle bin |
 | `core/rbac.js` | Hak akses per peran |
@@ -62,6 +65,14 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `core/financial-reports.js` | Laba Rugi, Neraca, Arus Kas |
 | `core/excel-import.js` | Impor Excel (termasuk saldo awal & stok awal) |
 | `core/xlsx-export.js` | Penulis file Excel tanpa dependensi (`NSAXlsx`) |
+| `core/archive-export.js` | Arsip Excel per tahun di Kelola Backup (`NSAArchive`) |
+| **Pengambilan** | |
+| `core/pickup-view.js` | PO Pengambilan, Catat Pengambilan, Impor Rekap Timbangan, Perubahan Timbangan, Rekap Pengambilan |
+| `core/pickup-billing.js` | Tagih Pelanggan, Tagihan Supplier |
+| `core/entri-harian.js` | Halaman Entri Harian (tugas rutin) |
+| `core/pipeline-extras.js` | Rekonsiliasi Timbangan penerimaan barang, faktur per penerimaan |
+| `core/sj-validation.js` | Validasi SJ Supplier |
+| `core/funnel-report.js` | Alur pembelian/penjualan dan Laporan per Periode |
 | **Modul tambahan** | |
 | `core/sales-purchase-extras.js` | Uang muka, target penjualan, penerimaan barang, harga supplier |
 | `core/bank-extras.js` | Kas & bank |
@@ -69,7 +80,7 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `core/inventory-extras.js` | Satuan, kategori, merek, permintaan barang, job costing |
 | `core/master-extras.js` | Karyawan, kontak, kategori pelanggan/supplier |
 | `core/asset-extras.js` | Aset tetap |
-| `core/tax-extras.js` | e-Faktur |
+| `core/tax-extras.js` | Faktur pajak, Ekspor Coretax (XML) |
 | `core/report-extras.js` | Daftar laporan, SPT PPN, analisis |
 | `core/settings-extras.js` | Termin, pengiriman, kalender, log aktivitas, kategori penjualan, transaksi favorit |
 | `core/*.d.ts` | Deklarasi tipe untuk tes |
