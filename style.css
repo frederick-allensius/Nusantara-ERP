@@ -4131,127 +4131,312 @@ html[data-theme] {
   background: var(--success-bg);
   color: var(--success);
 }
-.dash-chip-btn {
-  height: auto;
-  min-height: 22px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  border: 0;
-  font: inherit;
-  font-size: .75rem;
-  font-weight: 500;
-  line-height: 1.35;
-  text-align: left;
-  white-space: normal;
-  cursor: pointer;
+/* Header: period switch and Atur Tampilan */
+.dash-hdr-tools {
+  align-items: center;
 }
-.dash-chip-btn:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.seg-tabs.dash-period {
+  margin-bottom: 0;
 }
 
-/* Alur pengambilan — stages of the pickup flow (trading-summary.js pipeline) */
-.dash-pipe {
+/* Bottom row: Perlu tindakan beside Tren 6 bulan */
+.dash-row-split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dash-row-split > :only-child {
+  grid-column: 1 / -1;
+}
+.dash-more {
+  display: flex;
+  flex-direction: column;
+}
+.dash-more[hidden] {
+  display: none;
+}
+.dash-more-btn {
+  margin-top: 8px;
+  font-size: var(--fs-sm);
+}
+.dash-trend .chart-legend {
+  align-items: center;
+  margin: -4px 0 10px;
+}
+.dash-trend .card-head .seg-tabs,
+.dash-flow .card-head .seg-tabs {
+  margin-bottom: 0;
+}
+.chart-legend i.is-sales {
+  background: var(--chart-1);
+}
+.chart-legend i.is-purchases {
+  background: var(--chart-3);
+}
+.chart-legend i.is-ton {
+  background: var(--chart-2);
+}
+.chart-legend .link-btn {
+  font-size: var(--fs-xs);
+}
+
+/* Alur transaksi — stages as bands whose thickness follows the value. Wide
+   cards draw SVG bands under the stage columns; narrow cards list the stages
+   with a proportional bar. The body is the size container for that switch. */
+.dash-flow {
   margin-bottom: 12px;
 }
-.dash-pipe-empty {
+.dash-flow-body {
+  container-type: inline-size;
+}
+.dash-flow-panel[hidden] {
+  display: none;
+}
+.dash-fn {
+  --n: 3;
+}
+.dash-fn-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 0 12px;
+}
+.dash-fn-names {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.dash-fn-band + .dash-fn-band {
+  margin-top: 14px;
+}
+.dash-fn-label {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  max-width: 640px;
-  margin: 0 auto;
-}
-.pipe-flow {
-  display: flex;
-  align-items: stretch;
   gap: 6px;
+  margin-bottom: 2px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
 }
-.pipe-stage {
+.dash-swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--chart-1);
+}
+.dash-swatch.is-purchases {
+  background: var(--chart-3);
+}
+.dash-fn-cell {
   display: flex;
-  flex: 1 1 0;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 1px;
   min-width: 0;
-  margin: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--border-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
+  margin: 0 0 0 -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.pipe-stage:hover {
+button.dash-fn-cell {
+  cursor: pointer;
+}
+button.dash-fn-cell:hover {
   background: var(--surface-hover);
 }
-.pipe-stage.is-warning {
-  border-left-color: var(--warning);
-}
-.pipe-stage.is-success {
-  border-left-color: var(--success);
-}
-.pipe-stage-label {
-  font-size: .78125rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-.pipe-stage-count {
-  font-size: 1.25rem;
-  font-weight: 650;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.pipe-stage-count small {
-  font-size: .78125rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-.pipe-stage.is-zero .pipe-stage-count {
-  color: var(--muted);
-}
-.pipe-stage-sub {
+.dash-fn-name {
   max-width: 100%;
   overflow: hidden;
-  font-size: .75rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-fn-value {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dash-fn-sub {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pipe-arrow {
-  display: flex;
-  flex: none;
+.is-zero .dash-fn-value,
+.is-zero .dash-fl-value {
+  color: var(--muted);
+}
+.dash-fn-plot {
+  position: relative;
+  margin-top: 4px;
+}
+.dash-fn-svg {
+  display: block;
+  width: 100%;
+}
+.dash-band {
+  fill: var(--chart-1);
+}
+.dash-band.is-purchases {
+  fill: var(--chart-3);
+}
+.dash-leak {
+  display: inline-flex;
   align-items: center;
-  color: var(--muted-light);
+  height: 24px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: 500 var(--fs-xs) / 1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.pipe-lanes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+.dash-leak:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dash-leak.is-warning {
+  border-color: color-mix(in srgb, var(--warning) 55%, transparent);
+  color: var(--warning);
+}
+.dash-fn-plot .dash-leak {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.dash-fl {
+  display: none;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-light);
 }
-.pipe-lane {
+.dash-fl-band {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 0;
+  align-items: flex-start;
+  gap: 2px;
 }
-.pipe-lane-label {
-  font-size: .75rem;
-  font-weight: 600;
+.dash-fl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  align-items: baseline;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.dash-fl-row {
+  cursor: pointer;
+}
+button.dash-fl-row:hover {
+  background: var(--surface-hover);
+}
+.dash-fl-name {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text);
+}
+.dash-fl-value {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.dash-fl-bar,
+.dash-fl-sub {
+  grid-column: 1 / -1;
+}
+.dash-fl-bar {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--r-full);
+  background: var(--surface-active);
+}
+.dash-fl-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--chart-1);
+}
+.dash-fl-bar i.is-purchases {
+  background: var(--chart-3);
+}
+.dash-fl-sub {
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
-.pipe-note {
-  align-self: flex-start;
-  font-size: .78125rem;
+.dash-fl .dash-leak {
+  margin: 0 0 4px;
+}
+.dash-flow-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+}
+.dash-flow-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.dash-flow-facts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+@container (max-width: 639px) {
+  .dash-fn {
+    display: none;
+  }
+  .dash-fl {
+    display: flex;
+  }
+  .dash-flow-tabs {
+    width: 100%;
+  }
+  .dash-flow-tabs .seg-tab {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 28px;
+    padding: 4px 6px;
+    line-height: 1.2;
+    white-space: normal;
+  }
 }
 
 /* Tagihan pelanggan — one row per customer; labels repeat per cell on narrow screens */
@@ -4471,15 +4656,6 @@ html[data-theme] {
   color: var(--text);
 }
 @media (max-width: 900px) {
-  .pipe-flow {
-    flex-wrap: wrap;
-  }
-  .pipe-flow .pipe-stage {
-    flex: 1 1 calc(50% - 6px);
-  }
-  .pipe-arrow {
-    display: none;
-  }
   .dash-ton-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -4506,9 +4682,6 @@ html[data-theme] {
   }
 }
 @media (max-width: 480px) {
-  .pipe-flow .pipe-stage {
-    flex-basis: 100%;
-  }
   .dash-cols {
     gap: 4px;
     height: 170px;
@@ -4523,6 +4696,11 @@ html[data-theme] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dash-row-a {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 960px) {
+  .dash-row-split {
     grid-template-columns: 1fr;
   }
 }

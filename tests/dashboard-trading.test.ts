@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Ringkasan (modules/dashboard.js) with the trading pickup blocks:
-//   • without pickup data the pickup section is one calm empty state, not zeros
-//   • with pickup data: Alur pengambilan, Tagihan pelanggan, PO pengambilan
-//     berjalan and Tonase per bulan, each linking to the page that handles it
+// Ringkasan (modules/dashboard.js) with the trading pickup data:
+//   • without pickup data there is no Pengambilan tab; the warehouse orders show
+//   • with pickup data: the Pengambilan funnel links to the pages that handle
+//     each stage, and the optional blocks (Tagihan pelanggan, PO pengambilan
+//     berjalan, Tonase per bulan) show once switched on
 //   • unused surat jalan slots of a pickup PO are not "pengiriman belum selesai"
 //   • blocks can be switched off in "Atur Tampilan"; roles without access to the
 //     module do not see them
-// Runs the real classic scripts against the current date (the dashboard always
-// shows "this month").
+// Runs the real classic scripts against the current date.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
@@ -23,6 +23,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const now = new Date();
 const MONTH_START = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
 const ITEM = { itemId: '1', itemName: 'Batu Split 1-2', unit: 'Ton' };
+const LAYOUT_KEY = 'nsa_dash_hidden_v3';
 
 beforeAll(async () => {
   await import('../src/classic/core/doc-registry.js');
@@ -33,6 +34,7 @@ beforeAll(async () => {
   await import('../public/classic/core/balances.js');
   await import('../public/classic/core/trading.js');
   await import('../public/classic/core/trading-summary.js');
+  await import('../public/classic/core/order-pipeline.js');
   w().escapeHtml = (s: unknown) =>
     String(s ?? '').replace(
       /[&<>"']/g,
@@ -54,6 +56,7 @@ function order(id: string, party: any, qty: number, price: number) {
     date: MONTH_START,
     status: 'Confirmed',
     taxRate: 0.11,
+    amount: Math.round(qty * price * 1.11),
     lines: [{ ...ITEM, qty, price, lineDiscount: 0, subtotal: qty * price }],
   };
 }
@@ -91,44 +94,62 @@ function withTrips() {
 }
 
 const render = (): string => w().renderDashboard();
+const showAll = () => localStorage.setItem(LAYOUT_KEY, JSON.stringify([]));
 
 beforeEach(() => {
   seed();
-  localStorage.removeItem('nsa_dash_hidden_v2');
+  localStorage.removeItem(LAYOUT_KEY);
+  localStorage.removeItem('nsa_dash_period');
+  localStorage.removeItem('nsa_dash_trend');
   w().RBAC = undefined;
 });
 
-describe('Ringkasan — pickup blocks', () => {
-  it('shows one calm empty state while there is no pickup data', () => {
+describe('Ringkasan — pickup data', () => {
+  it('has no Pengambilan tab while there is no pickup data', () => {
     const html = render();
-    expect(html).toContain('Belum ada PO pengambilan');
-    expect(html).toContain('data-dash-open="PO Pengambilan"');
+    expect(html).toContain('Alur transaksi');
+    expect(html).not.toContain('data-flow-panel="pickup"');
+    // The two confirmed orders are ordinary warehouse orders until opened for pickup.
+    expect(html).toContain('data-flow-panel="sales"');
+    expect(html).toContain('data-flow-panel="purchases"');
     expect(html).not.toContain('PO pengambilan berjalan');
     expect(html).not.toContain('Tonase per bulan');
-    expect(html).not.toContain('pipe-stage');
   });
 
-  it('shows the pipeline, customer billing, open POs and tonnage once trips exist', () => {
+  it('shows the pickup funnel, linked to the page of each stage, once trips exist', () => {
     withTrips();
     const html = render();
-    expect(html).toContain('Alur pengambilan');
+    expect(html).toContain('data-flow-panel="pickup"');
     for (const label of [
-      'PO Pengambilan',
-      'Catat Pengambilan',
+      'Rekap Pengambilan',
       'Tagih Pelanggan',
       'Tagihan Supplier',
+      'PO Pengambilan',
     ]) {
       expect(html).toContain(`data-dash-open="${label}"`);
     }
+    expect(html).toContain('1 belum ditagih');
+    expect(html).toContain('1 belum ditagih supplier');
+    expect(html).toContain('1 PO berjalan');
+    expect(html).toContain('2 surat jalan siap');
+    // Opened for pickup, the orders leave the warehouse tabs.
+    expect(html).not.toContain('data-flow-panel="sales"');
+    // Perlu tindakan: the unbilled trip, not the two unused surat jalan slots.
+    expect(html).toContain('Pengambilan belum ditagih');
+    expect(html).not.toContain('Pengiriman belum selesai');
+    expect(html).not.toContain('Pesanan penjualan belum dikirim');
+  });
+
+  it('shows the optional pickup blocks once switched on', () => {
+    withTrips();
+    expect(render()).not.toContain('PO pengambilan berjalan');
+    showAll();
+    const html = render();
     expect(html).toContain('Tagihan pelanggan');
     expect(html).toContain('PT Arta');
     expect(html).toContain('PO pengambilan berjalan');
     expect(html).toContain('SJ 1/3');
     expect(html).toContain('Tonase per bulan');
-    // Perlu tindakan: the unbilled trip, not the two unused surat jalan slots.
-    expect(html).toContain('Pengambilan belum ditagih');
-    expect(html).not.toContain('Pengiriman belum selesai');
-    expect(html).not.toContain('Pesanan penjualan belum dikirim');
   });
 
   it('links an open weight change to Perubahan Timbangan', () => {
@@ -138,23 +159,25 @@ describe('Ringkasan — pickup blocks', () => {
     w().Trading.updateWeight(slot.id, { net: 36 }, { source: 'rekap' });
     const html = render();
     expect(html).toContain('data-dash-open="Perubahan Timbangan"');
+    expect(html).toContain('1 perubahan timbangan');
     expect(html).toContain('Perubahan timbangan belum ditindaklanjuti');
   });
 
   it('hides blocks switched off in Atur Tampilan', () => {
     withTrips();
-    localStorage.setItem('nsa_dash_hidden_v2', JSON.stringify(['pipeline', 'tonnage']));
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(['pipeline', 'tonnage']));
     const html = render();
-    expect(html).not.toContain('Alur pengambilan');
+    expect(html).not.toContain('Alur transaksi');
     expect(html).not.toContain('Tonase per bulan');
     expect(html).toContain('PO pengambilan berjalan');
   });
 
-  it('hides pickup blocks from a role that cannot view purchases', () => {
+  it('hides pickup figures from a role that cannot view purchases', () => {
     withTrips();
+    showAll();
     w().RBAC = { canView: (m: string) => m !== 'purchases' };
     const html = render();
-    expect(html).not.toContain('Alur pengambilan');
+    expect(html).not.toContain('data-flow-panel="pickup"');
     expect(html).not.toContain('PO pengambilan berjalan');
     expect(html).toContain('Tagihan pelanggan');
   });
