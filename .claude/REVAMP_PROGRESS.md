@@ -227,3 +227,20 @@ Owner decisions: docs/11 §8 and §7. Deploy by the owner: firestore.rules + fun
 Housekeeping left to the user: `.claude/worktrees/agent-*` (merged; some contain a node_modules
 JUNCTION to the main checkout — delete the junction with `cmd /c rmdir` first, then
 `git worktree remove --force`); scratchpad `friend` worktree. `harness.local/` removed.
+
+## Session 2026-10-03 (b) — declutter + pipeline views (DONE)
+
+Owner feedback: app felt cluttered; wanted a funnel/pipeline view based on the business logic.
+Approved design: Ringkasan 12 → 4 blocks with an "Alur transaksi" funnel; order lists get a status
+strip, row "⋯" menu and one "Ekspor / impor" menu; quieter cards.
+- b7c99a1 order-pipeline.js (OrderPipeline.stageOf/summary) + tests.
+- ddf786a (merged) Ringkasan: period switch, 4 KPI, funnel (pickup two bands, warehouse tabs),
+  Perlu tindakan top 5, one trend chart Rp/Ton; other blocks off by default (Atur Tampilan,
+  storage key nsa_dash_hidden_v3). 4b1a246 softer bands.
+- 1c73674 (merged) order lists: strip, row menu, Ekspor/impor menu, window.openOrderStage.
+- 1392711 token-based badges (dark mode), stage badge on order rows. 14eac19 invoice paging.
+  ede8f1e Faktur strip. e199b1a Surat Jalan summary line + folded armada/ekspedisi; CSP inline
+  handler fixes (actionBtns, PWA update card) + guard test. 08fe2f3 billing summary line.
+- Checks: vitest 39 files / 511 tests, tsc, eslint, build. Screens checked light/dark, 1440/390.
+Open (owner): Perlu tindakan order; card title "Alur transaksi"; Hapus in row menu without confirm
+(same as before); no quick status change for PO rows; trend vs same days last month.

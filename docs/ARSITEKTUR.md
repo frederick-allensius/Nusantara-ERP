@@ -105,6 +105,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 - Konsumen jurnal: `core/gl-view.js` (neraca saldo, jurnal, bagan akun), `core/financial-reports.js` (laporan keuangan), `core/budget-gl-extras.js` (anggaran, riwayat akun, biaya akrual, penggajian), dashboard.
 - `core/balances.js` (`window.Balances`) — saldo piutang/hutang per dokumen, open items, umur, kartu pihak; membaca aturan yang sama dengan `gl.js` sehingga angka Piutang/Hutang sama dengan buku besar.
 - **Pengambilan (trading):** `core/trading.js` (`window.Trading`) memegang aturan PO pengambilan — slot surat jalan (`deliveryOrders` dengan `pickup: true`), kuota, cut-off, trip (bruto/tara/netto), harga supplier per tanggal, faktur dari trip (`inv.doIds`, baris membawa `doId`), rekap timbangan, dan peringatan perubahan berat. Tidak ada koleksi Firestore baru. `gl.js` `buildPickupJournals` membukukan per trip (`J:DO:<id>:trip`): pembelian bila belum ada faktur supplier, HPP/Persediaan, penjualan bila belum ada faktur pelanggan; pesanan berstatus `pickupFlow` tidak membukukan di level pesanan. `core/trading-summary.js` (`window.TradingSummary`) menghitung angka Ringkasan, Entri Harian, dan notifikasi dari data yang sama.
+- **Tahap pesanan:** `core/order-pipeline.js` (`window.OrderPipeline`) — tahap tiap SO/PO (Draf, Dikonfirmasi, Terkirim/Diterima belum faktur, Belum lunas, Lunas) dari status, faktur aktif, dan saldo `Balances`; pesanan pengambilan dari trip dan fakturnya. Dipakai funnel Ringkasan, strip status daftar pesanan, dan badge baris.
 - **Penerimaan per tahap:** PO yang difakturkan per penerimaan barang (`pipeline-extras.js`) membukukan penerimaan yang belum difakturkan lewat `GL.receivedNotInvoiced` (`J:GR:<id>:recv`).
 - Aturan posting lengkap: [04-AKUNTANSI.md](04-AKUNTANSI.md).
 
@@ -129,6 +130,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 - **Komponen:** `src/core/helpers.js` (`idr`, `badge`, `secHdr`, `statRow`, …), `src/core/modal.js` (`openModal`, `closeModal`, `showToast`, `confirmDialog`).
 - **Gaya:** `style.css` (token warna & komponen, tema terang/gelap via `data-theme`), `mobile.css`, `public/theme-init.js` (tema sebelum render), `public/mobile-ui.js`.
 - **Bahasa:** `src/core/i18n.js` menerjemahkan teks Indonesia → Inggris di DOM saat bahasa Inggris dipilih.
+- **Pola daftar:** strip status (`.ostrip`, satu klik = filter tahap) menggantikan kartu statistik di Pesanan Penjualan/Pembelian dan Faktur; menu baris "⋯" dan satu menu "Ekspor / impor" (`erp-view.js`); `window.openOrderStage(side, stage)` membuka daftar pesanan dengan filter tahap. Badge status memakai kelas nada `.badge-*` (mengikuti tema terang/gelap).
 - **Halaman bersama:** `#view-pickups` dipakai `pickup-view.js` dan `pickup-billing.js`. Selama halaman tagihan terbuka, `renderPickups()` mengembalikan halaman tagihan (`_pickupBilling.isActive()/html()`), sehingga render ulang (mis. setelah penyimpanan ditolak) tidak mengganti halaman.
 - **Ukuran teks:** semua ukuran memakai `rem`; `html[data-text-size]` (Normal / Besar / Sangat besar, disimpan di `localStorage` `erp_text_size`, dipasang `public/theme-init.js`) mengubah skala seluruh aplikasi. Token `--fs-*` dan `--tap-min` di `style.css`.
 - **Tab dokumen:** `ui/doc-tabs.js` — detail dokumen dibuka sebagai tab hanya di dalam modulnya (maks. 5); dari halaman lain tampil sebagai dialog. Tab halaman bergaya browser sudah dihapus — keputusan di [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
@@ -163,6 +165,8 @@ Vitest + happy-dom (`tests/`). Tes yang memuat skrip klasik mengevaluasi file as
 | `pipeline-reconciliation.test.ts`, `sj-validation.test.ts`, `funnel-report.test.ts` | Rekonsiliasi Timbangan dan faktur per penerimaan (neraca saldo), Validasi SJ Supplier, alur & Laporan per Periode |
 | `kas-bank-recap.test.ts` | Kategori biaya, rekap per kategori & ekspor, biaya/bunga dari rekening koran, selisih saldo |
 | `coretax-export.test.ts`, `archive-export.test.ts` | XML Coretax; Arsip Excel per tahun |
+| `order-pipeline.test.ts`, `dashboard-pipeline.test.ts`, `order-list.test.ts`, `invoice-list.test.ts` | Tahap pesanan, funnel Ringkasan, strip & menu daftar pesanan, strip & halaman daftar faktur |
+| `csp-inline-handlers.test.ts` | Tidak ada atribut `on*=` di markup (diblokir CSP) |
 | `auth.test.ts`, `twofa-flow.test.ts`, `totp.test.ts` | Login lokal & 2FA |
 | `db-dirty-save.test.ts`, `indexeddb-sync.test.ts` | Penyimpanan & sinkronisasi |
 | `api-handler.test.ts` | API integrasi |

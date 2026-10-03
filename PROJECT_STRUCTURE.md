@@ -47,6 +47,7 @@ Cara kerja tiap bagian dijelaskan di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md).
 | `core/balances.js` | Saldo piutang/hutang, open items, umur, kartu pihak (`Balances`) |
 | `core/trading.js` | Aturan pengambilan: PO pengambilan, surat jalan, trip, kuota, cut-off, faktur dari trip, rekap timbangan (`Trading`) |
 | `core/trading-summary.js` | Angka pengambilan untuk Ringkasan, Entri Harian, notifikasi (`TradingSummary`) |
+| `core/order-pipeline.js` | Tahap tiap SO/PO untuk funnel Ringkasan dan strip daftar pesanan (`OrderPipeline`) |
 | `core/integrity.js` | Log audit, kunci periode, cek buku besar |
 | `core/trash.js` | Recycle bin |
 | `core/rbac.js` | Hak akses per peran |
