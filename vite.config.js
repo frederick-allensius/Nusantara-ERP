@@ -53,6 +53,8 @@ const classicAll = [
   // billing, open pickup POs, tonnage per month, supplier differences) for the
   // Ringkasan, Entri Harian and notifications.
   'public/classic/core/trading-summary.js',
+  // order-pipeline.js: stage of each SO/PO for the pipeline views (uses Balances, Trading).
+  'public/classic/core/order-pipeline.js',
   'public/classic/core/erp-crud.js',
   'public/classic/core/doc-migrate.js',
   'public/classic/core/erp-view.js',
