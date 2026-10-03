@@ -394,27 +394,6 @@
           '</p></div></div>';
   }
 
-  function statsHTML(items) {
-    if (typeof window.statRow === 'function') return window.statRow(items);
-    return (
-      '<div class="stat-row">' +
-      items
-        .map(function (s) {
-          return (
-            '<div class="card stat-card"><div class="stat-label">' +
-            esc(s.label) +
-            '</div><div class="stat-val">' +
-            esc(s.value) +
-            '</div><div class="stat-sub">' +
-            esc(s.sub || '') +
-            '</div></div>'
-          );
-        })
-        .join('') +
-      '</div>'
-    );
-  }
-
   function sinceText(days) {
     if (days <= 0) return 'Hari ini';
     return days + ' hari lalu';
@@ -438,24 +417,25 @@
       return x.oldest && (!o || x.oldest < o) ? x.oldest : o;
     }, '');
     var isCust = c === CFG.customer;
-    var html = statsHTML([
-      {
-        label: c.partyLabel,
-        value: String(g.list.length),
-        sub: 'dengan pengambilan belum ' + (isCust ? 'ditagih' : 'difakturkan'),
-      },
-      { label: 'Truk', value: String(trips), sub: qty(tons) + ' ton' },
-      {
-        label: 'Nilai termasuk PPN',
-        value: money(total),
-        sub: isCust ? 'Piutang belum difakturkan' : 'Hutang belum difakturkan',
-      },
-      {
-        label: 'Pengambilan tertua',
-        value: oldest ? fmtDate(oldest) : '—',
-        sub: oldest ? sinceText(daysBetween(oldest, today)) : '',
-      },
-    ]);
+    // One summary line; the table below carries the per-party figures.
+    var html = g.list.length
+      ? '<div class="list-summary">' +
+        esc(
+          g.list.length +
+            ' ' +
+            c.partyLabel.toLowerCase() +
+            ' · ' +
+            trips +
+            ' truk · ' +
+            qty(tons) +
+            ' ton · ' +
+            money(total) +
+            ' belum ' +
+            (isCust ? 'ditagih' : 'difakturkan') +
+            (oldest ? ' · tertua ' + fmtDate(oldest) + ' (' + sinceText(daysBetween(oldest, today)).toLowerCase() + ')' : '')
+        ) +
+        '</div>'
+      : '';
     if (g.orphan) {
       html +=
         '<div class="notice notice-info">' +
