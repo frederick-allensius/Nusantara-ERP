@@ -6,9 +6,10 @@
 //     Executive Dashboard (dashboard), full reports and the executive analytics
 //     (funnels / real-time margin / outstanding piutang / financials).
 //   • Admin/Accounting data-entry (akunting, penjualan) get the focused 'entri'
-//     surface exposing EXACTLY the operational entry tasks (PO / Surat Jalan /
-//     Timbangan / Biaya Operasional) and are gated OUT of the executive-only
-//     analytics surface.
+//     surface exposing EXACTLY the operational entry tasks of the trading flow
+//     (Catat Pengambilan / Impor Rekap Timbangan / Tagih Pelanggan / Biaya
+//     Operasional, with Buat PO as a secondary link) and are gated OUT of the
+//     executive-only analytics surface.
 //
 // Loads the real classic scripts by indirect eval (like the bundle / the
 // rbac.test.ts pattern): set window.__ERP_USER = { role, active } then read
@@ -95,23 +96,72 @@ describe('dual-view surfaces', () => {
 });
 
 describe('Entri Harian daily-entry surface', () => {
-  it('exposes EXACTLY the operational entry tasks (PO / Surat Jalan / Timbangan / Biaya)', () => {
+  it('exposes EXACTLY the operational entry tasks (Pengambilan / Rekap / Tagih / Biaya)', () => {
     const RBAC = bootRbac('akunting');
     // eslint-disable-next-line no-eval -- execute the real classic script in global scope
     (0, eval)(ENTRI_SRC);
     const entri = (window as any)._entriHarian;
 
-    const expected = ['po', 'suratJalan', 'timbangan', 'biayaOperasional'];
+    const expected = ['catatPengambilan', 'imporRekap', 'tagihPelanggan', 'biayaOperasional'];
     // The surface's tasks are exactly the operational entry actions — nothing
     // more (no executive analytics), nothing missing.
     expect(entri.tasks).toEqual(expected);
     // And they match the single source of truth on RBAC.
     expect(RBAC.ENTRI_ACTIONS).toEqual(expected);
+    // Buat PO stays reachable as a secondary link.
+    expect(entri.secondary).toEqual(['po']);
 
     expect(typeof (window as any).renderEntriHarian).toBe('function');
-    expect(typeof entri.openPO).toBe('function');
-    expect(typeof entri.openSuratJalan).toBe('function');
-    expect(typeof entri.openTimbangan).toBe('function');
+    expect(typeof entri.openCatatPengambilan).toBe('function');
+    expect(typeof entri.openImporRekap).toBe('function');
+    expect(typeof entri.openTagihPelanggan).toBe('function');
     expect(typeof entri.openBiayaOperasional).toBe('function');
+    expect(typeof entri.openPO).toBe('function');
+  });
+
+  it('opens each task through the page that handles it', () => {
+    bootRbac('akunting');
+    // eslint-disable-next-line no-eval -- execute the real classic script in global scope
+    (0, eval)(ENTRI_SRC);
+    const entri = (window as any)._entriHarian;
+    const calls: string[] = [];
+    // Without the sidebar (NSANav) the opener functions are called directly.
+    (window as any).NSANav = undefined;
+    (window as any)._pickupView = {
+      openRecord: () => calls.push('openRecord'),
+      openRecapImport: () => calls.push('openRecapImport'),
+    };
+    (window as any)._pickupBilling = {
+      openCustomerBilling: () => calls.push('openCustomerBilling'),
+    };
+    (window as any)._bankExtras = { openOtherPayment: () => calls.push('openOtherPayment') };
+    entri.openCatatPengambilan();
+    entri.openImporRekap();
+    entri.openTagihPelanggan();
+    entri.openBiayaOperasional();
+    expect(calls).toEqual([
+      'openRecord',
+      'openRecapImport',
+      'openCustomerBilling',
+      'openOtherPayment',
+    ]);
+
+    // With the sidebar, the menu entry is opened so its highlight follows.
+    const opened: string[] = [];
+    (window as any).NSANav = { open: (label: string) => (opened.push(label), true) };
+    entri.openCatatPengambilan();
+    entri.openTagihPelanggan();
+    expect(opened).toEqual(['Catat Pengambilan', 'Tagih Pelanggan']);
+    (window as any).NSANav = undefined;
+  });
+
+  it('shows only the tasks whose module the role may view', () => {
+    bootRbac('penjualan'); // no access to Kas & Bank (gl)
+    // eslint-disable-next-line no-eval -- execute the real classic script in global scope
+    (0, eval)(ENTRI_SRC);
+    const html: string = (window as any).renderEntriHarian();
+    expect(html).toContain('Catat Pengambilan');
+    expect(html).toContain('Tagih Pelanggan');
+    expect(html).not.toContain('Biaya Operasional');
   });
 });

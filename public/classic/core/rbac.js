@@ -127,9 +127,10 @@
   // Two handoff personas are layered on top of the resolved role WITHOUT
   // weakening the server-enforced rbac boundary:
   //   • 'entri'     — the Admin/Accounting daily data-entry surface (Entri
-  //                   Harian): PO, Surat Jalan (DO), Timbangan (weighbridge
-  //                   reconciliation) and Biaya Operasional (Transport / ATK /
-  //                   Entertain via Other Payment). Minimal, distraction-free.
+  //                   Harian): Catat Pengambilan, Impor Rekap Timbangan, Tagih
+  //                   Pelanggan and Biaya Operasional (Transport / ATK /
+  //                   Entertain via Other Payment), with Buat PO as a secondary
+  //                   link. Minimal, distraction-free.
   //   • 'executive' — the Owner/Management surface: the Executive Dashboard with
   //                   pipeline funnels, real-time margin (revenue vs COGS),
   //                   outstanding invoices (piutang aging) and the full
@@ -149,7 +150,7 @@
   // The operational entry actions the Entri Harian surface exposes, in order.
   // Kept here (beside the surface map) so entri-harian.js and the tests share a
   // single source of truth for "exactly the operational entry tasks".
-  const ENTRI_ACTIONS = ['po', 'suratJalan', 'timbangan', 'biayaOperasional'];
+  const ENTRI_ACTIONS = ['catatPengambilan', 'imporRekap', 'tagihPelanggan', 'biayaOperasional'];
 
   // The executive analytics the management surface exposes.
   const EXECUTIVE_ANALYTICS = ['funnels', 'margin', 'piutang', 'financials'];

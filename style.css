@@ -4106,6 +4106,397 @@ html[data-theme] {
   font-weight: 500;
   cursor: pointer;
 }
+.chip-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.dash-chip-btn {
+  height: auto;
+  min-height: 22px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border: 0;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.dash-chip-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Alur pengambilan — stages of the pickup flow (trading-summary.js pipeline) */
+.dash-pipe {
+  margin-bottom: 12px;
+}
+.dash-pipe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.pipe-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+.pipe-stage {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.pipe-stage:hover {
+  background: var(--surface-hover);
+}
+.pipe-stage.is-warning {
+  border-left-color: var(--warning);
+}
+.pipe-stage.is-success {
+  border-left-color: var(--success);
+}
+.pipe-stage-label {
+  font-size: .78125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.pipe-stage-count {
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pipe-stage-count small {
+  font-size: .78125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.pipe-stage.is-zero .pipe-stage-count {
+  color: var(--muted);
+}
+.pipe-stage-sub {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pipe-arrow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  color: var(--muted-light);
+}
+.pipe-lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+}
+.pipe-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.pipe-lane-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pipe-note {
+  align-self: flex-start;
+  font-size: .78125rem;
+}
+
+/* Tagihan pelanggan — one row per customer; labels repeat per cell on narrow screens */
+.dash-cust {
+  display: flex;
+  flex-direction: column;
+}
+.dash-cust-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.dash-cust-row:last-child {
+  border-bottom: 0;
+}
+.dash-cust-head {
+  padding-top: 0;
+  border-bottom-color: var(--border);
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.dash-cust-head > span:not(:first-child) {
+  text-align: right;
+}
+.dash-cust-total {
+  border-top: 1px solid var(--border);
+}
+.dash-cust-total .dash-cust-num {
+  font-weight: 650;
+}
+.dash-cust-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.dash-cust-name .dash-list-title,
+.dash-cust-name .dash-list-sub {
+  white-space: normal;
+}
+.dash-cust-num {
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text);
+}
+.dash-cust-num.is-warning {
+  color: var(--warning);
+}
+.dash-cust-num.is-danger {
+  color: var(--danger);
+  font-weight: 600;
+}
+.dash-cust-k {
+  display: none;
+}
+
+/* PO pengambilan berjalan — quota meter per open pickup PO */
+.dash-po-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  width: 100%;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dash-po-row + .dash-po-row {
+  border-top: 1px solid var(--border-light);
+}
+.dash-po-row:hover {
+  background: var(--surface-hover);
+}
+.dash-po-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.dash-po-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dash-meter {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--r-full);
+  background: var(--surface-active);
+}
+.dash-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+.dash-meter.is-warning i {
+  background: var(--warning);
+}
+.dash-meter.is-danger i {
+  background: var(--danger);
+}
+.dash-po-meta {
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* Tonase per bulan — CSS columns with the value above each month */
+.dash-ton {
+  margin-bottom: 12px;
+}
+.dash-ton-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+}
+.dash-cols {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  height: 200px;
+}
+.dash-col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.dash-col-val {
+  font-size: .75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dash-col-track {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 56px;
+  border-bottom: 1px solid var(--border);
+}
+.dash-col-track i {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-1);
+}
+.dash-col.is-partial .dash-col-track i {
+  opacity: .55;
+}
+.dash-col-key {
+  font-size: .75rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.dash-col-key small {
+  display: block;
+  font-size: .6875rem;
+}
+.dash-ton-note {
+  margin: 10px 0 0;
+  font-size: .78125rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.dash-ton-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dash-ton-side .dash-list-row {
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+}
+.dash-ton-side-head {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.dash-ton-more {
+  align-self: flex-start;
+  margin-top: 8px;
+  font-size: .78125rem;
+}
+.dash-modal-hint {
+  margin: 0 0 12px;
+}
+.dash-modal-sub {
+  margin: 16px 0 8px;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+@media (max-width: 900px) {
+  .pipe-flow {
+    flex-wrap: wrap;
+  }
+  .pipe-flow .pipe-stage {
+    flex: 1 1 calc(50% - 6px);
+  }
+  .pipe-arrow {
+    display: none;
+  }
+  .dash-ton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dash-cust-head {
+    display: none;
+  }
+  .dash-cust-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+  }
+  .dash-cust-name {
+    grid-column: 1 / -1;
+  }
+  .dash-cust-num {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  .dash-cust-k {
+    display: block;
+    font-size: .6875rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+}
+@media (max-width: 480px) {
+  .pipe-flow .pipe-stage {
+    flex-basis: 100%;
+  }
+  .dash-cols {
+    gap: 4px;
+    height: 170px;
+  }
+  .dash-col-val,
+  .dash-col-key {
+    font-size: .6875rem;
+  }
+}
 @media (max-width: 1100px) {
   .dash-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4118,4 +4509,87 @@ html[data-theme] {
   .dash-kpis {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── 36. ENTRI HARIAN (core/entri-harian.js) ─────────────────────────────────── */
+.eh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+@media (max-width: 700px) {
+  .eh-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.eh-task {
+  --eh-fg: var(--primary);
+  --eh-bg: var(--primary-light);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 18px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.eh-task:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.eh-tone-info {
+  --eh-fg: var(--info);
+  --eh-bg: var(--info-bg);
+}
+.eh-tone-success {
+  --eh-fg: var(--success);
+  --eh-bg: var(--success-bg);
+}
+.eh-tone-warning {
+  --eh-fg: var(--warning);
+  --eh-bg: var(--warning-bg);
+}
+.eh-task-icon {
+  display: flex;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: var(--r);
+  background: var(--eh-bg);
+  color: var(--eh-fg);
+}
+.eh-task-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.eh-task-title {
+  font-size: .9375rem;
+  font-weight: 650;
+  color: var(--text);
+}
+.eh-task-desc {
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.eh-task-go {
+  display: flex;
+  flex: none;
+  color: var(--muted-light);
+}
+.eh-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: .8125rem;
 }

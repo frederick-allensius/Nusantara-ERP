@@ -49,6 +49,10 @@ const classicAll = [
   // trading.js: pickup POs, surat jalan slots, trips and recap matching. gl.js and
   // balances.js call it at run time; the views below use it.
   'public/classic/core/trading.js',
+  // trading-summary.js: read-only figures over trading.js (pipeline, per-customer
+  // billing, open pickup POs, tonnage per month, supplier differences) for the
+  // Ringkasan, Entri Harian and notifications.
+  'public/classic/core/trading-summary.js',
   'public/classic/core/erp-crud.js',
   'public/classic/core/doc-migrate.js',
   'public/classic/core/erp-view.js',
