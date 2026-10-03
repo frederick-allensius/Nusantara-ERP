@@ -877,7 +877,7 @@ var _dashTrading = (function () {
   // per stage column; px vertically). A band is flat across the first part of a
   // column and bends to the next stage's thickness in the rest. Thickness
   // follows the value on one scale for every band of the tab.
-  var FN = { col: 100, flat: 55, tmax: 56, tmin: 2, room: 26 };
+  var FN = { col: 100, flat: 55, tmax: 44, tmin: 2, room: 26 };
   function thick(v, max) {
     if (!(v > 0.5) || !(max > 0)) {
       return 0;

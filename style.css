@@ -4289,9 +4289,13 @@ button.dash-fn-cell:hover {
 }
 .dash-band {
   fill: var(--chart-1);
+  fill-opacity: 0.8;
 }
 .dash-band.is-purchases {
   fill: var(--chart-3);
+}
+[data-theme='dark'] .dash-band {
+  fill-opacity: 0.55;
 }
 .dash-leak {
   display: inline-flex;
