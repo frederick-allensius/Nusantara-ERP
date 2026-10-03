@@ -149,6 +149,21 @@ describe('recording trips', () => {
     expect(w().DB.salesOrders[0].status).toBe('Closed');
   });
 
+  it('leaves orders open when the user may not change them (sales-only, or no purchases)', () => {
+    w().RBAC = { can: (_a: string, m: string) => m === 'sales' };
+    try {
+      trip(1, '2026-09-03', 35);
+      trip(2, '2026-09-04', 35);
+      const r = T().recordTrip(slot(3).id, { date: '2026-09-05', net: 30 });
+      expect(r.ok).toBe(true);
+      expect(r.warnings.join(' ')).toMatch(/perlu ditutup oleh pengguna dengan akses Pembelian/);
+      expect(w().DB.purchaseOrders[0].status).toBe('Confirmed');
+      expect(T().sweepCutoffs('2026-10-01')).toEqual([]);
+    } finally {
+      delete w().RBAC;
+    }
+  });
+
   it('uses the supplier price in effect on the trip date and warns when it differs from the PO', () => {
     w().DB.supplierPrices.push({
       supplierId: 'S1',

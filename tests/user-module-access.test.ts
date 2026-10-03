@@ -51,6 +51,7 @@ function freshDB() {
   return {
     salesOrders: [] as any[],
     purchaseOrders: [] as any[],
+    deliveryOrders: [] as any[],
     inventoryItems: [] as any[],
     customers: [] as any[],
     journals: [] as any[],
@@ -301,6 +302,25 @@ describe('saveDB safety net', () => {
     w.saveDB();
     expect(persistedCount).toBe(1);
     expect(db.settings.units).toEqual(['Ton']);
+  });
+
+  it('lets Pengambilan (purchases) record pickup trips but not ordinary surat jalan', () => {
+    const db = freshDB();
+    db.deliveryOrders.push({ id: 'DO-1', pickup: true, status: 'Pending' });
+    boot('manajer', ['purchases'], db);
+    db.deliveryOrders[0] = { id: 'DO-1', pickup: true, status: 'Delivered', weighing: { net: 30 } };
+    w.saveDB();
+    expect(persistedCount).toBe(1);
+
+    db.deliveryOrders.push({ id: 'DO-2', status: 'Pending' });
+    w.saveDB();
+    expect(persistedCount).toBe(1);
+    expect(db.deliveryOrders).toHaveLength(1);
+
+    db.deliveryOrders[0] = { id: 'DO-1', pickup: false, status: 'Delivered' };
+    w.saveDB();
+    expect(persistedCount).toBe(1); // a trip can't be turned into an ordinary surat jalan
+    expect(db.deliveryOrders[0].pickup).toBe(true);
   });
 
   it('lets the same role write every module without a list', () => {

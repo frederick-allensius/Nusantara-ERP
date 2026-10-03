@@ -125,6 +125,23 @@ service cloud.firestore {
     function canDeleteModule(m) {
       return roleCanDelete(m) && moduleAllowed(m);
     }
+    // A pickup surat jalan / trip (deliveryOrders with pickup == true, before and
+    // after the write) is recorded from Pengambilan (purchases) as well as billed
+    // from sales, so the purchases right also covers it. Mirror of
+    // recordModules() in public/classic/core/rbac.js.
+    function isPickupDoc(collection) {
+      return collection == 'deliveryOrders'
+        && (resource == null || resource.data.get('pickup', false) == true)
+        && (request.resource == null || request.resource.data.get('pickup', false) == true);
+    }
+    function canWriteDoc(collection) {
+      return canWriteModule(moduleOf(collection))
+        || (isPickupDoc(collection) && canWriteModule('purchases'));
+    }
+    function canDeleteDoc(collection) {
+      return canDeleteModule(moduleOf(collection))
+        || (isPickupDoc(collection) && canDeleteModule('purchases'));
+    }
 
     // ── Role matrix (create/update) ──────────────────────────────────────────
     function roleCanWrite(m) {
@@ -241,13 +258,13 @@ service cloud.firestore {
         && collection != 'serverBackups'
         && collection != 'accessLog';
       allow create, update: if verified()
-        && canWriteModule(moduleOf(collection))
+        && canWriteDoc(collection)
         && collection != 'users'
         && collection != 'authUsers'
         && collection != 'serverBackups'
         && collection != 'accessLog';
       allow delete: if verified()
-        && canDeleteModule(moduleOf(collection))
+        && canDeleteDoc(collection)
         && collection != 'users'
         && collection != 'authUsers'
         && collection != 'serverBackups'

@@ -641,8 +641,11 @@
     });
     var after2 = usage(po, date);
     if (after2.full && !opts.keepOpen) {
-      closePickupPO(po.id, 'quota');
-      warnings.push('Kuota PO terpenuhi — PO ditutup, surat jalan sisa dibatalkan.');
+      warnings.push(
+        closePickupPO(po.id, 'quota')
+          ? 'Kuota PO terpenuhi — PO ditutup, surat jalan sisa dibatalkan.'
+          : 'Kuota PO terpenuhi — PO perlu ditutup oleh pengguna dengan akses Pembelian.'
+      );
     }
     return { ok: true, warnings: warnings };
   }
@@ -721,9 +724,18 @@
   }
 
   // reason: 'quota' | 'cutoff' | 'manual'
+  // May the signed-in user change records of `module`? Closing a PO (and its SO)
+  // is a side effect of recording a trip or of the cut-off sweep; a user without
+  // that right leaves the order open for one who has it (the save would be
+  // rolled back otherwise). No RBAC loaded (tests) = allowed.
+  function mayEdit(module) {
+    var r = window.RBAC;
+    return !r || typeof r.can !== 'function' || r.can('edit', module);
+  }
+
   function closePickupPO(poId, reason) {
     var po = find('purchaseOrders', poId);
-    if (!isPickupOrder(po) || po.status === 'Closed') return false;
+    if (!isPickupOrder(po) || po.status === 'Closed' || !mayEdit('purchases')) return false;
     var label =
       { quota: 'kuota terpenuhi', cutoff: 'lewat cut-off', manual: 'ditutup manual' }[reason] ||
       reason ||
@@ -736,7 +748,7 @@
     po.closedReason = reason || 'manual';
     po.closedBy = currentUser();
     var so = find('salesOrders', po.pickupFlow.soId);
-    if (so && so.status !== 'Closed') {
+    if (so && so.status !== 'Closed' && mayEdit('sales')) {
       var line = orderLine(so) || {};
       var taken = tripsForSO(so.id).reduce(function (s, d) {
         return s + netOf(d);
@@ -771,8 +783,7 @@
     var closed = [];
     (db().purchaseOrders || []).forEach(function (po) {
       if (!isPickupOrder(po) || po.status === 'Closed' || po.status === 'Cancelled') return;
-      if (usage(po, asOf).pastCutoff) {
-        closePickupPO(po.id, 'cutoff');
+      if (usage(po, asOf).pastCutoff && closePickupPO(po.id, 'cutoff')) {
         closed.push(po);
       }
     });

@@ -406,6 +406,16 @@
     return m;
   }
 
+  // Modules a record belongs to. A pickup surat jalan / trip (deliveryOrders with
+  // pickup: true) is recorded from Pengambilan (purchases) and billed from Tagih
+  // Pelanggan (sales), so either right covers it. Mirror of firestore.rules.
+  function recordModules(name, rec, module) {
+    return name === 'deliveryOrders' && rec && rec.pickup === true ? [module, 'purchases'] : [module];
+  }
+  function canAny(action, mods) {
+    return mods.some(m => can(action, m));
+  }
+
   // Detect the first mutation the current role is NOT allowed to make.
   // Returns { module, action, collection } or null.
   function findViolation() {
@@ -438,11 +448,15 @@
           return;
         }
         const prev = oldMap.get(id);
+        const mods = recordModules(name, prev || rec, module);
+        if (prev && prev.pickup !== rec.pickup) {
+          mods.length = 1; // turning a record into (or out of) a pickup needs its own module
+        }
         if (!prev) {
-          if (!can('create', module)) {
+          if (!canAny('create', mods)) {
             v = { module, action: 'create', collection: name };
           }
-        } else if (JSON.stringify(prev) !== JSON.stringify(rec) && !can('edit', module)) {
+        } else if (JSON.stringify(prev) !== JSON.stringify(rec) && !canAny('edit', mods)) {
           v = { module, action: 'edit', collection: name };
         }
       });
@@ -453,7 +467,7 @@
         if (v) {
           return;
         }
-        if (!newMap.has(id) && !can('delete', module)) {
+        if (!newMap.has(id) && !canAny('delete', recordModules(name, rec, module))) {
           v = { module, action: 'delete', collection: name };
         }
       });
