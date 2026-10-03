@@ -458,6 +458,17 @@ describe('row menu', () => {
     viewSO.mockRestore();
   });
 
+  it('shows the money stage on delivered rows, matching the strip', () => {
+    const text = (id: string) =>
+      viewEl('sales').querySelector(`tr[data-id="${id}"] .badge`)!.textContent;
+    expect(text('SO-C')).toBe('Dikonfirmasi'); // before delivery: the status
+    expect(text('SO-N')).toBe('Belum faktur'); // delivered, not invoiced
+    const unpaid = w()
+      .OrderPipeline.summary('sales')
+      .stages.find((s: any) => s.key === 'unpaid');
+    expect(text(unpaid.ids[0])).toBe('Belum lunas');
+  });
+
   it('shows a "Pengambilan" tag on pickup orders only', () => {
     const tagged = Array.from(viewEl('sales').querySelectorAll('tbody tr')).filter(tr =>
       tr.querySelector('.ostrip-tag')

@@ -109,36 +109,38 @@ export function today() {
 
 // ── Badge Helper ─────────────────────────────────────────────────────────────
 export function badge(status) {
+  // Tone classes (style.css .badge-*) follow the theme tokens, so badges read
+  // well in light and dark mode.
   const map = {
-    Draft: { bg: '#F3F4F6', color: '#374151', label: 'Draft' },
-    Confirmed: { bg: '#EFF6FF', color: '#1D4ED8', label: 'Dikonfirmasi' },
-    Delivered: { bg: '#F0FDF4', color: '#166534', label: 'Terkirim' },
-    Paid: { bg: '#DCFCE7', color: '#166534', label: 'Lunas' },
-    Received: { bg: '#F0FDF4', color: '#166534', label: 'Diterima' },
-    Outstanding: { bg: '#FEF3C7', color: '#92400E', label: 'Belum Lunas' },
-    Posted: { bg: '#DBEAFE', color: '#1D4ED8', label: 'Diposting' },
-    Pending: { bg: '#FFFBEB', color: '#92400E', label: 'Pending' },
-    'In Transit': { bg: '#EFF6FF', color: '#1D4ED8', label: 'Dalam Pengiriman' },
-    Low: { bg: '#FFF1F0', color: '#C0392B', label: 'Stok Rendah' },
-    OK: { bg: '#F0FDF4', color: '#166534', label: 'Normal' },
-    Maintenance: { bg: '#FDF4FF', color: '#6B21A8', label: 'Servis/Perbaikan' },
-    Approved: { bg: '#D1FAE5', color: '#065F46', label: 'Disetujui' },
-    Rejected: { bg: '#FEE2E2', color: '#991B1B', label: 'Ditolak' },
-    'PO Dibuat': { bg: '#DBEAFE', color: '#1D4ED8', label: 'PO Dibuat' },
-    Open: { bg: '#FFFBEB', color: '#92400E', label: 'Open' },
-    Closed: { bg: '#F3F4F6', color: '#374151', label: 'Selesai' },
-    Cancelled: { bg: '#FEE2E2', color: '#991B1B', label: 'Dibatalkan' },
+    Draft: ['neutral', 'Draft'],
+    Confirmed: ['info', 'Dikonfirmasi'],
+    Delivered: ['success', 'Terkirim'],
+    Paid: ['success', 'Lunas'],
+    Received: ['success', 'Diterima'],
+    Outstanding: ['warning', 'Belum Lunas'],
+    Posted: ['info', 'Diposting'],
+    Pending: ['warning', 'Pending'],
+    'In Transit': ['info', 'Dalam Pengiriman'],
+    Low: ['danger', 'Stok Rendah'],
+    OK: ['success', 'Normal'],
+    Maintenance: ['neutral', 'Servis/Perbaikan'],
+    Approved: ['success', 'Disetujui'],
+    Rejected: ['danger', 'Ditolak'],
+    'PO Dibuat': ['info', 'PO Dibuat'],
+    Open: ['warning', 'Open'],
+    Closed: ['neutral', 'Selesai'],
+    Cancelled: ['danger', 'Dibatalkan'],
     // Accurate order-processing statuses (SO/PO)
-    'Waiting on Process': { bg: '#FFFBEB', color: '#92400E', label: 'Menunggu Proses' },
-    'Partially Processed': { bg: '#EFF6FF', color: '#1D4ED8', label: 'Diproses Sebagian' },
-    Processed: { bg: '#F0FDF4', color: '#166534', label: 'Diproses' },
+    'Waiting on Process': ['warning', 'Menunggu Proses'],
+    'Partially Processed': ['info', 'Diproses Sebagian'],
+    Processed: ['success', 'Diproses'],
     // Accurate delivery/invoicing statuses (DO)
-    Sent: { bg: '#EFF6FF', color: '#1D4ED8', label: 'Terkirim' },
-    Invoiced: { bg: '#DCFCE7', color: '#166534', label: 'Difakturkan' },
-    'Partially invoiced': { bg: '#FEF3C7', color: '#92400E', label: 'Faktur Sebagian' },
+    Sent: ['info', 'Terkirim'],
+    Invoiced: ['success', 'Difakturkan'],
+    'Partially invoiced': ['warning', 'Faktur Sebagian'],
   };
-  const s = map[status] || map.Draft;
-  return `<span class="badge" style="background:${s.bg};color:${s.color}">${escapeHtml(s.label)}</span>`;
+  const [tone, label] = map[status] || map.Draft;
+  return `<span class="badge badge-${tone}">${escapeHtml(label)}</span>`;
 }
 
 // ── UI Helpers ───────────────────────────────────────────────────────────────

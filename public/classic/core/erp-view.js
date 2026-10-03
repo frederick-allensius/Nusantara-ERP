@@ -422,6 +422,19 @@ function openOrderStage(side, stageKey, opts) {
 }
 window.openOrderStage = openOrderStage;
 
+// Row badge of an order: once delivered/received (or a pickup order is done)
+// the row shows where its money stands — the same stage as the strip above.
+const STAGE_BADGE = {
+  delivered: ['warning', 'Belum faktur'],
+  unpaid: ['info', 'Belum lunas'],
+  paid: ['success', 'Lunas'],
+};
+function orderStageBadge(side, o) {
+  const P = window.OrderPipeline;
+  const st = P ? STAGE_BADGE[P.stageOf(side, o)] : null;
+  return st ? `<span class="badge badge-${st[0]}">${escapeHtml(st[1])}</span>` : badge(o.status);
+}
+
 // Small "Pengambilan" tag beside the number of a trading pickup order.
 function pickupTag(o) {
   return o && o.pickupFlow ? '<span class="ostrip-tag">Pengambilan</span>' : '';
@@ -1078,7 +1091,7 @@ function renderPurchase() {
               <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.supplier)}</td>
               <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
               <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
-              <td class="td-p">${badge(o.status)}</td>
+              <td class="td-p">${orderStageBadge('purchases', o)}</td>
               <td class="td-p row-menu-cell">${orderRowMenu('purchase', o)}</td>
             </tr>`
                   )
@@ -3147,7 +3160,7 @@ function renderSales() {
           <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.customer)}</td>
           <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
           <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
-          <td class="td-p">${badge(o.status)}</td>
+          <td class="td-p">${orderStageBadge('sales', o)}</td>
           <td class="td-p row-menu-cell">${orderRowMenu('sales', o)}</td>
         </tr>`;
           })
