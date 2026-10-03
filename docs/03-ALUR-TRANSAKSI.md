@@ -37,9 +37,9 @@ flowchart LR
 | Penerimaan Pembayaran (SR) atau Log Pembayaran SO | Salah satu | Keuangan | Tidak | Ya |
 | Retur Penjualan | Bila ada barang kembali | Operasional + keuangan | Ya (masuk) | Ya |
 
-> ⚠ **Temuan penting (T-01):** saat ini *SO berstatus Terkirim* **dan** *Faktur yang dibuat dari SO tersebut* sama-sama membentuk jurnal pendapatan — sehingga penjualan tercatat dua kali di buku besar bila keduanya dipakai. Aturan perbaikan dijelaskan di [04-AKUNTANSI.md](04-AKUNTANSI.md) §4.
+> **Pendapatan dicatat sekali (T-01, diperbaiki):** *SO Terkirim* membentuk HPP dan pengurangan persediaan. Pendapatan, piutang, dan PPN keluaran dibentuk oleh Faktur Penjualan bila SO sudah difakturkan; bila belum, oleh SO Terkirim. Rincian di [04-AKUNTANSI.md](04-AKUNTANSI.md) §4.1.
 >
-> ❓ Di bisnis nyata: kapan faktur dibuat — saat barang dikirim, atau ditagih belakangan (misalnya per bulan)? Satu faktur untuk satu pengiriman atau gabungan beberapa pengiriman? — **REQUIRES USER CONFIRMATION**
+> ❓ Untuk penjualan dari stok gudang: kapan faktur dibuat — saat barang dikirim, atau ditagih belakangan (misalnya per bulan)? Satu faktur untuk satu pengiriman atau gabungan beberapa pengiriman? — **REQUIRES USER CONFIRMATION**. Untuk pengambilan, penagihan per periode dari beberapa truk sudah tersedia (lihat [§V](#v-pengambilan-trading)).
 
 ### Alur pembelian
 
@@ -47,7 +47,8 @@ flowchart LR
 flowchart LR
   PQ["Penawaran Pembelian<br/>(PQ) — opsional"] -->|Konversi saat Diterima| PO["Purchase Order (PO)"]
   PO -->|status Diterima| IN(["Stok masuk + jurnal persediaan/hutang"])
-  PO -.->|alternatif: Penerimaan Barang| GR["Penerimaan Barang (GR)<br/>stok masuk, tanpa jurnal"]
+  PO -.->|alternatif: Penerimaan Barang| GR["Penerimaan Barang (GR)<br/>stok masuk + timbangan"]
+  GR -.->|Rekonsiliasi Timbangan| PI
   PO -->|Buat Faktur| PI["Faktur Pembelian (PI)"]
   PI --> AP(["Hutang"])
   PI -->|Catat Pembayaran| PP["Pembayaran ke Supplier (PP)"]
@@ -61,14 +62,40 @@ flowchart LR
 |---|---|---|---|---|
 | Penawaran Pembelian (PQ) | Opsional | Komersial | Tidak | Tidak |
 | Purchase Order (PO) | **Wajib** untuk alur berbasis dokumen | Operasional | Masuk saat **Diterima** | Ya saat **Diterima** |
-| Penerimaan Barang (GR) | Opsional (jalur terpisah) | Operasional/gudang | Ya (bila "langsung update stok") | **Tidak** |
+| Penerimaan Barang (GR) | Opsional (jalur terpisah, bisa bertahap) | Operasional/gudang | Ya (bila "Langsung update stok") | Lewat PO saat PO menjadi *Diterima*; per penerimaan bila PO difakturkan per penerimaan |
+| Rekonsiliasi Timbangan | Opsional | Kontrol | Tidak | Tidak (menentukan qty faktur) |
 | Faktur Pembelian (PI) | Opsional di sistem | Keuangan | Tidak | Ya |
 | Pembayaran (PP) atau Log Pembayaran PO | Salah satu | Keuangan | Tidak | Ya |
 | Retur Pembelian | Bila barang dikembalikan | Operasional + keuangan | Ya (keluar) | Ya |
 
-> ⚠ **Temuan (T-02, T-07):** PO berstatus *Diterima* dan Faktur Pembelian dari PO tersebut sama-sama membentuk jurnal persediaan/hutang. Selain itu ada **dua cara** mencatat barang datang (status PO *Diterima* dan menu *Penerimaan Barang*) yang masing-masing menambah stok — bila keduanya dipakai, stok bertambah dua kali.
+> **Persediaan & hutang dicatat sekali (T-02, T-07, diperbaiki):** bila PO sudah punya Faktur Pembelian aktif, jurnal penerimaan PO tidak dibentuk; faktur yang menjadi dasarnya. Ada **dua cara** mencatat barang datang (status PO *Diterima* dan menu *Penerimaan Barang*); keduanya dicegah menambah stok dua kali, dan penerimaan yang melengkapi seluruh qty PO mengubah status PO menjadi *Diterima*.
 >
 > ❓ Apakah barang dari supplier bisa datang bertahap (sebagian)? Kapan faktur supplier diterima? Siapa yang mencatat penerimaan di gudang? — **REQUIRES USER CONFIRMATION**
+
+### Alur pengambilan (trading)
+
+Barang dibeli dari supplier dan diambil truk pelanggan langsung di supplier, tanpa masuk gudang. Rincian di [§V](#v-pengambilan-trading).
+
+```mermaid
+flowchart LR
+  SO["PO pelanggan<br/>(Pesanan Penjualan, Dikonfirmasi)"] --> PO["PO supplier<br/>(Dikonfirmasi, satu barang)"]
+  PO -->|Buka untuk pengambilan| SJ["Surat jalan untuk semua truk<br/>⌈jumlah ÷ kapasitas⌉, nomor PO/01…"]
+  SJ -->|Catat Pengambilan /<br/>Impor Rekap Timbangan| TR(["Pengambilan per truk<br/>bruto − tara = netto<br/>+ jurnal per truk"])
+  TR -->|Tagih Pelanggan, per periode| SI["Faktur Penjualan"]
+  TR -->|Tagihan Supplier, per periode| PI["Faktur Pembelian"]
+  SI --> SR["Penerimaan Pembayaran"]
+  PI --> PP["Pembayaran ke Supplier"]
+  PO -.->|kuota terpenuhi / lewat batas / tutup manual| CL(["PO Selesai,<br/>surat jalan sisa Batal"])
+```
+
+| Langkah | Wajib? | Sifat | Mengubah stok | Membentuk jurnal |
+|---|---|---|---|---|
+| PO pelanggan (Pesanan Penjualan) | **Wajib**, status Dikonfirmasi | Komersial | Tidak | Tidak (pesanan pengambilan dibukukan per truk) |
+| PO supplier dibuka untuk pengambilan | **Wajib**, satu barang per PO | Operasional | Tidak | Tidak |
+| Catat Pengambilan / Impor Rekap Timbangan | **Wajib** per truk | Operasional | **Tidak** | Ya, per truk: pembelian, HPP, penjualan |
+| Tagih Pelanggan | Per periode (mis. mingguan) | Keuangan | Tidak | Ya (penjualan pindah ke faktur) |
+| Tagihan Supplier | Per periode | Keuangan | Tidak | Ya (pembelian pindah ke faktur) |
+| Penerimaan / Pembayaran | Atas faktur | Keuangan | Tidak | Ya |
 
 ---
 
@@ -100,7 +127,7 @@ Catatan: baris "item manual" tersimpan dengan nama "Custom Item" (nama yang dike
 | 4 | Saat disimpan | Nomor `SO.YYYY.MM.NNNNN`; total = subtotal + PPN (bila dicentang). Bila status **Dikonfirmasi** → stok direservasi (peringatan bila tidak cukup). Bila status **Terkirim** → stok langsung dikurangi |
 | 5 | Stok | Reservasi saat *Dikonfirmasi*; stok fisik berkurang saat *Terkirim* |
 | 6–7 | Akuntansi / jurnal | Saat *Terkirim*: Piutang (+PPN Keluaran) vs Penjualan, dan HPP vs Persediaan (harga pokok rata-rata). Pembayaran lewat "Catat Pembayaran": Kas/Bank vs Piutang |
-| 8 | Status | Draft · Dikonfirmasi · Terkirim · Lunas · Dibatalkan (+ status impor Accurate: Menunggu Proses, Diproses Sebagian, Diproses) |
+| 8 | Status | Draft · Dikonfirmasi · Terkirim · Lunas · Dibatalkan · **Selesai** (pesanan pengambilan yang sudah habis diambil, lihat [§V](#v-pengambilan-trading)) (+ status impor Accurate: Menunggu Proses, Diproses Sebagian, Diproses) |
 | 9 | Bisa diubah | ✅ Ya, di semua status (form Edit), termasuk mengganti status |
 | 10 | Setelah Terkirim | Mengubah baris akan mengembalikan stok lama lalu mengurangi stok baru; jurnal dihitung ulang otomatis. ⚠ Perhitungan ulang stok saat edit tidak memperbarui stok per gudang dengan benar (T-05) |
 | 11 | Batal | Ubah status ke **Dibatalkan** (tidak dikunci), atau **Hapus** (dengan undo + recycle bin) |
@@ -115,7 +142,7 @@ Fitur tambahan: ubah status langsung dari daftar, ubah status massal, duplikat, 
 
 | # | Pertanyaan | Jawaban |
 |---|---|---|
-| 1 | Mulai dari mana | Detail SO → **Buat DO**, atau **Penjualan → Delivery Order** → **Buat DO Baru** |
+| 1 | Mulai dari mana | Detail SO → **Buat DO**, atau **Penjualan → Surat Jalan** → **Buat DO Baru** |
 | 2 | Data diisi | Referensi (Manual / Sales Order / Purchase Order), pelanggan/supplier, tujuan, tanggal kirim, status, driver, no. kendaraan, no. PO pelanggan, catatan, qty per barang |
 | 3 | Wajib | Pihak, tujuan, tanggal |
 | 4 | Saat disimpan | Nomor `DO.YYYY.MM.NNN`. Bila dari SO, qty terisi otomatis sebesar **sisa yang belum dikirim** (mendukung kirim sebagian). Bila tujuan berbeda dari alamat pelanggan, diberi tanda "TUJUAN DIUBAH" |
@@ -124,9 +151,11 @@ Fitur tambahan: ubah status langsung dari daftar, ubah status massal, duplikat, 
 | 8 | Status | Pending · Dalam Pengiriman · Terkirim (form) — plus status impor: Terkirim/Faktur Sebagian/Difakturkan |
 | 9 | Bisa diubah | ✅ Ya; perubahan status divalidasi |
 | 10–12 | Batal | Hapus (undo + recycle bin); tidak ada efek stok/akuntansi |
-| 13 | Menemukan lagi | Daftar Delivery Order (menampilkan asal SO/PO), detail SO/PO, Jejak Dokumen |
+| 13 | Menemukan lagi | Daftar Surat Jalan (menampilkan asal SO/PO), detail SO/PO, Jejak Dokumen |
 
 Fitur: cetak Surat Jalan, **Bulk Surat Jalan** (membagi total muatan per kapasitas truk menjadi beberapa lembar Excel).
+
+Surat jalan **pengambilan** (dibuat otomatis saat PO supplier dibuka untuk pengambilan) tidak tampil di daftar ini; daftar menampilkan jumlahnya dengan tautan ke Pengambilan → PO Pengambilan. Ubah dan hapus surat jalan pengambilan dari menu Surat Jalan ditolak — surat jalan itu hanya diubah lewat menu Pengambilan agar kuota PO, timbangan, dan faktur tetap konsisten ([§V](#v-pengambilan-trading)).
 
 ❓ Apakah pengiriman barang **seharusnya** yang mengurangi stok (bukan status SO)? Apakah armada sendiri, ekspedisi, atau keduanya? — **REQUIRES USER CONFIRMATION**
 
@@ -135,14 +164,14 @@ Fitur: cetak Surat Jalan, **Bulk Surat Jalan** (membagi total muatan per kapasit
 | # | Pertanyaan | Jawaban |
 |---|---|---|
 | 1 | Mulai dari mana | Detail SO → **Buat Faktur**, atau **Penjualan → Faktur Penjualan** → **Buat Faktur** |
-| 2 | Data diisi | Sumber = SO berstatus Terkirim, tanggal, catatan (baris diambil dari SO) |
+| 2 | Data diisi | Sumber = SO berstatus Terkirim, tanggal, catatan (baris diambil dari SO). Faktur dari pengambilan dibuat lewat **Pengambilan → Tagih Pelanggan** (satu baris per truk, [§V](#v-pengambilan-trading)) |
 | 3 | Wajib | Dokumen sumber |
-| 4 | Saat disimpan | Nomor `SI.YYYY.MM.NNNNN`, langsung berstatus **Belum Lunas** (Outstanding) |
+| 4 | Saat disimpan | Nomor `SI.YYYY.MM.NNNNN`, langsung berstatus **Belum Lunas** (Outstanding); tarif dan nilai PPN ikut dari SO |
 | 5 | Stok | Tidak |
-| 6–7 | Akuntansi | Piutang vs Penjualan (+ HPP). ⚠ Tumpang tindih dengan jurnal SO Terkirim (T-01); PPN dari SO tidak ikut ke faktur (T-03) |
-| 8 | Status | Belum Lunas → **Lunas** otomatis bila total penerimaan ≥ nilai faktur |
-| 9–12 | Ubah/batal | ❌ Tidak ada tombol ubah, hapus, atau batal. Koreksi hanya lewat Retur Penjualan |
-| 13 | Menemukan lagi | Tab Faktur Penjualan, detail SO ("Faktur Terkait"), Kartu Piutang pelanggan, Umur Piutang |
+| 6–7 | Akuntansi | Piutang (+PPN Keluaran) vs Penjualan. HPP tetap dibentuk oleh pengiriman SO (atau oleh truk, untuk faktur dari pengambilan) — lihat [04 §4.1](04-AKUNTANSI.md) |
+| 8 | Status | Belum Lunas → **Lunas** otomatis bila total penerimaan ≥ nilai faktur · Dibatalkan |
+| 9–12 | Ubah/batal | Tidak bisa diubah atau dihapus. **Batalkan** bila belum ada penerimaan dan retur: dokumen tetap tersimpan berstatus Dibatalkan; pendapatan & piutang kembali dicatat dari SO Terkirim, atau — untuk faktur dari pengambilan — truknya kembali menjadi "belum ditagih" |
+| 13 | Menemukan lagi | Tab Faktur Penjualan, detail SO ("Faktur Terkait"), Kartu Piutang pelanggan, Umur Piutang. Detail faktur dari pengambilan menampilkan jumlah truk, periode, dan nomor surat jalannya |
 
 Cetak: tombol **Cetak PDF** (perlu verifikasi template faktur, T-16).
 
@@ -160,7 +189,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | 2–3 | Data / wajib | Faktur sumber, tanggal, jumlah (> 0), metode (Tunai, Transfer BCA, Transfer Mandiri, Lainnya), catatan |
 | 4 | Saat disimpan | Langsung **Diposting** |
 | 6–7 | Jurnal | Debit Kas (Tunai) / Bank BCA / Bank Mandiri, Kredit Piutang Usaha |
-| 9–12 | Ubah/batal | ❌ Tidak ada ubah/hapus/batal |
+| 9–12 | Ubah/batal | Tidak bisa diubah atau dihapus. **Batalkan**: saldo kas/bank dan piutang dikembalikan, status faktur dihitung ulang |
 | 13 | Menemukan | Tab Penerimaan, Kartu Piutang, Riwayat Akun Kas |
 
 ⚠ Kedua cara tidak saling mengenali: mencatat pembayaran yang sama di SO **dan** di faktur akan menggandakan kas (T-06). Pembayaran sebagian didukung di kedua cara.
@@ -204,7 +233,7 @@ Sama seperti Penawaran Penjualan, tetapi pihaknya **Supplier** dan harga default
 | 4 | Saat disimpan | Nomor `PO.YYYY.MM.NNNNN`. Bila status **Diterima** → stok langsung bertambah |
 | 5 | Stok | Bertambah saat *Diterima* |
 | 6–7 | Jurnal | Saat *Diterima*: Persediaan (barang stok) / Beban Operasional Lain (baris manual) + PPN Masukan vs Hutang Usaha. Pembayaran via log: Hutang vs Kas/Bank |
-| 8 | Status | Draft · Dikonfirmasi · Diterima · Lunas · Dibatalkan (+ status impor) |
+| 8 | Status | Draft · Dikonfirmasi · Diterima · Lunas · Dibatalkan · **Selesai** (PO pengambilan yang ditutup, lihat [§V](#v-pengambilan-trading)) (+ status impor) |
 | 9 | Bisa diubah | ✅ Ya, semua status (tanpa validasi transisi di form) |
 | 10 | Setelah Diterima | Edit mengembalikan stok lama lalu menambah stok baru. ⚠ Bisa menggandakan stok (T-05) |
 | 11–12 | Batal | Status Dibatalkan atau Hapus; bila sudah Diterima stok dikurangi kembali; jurnal hilang |
@@ -217,19 +246,23 @@ Cetak: "Pesanan Pembelian" (menampilkan PPh 23 2% sebagai informasi — ❓ **RE
 | # | Jawaban |
 |---|---|
 | Mulai | Pembelian → Penerimaan Barang → **Terima Barang** |
-| Data | PO (Draft/Dikonfirmasi), tanggal terima, catatan, qty diterima per baris, centang "Langsung update stok" |
-| Saat disimpan | Dokumen `GR-…`; bila dicentang, stok bertambah (gudang utama) |
-| Akuntansi | ❌ Tidak ada jurnal; status PO **tidak** berubah; tidak masuk kartu stok & harga pokok rata-rata |
-| Batal | Hapus (stok **tidak** dikembalikan) |
+| Data | PO (Draft/Dikonfirmasi/Lunas yang belum Diterima), tanggal terima, catatan, centang "Langsung update stok", dan per baris: qty diterima (maksimal sisa yang belum diterima), qty surat jalan, **Bruto**, **Tara**, **Netto** (= Bruto − Tara; boleh diketik langsung bila tidak ada bruto), harga satuan |
+| Saat disimpan | Dokumen `GR-…`; bila dicentang, stok bertambah di gudang PO (atau gudang utama). Bila seluruh qty PO sudah diterima, status PO menjadi **Diterima**. Tara lebih besar dari bruto ditolak |
+| Akuntansi | Persediaan & hutang dicatat dari PO saat PO menjadi *Diterima*. Bila PO difakturkan **per penerimaan** (Rekonsiliasi Timbangan), setiap penerimaan yang belum difakturkan membentuk jurnal persediaan/hutangnya sendiri ([04 §4.2](04-AKUNTANSI.md)) |
+| Batal | Hapus: draft bebas dihapus; penerimaan yang sudah menambah stok dihapus dengan mengurangi stok kembali — ditolak bila barangnya sudah terpakai, bila PO sudah diterima penuh, atau bila penerimaan sudah difakturkan (batalkan fakturnya dulu) |
 
-➡ Menu ini berjalan terpisah dari status PO *Diterima* (T-07). Perlu diputuskan satu cara baku — **REQUIRES USER CONFIRMATION**.
+**Rekonsiliasi Timbangan** (Pembelian → Rekonsiliasi Timbangan): per penerimaan, bandingkan qty pesanan, qty surat jalan, dan netto timbangan, lalu tetapkan qty yang menjadi dasar faktur (bukan qty pesanan). Penerimaan yang sudah direkonsiliasi bisa dibuatkan **faktur pembelian sendiri** (satu faktur per penerimaan), sehingga satu PO bisa punya beberapa faktur.
+
+**Validasi SJ Supplier** (Pembelian → Validasi SJ Supplier): rekap tagihan dari supplier (Excel) dicocokkan dengan penerimaan yang sudah direkonsiliasi; selisih tonase atau harga ditandai sebelum faktur dibuat. Panduan: [SJ_VALIDATION_DEMO.md](SJ_VALIDATION_DEMO.md).
+
+➡ Dua cara mencatat barang datang (status PO *Diterima* dan menu Penerimaan Barang) dicegah menambah stok dua kali (T-07). Cara baku yang dipakai bisnis — **REQUIRES USER CONFIRMATION**. Pengambilan dari **PO pengambilan** dicatat di [§V](#v-pengambilan-trading), bukan lewat menu ini.
 
 ## K. Faktur Pembelian (PI) dan Pembayaran ke Supplier (PP)
 
 Sama seperti Faktur Penjualan & Penerimaan (bagian D–E), dengan arah berlawanan:
-- Faktur Pembelian dibuat dari **PO Diterima** → status Belum Lunas → jurnal Persediaan (+PPN Masukan) vs Hutang (⚠ T-02).
+- Faktur Pembelian dibuat dari **PO Diterima**, dari **satu penerimaan** yang sudah direkonsiliasi (Rekonsiliasi Timbangan), atau dari **pengambilan** (Pengambilan → Tagihan Supplier, [§V](#v-pengambilan-trading)) → status Belum Lunas → jurnal Persediaan (+PPN Masukan) vs Hutang. Bila PO sudah punya faktur aktif, jurnal penerimaan PO tidak dibentuk lagi (T-02).
 - Pembayaran (PP) dari faktur Belum Lunas → jurnal Hutang vs Kas/Bank → faktur Lunas bila penuh.
-- Tidak ada ubah/hapus/batal untuk faktur maupun pembayaran.
+- Faktur dan pembayaran tidak bisa diubah atau dihapus; keduanya bisa **dibatalkan** dengan aturan yang sama seperti bagian D–E. Membatalkan faktur dari pengambilan membuat truknya kembali "belum difakturkan supplier".
 
 ## L. Uang Muka Pembelian dan Retur Pembelian
 
@@ -265,15 +298,19 @@ Sama seperti Faktur Penjualan & Penerimaan (bagian D–E), dengan arah berlawana
 
 | Transaksi | Data | Efek saat ini |
 |---|---|---|
-| **Pengeluaran Lain** (Other Payment) | Tanggal, rekening, penerima, kategori (Utilities, Sewa, Gaji, Transportasi, Pemeliharaan, Asuransi, Pajak, Lainnya), jumlah, metode, referensi, keterangan | ⚠ Hanya tersimpan — **tidak** membentuk jurnal (T-08) |
-| **Penerimaan Lain** (Other Deposit) | Tanggal, rekening, pengirim, kategori, jumlah, metode, keterangan | ⚠ Tidak membentuk jurnal |
-| **Transfer Bank** | Tanggal, dari rekening, ke rekening, jumlah, biaya transfer | ⚠ Tidak membentuk jurnal |
-| **Rekening Koran** | Input manual baris debit/kredit per rekening & periode | Pencatatan |
-| **Rekonsiliasi Bank** | Centang baris rekening koran terbaru | Tidak mencocokkan otomatis |
+| **Pengeluaran Lain** (Other Payment) | Tanggal, rekening, penerima, kategori (ATK, Entertain, Utilities, Sewa, Gaji, Transportasi, Pemeliharaan, Asuransi, Pajak, Biaya Bank, Reimbursement, Lainnya), jumlah, metode (Transfer Bank, Tunai, Cek, Giro, QRIS), **akun beban** (terisi dari kategori, bisa diganti), referensi, keterangan | Jurnal otomatis: beban vs kas/bank ([04 §6](04-AKUNTANSI.md)) |
+| **Penerimaan Lain** (Other Deposit) | Tanggal, rekening, pembayar, kategori (Penjualan, Penerimaan Lainnya, Refund, Bunga Bank, Lainnya), jumlah, metode, **akun pendapatan**, keterangan | Jurnal otomatis: kas/bank vs pendapatan |
+| **Transfer Bank** | Tanggal, dari rekening, ke rekening, jumlah, biaya transfer | Jurnal otomatis: rekening tujuan (+ biaya bank) vs rekening asal |
+| **Rekening Koran** | Rekening, periode, saldo awal & akhir, baris debit/kredit diketik manual | Pencatatan |
+| **Rekonsiliasi Bank** | Pilih rekening koran; centang baris yang cocok; isi saldo akhir rekening koran | Menampilkan **saldo rekening koran vs saldo buku besar** dan selisihnya per akhir periode. Baris yang belum tercatat bisa langsung dicatat dengan **Catat biaya** (baris debit → Pengeluaran Lain kategori Biaya Bank) atau **Catat bunga** (baris kredit → Penerimaan Lain kategori Bunga Bank); tombol **Catat biaya bank** untuk biaya admin, biaya transfer, pajak bunga, atau bunga |
 
-Semua dapat dihapus kapan saja. Pengeluaran yang **masuk** buku besar saat ini hanya lewat **Biaya Akrual** atau **Jurnal Umum**.
+Kategori lama "Transport" ditampilkan sebagai **Transportasi** di daftar, rekap, dan ekspor.
 
-❓ Biaya operasional (listrik, sewa, BBM, gaji) dicatat oleh siapa dan seberapa rinci? Apakah perlu per kategori biaya? — **REQUIRES USER CONFIRMATION**
+**Rekap per bulan:** halaman Pengeluaran Lain dan Penerimaan Lain punya pemilih periode (per bulan atau semua periode), total periode, tabel **Rekap per kategori** (kategori, akun, jumlah transaksi, jumlah), dan tombol **Ekspor Excel** — file berisi daftar transaksi periode itu dan rekap per kategori, untuk akuntan atau pihak lain yang tidak memakai aplikasi. Transaksi berstatus batal tidak ikut rekap dan ekspor.
+
+Semua dapat dihapus kapan saja; jurnalnya ikut hilang. Pengeluaran rutin bisa dicatat cepat lewat kartu **Biaya Operasional** di Entri Harian.
+
+❓ Pemetaan kategori → akun perlu disetujui akuntan — **REQUIRES USER CONFIRMATION** ([04 §6](04-AKUNTANSI.md)).
 
 ## P. Jurnal Umum (Journal Voucher)
 
@@ -311,13 +348,109 @@ Pengaturan → Kelola Backup → **Import dari Excel** (atau menu Import dari Ex
 
 | Kebutuhan | Tempat di aplikasi | Dasar perhitungan |
 |---|---|---|
-| Siapa belum bayar | Keuangan → Piutang Pelanggan (Aging) | Faktur Penjualan belum lunas − penerimaan |
-| Riwayat per pelanggan | Detail Pelanggan → **Kartu Piutang** | Faktur (debit) dan Penerimaan (kredit) |
+| Siapa belum bayar | Akuntansi → Ringkasan Keuangan → **Piutang pelanggan** (umur piutang) | Faktur Penjualan belum lunas − penerimaan − retur; SO terkirim yang belum difakturkan; **pengambilan yang belum ditagih** |
+| Riwayat per pelanggan | Detail Pelanggan → **Kartu Piutang** | Faktur, SO terkirim belum difakturkan, dan pengambilan belum ditagih (debit); penerimaan dan retur (kredit) |
 | Saldo akuntansi | Buku Besar → akun 110201 Piutang Usaha | Jurnal |
-| Hutang ke supplier | Keuangan → Hutang (Aging) | ⚠ PO berstatus Dikonfirmasi (bukan faktur) |
-| Riwayat per supplier | Detail Supplier → **Kartu Hutang** | Faktur Pembelian dan Pembayaran |
+| Hutang ke supplier | Akuntansi → Ringkasan Keuangan → **Hutang ke supplier** | Faktur Pembelian belum lunas; PO diterima / penerimaan yang belum difakturkan; **pengambilan yang belum ada faktur supplier** |
+| Riwayat per supplier | Detail Supplier → **Kartu Hutang** | Sama seperti Kartu Piutang, sisi supplier |
+| Ringkasan per pelanggan (pengambilan) | Ringkasan → **Tagihan pelanggan** | Belum ditagih, ditagih belum lunas, lewat jatuh tempo, diterima bulan ini |
 
-⚠ Angka piutang/hutang dihitung dengan dasar yang berbeda di beberapa layar (Dashboard, daftar SO, aging, buku besar), sehingga bisa tidak sama (T-09).
+Semua layar memakai satu perhitungan saldo (T-09, diperbaiki), sehingga angka dashboard, umur piutang/hutang, dan kartu piutang/hutang sama. Pengambilan yang belum ditagih **tidak punya jatuh tempo** — termin baru berjalan sejak faktur dibuat — sehingga tidak pernah dihitung "lewat jatuh tempo"; keterlambatan menagih muncul sebagai peringatan "pengambilan belum ditagih" (Ringkasan dan notifikasi).
+
+## V. Pengambilan (trading)
+
+Barang dibeli dari supplier dan diambil truk pelanggan langsung di lokasi supplier; barang tidak masuk gudang. Satu **PO pelanggan** (dicatat sebagai Pesanan Penjualan) dipasangkan dengan satu atau lebih **PO supplier** untuk barang yang sama. Setiap truk adalah satu **pengambilan** dengan satu surat jalan dan satu hasil timbangan. Semua layarnya ada di grup menu **Pengambilan**; tugas harian juga bisa dibuka dari **Entri Harian**.
+
+### V1. Membuka PO supplier untuk pengambilan
+
+| # | Pertanyaan | Jawaban |
+|---|---|---|
+| 1 | Mulai dari mana | PO supplier dibuat dan dikonfirmasi di Pembelian → Pesanan Pembelian, lalu **Pengambilan → PO Pengambilan** → daftar **PO siap dibuka** → **Buka untuk pengambilan** |
+| 2 | Data diisi | PO pelanggan (Pesanan Penjualan berstatus Dikonfirmasi yang memuat barang yang sama), kapasitas per truk (bawaan 35), batas pengambilan (bawaan akhir bulan tanggal PO) |
+| 3 | Wajib | PO supplier berstatus **Dikonfirmasi** berisi **tepat satu barang** (satu jenis/ukuran per PO); PO pelanggan; kapasitas > 0; batas pengambilan tidak sebelum tanggal PO |
+| 4 | Saat disimpan | Surat jalan untuk semua truk langsung dibuat: ⌈jumlah PO ÷ kapasitas⌉ lembar (mis. 500 ton ÷ 35 = 15), bernomor `<No PO>/01`, `/02`, …, berstatus **Siap**, berisi pelanggan, tujuan (alamat pelanggan), barang, dan harga jual dari PO pelanggan. Jumlahnya tetap: PO tidak bisa mendapat surat jalan tambahan. Layar memperingatkan bila PO pelanggan sudah punya PO pengambilan yang berjalan, atau bila jumlah PO supplier melebihi sisa PO pelanggan |
+| 5 | Stok | Tidak berubah |
+| 6–7 | Akuntansi | Tidak ada jurnal; jurnal dibentuk per truk saat pengambilan dicatat |
+| 8 | Status | PO tetap **Dikonfirmasi** (berjalan) sampai ditutup menjadi **Selesai** (§V4) |
+| 9–12 | Ubah/batal | Surat jalan yang belum dipakai bisa **dibatalkan** satu per satu (alasan opsional). PO bisa ditutup (**Tutup PO**) dan dibuka kembali (§V4) |
+| 13 | Menemukan lagi | PO Pengambilan (tab Berjalan / Selesai) dan detail PO. **Ekspor Excel untuk timbangan** (per PO atau per supplier) menghasilkan daftar surat jalan dengan kolom tanggal, No Polisi, sopir, bruto, tara, netto yang diisi bagian timbangan; **Cetak SJ** mencetak satu surat jalan |
+
+### V2. Catat Pengambilan (satu truk)
+
+| # | Pertanyaan | Jawaban |
+|---|---|---|
+| 1 | Mulai dari mana | **Pengambilan → Catat Pengambilan**, tombol di PO Pengambilan / detail PO, atau kartu di Entri Harian. Formnya nyaman dipakai di HP |
+| 2 | Data diisi | PO pengambilan, surat jalan (yang masih Siap terpilih otomatis), tanggal ambil, No. Polisi, sopir, **bruto** dan **tara** (netto dihitung) atau netto langsung, tujuan (terisi alamat pelanggan), No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan |
+| 3 | Wajib | PO dan surat jalan, tanggal, No. Polisi, netto > 0. Tara harus lebih kecil dari bruto; tanggal tidak sebelum tanggal PO dan tidak setelah batas pengambilan |
+| 4 | Saat disimpan | Surat jalan menjadi **Diambil**, netto menjadi qty. Harga jual = harga di PO pelanggan. Harga beli = **Harga Supplier** yang berlaku pada tanggal ambil (bila tidak ada, harga PO); bila berbeda dari harga PO muncul peringatan. Tujuan yang diubah dari alamat pelanggan ditandai "Tujuan diubah". Netto jauh di atas kapasitas truk (lebih dari 125%) memunculkan peringatan. Bila total diambil melebihi kuota PO, penyimpanan ditolak kecuali dikonfirmasi **Tetap simpan**. Bila kuota terpenuhi, PO ditutup otomatis |
+| 5 | Stok | **Tidak berubah** — barang langsung dari supplier ke pelanggan |
+| 6–7 | Jurnal | Satu jurnal per truk: pembelian (Persediaan + PPN Masukan vs Hutang), HPP vs Persediaan pada harga beli, dan penjualan (Piutang vs Penjualan + PPN Keluaran). Setelah ada faktur, bagian penjualan/pembelian pindah ke faktur — [04 §4.5](04-AKUNTANSI.md#45-pengambilan-trading) |
+| 8 | Status | Siap → **Diambil** → **Ditagih** (sudah ada Faktur Penjualan aktif) · **Batal** (surat jalan tidak dipakai) |
+| 9 | Bisa diubah | Berat diubah lewat **Impor Rekap Timbangan** (riwayat berat disimpan, §V3). Harga beli bisa dikoreksi di Tagihan Supplier selama truk belum masuk faktur supplier (riwayat harga disimpan). Menu Surat Jalan menolak ubah/hapus surat jalan pengambilan |
+| 10–12 | Batal | Pengambilan yang sudah dicatat tidak bisa dibatalkan atau dihapus dari aplikasi; yang bisa dibatalkan hanya surat jalan yang belum dipakai |
+| 13 | Menemukan lagi | Detail PO pengambilan, Rekap Pengambilan, Laporan per Periode (jenis Pengambilan), umur piutang/hutang dan Kartu Piutang/Hutang (selama belum ditagih), faktur yang menagihnya |
+
+### V3. Impor Rekap Timbangan dan Perubahan Timbangan
+
+| # | Jawaban |
+|---|---|
+| Mulai | **Pengambilan → Impor Rekap Timbangan** (atau kartu Entri Harian) → **Pilih file rekap** (.xlsx, .xls, .csv) |
+| Kolom yang dibaca | No SJ, Tanggal, No Polisi, Sopir, Bruto, Tara, Netto (juga No PO, Barang, Pelanggan, No tiket bila ada). Nama kolom fleksibel (mis. "Nopol", "Berat bersih"); angka desimal dengan koma dan tanggal hari/bulan/tahun dikenali. Paling tepat memakai file dari **Ekspor Excel untuk timbangan** yang sudah diisi bagian timbangan |
+| Pencocokan | Per No SJ; baris tanpa No SJ dicocokkan dengan Tanggal + No Polisi pada pengambilan yang sudah tercatat |
+| Hasil sebelum diterapkan | **Baru dicatat** (surat jalan Siap yang ada beratnya di rekap), **Sama** (dilewati), **Berubah** (berat berbeda dari yang tercatat; ditandai bila sudah ditagih), **Tidak cocok / bermasalah** (No SJ tidak dikenal, SJ muncul dua kali, SJ batal, PO sudah ditutup, lewat batas, netto kosong) |
+| Terapkan | Baris baru dicatat dengan aturan yang sama seperti Catat Pengambilan (centang "Tetap catat walau melebihi kuota PO" bila perlu). Baris berubah memperbarui berat dan menyimpan riwayatnya |
+| Rekap kumulatif | Rekap boleh berisi semua pengambilan sejak awal: baris yang sama dilewati, berat yang berubah ditandai |
+
+**Perubahan Timbangan:** bila berat berubah pada truk yang **sudah masuk faktur** (pelanggan atau supplier), faktur **tidak diubah otomatis**. Muncul peringatan di Pengambilan → Perubahan Timbangan, PO Pengambilan, Ringkasan, dan notifikasi sampai ditandai **selesai** dengan catatan tindak lanjut (mis. "selisih ditagihkan susulan di faktur berikutnya"). Faktur berikutnya memakai berat baru. Halaman yang sama memuat riwayat semua perubahan berat (waktu, pengguna, sumber, berat lama → baru).
+
+### V4. Kuota, batas pengambilan, dan penutupan PO
+
+- **Kuota** = jumlah di PO supplier. Pengambilan yang membuat total melebihi kuota ditolak kecuali dikonfirmasi.
+- **Batas pengambilan (cut-off)** = bawaan akhir bulan tanggal PO, bisa diatur saat PO dibuka. Pengambilan bertanggal setelah batas ditolak; sisa diambil lewat PO supplier baru.
+- PO ditutup menjadi **Selesai** saat kuota terpenuhi (otomatis saat pengambilan dicatat), saat lewat batas (otomatis setiap kali daftar PO Pengambilan dibuka), atau lewat **Tutup PO**. Surat jalan yang belum dipakai menjadi **Batal**. Menutup PO butuh hak ubah Pembelian; bila pencatat tidak punya hak itu, PO tetap terbuka sampai ditutup pengguna yang berhak.
+- **Buka kembali**: PO kembali Dikonfirmasi dan surat jalan yang dibatalkan saat PO ditutup aktif lagi dengan nomor yang sama. Bila batas sudah lewat, hanya pengambilan bertanggal sampai batas yang bisa dicatat, dan PO ditutup lagi saat daftar dibuka.
+- **PO pelanggan** menjadi **Selesai** saat seluruh qty-nya sudah diambil dan tidak ada PO supplier yang masih berjalan untuknya. PO supplier yang ditutup karena batas dengan sisa tonase membiarkan PO pelanggan tetap berjalan, sehingga sisanya bisa diambil lewat PO supplier baru untuk PO pelanggan yang sama. Apakah PO pelanggan juga harus berakhir saat cut-off — **REQUIRES USER CONFIRMATION** ([11 §2](11-KEBUTUHAN-MEETING-14-SEP-2026.md)).
+- Ringkasan dan notifikasi menandai PO yang lewat batas tetapi masih terbuka, batas dalam 3 hari, atau kuota terambil ≥ 90%.
+
+### V5. Tagih Pelanggan
+
+| # | Pertanyaan | Jawaban |
+|---|---|---|
+| 1 | Mulai dari mana | **Pengambilan → Tagih Pelanggan**, kartu di Entri Harian, atau baris "Pengambilan belum ditagih" di Ringkasan |
+| 2 | Data diisi | Pilih pelanggan dari daftar yang punya pengambilan belum ditagih (nilai termasuk PPN, umur pengambilan tertua) → periode (bawaan: sehari setelah periode faktur pengambilan terakhir pelanggan itu sampai hari ini, atau 7 hari terakhir; tombol cepat Minggu ini / 7 hari terakhir / Bulan ini) → centang truk → tanggal faktur |
+| 3 | Wajib | Minimal satu truk, semua dari pelanggan yang sama. Truk dari PO pelanggan dengan pengaturan PPN berbeda tidak bisa digabung dalam satu faktur |
+| 4 | Saat disimpan | Satu **Faktur Penjualan**: satu baris per truk (netto × harga jual; keterangan No SJ · tanggal · No. Polisi), periode pengambilan, jatuh tempo = tanggal faktur + termin pelanggan, PPN dari PO pelanggan. Truknya menjadi **Ditagih**. Layar memberi tahu bila masih ada pengambilan belum ditagih sebelum periode yang dipilih |
+| 5 | Stok | Tidak |
+| 6–7 | Jurnal | Faktur membentuk Piutang (+PPN Keluaran) vs Penjualan; bagian penjualan di jurnal truk berhenti sehingga tidak tercatat dua kali. HPP tetap di jurnal truk |
+| 8 | Status | Belum Lunas → Lunas (lewat Penerimaan Pembayaran) · Dibatalkan |
+| 9–12 | Ubah/batal | Faktur tidak bisa diubah. **Batalkan** (bila belum ada penerimaan dan retur) → truknya kembali "belum ditagih" dan bisa ditagih lagi. Truk yang sudah ada di faktur aktif tidak bisa ditagih dua kali |
+| 13 | Menemukan lagi | Faktur Penjualan (detail menampilkan jumlah truk, periode, dan No SJ), Rekap Pengambilan (kolom Faktur Pelanggan), Kartu Piutang. Setelah faktur dibuat tersedia **Buka faktur**, **Cetak**, dan **Ekspor rekap Excel** untuk dikirim ke pelanggan |
+
+### V6. Tagihan Supplier
+
+| # | Pertanyaan | Jawaban |
+|---|---|---|
+| 1 | Mulai dari mana | **Pengambilan → Tagihan Supplier** → pilih supplier yang punya pengambilan belum difakturkan |
+| 2 | Data diisi | No. faktur supplier, tanggal faktur, periode tagihan, **tonase ditagih**, **harga per ton** ditagih, catatan harga (bila tagihan memakai lebih dari satu harga), centang truk |
+| 3 | Wajib | No. faktur supplier (tidak boleh sama dengan faktur aktif lain dari supplier yang sama), tonase ditagih > 0, minimal satu truk; **alasan** bila tonase berbeda dari pengambilan kita |
+| 4 | Saat disimpan | Sebelum disimpan, layar membandingkan tonase dan harga tagihan dengan pengambilan kita dan menandai selisih, truk dengan perubahan timbangan yang belum selesai, serta truk yang belum memakai Harga Supplier yang berlaku. Harga beli truk bisa disamakan dengan harga tagihan atau dengan Harga Supplier (riwayat harga disimpan). Bila tonase atau harga berbeda, diminta konfirmasi. Hasilnya satu **Faktur Pembelian**, satu baris per truk **dengan harga beli yang tercatat di truk**; angka tagihan supplier dan alasan selisih disimpan di catatan faktur |
+| 5 | Stok | Tidak |
+| 6–7 | Jurnal | Faktur membentuk Persediaan (+PPN Masukan) vs Hutang; bagian pembelian di jurnal truk berhenti. HPP truk mengikuti nilai yang dibukukan faktur untuk truk itu |
+| 8 | Status | Belum Lunas → Lunas (lewat Pembayaran ke Supplier) · Dibatalkan |
+| 9–12 | Ubah/batal | **Batalkan** (bila belum ada pembayaran dan retur) → truknya kembali "belum difakturkan supplier" |
+| 13 | Menemukan lagi | Faktur Pembelian, Rekap Pengambilan (kolom Faktur Supplier), Kartu Hutang |
+
+### V7. Rekap dan pemantauan
+
+- **Rekap Pengambilan**: semua truk per periode, pelanggan, supplier, dan PO; jumlah truk, total netto, belum ditagih ke pelanggan, belum ada faktur supplier; ekspor Excel (tanggal, No SJ, PO supplier, PO pelanggan, pelanggan, barang, No. Polisi, sopir, bruto, tara, netto, faktur pelanggan, faktur supplier).
+- **Laporan per Periode** (Laporan → Laporan per Periode) dengan jenis **Pengambilan**: netto, nomor PO dan PO pelanggan, total netto sendiri (tidak dicampur total pesanan).
+- **Ringkasan**: Alur pengambilan, Tagihan pelanggan, PO pengambilan berjalan, Tonase per bulan, dan baris Perlu tindakan ([09 §4](09-AUDIT-UX.md)). **Notifikasi**: perubahan timbangan, PO di batas cut-off, pengambilan belum ditagih lebih dari 7 hari ([02 §4](02-PETA-MODUL-DAN-NAVIGASI.md)).
+- **Arsip Excel** per tahun (Kelola Backup) memuat sheet Rekap Pengambilan.
+
+❓ **REQUIRES USER CONFIRMATION** (rincian di [11](11-KEBUTUHAN-MEETING-14-SEP-2026.md)):
+- Format rekap Excel asli dari bagian timbangan supplier (contoh file) — untuk memastikan kolom yang dibaca Impor Rekap Timbangan.
+- Apakah PO pelanggan juga berakhir saat cut-off akhir bulan, atau tetap berjalan sampai habis (perilaku saat ini).
+- Membaca angka di foto DO/tiket secara otomatis belum dibuat; foto hanya disimpan sebagai bukti.
 
 ---
 
@@ -329,18 +462,21 @@ Pengaturan → Kelola Backup → **Import dari Excel** (atau menu Import dari Ex
 | SO Dikonfirmasi | Reservasi | — | Ubah status/hapus |
 | SO Terkirim | Keluar | Penjualan, Piutang, HPP | Ubah status/hapus |
 | Surat Jalan | — | — | Hapus |
-| Faktur Penjualan | — | Penjualan, Piutang | Tidak |
-| Penerimaan (SR) / Log Pembayaran SO | — | Kas/Bank, Piutang | Tidak / tidak |
+| Faktur Penjualan | — | Penjualan, Piutang, PPN Keluaran | Batalkan (bila belum ada penerimaan/retur) |
+| Penerimaan (SR) / Log Pembayaran SO | — | Kas/Bank, Piutang | Batalkan / hapus log |
 | Uang Muka Penjualan | — | Kas, Uang Muka, Piutang | Hapus |
 | Retur Penjualan (Post) | Masuk | Balik penjualan & HPP | Tidak |
 | PO Diterima | Masuk | Persediaan, Hutang | Ubah status/hapus |
-| Penerimaan Barang | Masuk | — | Hapus (stok tidak kembali) |
-| Faktur Pembelian | — | Persediaan, Hutang | Tidak |
-| Pembayaran (PP) / Log Pembayaran PO | — | Hutang, Kas/Bank | Tidak |
+| Penerimaan Barang | Masuk | Lewat PO Diterima, atau per penerimaan bila difakturkan per penerimaan | Hapus (stok dikurangi kembali; ditolak bila sudah terpakai/difakturkan) |
+| Faktur Pembelian | — | Persediaan, PPN Masukan, Hutang | Batalkan (bila belum ada pembayaran/retur) |
+| Pembayaran (PP) / Log Pembayaran PO | — | Hutang, Kas/Bank | Batalkan / hapus log |
+| Buka PO untuk pengambilan | — | — | Batalkan surat jalan yang belum dipakai; Tutup PO |
+| Pengambilan (per truk) | — (tidak masuk gudang) | Pembelian, HPP, penjualan per truk (sampai ditagih) | Tidak |
+| Faktur dari pengambilan (Tagih Pelanggan / Tagihan Supplier) | — | Penjualan & piutang / persediaan & hutang pindah ke faktur | Batalkan → truk kembali belum ditagih |
 | Retur Pembelian (Post) | Keluar | Balik persediaan & hutang | Tidak |
 | Penyesuaian Stok | ± | Persediaan vs Beban Penyesuaian | Hapus |
 | Transfer Gudang | Pindah | — | Tidak |
-| Pengeluaran/Penerimaan Lain, Transfer Bank | — | ⚠ Tidak (T-08) | Hapus |
+| Pengeluaran/Penerimaan Lain, Transfer Bank | — | Beban/pendapatan vs kas/bank; antar rekening (+ biaya bank) | Hapus |
 | Jurnal Umum, Biaya Akrual (posting) | — | Sesuai input | Tidak |
 | Penggajian (posting & bayar) | — | Beban/Hutang Gaji, Kas | Tidak |
 | Aset Tetap | — | — | Hapus |

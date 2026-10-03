@@ -13,9 +13,11 @@
 | Halaman (view) di aplikasi | 24 kontainer; banyak fitur "menumpang" di halaman lain |
 | Lapis navigasi | 4: sidebar ikon → panel sub-menu → bar tab halaman → tab dokumen |
 
+Struktur yang berlaku sekarang ada di §4: **12 grup** dan **83 item menu** di sidebar berlabel yang bisa diciutkan (Ringkasan dan Entri Harian langsung membuka halaman), ditambah tab dokumen di dalam modul.
+
 ---
 
-## 2. Menu saat ini → layar yang dibuka
+## 2. Menu saat review → layar yang dibuka
 
 Label ditulis persis seperti di aplikasi saat review. Kolom "Halaman induk" menunjukkan kontainer tempat fitur ditampilkan.
 
@@ -118,8 +120,8 @@ Report List (daftar laporan), Laba Rugi (P/L), Neraca (Balance Sheet), Arus Kas 
 |---|---|---|
 | Target Penjualan | Berjalan | Ditampilkan di menu Penjualan |
 | Transaksi Favorit | Daftar template | Ditampilkan di Pengaturan |
-| Ekspor e-Faktur (CTAS) | Ekspor CSV + nomor e-Faktur | Ditampilkan di Akuntansi |
-| e-Faktur format lama | Ekspor CSV format lama | Tetap di kode, dibuka dari halaman e-Faktur bila diperlukan |
+| Ekspor e-Faktur (CTAS) | Ekspor CSV + nomor e-Faktur | Ditampilkan di Akuntansi sebagai **Ekspor Coretax**: file XML faktur pajak keluaran per masa pajak untuk diimpor di Coretax, plus pencatatan nomor faktur pajak |
+| e-Faktur format lama | Ekspor CSV format lama | Tombol **CSV format lama** di halaman Ekspor Coretax |
 | Rekap / SPT PPN | Angka dari dokumen yang diposting (T-11 diperbaiki) | Ditampilkan di Laporan sebagai **Rekap PPN** |
 | Halaman Keuangan (umur piutang/hutang, kunci periode, cek buku besar, log audit) | Tidak punya item menu langsung | Ditampilkan sebagai **Ringkasan Keuangan** |
 | Halaman Pengaturan (pengguna, backup, reset data, kategori) | Tidak punya item menu langsung | Ditampilkan sebagai **Pengaturan Umum** |
@@ -145,11 +147,19 @@ Report List (daftar laporan), Laba Rugi (P/L), Neraca (Balance Sheet), Arus Kas 
 
 ## 4. Struktur navigasi baru
 
-Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk setiap fitur, sidebar berlabel yang bisa diciutkan. Kolom "Sebelumnya" memastikan setiap menu lama tetap punya tempat.
+Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk setiap fitur, sidebar berlabel yang bisa diciutkan. Kolom "Sebelumnya" memastikan setiap menu lama tetap punya tempat; *(baru)* menandai menu yang tidak ada saat review.
 
 | Grup | Menu baru | Sebelumnya |
 |---|---|---|
 | **Ringkasan** | Ringkasan | Dashboard |
+| **Entri Harian** | Entri Harian | *(baru)* |
+| **Pengambilan** | PO Pengambilan | *(baru)* |
+| | Catat Pengambilan | *(baru)* |
+| | Impor Rekap Timbangan | *(baru)* |
+| | Perubahan Timbangan | *(baru)* |
+| | Rekap Pengambilan | *(baru)* |
+| | Tagih Pelanggan | *(baru)* |
+| | Tagihan Supplier | *(baru)* |
 | **Penjualan** | Penawaran Penjualan | Sales Quotation |
 | | Pesanan Penjualan (SO) | Sales Order |
 | | Surat Jalan | Delivery Order |
@@ -162,6 +172,8 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | **Pembelian** | Penawaran Pembelian | Purchase Quotation |
 | | Pesanan Pembelian (PO) | Purchase Order |
 | | Penerimaan Barang | Receive Item |
+| | Rekonsiliasi Timbangan | *(baru)* |
+| | Validasi SJ Supplier | *(baru)* |
 | | Faktur Pembelian | Purchase Invoice |
 | | Pembayaran ke Supplier | Purchase Payment |
 | | Uang Muka Pembelian | Purchase Down Payment |
@@ -193,7 +205,7 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Realisasi Anggaran | Budget Monitor |
 | | Transfer Anggaran | Budget Transfer |
 | | Pajak & PPN | Tax |
-| | Ekspor e-Faktur | *(tidak ada di menu)* |
+| | Ekspor Coretax | *(tidak ada di menu: Ekspor e-Faktur CTAS)* |
 | **Aset Tetap** | Daftar Aset | Fixed Asset |
 | | Kategori Aset | Fixed Asset Category |
 | | Golongan Aset Fiskal | Fiscal FA Category |
@@ -202,6 +214,7 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Pelepasan Aset | FA Disposition |
 | | Aset per Lokasi | Asset per Location |
 | **Laporan** | Daftar Laporan | Report List |
+| | Laporan per Periode | *(baru)* |
 | | Laba Rugi | Laba Rugi (P/L), Laporan Keuangan |
 | | Neraca | Neraca (Balance Sheet) |
 | | Arus Kas | Arus Kas (Cash Flow) |
@@ -225,7 +238,34 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Import dari Excel | Import dari Excel (2 tempat) |
 
 Catatan:
-- Menu disembunyikan sesuai hak akses peran seperti sebelumnya.
-- **Pajak & PPN** dan **Ekspor e-Faktur** mengikuti hak akses modul Pajak, bukan modul Akuntansi.
+- Menu disembunyikan sesuai hak akses peran seperti sebelumnya, dan dapat dipersempit per pengguna lewat **Akses menu** di Manajemen Pengguna ([01 §4](01-RINGKASAN-SISTEM.md)).
+- **Entri Harian** dan grup **Pengambilan** mengikuti hak modul Pembelian; **Tagih Pelanggan** mengikuti hak Penjualan.
+- **Pajak & PPN** dan **Ekspor Coretax** mengikuti hak akses modul Pajak, bukan modul Akuntansi.
+- Menu **Surat Jalan** hanya menampilkan surat jalan pengiriman dari stok. Surat jalan pengambilan (dari PO pengambilan) ada di Pengambilan → PO Pengambilan; menu Surat Jalan menampilkan tautan ke sana dan menolak ubah/hapus surat jalan pengambilan.
 - **REQUIRES USER CONFIRMATION:** grup yang tidak dipakai bisnis (mis. Aset Tetap, Anggaran, Job Costing) dapat disembunyikan per peran — **tidak dihapus** — setelah dikonfirmasi.
 - Keputusan tentang tab halaman dan tab dokumen: lihat [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
+
+### Isi menu yang tidak ada saat review
+
+| Menu | Isi layar | Hak akses |
+|---|---|---|
+| Entri Harian | Kartu tugas harian: **Catat Pengambilan**, **Impor Rekap Timbangan**, **Tagih Pelanggan**, **Biaya Operasional** (membuka Pengeluaran Lain), dan pintasan **Buat PO**. Angka hari ini: pengambilan hari ini, perubahan timbangan, belum ditagih, biaya hari ini. Kartu yang modulnya tidak boleh dibuka pengguna tidak tampil | Pembelian |
+| PO Pengambilan | PO berjalan dan selesai (diambil vs kuota, surat jalan terpakai/siap, batas pengambilan, status); daftar **PO siap dibuka** (PO supplier Dikonfirmasi berisi satu barang) dengan tombol **Buka untuk pengambilan**; ekspor Excel untuk timbangan per supplier. Detail PO: surat jalan per truk, Catat Pengambilan, Ekspor Excel untuk timbangan, Cetak SJ, batalkan surat jalan yang belum dipakai, **Tutup PO** / **Buka kembali**. Setiap kali daftar dibuka, PO yang lewat batas pengambilan ditutup otomatis | Pembelian |
+| Catat Pengambilan | Form satu truk, nyaman dipakai di HP: PO, surat jalan, tanggal ambil, No. Polisi, sopir, bruto/tara/netto, tujuan, No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan | Pembelian |
+| Impor Rekap Timbangan | Unggah rekap Excel/CSV dari timbangan supplier; hasil dikelompokkan menjadi baru dicatat, sama, berubah, tidak cocok/bermasalah; tombol **Terapkan** | Pembelian |
+| Perubahan Timbangan | Berat yang berubah setelah ditagih (ditindaklanjuti dengan **Tandai selesai** + catatan) dan riwayat semua perubahan berat | Pembelian |
+| Rekap Pengambilan | Semua truk yang sudah mengambil, disaring per periode, pelanggan, supplier, PO; total netto, belum ditagih ke pelanggan, belum ada faktur supplier; ekspor Excel | Pembelian |
+| Tagih Pelanggan | Pelanggan dengan pengambilan belum ditagih → pilih periode dan truk → satu Faktur Penjualan; cetak dan ekspor rekap Excel untuk pelanggan | Penjualan |
+| Tagihan Supplier | Catat faktur dari supplier (No. faktur supplier, tanggal, periode, tonase dan harga yang ditagih), cocokkan dengan pengambilan, lalu simpan sebagai Faktur Pembelian | Pembelian |
+| Rekonsiliasi Timbangan | Per penerimaan barang: bandingkan qty pesanan, surat jalan, dan timbangan; tetapkan qty dasar faktur; **Buat Faktur** per penerimaan | Pembelian |
+| Validasi SJ Supplier | Cocokkan rekap supplier (Excel) dengan penerimaan yang sudah direkonsiliasi sebelum faktur dibuat — lihat [SJ_VALIDATION_DEMO.md](SJ_VALIDATION_DEMO.md) | Pembelian |
+| Ekspor Coretax | File XML faktur pajak keluaran per masa pajak untuk diimpor di Coretax, CSV format lama, pencatatan nomor faktur pajak, kode barang & satuan Coretax | Pajak |
+| Laporan per Periode | Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen; pengambilan punya total netto sendiri | Laporan |
+
+### Menu pengguna
+
+Dibuka dari nama pengguna di bar atas: Profil & Perusahaan, Manajemen Pengguna (bila berhak mengelola pengguna), Ganti Password, Verifikasi 2 Langkah, **Kelola Backup** (termasuk **Arsip Excel** per tahun), Instal Aplikasi, Bahasa, **Ukuran teks** (Normal / Besar / Sangat besar; bawaan Besar; disimpan per perangkat), dan Keluar.
+
+### Notifikasi (ikon lonceng)
+
+Diperiksa berkala dan bisa diteruskan ke notifikasi perangkat: piutang/hutang lewat jatuh tempo, hutang jatuh tempo 7 hari ke depan, stok menipis, anggaran terlampaui, **perubahan timbangan belum ditindaklanjuti**, **PO pengambilan di batas cut-off** (lewat batas tetapi masih terbuka, atau batas dalam 3 hari), dan **pengambilan belum ditagih lebih dari 7 hari**. Notifikasi pengambilan membuka menu terkait dan hanya tampil bila pengguna boleh membuka modulnya (Pembelian untuk timbangan dan cut-off, Penjualan untuk belum ditagih).

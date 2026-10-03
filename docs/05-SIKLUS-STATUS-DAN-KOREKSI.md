@@ -11,11 +11,11 @@
 | Istilah umum | Arti | Padanan di aplikasi |
 |---|---|---|
 | **Draft** | Belum berlaku; bebas diubah | Draft |
-| **Diajukan / Dikonfirmasi** | Komitmen bisnis, belum ada efek akuntansi | Dikonfirmasi (SO/PO), Dikirim (penawaran), Pending (DO) |
-| **Diposting** | Sudah memengaruhi stok dan/atau buku besar | Terkirim (SO), Diterima (PO), Belum Lunas (faktur), Diposting (penerimaan, pembayaran, retur, transfer) |
+| **Diajukan / Dikonfirmasi** | Komitmen bisnis, belum ada efek akuntansi | Dikonfirmasi (SO/PO), Dikirim (penawaran), Pending (DO), Siap (surat jalan pengambilan) |
+| **Diposting** | Sudah memengaruhi stok dan/atau buku besar | Terkirim (SO), Diterima (PO), Belum Lunas (faktur), Diposting (penerimaan, pembayaran, retur, transfer), Diambil (truk pengambilan) |
 | **Lunas** | Kewajiban/tagihan sudah dibayar penuh | Lunas (SO/PO/faktur) |
-| **Selesai** | Siklus dokumen tuntas | Difakturkan (DO), Diterima/Ditolak (penawaran) |
-| **Dibatalkan** | Tidak berlaku; tetap tersimpan untuk jejak | Dibatalkan (SO/PO; belum ada di dokumen lain) |
+| **Selesai** | Siklus dokumen tuntas | Difakturkan (DO), Ditagih (truk pengambilan), Diterima/Ditolak (penawaran), **Selesai** (SO/PO pengambilan yang ditutup) |
+| **Dibatalkan** | Tidak berlaku; tetap tersimpan untuk jejak | Dibatalkan (SO/PO, faktur, penerimaan/pembayaran, retur draft), **Batal** (surat jalan pengambilan yang tidak dipakai) |
 | **Dibalik (reversed)** | Efeknya dinetralkan oleh dokumen/jurnal lawan | Retur Penjualan/Pembelian, Jurnal Umum koreksi |
 | **Diubah** | Isi dokumen diganti setelah dibuat | Form Edit |
 | **Dikoreksi** | Kesalahan diperbaiki dengan dokumen koreksi | Retur, Penyesuaian Stok, Jurnal Umum |
@@ -134,5 +134,31 @@ Kolom ini diperbarui seiring perbaikan aplikasi. Rincian teknis di [08-TEMUAN-TE
 | Pesanan yang sudah difakturkan tidak bisa diubah sebelum fakturnya dibatalkan | Diterapkan |
 | Retur yang sudah diposting bersifat final; koreksi dengan dokumen baru | Diterapkan |
 | Biaya akrual yang sudah diposting tidak bisa dihapus; koreksi dengan Jurnal Umum (jurnal balik) | Diterapkan |
+| Status **Selesai** (SO/PO pengambilan yang ditutup) dan **Batal** (surat jalan pengambilan yang tidak dipakai) di mesin dokumen | Diterapkan |
+| Membatalkan faktur dari pengambilan mengembalikan truknya menjadi belum ditagih / belum difakturkan supplier | Diterapkan |
+| Surat jalan pengambilan hanya diubah dari menu Pengambilan (menu Surat Jalan menolak ubah/hapus) | Diterapkan |
+| Perubahan berat setelah ditagih tidak mengubah faktur; muncul peringatan sampai ditindaklanjuti | Diterapkan |
 | Jurnal balik eksplisit untuk pembatalan | Menunggu konfirmasi kebutuhan |
 | Approval pembatalan | Menunggu konfirmasi kebutuhan |
+
+---
+
+## 6. Pengambilan — status dan koreksi
+
+Alur lengkapnya di [03 §V](03-ALUR-TRANSAKSI.md#v-pengambilan-trading); dampak akuntansinya di [04 §4.5](04-AKUNTANSI.md#45-pengambilan-trading).
+
+| Dokumen | Status | Perpindahan |
+|---|---|---|
+| PO supplier pengambilan | Dikonfirmasi (berjalan) → **Selesai** | Ditutup otomatis saat kuota terpenuhi atau lewat batas pengambilan, atau lewat **Tutup PO**. **Buka kembali** mengembalikannya ke Dikonfirmasi |
+| PO pelanggan (Pesanan Penjualan) | Dikonfirmasi → **Selesai** | Selesai saat seluruh qty sudah diambil dan tidak ada PO supplier yang masih berjalan untuknya (dicek saat PO supplier ditutup) |
+| Surat jalan pengambilan (satu per truk) | **Siap** → **Diambil** → **Ditagih**; **Batal** | Siap → Diambil saat truk dicatat; Diambil → Ditagih saat masuk Faktur Penjualan aktif, kembali Diambil bila faktur itu dibatalkan; Siap → Batal bila dibatalkan manual atau PO ditutup, kembali Siap bila PO dibuka kembali |
+
+| Situasi | Tindakan di aplikasi | Efek |
+|---|---|---|
+| Surat jalan tidak akan dipakai | Detail PO → **Batalkan** surat jalan (hanya yang masih Siap) | Tidak ada efek akuntansi |
+| PO tidak akan diambil lagi | **Tutup PO** | Surat jalan Siap menjadi Batal; PO pelanggan selesai bila sudah habis diambil |
+| PO ditutup terlalu cepat | **Buka kembali** | PO Dikonfirmasi lagi; surat jalan yang dibatalkan saat penutupan aktif kembali dengan nomor yang sama. Bila batas sudah lewat, hanya pengambilan sampai batas yang bisa dicatat dan PO ditutup lagi saat daftar PO Pengambilan dibuka |
+| Berat truk salah / berubah | **Impor Rekap Timbangan** dengan berat yang benar | Berat diperbarui, riwayat disimpan. Bila truk sudah masuk faktur: faktur tetap, muncul peringatan di Perubahan Timbangan sampai **Tandai selesai** dengan catatan tindak lanjut |
+| Harga beli truk salah | Tagihan Supplier → samakan harga dengan tagihan atau Harga Supplier (sebelum faktur supplier dibuat) | Riwayat harga disimpan; jurnal pembelian & HPP truk ikut berubah |
+| Faktur dari pengambilan salah | **Batalkan** faktur (bila belum ada penerimaan/pembayaran dan retur), lalu buat lagi | Truk kembali belum ditagih / belum difakturkan supplier; jurnal truk kembali memuat bagian itu |
+| Truk tercatat padahal tidak mengambil | Tidak ada tombol batal/hapus untuk pengambilan yang sudah dicatat | Koreksi butuh keputusan cara baku — **REQUIRES USER CONFIRMATION** |

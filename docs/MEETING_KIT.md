@@ -26,8 +26,8 @@ Yang **bukan** tujuan meeting ini: menilai sistem lama, memutuskan menghapus fit
 | Waktu | Bagian | Keterangan |
 |---|---|---|
 | 5 menit | Pembuka | Naskah §3 |
-| 10 menit | Gambaran sistem | Demo singkat §7 — cukup menunjukkan, bukan melatih |
-| 45 menit | Pertanyaan per alur | §5 — dahulukan 🔴 |
+| 15 menit | Gambaran sistem | Demo singkat §7 (alur pengambilan lebih dulu) — cukup menunjukkan, bukan melatih |
+| 40 menit | Pertanyaan per alur | §5 — dahulukan 🔴 |
 | 10 menit | Prioritas & keputusan | §6 |
 | 5 menit | Penutup | Rangkum, sepakati langkah berikutnya |
 
@@ -82,14 +82,19 @@ Pemisahan ini penting: hanya bagian **Terkonfirmasi** yang boleh dianggap fakta.
 5. Harga pokok barang dihitung otomatis dengan rata-rata bergerak.
 6. PPN (default 11%) bisa dikenakan per dokumen dan tercatat di jurnal.
 7. Surat jalan mendukung pengiriman sebagian dan pembagian muatan per truk.
-8. Tersedia 5 peran pengguna, verifikasi 2 langkah, log audit, kunci periode, dan recycle bin.
+8. Tersedia 5 peran pengguna, akses menu per pengguna, verifikasi 2 langkah, log audit, kunci periode, dan recycle bin.
 9. Sistem bisa berjalan di satu perangkat tanpa internet, atau tersinkron di cloud untuk banyak perangkat.
 10. Data awal (pesanan, faktur, pembayaran, saldo awal akun, stok awal) bisa diimpor dari Excel.
+11. Alur pengambilan: PO supplier dipasangkan dengan PO pelanggan; surat jalan untuk semua truk dibuat sekaligus (⌈jumlah ÷ kapasitas truk⌉); tiap truk dicatat dengan bruto/tara/netto atau lewat impor rekap timbangan Excel; kuota dan batas pengambilan akhir bulan menutup PO; pelanggan dan supplier ditagih per periode dari truk, tanpa tagihan ganda; perubahan berat setelah ditagih menimbulkan peringatan.
+12. Pengeluaran lain dicatat dengan kategori dan otomatis masuk Laba Rugi; rekap per kategori per bulan bisa diekspor ke Excel; biaya dan bunga bank bisa dicatat dari rekening koran.
+13. Faktur pajak keluaran bisa diekspor sebagai file XML untuk diimpor di Coretax.
 
 ### 🟡 Diasumsikan (dugaan — perlu dibenarkan)
 
-1. Bisnis memperdagangkan material dalam satuan Ton/M3 kepada pelanggan bisnis (PT, CV, UD, toko).
-2. Barang dikirim dengan truk; satu pesanan bisa dikirim bertahap.
+Gambaran usaha yang sudah dikonfirmasi pemilik (trading, batu split per ton, pengambilan bertahap oleh truk pelanggan, penagihan mingguan) dicatat di [11](11-KEBUTUHAN-MEETING-14-SEP-2026.md); butir di bawah tetap perlu dibenarkan.
+
+1. Selain pengambilan di supplier, ada penjualan barang dari stok gudang dalam satuan Ton/M3 kepada pelanggan bisnis (PT, CV, UD, toko).
+2. Untuk penjualan dari stok, barang dikirim dengan truk; satu pesanan bisa dikirim bertahap.
 3. Pelanggan membayar dengan tempo (sekitar 30 hari), umumnya melalui transfer bank.
 4. Perusahaan memungut PPN.
 5. Pengguna utama: pemilik/admin, staf akunting, staf penjualan.
@@ -207,6 +212,16 @@ Pemisahan ini penting: hanya bagian **Terkonfirmasi** yang boleh dianggap fakta.
 | U4 | 🟡 | Apakah staf gudang/sopir perlu akses (mis. dari HP)? | Peran tambahan & perangkat | |
 | U5 | 🟢 | Apakah perlu ditinjau secara rutin siapa mengubah data apa? | Pemakaian log audit | |
 
+### 5.8 Pengambilan (hal yang masih terbuka)
+
+| No | Prioritas | Pertanyaan | Mengapa penting | Jawaban |
+|---|---|---|---|---|
+| T1 | 🔴 | Bisa diberikan contoh file rekap Excel dari bagian timbangan supplier? | Memastikan Impor Rekap Timbangan membaca kolom yang benar | |
+| T2 | 🔴 | Saat cut-off akhir bulan, apakah PO pelanggan juga dianggap selesai, atau tetap berjalan sampai habis diambil? | Saat ini PO pelanggan tetap berjalan dan sisanya diambil lewat PO supplier baru | |
+| T3 | 🟡 | Siapa saja pengguna dan menu apa yang boleh dibuka masing-masing? Pengeluaran mana yang harus disembunyikan dari siapa? | Pengaturan Akses menu (saat ini per kelompok menu, bukan per kategori biaya) | |
+| T4 | 🟡 | Bisa diberikan contoh surat jalan, PO, dan invoice perusahaan, serta daftar barang dan satuannya? | Template cetak; data barang dan kode Coretax | |
+| T5 | 🟢 | Apakah angka di foto DO/tiket perlu dibaca otomatis (layanan berbayar, butuh internet)? | Saat ini foto hanya disimpan sebagai bukti | |
+
 ---
 
 ## 6. Keputusan yang dibutuhkan
@@ -216,7 +231,7 @@ Keputusan ini menentukan perbaikan berikutnya. Sampai diputuskan, sistem memakai
 | No | Keputusan | Pilihan | Sementara | Terkait |
 |---|---|---|---|---|
 | K1 | Kapan stok berkurang | (a) status pesanan *Terkirim* · (b) saat surat jalan dibuat/dikirim | (a) | I1 |
-| K2 | Dasar penagihan | (a) 1 faktur per pesanan · (b) faktur per pengiriman · (c) faktur gabungan | (a) | S2, S3 |
+| K2 | Dasar penagihan (penjualan dari stok) | (a) 1 faktur per pesanan · (b) faktur per pengiriman · (c) faktur gabungan | (a); pengambilan sudah ditagih per periode dari truk | S2, S3 |
 | K3 | Jalur pencatatan pembayaran pelanggan/supplier | (a) atas faktur · (b) atas pesanan | Keduanya tersedia, dengan peringatan | S5 |
 | K4 | Cara mencatat barang datang | (a) status PO *Diterima* · (b) menu Penerimaan Barang | Keduanya, dicegah ganda | P2 |
 | K5 | Pemetaan biaya kas & bank ke akun | Usulan di [04 §6](04-AKUNTANSI.md) | Usulan dipakai | F4 |
@@ -224,13 +239,14 @@ Keputusan ini menentukan perbaikan berikutnya. Sampai diputuskan, sistem memakai
 | K7 | Wewenang koreksi & pembatalan | Per peran / dengan persetujuan | Admin & manajer | F6, U3 |
 | K8 | Penyimpanan data | (a) satu perangkat · (b) cloud multi perangkat | Belum dipilih | B6 |
 | K9 | Tanggal mulai & saldo awal | Tanggal + sumber data | — | B3, B4 |
-| K10 | Modul yang belum dipakai | Disembunyikan per peran (tidak dihapus) | Semua tampil | F10–F12, I7 |
+| K10 | Modul yang belum dipakai | Disembunyikan per pengguna lewat Akses menu (tidak dihapus) | Semua tampil sesuai peran | F10–F12, I7, T3 |
+| K11 | PO pelanggan saat cut-off akhir bulan | (a) tetap berjalan sampai habis · (b) ikut selesai | (a) | T2 |
 
 ---
 
-## 7. Demo singkat (10 menit)
+## 7. Demo singkat (± 15 menit)
 
-Tujuan demo: menyamakan gambaran, **bukan** pelatihan. Gunakan data contoh.
+Tujuan demo: menyamakan gambaran, **bukan** pelatihan. Gunakan data contoh. Bila waktu hanya 10 menit, cukup bagian A.
 
 **Persiapan (sebelum meeting):**
 1. Jalankan aplikasi mode lokal: `npm run dev:local`, buka `http://localhost:8088/app.html`.
@@ -238,19 +254,31 @@ Tujuan demo: menyamakan gambaran, **bukan** pelatihan. Gunakan data contoh.
 3. Pastikan data demo terisi. Data demo dibuat relatif terhadap tanggal hari ini; bila perlu jalankan **Pengaturan → Pengaturan Umum → Reset Data** (menghapus semua data di perangkat itu — hanya untuk instalasi demo).
 4. Pilih tema terang, perbesar tampilan browser bila memakai proyektor.
 
-**Urutan tampilan:**
+**A. Alur pengambilan (± 10 menit)**
 
 | Langkah | Menu | Yang disampaikan |
 |---|---|---|
-| 1 | Ringkasan | "Ini ringkasan kas, piutang, hutang, dan yang perlu ditindaklanjuti." |
-| 2 | Penjualan → Pesanan Penjualan → buka satu pesanan | "Pesanan pelanggan, isi barang, status, dan jejak dokumennya." |
-| 3 | Dari pesanan: Surat Jalan | "Surat jalan untuk sopir; bisa dikirim sebagian." |
-| 4 | Penjualan → Faktur Penjualan | "Tagihan ke pelanggan dan status pembayarannya." |
-| 5 | Penjualan → Penerimaan Pembayaran | "Pencatatan uang masuk." |
-| 6 | Persediaan → Barang & Stok → kartu stok satu barang | "Riwayat keluar-masuk barang." |
-| 7 | Laporan → Laba Rugi | "Laporan disusun otomatis dari transaksi." |
+| 1 | Ringkasan → blok **Alur pengambilan**, **Tagihan pelanggan**, **Tonase per bulan** | "Dari sini terlihat PO supplier yang masih berjalan, truk yang sudah mengambil bulan ini, mana yang belum ditagih, belum lunas, dan tonase per bulan." |
+| 2 | Pengambilan → **PO Pengambilan** → buka satu PO berjalan | "Satu PO supplier untuk satu PO pelanggan. Surat jalan untuk semua truk sudah dibuat sejak PO dibuka dan bernomor PO. Terlihat sisa kuota dan batas akhir bulan." |
+| 3 | Dari detail PO: **Ekspor Excel untuk timbangan** | "File ini dikirim ke bagian timbangan supplier; mereka cukup mengisi tanggal, nomor polisi, bruto, tara, netto." |
+| 4 | Pengambilan → **Catat Pengambilan** (tunjukkan form, tidak perlu disimpan) | "Satu truk dicatat dari HP: nomor polisi, bruto dan tara, netto dihitung sendiri. Bila melebihi kuota atau lewat batas, sistem menolak." |
+| 5 | Pengambilan → **Impor Rekap Timbangan** (cukup tunjukkan format) | "Rekap Excel dari timbangan langsung dicocokkan ke surat jalan, tanpa mengetik ulang." |
+| 6 | Pengambilan → **Perubahan Timbangan** | "Truk ini sudah ditagih 30 ton, lalu rekap supplier mengubahnya menjadi 35 ton. Faktur tidak berubah diam-diam; ada peringatan sampai ditindaklanjuti." |
+| 7 | Pengambilan → **Tagih Pelanggan** → pilih satu pelanggan | "Truk minggu ini menjadi satu faktur, satu baris per truk. Truk yang sudah ditagih tidak bisa ditagih lagi. Rekap Excel bisa dikirim ke pelanggan." |
+| 8 | Pengambilan → **Tagihan Supplier** → pilih supplier, isi tonase dari tagihannya | "Tagihan supplier dicocokkan dengan truk kita; selisih tonase atau harga langsung terlihat sebelum disimpan." |
 
-Kasus yang sudah tersedia di data demo bila muncul pertanyaan: faktur penjualan dan hutang ke supplier yang lewat jatuh tempo, barang di bawah stok minimum, pesanan yang masih draft, dikonfirmasi, dalam perjalanan, atau dibatalkan, penawaran yang diterima lalu menjadi pesanan, retur sebagian, uang muka, setoran tunai ke bank, dan penggajian bulanan.
+**B. Keuangan dan pajak (± 5 menit)**
+
+| Langkah | Menu | Yang disampaikan |
+|---|---|---|
+| 9 | Kas & Bank → **Pengeluaran Lain** → pilih bulan | "Biaya dicatat dengan kategori; rekap per kategori per bulan dan ekspor Excel untuk akuntan." |
+| 10 | Kas & Bank → **Rekonsiliasi Bank** | "Saldo rekening koran dibandingkan dengan buku; biaya admin atau bunga yang belum dicatat bisa langsung dicatat dari barisnya." (Data demo tidak berisi rekening koran; isi satu rekening koran contoh bila ingin menunjukkan.) |
+| 11 | Akuntansi → **Ekspor Coretax** | "Faktur pajak keluaran satu masa pajak diekspor sebagai file untuk diimpor di Coretax." (Data demo tidak berisi NPWP; untuk mengunduh file, isi NPWP perusahaan contoh di **Konfigurasi** lebih dulu.) |
+| 12 | Laporan → **Laba Rugi** | "Laporan disusun otomatis dari transaksi, termasuk setiap truk." |
+
+Bila ditanya tentang penjualan dari stok gudang: Penjualan → Pesanan Penjualan → buka satu pesanan → Surat Jalan → Faktur Penjualan, dan Persediaan → Barang & Stok → kartu stok.
+
+Kasus yang sudah tersedia di data demo bila muncul pertanyaan: PO pengambilan yang ditutup karena kuota terpenuhi dan karena cut-off (dilanjutkan PO baru bulan berikutnya), dua pelanggan mengambil barang yang sama di hari yang sama, satu truk dengan tujuan diubah, harga supplier yang naik di tengah bulan, truk minggu berjalan yang belum ditagih, faktur penjualan dan hutang ke supplier yang lewat jatuh tempo, barang di bawah stok minimum, pesanan yang masih draft, dikonfirmasi, dalam perjalanan, atau dibatalkan, penawaran yang diterima lalu menjadi pesanan, retur sebagian, uang muka, setoran tunai ke bank, bunga bank, dan penggajian bulanan.
 
 Setelah demo, tanyakan: *"Dari yang barusan, bagian mana yang paling mirip dengan cara kerja sekarang, dan bagian mana yang berbeda?"*
 
