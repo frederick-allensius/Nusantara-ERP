@@ -14,6 +14,8 @@
 //     Balances, which also counts payments logged on the source order.
 //   • Corrections: cancel the receipt/payment first, then the invoice. Cancelled
 //     documents stay listed and post nothing.
+//   • Invoices made from pickups (pickup-billing.js) list their trips in doIds;
+//     cancelling one frees the trips for the next invoice (Trading.releaseInvoice).
 //
 // Global-scope rule: classic <script>, IIFE-wrapped; exposes window.renderInvoices,
 // window.viewInvoiceDoc and window._invoiceExtras.
@@ -706,11 +708,16 @@
       return;
     }
     const src = B().sourceOrder(t.side, inv);
-    const effect = src
+    const trips = Array.isArray(inv.doIds) ? inv.doIds.length : 0;
+    const effect = trips
       ? type === 'SI'
-        ? `Pendapatan dan piutang kembali dicatat dari pengiriman ${docNo(src)}.`
-        : `Persediaan dan hutang kembali dicatat dari penerimaan ${docNo(src)}.`
-      : 'Jurnal faktur ini tidak lagi dibentuk.';
+        ? `${trips} pengambilan kembali menjadi belum ditagih; piutang dan penjualan dicatat lagi dari pengambilan.`
+        : `${trips} pengambilan kembali menjadi belum difakturkan supplier; hutang dicatat lagi dari pengambilan.`
+      : src
+        ? type === 'SI'
+          ? `Pendapatan dan piutang kembali dicatat dari pengiriman ${docNo(src)}.`
+          : `Persediaan dan hutang kembali dicatat dari penerimaan ${docNo(src)}.`
+        : 'Jurnal faktur ini tidak lagi dibentuk.';
     if (
       !window.confirm(
         `Batalkan ${docNo(inv)}?\n\n${effect}\nDokumen tetap tersimpan dengan status Dibatalkan.`
@@ -721,6 +728,10 @@
     inv.status = 'Cancelled';
     inv.cancelledAt = new Date().toISOString();
     inv.cancelledBy = currentUser();
+    // An invoice made from trips frees them for the next invoice.
+    if (window.Trading && typeof window.Trading.releaseInvoice === 'function') {
+      window.Trading.releaseInvoice(type === 'SI' ? 'sales' : 'purchases', inv);
+    }
     save();
     if (typeof window.closeModal === 'function') {
       window.closeModal();
@@ -812,6 +823,19 @@
       ? `<button class="link-btn" data-action="${type === 'SI' ? 'viewSO' : 'viewPO'}" data-id="${esc(src.id)}">${esc(docNo(src))}</button>`
       : esc(inv.sourceNumber || inv.sourceId || '—');
     const settlements = (db()[TYPES[t.settleType].coll] || []).filter(r => same(r.invoiceId, inv.id));
+    // Invoices made from pickups (trading.js) list their trucks' surat jalan.
+    const tripIds = Array.isArray(inv.doIds) ? inv.doIds : [];
+    const sjNos = tripIds.map(id => {
+      const d = (db().deliveryOrders || []).find(x => same(x.id, id));
+      return d ? d.sjNo || d.number || d.id : id;
+    });
+    const tripsHTML = tripIds.length
+      ? `<div class="detail-item" style="grid-column:1 / -1">
+          <div class="detail-label">Dari pengambilan</div>
+          <div class="detail-value">${tripIds.length} truk, periode ${fmtDate(inv.periodFrom)} – ${fmtDate(inv.periodTo)}
+            <div class="t-muted" style="font-size:.75rem">${esc(sjNos.join(', '))}</div></div>
+        </div>`
+      : '';
 
     const balanceHTML = bal
       ? `<div class="balance-panel">
@@ -856,6 +880,8 @@
         ${row('Tanggal', fmtDate(inv.date))}
         ${row('Jatuh tempo', fmtDate(due))}
         ${row(t.srcLabel, srcBtn)}
+        ${inv.supplierRef ? row('No. faktur supplier', esc(inv.supplierRef)) : ''}
+        ${tripsHTML}
         ${inv.note ? row('Catatan', esc(inv.note)) : ''}
         ${inv.status === 'Cancelled' ? row('Dibatalkan', `${fmtDate(inv.cancelledAt)}${inv.cancelledBy ? ' · ' + esc(inv.cancelledBy) : ''}`) : ''}
       </div>
