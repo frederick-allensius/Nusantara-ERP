@@ -113,6 +113,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 | Login cloud | Callable `loginWithUsername` → custom token Firebase; pembatasan percobaan; `functions/auth.js`, `functions/auth-users.js` |
 | 2FA | TOTP RFC 6238 (`src/core/totp.js`) + kode cadangan; rahasia disimpan di server pada mode cloud |
 | Peran | `src/core/user-role.js` (peran & label), `core/rbac.js` (matriks peran × modul, sembunyikan menu, cegah klik, saring `saveDB`), `firestore.rules` (penegakan di server) |
+| Akses menu per pengguna | `users/{uid}.modules` (cloud) atau catatan pengguna lokal: daftar modul yang **mempersempit** peran (izin = peran DAN modul ada di daftar; tanpa daftar = tanpa batas; Admin tidak bisa dibatasi; `dashboard` dan `config` selalu mengikuti peran). `rbac.js` `can()`/`canView()` menerapkannya pada menu, halaman (halaman bersama dihitung dari semua modul menu yang membukanya), tombol, pencarian, dan `saveDB`; `firestore.rules` `moduleAllowed()` pada penulisan; hanya admin yang bisa mengubah `users/{uid}`. Diatur di Manajemen Pengguna (`erp-crud.js`) |
 | Audit & periode | `core/integrity.js` (log audit lokal, kunci periode, cek buku besar); `functions/access-log.js` (log akses server) |
 | Recycle bin | `core/trash.js` (90 hari, maks. 300 entri) |
 | CSP | `firebase.json`: `script-src 'self'` tanpa `unsafe-inline` — **dilarang** memakai atribut `onclick`/`onmouseover` inline; gunakan `data-action` + event delegation |
@@ -136,7 +137,7 @@ Beberapa modul membungkus fungsi global. Selalu panggil versi `window.*`, bukan 
 | `onBusinessWrite`, `recordLogout`, `adminListAccessLog` | Trigger/callable | Log akses server |
 | `loginWithUsername`, `changeMyPassword` | Callable | Login & ganti password |
 | `enable2FA`, `disable2FA`, `regenerateBackupCodes`, `get2FAStatus` | Callable | Verifikasi 2 langkah |
-| `adminListUsers`, `adminCreateUser`, `adminSetPassword`, `adminSetRole`, `adminSetActive`, `adminDeleteUser` | Callable | Manajemen pengguna oleh admin |
+| `adminListUsers`, `adminCreateUser`, `adminSetPassword`, `adminSetRole`, `adminSetActive`, `adminDeleteUser`, `adminSetModules` | Callable | Manajemen pengguna oleh admin (`adminSetModules`: Akses menu, kunci divalidasi di `functions/user-modules.js`) |
 
 ## 11. Pengujian
 
@@ -150,6 +151,9 @@ Vitest + happy-dom (`tests/`). Tes yang memuat skrip klasik mengevaluasi file as
 | `demo-data.test.ts` | Data demo: stok per gudang, nomor unik, tautan dokumen, penggajian, status faktur, neraca saldo seimbang, persediaan = nilai stok, kas/bank tidak minus di hari mana pun, kasus demo |
 | `doc-engine.test.ts`, `erp-flow.test.ts`, `stock-reservation.test.ts`, `transaction-rollback.test.ts` | Penomoran, transisi, alur dokumen, reservasi stok, rollback |
 | `rbac.test.ts`, `integrity.test.ts` | Hak akses dan log audit/kunci periode |
+| `user-module-access.test.ts` | Akses menu per pengguna: hanya mempersempit, halaman bersama, pengalihan, editor, kunci modul sama di klien/functions/rules |
+| `trading-pickups.test.ts` | Pengambilan: slot SJ, kuota & cut-off, harga supplier, tagihan dari trip, rekap timbangan, jurnal per trip |
+| `coretax-export.test.ts`, `archive-export.test.ts` | XML Coretax; Arsip Excel per tahun |
 | `auth.test.ts`, `twofa-flow.test.ts`, `totp.test.ts` | Login lokal & 2FA |
 | `db-dirty-save.test.ts`, `indexeddb-sync.test.ts` | Penyimpanan & sinkronisasi |
 | `api-handler.test.ts` | API integrasi |

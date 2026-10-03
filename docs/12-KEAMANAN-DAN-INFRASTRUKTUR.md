@@ -28,18 +28,21 @@ Usulan pengaturan:
 3. **Jejak akses tercatat.**
    - Google Cloud mencatat siapa yang mengubah pengaturan proyek (Audit Logs).
    - Aplikasi mencatat login dan perubahan data per pengguna (Log Aktivitas, Log Akses, log audit dengan kunci periode).
-4. **Di dalam aplikasi,** setiap pengguna punya peran dan — setelah fitur akses per pengguna selesai — daftar menu yang boleh dibuka. Contoh: admin tidak melihat pengeluaran tertentu. Tersedia verifikasi 2 langkah (2FA) untuk akun penting.
+4. **Di dalam aplikasi,** setiap pengguna punya peran dan, bila perlu, **Akses menu**: daftar grup menu yang boleh dibuka (Manajemen Pengguna). Contoh: staf admin kantor hanya membuka Pengambilan dan Penjualan, tanpa Kas & Bank. Tersedia verifikasi 2 langkah (2FA) untuk akun penting.
+   - Pada mode cloud, server (`firestore.rules`) menolak penyimpanan ke modul di luar daftar. Hanya admin sistem yang bisa mengubah daftar ini.
+   - Batasannya: data tetap bisa **dibaca** oleh pengguna yang sudah disetujui, dan Ringkasan menampilkan angka yang sama untuk semua. Pembatasan baca per modul di server membutuhkan pemisahan data — **REQUIRES USER CONFIRMATION** bila dibutuhkan.
 5. **Komitmen tertulis.** Perjanjian kerahasiaan (NDA) antara perusahaan dan pengembang tentang larangan memakai atau membuka data perusahaan — **REQUIRES USER CONFIRMATION** (dokumen hukum, di luar aplikasi).
 
 ## 3. Keandalan, cadangan, dan arsip
 
 - **Ketersediaan.** Firestore menyimpan data tereplikasi di beberapa lokasi Google; gangguan layanan jarang terjadi dan biasanya pulih dalam hitungan jam. Tidak ada layanan yang menjamin 0% gangguan.
 - **Cadangan otomatis.** Fungsi `nightlyBackup` menyimpan salinan harian di dalam proyek. Untuk perlindungan tambahan, disarankan ekspor terjadwal Firestore ke Cloud Storage (paket Blaze) — **REQUIRES USER CONFIRMATION**.
-- **Cadangan di komputer perusahaan.** Menu pengguna → Kelola Backup → unduh file cadangan (JSON) secara berkala (misalnya setiap minggu) ke hard disk perusahaan. File ini bisa dipulihkan ke aplikasi.
+- **Cadangan di komputer perusahaan.** Menu pengguna → Kelola Backup → **Export ke File** (JSON) secara berkala (misalnya setiap minggu) ke hard disk perusahaan. File ini bisa dipulihkan ke aplikasi.
 - **Arsip jangka panjang.** Data tidak perlu dihapus; data usaha dan pajak disimpan bertahun-tahun. Setelah tutup buku tahunan:
-  - unduh cadangan JSON tahun itu;
-  - ekspor laporan dan daftar transaksi ke Excel (Laporan, Rekap Pengambilan, Pengeluaran Lain);
-  - simpan di hard disk eksternal.
+  - unduh cadangan JSON (Export ke File);
+  - unduh **Arsip Excel** tahun itu (Kelola Backup): satu file berisi pelanggan, supplier, barang, pesanan, pengambilan, faktur, pembayaran, pengeluaran/penerimaan lain, dan baris jurnal — bisa dibuka tanpa aplikasi;
+  - simpan laporan keuangan tahunan (Laporan → ekspor);
+  - simpan semuanya di hard disk eksternal.
 
   Penghapusan data lama dari sistem hanya dilakukan bila diputuskan pemilik dan setelah arsip diverifikasi — **REQUIRES USER CONFIRMATION**.
 
