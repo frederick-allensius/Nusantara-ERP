@@ -359,7 +359,7 @@ describe('row menu', () => {
       'duplicateSO',
       'printSO',
       'cancelSO',
-      'deleteSO',
+      'confirmDeleteSO',
       'rowMenuPanel', // "Kembali" in the status picker
     ]);
     expect(menu.textContent).toContain('Ubah status');
@@ -373,7 +373,14 @@ describe('row menu', () => {
     const actions = Array.from(popMenu()!.querySelectorAll('[role="menuitem"]')).map(
       b => (b as HTMLElement).dataset.action
     );
-    expect(actions).toEqual(['viewPO', 'editPO', 'duplicatePO', 'printPO', 'cancelPO', 'deletePO']);
+    expect(actions).toEqual([
+      'viewPO',
+      'editPO',
+      'duplicatePO',
+      'printPO',
+      'cancelPO',
+      'confirmDeletePO',
+    ]);
     expect(viewEl('purchase').querySelector('tr[data-id="PO-D"] .badge')).toBeTruthy();
   });
 
@@ -428,6 +435,31 @@ describe('row menu', () => {
     await tick();
     expect(popMenu()).toBeNull();
     edit.mockRestore();
+  });
+
+  it('asks before Hapus and deletes only once confirmed', async () => {
+    const del = vi.spyOn(w(), 'deleteSO').mockImplementation(() => {});
+    const confirm = w().confirmDialog as ReturnType<typeof vi.fn>;
+    confirm.mockClear();
+    click(rowTrigger('sales', 'SO-D'));
+    click(popMenu()!.querySelector('[data-action="confirmDeleteSO"]'));
+    await tick();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm.mock.calls[0][0]).toContain('Hapus');
+    expect(del).not.toHaveBeenCalled(); // nothing deleted before the answer
+    confirm.mock.calls[0][2](); // "Hapus" in the dialog
+    expect(del).toHaveBeenCalledWith('SO-D');
+    del.mockRestore();
+
+    show('purchase');
+    const delPO = vi.spyOn(w(), 'deletePO').mockImplementation(() => {});
+    click(rowTrigger('purchase', 'PO-D'));
+    click(popMenu()!.querySelector('[data-action="confirmDeletePO"]'));
+    await tick();
+    expect(delPO).not.toHaveBeenCalled();
+    confirm.mock.calls[confirm.mock.calls.length - 1][2]();
+    expect(delPO).toHaveBeenCalledWith('PO-D');
+    delPO.mockRestore();
   });
 
   it('closes on Escape (focus back on the button) and on an outside click', () => {

@@ -435,6 +435,22 @@ function orderStageBadge(side, o) {
   return st ? `<span class="badge badge-${st[0]}">${escapeHtml(st[1])}</span>` : badge(o.status);
 }
 
+// Confirmation before deleting an order from its row menu.
+function confirmOrderDelete(type, id) {
+  const list = type === 'SO' ? DB.salesOrders : DB.purchaseOrders;
+  const o = (list || []).find(x => String(x.id) === String(id));
+  if (!o) {
+    return;
+  }
+  const what = type === 'SO' ? 'Pesanan penjualan' : 'Pesanan pembelian';
+  const party = type === 'SO' ? o.customer : o.supplier;
+  confirmDialog(
+    `Hapus ${docNum(o.number, o.id)}?`,
+    `${what} ${docNum(o.number, o.id)}${party ? ' untuk ' + party : ''} akan dihapus. Sesaat setelah dihapus, Anda masih bisa mengurungkannya.`,
+    () => (type === 'SO' ? deleteSO(id) : deletePO(id))
+  );
+}
+
 // Small "Pengambilan" tag beside the number of a trading pickup order.
 function pickupTag(o) {
   return o && o.pickupFlow ? '<span class="ostrip-tag">Pengambilan</span>' : '';
@@ -664,7 +680,7 @@ function orderRowMenu(view, o) {
     _menuItem('Cetak', `data-action="print${T}" data-id="${id}"`),
     '<div class="row-menu-sep" role="separator"></div>',
     canCancel ? _menuItem('Batalkan', `data-action="cancel${T}" data-id="${id}"`, 'is-danger') : '',
-    _menuItem('Hapus', `data-action="delete${T}" data-id="${id}"`, 'is-danger'),
+    _menuItem('Hapus', `data-action="confirmDelete${T}" data-id="${id}"`, 'is-danger'),
   ].join('');
 
   let statusPanel = '';
@@ -2321,6 +2337,11 @@ document.addEventListener('click', async e => {
       break;
     case 'deleteSO':
       deleteSO(id);
+      break;
+    // Hapus from the row "⋯" menu asks first (the edit dialog's Hapus does not).
+    case 'confirmDeleteSO':
+    case 'confirmDeletePO':
+      confirmOrderDelete(action === 'confirmDeleteSO' ? 'SO' : 'PO', id);
       break;
 
     // ── Purchase Orders ───────────────────────────────────────────────────────
