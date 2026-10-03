@@ -35,6 +35,8 @@ import {
   listLocalUsers,
   setUserRoleLocal,
   setUserActive,
+  getUserModulesLocal,
+  setUserModulesLocal,
   addUser as addLocalUser,
   setUserPassword as setLocalUserPassword,
   deleteUser as deleteLocalUser,
@@ -56,6 +58,49 @@ export const ROLE_LABELS = {
   pending: 'Menunggu persetujuan',
 };
 
+// RBAC modules a user's "Akses menu" may list (users/{uid}.modules or the local
+// user record). The list only narrows the role (classic/core/rbac.js); missing
+// or empty = no restriction. MUST mirror functions/user-modules.js MODULE_KEYS
+// and validModules() in firestore.rules.
+export const MODULE_KEYS = [
+  'dashboard',
+  'reports',
+  'sales',
+  'purchases',
+  'inventory',
+  'gl',
+  'tax',
+  'assets',
+  'master',
+  'admin',
+  'config',
+];
+
+/**
+ * Validate a module allowlist: an array of known module keys. Returns it
+ * de-duplicated in MODULE_KEYS order ([] = no restriction); throws otherwise.
+ */
+export function normalizeModules(input) {
+  if (input == null) {
+    return [];
+  }
+  if (!Array.isArray(input)) {
+    throw new Error('Daftar modul tidak valid');
+  }
+  for (const m of input) {
+    if (typeof m !== 'string' || !MODULE_KEYS.includes(m)) {
+      throw new Error(`Modul tidak dikenal: ${String(m)}`);
+    }
+  }
+  return MODULE_KEYS.filter(m => input.includes(m));
+}
+
+// A stored list is read as stored (string entries only, never thrown on), so the
+// client applies exactly the list the Firestore rules apply.
+function cleanModules(list) {
+  return Array.isArray(list) ? list.filter(m => typeof m === 'string') : [];
+}
+
 function isBootstrap(email) {
   return !!email && BOOTSTRAP_ADMINS.includes(String(email).toLowerCase());
 }
@@ -64,11 +109,24 @@ function userRef(uid) {
   return doc(fbDb, 'users', uid);
 }
 
+// Akses menu of a username (custom-token) session: users/{uid}.modules, which
+// the owner may read. A read failure leaves the client unrestricted — the
+// Firestore rules still enforce the list on every write.
+async function readOwnModules(uid) {
+  try {
+    const snap = await getDoc(userRef(uid));
+    return snap.exists() ? cleanModules((snap.data() || {}).modules) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
 /**
  * Resolve the active user's role. Returns
- *   { uid, email, displayName, role, active, mode, source }
+ *   { uid, email, displayName, role, active, mode, source, modules? }
  * and never throws — on any failure it degrades to a safe, low-privilege role
- * so a transient Firestore error can't escalate access.
+ * so a transient Firestore error can't escalate access. `modules` is the
+ * user's Akses menu (empty/missing = no restriction).
  */
 export async function resolveUserRole() {
   const user = getCurrentUser();
@@ -99,6 +157,8 @@ export async function resolveUserRole() {
       active: true,
       mode: 'local',
       source: 'local',
+      // Read from the store (not the session) so a change applies on reload.
+      modules: getUserModulesLocal(user.username || user.uid),
     };
   }
 
@@ -106,21 +166,23 @@ export async function resolveUserRole() {
 
   // Username → custom-token session: the role is a claim on the Firebase ID
   // token (set by the loginWithUsername Cloud Function) — authoritative and
-  // identical to what the Firestore rules enforce. These users have no
-  // users/{uid} document, so trust the claim directly and skip the doc lookup.
+  // identical to what the Firestore rules enforce. Their users/{uid} document
+  // (uid = u_<username>) holds only the Akses menu, if one was set.
   try {
     if (fbAuth && fbAuth.currentUser) {
       const tok = await fbAuth.currentUser.getIdTokenResult();
       const claimRole = tok && tok.claims && tok.claims.role;
       if (claimRole) {
+        const role = bootstrap ? 'admin' : claimRole;
         return {
           uid: user.uid,
           email,
           displayName,
-          role: bootstrap ? 'admin' : claimRole,
+          role,
           active: true,
           mode: 'firebase',
           source: 'claim',
+          modules: role === 'admin' ? [] : await readOwnModules(fbAuth.currentUser.uid),
         };
       }
     }
@@ -153,7 +215,17 @@ export async function resolveUserRole() {
       }
       const role = bootstrap ? 'admin' : data.role || 'pending';
       const active = bootstrap ? true : data.active !== false;
-      return { uid: user.uid, email, displayName, role, active, mode: 'firebase', source: 'doc' };
+      const modules = role === 'admin' ? [] : cleanModules(data.modules);
+      return {
+        uid: user.uid,
+        email,
+        displayName,
+        role,
+        active,
+        mode: 'firebase',
+        source: 'doc',
+        modules,
+      };
     }
 
     // First login → self-provision a document. Bootstrap admins get `admin`,
@@ -230,6 +302,7 @@ export async function listUsers() {
       role: u.role,
       active: u.active,
       mustChangePassword: u.mustChangePassword,
+      modules: cleanModules(u.modules),
       local: true,
     }));
   }
@@ -243,7 +316,26 @@ export async function listUsers() {
     active: u.active,
     mustChangePassword: u.mustChangePassword,
     twoFactorEnabled: u.twoFactorEnabled,
+    modules: cleanModules(u.modules),
   }));
+}
+
+/**
+ * Set a user's Akses menu: the modules they may use, narrowing their role.
+ * [] = everything the role allows. Admin-only; admins can't be restricted.
+ * Returns the stored list. (uid == username.)
+ */
+export async function setUserModules(uid, modules) {
+  if (!uid) {
+    throw new Error('uid wajib diisi');
+  }
+  const list = normalizeModules(modules);
+  if (isLocalMode()) {
+    setUserModulesLocal(uid, list);
+    return list;
+  }
+  const res = await callAdmin('adminSetModules', { username: uid, modules: list });
+  return cleanModules(res && res.modules);
 }
 
 /** Set a user's role and active flag. Admin-only. (uid == username.) */

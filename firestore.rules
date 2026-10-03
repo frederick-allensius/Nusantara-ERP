@@ -6,9 +6,11 @@ service cloud.firestore {
     // Single-tenant internal ERP — Role-Based Access Control (real enforcement)
     //
     // Identity:  each account maps to a users/{uid} document { email, role,
-    //            active }. The app auto-provisions a `pending` (inactive) doc on
-    //            first login (see src/core/user-role.js); an admin assigns a real
-    //            role via Settings → Manajemen Pengguna.
+    //            active, modules? }. The app auto-provisions a `pending`
+    //            (inactive) doc on first login (see src/core/user-role.js); an
+    //            admin assigns a real role via Settings → Manajemen Pengguna.
+    //            Username (custom-token) accounts carry the role as a claim and
+    //            use users/u_<username> only for `modules` (Akses menu).
     //
     // Roles (must mirror public/classic/core/rbac.js PERMISSIONS):
     //   admin     — everything, incl. user management + settings + deletes
@@ -90,8 +92,42 @@ service cloud.firestore {
         : 'admin'; // unknown/meta → admin-only (safe default)
     }
 
-    // ── Permission matrix (create/update) ────────────────────────────────────
+    // ── Per-user module allowlist ("Akses menu") ─────────────────────────────
+    // users/{uid}.modules, set by an admin (Manajemen Pengguna → the
+    // adminSetModules callable). When present and non-empty it can only NARROW
+    // the role: a module outside the list is denied even if the role allows
+    // it. Missing or empty = no restriction. Admins are never restricted (no
+    // lock-out of the last admin). 'operational' side effects and the shared
+    // settings doc ('config', which also holds reference data of other
+    // modules) follow the role alone. Mirror of moduleAllowed() in
+    // public/classic/core/rbac.js.
+    function allowedModules() {
+      return hasUserDoc() ? userDoc().get('modules', []) : [];
+    }
+    function moduleAllowed(m) {
+      return isAdmin()
+        || m in ['operational', 'config']
+        || !(allowedModules() is list)
+        || allowedModules().size() == 0
+        || m in allowedModules();
+    }
+    // Only known module keys may be stored (rbac.js PERMISSIONS modules).
+    function validModules(data) {
+      return !('modules' in data)
+        || (data.modules is list
+            && data.modules.hasOnly(['dashboard','reports','sales','purchases','inventory','gl','tax','assets','master','admin','config']));
+    }
+
+    // ── Effective permission = role matrix AND Akses menu ────────────────────
     function canWriteModule(m) {
+      return roleCanWrite(m) && moduleAllowed(m);
+    }
+    function canDeleteModule(m) {
+      return roleCanDelete(m) && moduleAllowed(m);
+    }
+
+    // ── Role matrix (create/update) ──────────────────────────────────────────
+    function roleCanWrite(m) {
       return isAdmin() ? true
         : role() == 'manajer' ? (m in ['sales','purchases','inventory','master','assets','gl','operational','config'])
         // 'config' included so akunting (tax: FULL client-side) can actually
@@ -104,8 +140,8 @@ service cloud.firestore {
         : false; // viewer (read-only) / pending / unknown
     }
 
-    // ── Permission matrix (delete) ───────────────────────────────────────────
-    function canDeleteModule(m) {
+    // ── Role matrix (delete) ─────────────────────────────────────────────────
+    function roleCanDelete(m) {
       return isAdmin() ? true
         : role() == 'manajer' ? (m in ['sales','purchases','inventory','master','assets','operational','config'])
         : role() == 'akunting' ? (m in ['gl','tax','operational'])
@@ -117,13 +153,17 @@ service cloud.firestore {
     // Read: admins, or the owner of the document.
     // Create: an admin, OR a user self-provisioning their OWN doc with the
     //         non-privileged `pending` role (first-login bootstrap).
-    // Update/Delete: admins only — a user can never escalate their own role.
+    // Update/Delete: admins only — a user can never escalate their own role
+    //         nor edit their own Akses menu (`modules`). Writes are excluded
+    //         from the catch-all below, so these are the only grants.
     match /users/{uid} {
       allow read: if signedIn() && (isAdmin() || uid == request.auth.uid);
-      allow create: if isAdmin()
-                    || (verified() && uid == request.auth.uid
-                        && request.resource.data.role == 'pending');
-      allow update, delete: if isAdmin();
+      allow create: if validModules(request.resource.data)
+                    && (isAdmin()
+                        || (verified() && uid == request.auth.uid
+                            && request.resource.data.role == 'pending'));
+      allow update: if isAdmin() && validModules(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     // ── authUsers: server-only credential store ───────────────────────────────
@@ -179,7 +219,8 @@ service cloud.firestore {
     // subcollections (e.g. backups/{id}/chunks/{n}), so depth>2 documents stay
     // covered — a plain /{collection}/{docId} would DENY them. The module is
     // keyed off the top-level collection name. (users is handled above and
-    // excluded from reads here to keep it private.)
+    // excluded here: reads to keep it private, writes so the users/{uid} block
+    // — admin-only, `modules` validated — is the only grant.)
     // Server-only collections are excluded from every catch-all grant because
     // Firestore OR-combines allow rules — their sibling `if false` blocks above
     // are not enough on their own. authUsers (password hashes + 2FA secrets),
@@ -201,11 +242,13 @@ service cloud.firestore {
         && collection != 'accessLog';
       allow create, update: if verified()
         && canWriteModule(moduleOf(collection))
+        && collection != 'users'
         && collection != 'authUsers'
         && collection != 'serverBackups'
         && collection != 'accessLog';
       allow delete: if verified()
         && canDeleteModule(moduleOf(collection))
+        && collection != 'users'
         && collection != 'authUsers'
         && collection != 'serverBackups'
         && collection != 'accessLog';

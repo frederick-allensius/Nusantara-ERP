@@ -3220,6 +3220,139 @@ function showUserManagement() {
       .join('');
   }
 
+  // ── Akses menu: per-user module allowlist that only narrows the role ───────
+  // Groups come from rbac.js (ACCESS_GROUPS, one per module, with the sidebar
+  // entries each opens). An empty list = everything the role allows.
+  const ACCESS = (window.RBAC && window.RBAC.ACCESS_GROUPS) || [];
+  const canSetModules = ACCESS.length > 0 && typeof window.erpUsers.setModules === 'function';
+
+  function userModules(u) {
+    return Array.isArray(u.modules) ? u.modules : [];
+  }
+
+  function modulesSummary(u) {
+    if (u.role === 'admin') {
+      return '<span class="badge badge-neutral">Semua (Admin)</span>';
+    }
+    const mods = userModules(u);
+    if (!mods.length) {
+      return '<span class="badge badge-neutral">Semua</span>';
+    }
+    const n = ACCESS.filter(g => mods.includes(g.module)).length;
+    return `<span class="badge badge-info">${n} dari ${ACCESS.length} grup</span>`;
+  }
+
+  function modulesPanelHTML(u, panelId) {
+    const uid = escapeHtml(u.uid);
+    const perms = (window.RBAC.PERMISSIONS || {})[u.role] || {};
+    const mods = userModules(u);
+    const all = !mods.length;
+    const groups = ACCESS.map(g => {
+      const inRole = (perms[g.module] || []).includes('view');
+      const checked = inRole && (all || mods.includes(g.module));
+      const menus =
+        typeof window.RBAC.accessMenus === 'function' ? window.RBAC.accessMenus(g.module) : [];
+      const desc = menus.length ? menus.join(' · ') : g.hint || '';
+      return `<label style="display:flex;align-items:flex-start;gap:6px;margin:0;font-size:.75rem;font-weight:500;color:${inRole ? 'var(--text)' : 'var(--muted)'}">
+          <input type="checkbox" class="um-mod" value="${escapeHtml(g.module)}" data-in-role="${inRole ? '1' : '0'}" ${checked ? 'checked' : ''} ${all || !inRole ? 'disabled' : ''} style="margin-top:2px">
+          <span>${escapeHtml(g.label)}${inRole ? '' : ' · di luar peran'}
+            <span style="display:block;font-weight:400;color:var(--muted)">${escapeHtml(desc)}</span>
+          </span>
+        </label>`;
+    }).join('');
+    return `<div class="um-mods-panel" id="${panelId}" data-uid="${uid}" hidden style="flex-basis:100%;padding:10px 12px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:var(--r-sm)">
+        <p class="form-hint" style="margin:0 0 8px">
+          Akses menu hanya dapat membatasi peran ${escapeHtml(ROLE_LABELS[u.role] || u.role || '')}, tidak menambahnya:
+          grup di luar peran tidak dapat dipilih. Ringkasan selalu tampil. Menu pengguna
+          berubah saat ia membuka ulang aplikasi.
+        </p>
+        <label style="display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:.75rem;font-weight:600;color:var(--text)">
+          <input type="checkbox" class="um-mods-all" ${all ? 'checked' : ''}> Semua sesuai peran
+        </label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:8px 16px">${groups}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn-ghost" data-action="umModulesCancel" data-panel="${panelId}" style="font-size:.75rem;padding:4px 10px">Batal</button>
+          <button type="button" class="btn" data-action="umModulesSave" data-panel="${panelId}" style="font-size:.75rem;padding:4px 10px">Simpan Akses</button>
+        </div>
+      </div>`;
+  }
+
+  // Delegated on #um-list (its rows are re-rendered by load()).
+  function setPanelOpen(panelId, open) {
+    const panel = document.getElementById(panelId);
+    const btn = document.querySelector(
+      `[data-action="umModulesToggle"][aria-controls="${panelId}"]`
+    );
+    if (panel) {
+      panel.hidden = !open;
+    }
+    if (btn) {
+      btn.setAttribute('aria-expanded', String(open));
+    }
+  }
+
+  async function saveModules(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) {
+      return;
+    }
+    const uid = panel.dataset.uid;
+    let modules = [];
+    if (!panel.querySelector('.um-mods-all')?.checked) {
+      modules = [...panel.querySelectorAll('.um-mod')]
+        .filter(b => b.checked && !b.disabled)
+        .map(b => b.value);
+      if (!modules.length) {
+        showToast('Pilih minimal satu grup menu, atau centang "Semua sesuai peran".', 'warning');
+        return;
+      }
+    }
+    try {
+      await window.erpUsers.setModules(uid, modules);
+      showToast(
+        modules.length ? 'Akses menu disimpan' : 'Akses menu: semua sesuai peran',
+        'success'
+      );
+      load();
+    } catch (e) {
+      showToast(e?.message || 'Gagal menyimpan akses menu', 'danger');
+    }
+  }
+
+  function onListClick(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) {
+      return;
+    }
+    const action = btn.dataset.action;
+    if (action === 'umModulesToggle') {
+      const panelId = btn.getAttribute('aria-controls');
+      setPanelOpen(panelId, btn.getAttribute('aria-expanded') !== 'true');
+    } else if (action === 'umModulesCancel') {
+      load(); // discard unsaved ticks
+    } else if (action === 'umModulesSave') {
+      saveModules(btn.dataset.panel);
+    }
+  }
+
+  function onListChange(e) {
+    const allBox = e.target.closest('.um-mods-all');
+    if (!allBox) {
+      return;
+    }
+    // "Semua sesuai peran" ticks every group the role has and locks them.
+    allBox
+      .closest('.um-mods-panel')
+      .querySelectorAll('.um-mod')
+      .forEach(b => {
+        const inRole = b.dataset.inRole === '1';
+        if (allBox.checked) {
+          b.checked = inRole;
+        }
+        b.disabled = allBox.checked || !inRole;
+      });
+  }
+
   function render(list) {
     const el = document.getElementById('um-list');
     if (!el) {
@@ -3230,7 +3363,7 @@ function showUserManagement() {
       return;
     }
     el.innerHTML = list
-      .map(u => {
+      .map((u, i) => {
         const self = u.uid === myUid;
         const active = u.active !== false;
         const der = u.local ? null : roleForEmail(u.email);
@@ -3246,11 +3379,20 @@ function showUserManagement() {
           ? `<button class="btn-ghost um-reset" data-uid="${escapeHtml(u.uid)}" style="font-size:.75rem;padding:3px 7px">Reset PW</button>
              ${u.uid === 'admin' ? '' : `<button class="btn-ghost um-del" data-uid="${escapeHtml(u.uid)}" style="font-size:.75rem;padding:3px 7px;color:var(--danger)">Hapus</button>`}`
           : '';
+        const panelId = `um-mods-${i}`;
+        const modsLine = canSetModules
+          ? `<div style="font-size:.75rem;color:var(--muted);margin-top:3px">Akses menu: ${modulesSummary(u)}</div>`
+          : '';
+        const modsButton = canSetModules
+          ? `<button type="button" class="btn-ghost" data-action="umModulesToggle" aria-expanded="false" aria-controls="${panelId}" style="font-size:.75rem;padding:3px 7px" ${u.role === 'admin' ? 'disabled title="Peran Admin selalu mendapat semua menu"' : ''}>Akses menu</button>`
+          : '';
+        const modsPanel = canSetModules && u.role !== 'admin' ? modulesPanelHTML(u, panelId) : '';
         return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <div style="min-width:0;flex:1">
             <div style="font-size:.75rem;font-weight:700">${escapeHtml(u.displayName || u.email || u.uid)}${self ? ' <span style="color:var(--muted);font-weight:400">(Anda)</span>' : ''}</div>
             <div style="font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subLine}</div>
             ${deptLine}
+            ${modsLine}
           </div>
           <select class="form-input um-role" data-uid="${escapeHtml(u.uid)}" ${self ? 'disabled title="Anda tidak dapat mengubah peran sendiri"' : ''} style="font-size:.75rem;width:auto;padding:4px 8px">
             ${roleOptions(u.role || 'pending')}
@@ -3258,7 +3400,9 @@ function showUserManagement() {
           <label style="font-size:.75rem;display:flex;align-items:center;gap:4px;cursor:${self ? 'not-allowed' : 'pointer'}">
             <input type="checkbox" class="um-active" data-uid="${escapeHtml(u.uid)}" ${active ? 'checked' : ''} ${self ? 'disabled' : ''}> Aktif
           </label>
+          ${modsButton}
           ${localActions}
+          ${modsPanel}
         </div>`;
       })
       .join('');
@@ -3301,6 +3445,7 @@ function showUserManagement() {
         try {
           await window.erpUsers.setRole(uid, role, active);
           showToast('Peran pengguna diperbarui', 'success');
+          load(); // Akses menu follows the role (an admin is never restricted)
         } catch (e) {
           showToast(e?.message || 'Gagal memperbarui peran', 'danger');
           load(); // re-sync UI with server truth
@@ -3330,6 +3475,9 @@ function showUserManagement() {
     document.getElementById('um-add')?.addEventListener('click', () => showAddLocalUser(load));
     document.getElementById('um-log')?.addEventListener('click', showLoginLog);
     document.getElementById('um-access-log')?.addEventListener('click', showAccessLog);
+    const listEl = document.getElementById('um-list');
+    listEl?.addEventListener('click', onListClick);
+    listEl?.addEventListener('change', onListChange);
     load();
   }, 60);
 }
