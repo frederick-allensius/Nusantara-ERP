@@ -46,26 +46,30 @@ export function registerServiceWorker() {
 }
 
 function showUpdateNotification() {
+  // CSP (script-src 'self') blocks inline handlers, so the buttons get listeners.
   const notification = document.createElement('div');
   notification.className = 'pwa-update-notification';
+  notification.setAttribute('role', 'status');
   notification.innerHTML = `
     <div style="display: flex; align-items: center; gap: 12px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
         <path d="M21 3v5h-5"/>
       </svg>
       <div style="flex: 1;">
-        <div style="font-weight: 600; margin-bottom: 4px;">Update Available</div>
-        <div style="font-size: .8125rem; opacity: 0.9;">A new version of the app is ready.</div>
+        <div style="font-weight: 600; margin-bottom: 4px;">Versi baru tersedia</div>
+        <div style="font-size: .8125rem; opacity: 0.9;">Muat ulang untuk memakai versi terbaru aplikasi.</div>
       </div>
-      <button onclick="window.location.reload()" style="padding: 8px 16px; background: white; color: #4F46E5; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-        Reload
-      </button>
-      <button onclick="this.closest('.pwa-update-notification').remove()" style="padding: 8px; background: transparent; border: none; cursor: pointer; opacity: 0.7;">
-        ✕
-      </button>
+      <button type="button" class="btn" data-pwa="reload">Muat ulang</button>
+      <button type="button" class="btn-ghost" data-pwa="close" aria-label="Tutup">✕</button>
     </div>
   `;
+  notification.querySelector('[data-pwa="reload"]').addEventListener('click', () => {
+    window.location.reload();
+  });
+  notification.querySelector('[data-pwa="close"]').addEventListener('click', () => {
+    notification.remove();
+  });
 
   document.body.appendChild(notification);
 

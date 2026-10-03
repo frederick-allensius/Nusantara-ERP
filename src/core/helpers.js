@@ -181,15 +181,14 @@ export function tblHdr(cols) {
 }
 
 export function actionBtns(type, id) {
-  return `<div style="display:flex;gap:6px;justify-content:center">
-    <button data-action="edit${type}" data-id="${escapeHtml(id)}" title="Edit" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 12px;background:transparent;border:1px solid var(--primary);border-radius:6px;cursor:pointer;color:var(--primary);font-size:.75rem;font-weight:600;transition:all .2s ease;font-family:inherit" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--primary)'">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  // Quiet row button (style.css .row-edit); no inline handlers (CSP).
+  return `<button type="button" class="row-edit" data-action="edit${type}" data-id="${escapeHtml(id)}" title="Edit">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
       </svg>
       Edit
-    </button>
-  </div>`;
+    </button>`;
 }
 
 export function detailRow(label, value) {

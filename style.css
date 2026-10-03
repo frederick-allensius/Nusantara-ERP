@@ -1464,6 +1464,78 @@ tfoot td {
   font-weight: 600;
 }
 
+/* "Versi baru tersedia" card (src/pwa-register.js) */
+.pwa-update-notification {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  font-size: var(--fs-base);
+}
+
+/* Row "Edit" button (helpers.js actionBtns): quiet until hovered */
+.row-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+}
+.row-edit:hover,
+.row-edit:focus-visible {
+  border-color: var(--border);
+  background: var(--surface-hover);
+  color: var(--primary);
+  outline: none;
+}
+
+/* One-line summary under a page header (instead of a row of stat tiles) */
+.list-summary {
+  margin: -8px 0 14px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Surat Jalan: armada & ekspedisi folded below the list */
+.log-fleet > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+}
+.log-fleet > summary span {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--muted);
+}
+.log-fleet .log-2col {
+  gap: 28px;
+  margin: 14px 0 0;
+}
+.log-fleet .log-2col > .card {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
 /* Pager under a flush list card (invoice-view.js) */
 .inv-pager {
   display: flex;

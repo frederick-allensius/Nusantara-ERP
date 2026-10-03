@@ -1724,9 +1724,6 @@ function renderLogistics() {
   orders = applyDateFilter(orders, 'logistics');
   orders = applySorted(orders, 'logistics');
 
-  const invoiced = dos.filter(o => o.status === 'Invoiced').length;
-  const sent = dos.filter(o => o.status === 'Sent').length;
-  const partialInv = dos.filter(o => o.status === 'Partially invoiced').length;
   // Fix #4: compute from real data — count unique drivers dispatched this month
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -1740,21 +1737,83 @@ function renderLogistics() {
 
   return `
   ${secHdr('Surat Jalan', 'Pengiriman barang ke pelanggan, armada, dan ekspedisi', 'Buat Surat Jalan', 'addDO')}
-  ${statRow([
-    {
-      label: 'DO Difakturkan',
-      value: String(invoiced),
-      sub: 'Sudah jadi faktur',
-      color: 'var(--success)',
-    },
-    { label: 'DO Terkirim', value: String(sent), sub: 'Belum difaktur', color: 'var(--primary)' },
-    { label: 'DO Faktur Sebagian', value: String(partialInv), sub: 'Sebagian difaktur', color: 'var(--warning)' },
-    {
-      label: 'Driver Aktif Bln Ini',
-      value: String(uniqueDrivers),
-      sub: `${thisMthDO.length} DO bulan ini`,
-    },
-  ])}
+  <div class="list-summary">${dos.length} surat jalan · ${thisMthDO.length} bulan ini · ${uniqueDrivers} driver aktif bulan ini</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div style="font-size:.875rem;font-weight:700">Daftar Delivery Order</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${ioMenu('logistics', ['csv', 'excel', 'import'])}
+        ${filterBtn('logistics')}
+      </div>
+    </div>
+    <div style="margin-bottom:12px">${dateFilterBar('logistics')}</div>
+    ${
+      pickupCount > 0
+        ? `<div class="empty-inline" style="margin-bottom:12px;text-align:left">Surat jalan pengambilan dari supplier (${pickupCount}) ada di menu <button class="link-btn" data-action="openPickupOrders">Pengambilan → PO Pengambilan</button>.</div>`
+        : ''
+    }
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          ${sortTh('No. DO', 'logistics', 'id')}
+          <th>Ref.</th>
+          ${sortTh('Pelanggan', 'logistics', 'customer')}
+          ${sortTh('Tujuan', 'logistics', 'destination')}
+          ${sortTh('Tanggal', 'logistics', 'date')}
+          <th>Driver</th>
+          <th>Kendaraan</th>
+          ${sortTh('Status', 'logistics', 'status')}
+          <th>Aksi</th>
+        </tr></thead>
+        <tbody>
+          ${
+            paged.length === 0
+              ? emptyRow(9, 'logistics')
+              : paged
+                  .map(d => {
+                    const rawRef = d.soId || d.poId || null;
+                    // The source order's own number (SO.… / PO.…) tells where
+                    // the DO came from.
+                    const refDoc = d.soId
+                      ? (DB.salesOrders || []).find(o => String(o.id) === String(d.soId))
+                      : d.poId
+                        ? (DB.purchaseOrders || []).find(o => String(o.id) === String(d.poId))
+                        : null;
+                    const ref = refDoc
+                      ? docNum(refDoc.number, refDoc.id)
+                      : rawRef
+                        ? `${d.soId ? 'SO' : 'PO'} · ${docNum(null, rawRef)}`
+                        : '—';
+                    const refColor = d.soId
+                      ? 'var(--primary)'
+                      : d.poId
+                        ? 'var(--warning)'
+                        : 'var(--muted)';
+                    return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}" style="cursor:pointer">
+              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:600;color:${refColor}">${escapeHtml(ref)}</td>
+              <td class="td-p" style="font-size:.75rem;font-weight:600">${escapeHtml(d.customer)}</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.destination)}${
+                d.destChanged
+                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:.75rem;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
+                  : ''
+              }</td>
+              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date)}</td>
+              <td class="td-p" style="font-size:.75rem">${escapeHtml(d.driver)}</td>
+              <td class="td-p" style="font-size:.75rem;font-family:monospace">${escapeHtml(d.vehicle)}</td>
+              <td class="td-p">${badge(d.status)}</td>
+              <td class="td-p">${actionBtns('DO', d.id)}</td>
+            </tr>`;
+                  })
+                  .join('')
+          }
+        </tbody>
+      </table>
+    </div>
+    ${pagerHTML(totalFiltered, 'logistics')}
+  </div>
+  <details class="card log-fleet">
+    <summary>Armada &amp; ekspedisi <span>${fleet.length} kendaraan · ${expedition.length} rekanan</span></summary>
   <div class="log-2col">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1800,72 +1859,7 @@ function renderLogistics() {
       }
     </div>
   </div>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-      <div style="font-size:.875rem;font-weight:700">Daftar Delivery Order</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${ioMenu('logistics', ['csv', 'excel', 'import'])}
-        ${filterBtn('logistics')}
-      </div>
-    </div>
-    <div style="margin-bottom:12px">${dateFilterBar('logistics')}</div>
-    ${
-      pickupCount > 0
-        ? `<div class="empty-inline" style="margin-bottom:12px;text-align:left">Surat jalan pengambilan dari supplier (${pickupCount}) ada di menu <button class="link-btn" data-action="openPickupOrders">Pengambilan → PO Pengambilan</button>.</div>`
-        : ''
-    }
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          ${sortTh('No. DO', 'logistics', 'id')}
-          <th>Ref.</th>
-          ${sortTh('Pelanggan', 'logistics', 'customer')}
-          ${sortTh('Tujuan', 'logistics', 'destination')}
-          ${sortTh('Tanggal', 'logistics', 'date')}
-          <th>Driver</th>
-          <th>Kendaraan</th>
-          ${sortTh('Status', 'logistics', 'status')}
-          <th>Aksi</th>
-        </tr></thead>
-        <tbody>
-          ${
-            paged.length === 0
-              ? emptyRow(9, 'logistics')
-              : paged
-                  .map(d => {
-                    const rawRef = d.soId || d.poId || null;
-                    // Prefix the reference with its source type so it's obvious
-                    // at a glance whether the DO came from an SO or a PO.
-                    const refKind = d.soId ? 'SO' : d.poId ? 'PO' : '';
-                    const ref = rawRef ? `${refKind} · ${docNum(null, rawRef)}` : '—';
-                    const refColor = d.soId
-                      ? 'var(--primary)'
-                      : d.poId
-                        ? 'var(--warning)'
-                        : 'var(--muted)';
-                    return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:600;color:${refColor}">${escapeHtml(ref)}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:600">${escapeHtml(d.customer)}</td>
-              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.destination)}${
-                d.destChanged
-                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:.75rem;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
-                  : ''
-              }</td>
-              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date)}</td>
-              <td class="td-p" style="font-size:.75rem">${escapeHtml(d.driver)}</td>
-              <td class="td-p" style="font-size:.75rem;font-family:monospace">${escapeHtml(d.vehicle)}</td>
-              <td class="td-p">${badge(d.status)}</td>
-              <td class="td-p">${actionBtns('DO', d.id)}</td>
-            </tr>`;
-                  })
-                  .join('')
-          }
-        </tbody>
-      </table>
-    </div>
-    ${pagerHTML(totalFiltered, 'logistics')}
-  </div>`;
+  </details>`;
 }
 
 // ── View: Master Data ─────────────────────────────────────────────────────────
