@@ -1,13 +1,18 @@
-// Notification scheduler: overdue receivables/payables, low stock and budget alerts.
+// Notification scheduler: overdue receivables/payables, low stock, budget alerts
+// and the trading pickup flow (weight changes after billing, pickup POs at their
+// cut-off, trips left unbilled for more than a week).
 // Uses the Notification API + SW postMessage for OS notifications.
 // Exposes window.NSANotif for the nav.js panel.
 //
 // Receivable/payable figures come from window.Balances (balances.js), so alerts
 // show the same open items and amounts as invoices, aging and the dashboard.
+// Pickup figures come from window.TradingSummary (trading-summary.js), the same
+// source as the Ringkasan blocks.
 
 const CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
 const ICON = '/icon-192.png';
 const LOW_STOCK_DETAIL_LIMIT = 5; // more low-stock items than this collapse into one alert
+const UNBILLED_DAYS = 7; // customers billed weekly: trips older than this are late
 
 let _alerts = [];
 let _unreadCount = 0;
@@ -199,13 +204,85 @@ function budgetAlerts(DB, now) {
   ];
 }
 
+// Respect the role's module access (core/rbac.js) for alerts about one module.
+function canView(module) {
+  const R = window.RBAC;
+  return !R || typeof R.canView !== 'function' || R.canView(module);
+}
+
+function tradingAlerts(now) {
+  const S = window.TradingSummary;
+  if (!S || typeof S.hasData !== 'function' || !S.hasData()) {
+    return [];
+  }
+  const out = [];
+  if (canView('purchases')) {
+    const changes = S.supplierDiffs().alerts;
+    if (changes.length > 0) {
+      out.push({
+        id: 'pickup-weight-changes',
+        type: 'warning',
+        icon: 'warning',
+        title: 'Perubahan timbangan belum ditindaklanjuti',
+        body: `${changes.length} pengambilan · berat berubah setelah ditagih`,
+        link: 'menu:Perubahan Timbangan',
+        ts: now,
+        count: changes.length,
+      });
+    }
+    const cutoff = S.poProgress(now).filter(p => p.pastCutoff || p.nearCutoff);
+    if (cutoff.length > 0) {
+      const past = cutoff.filter(p => p.pastCutoff).length;
+      const near = cutoff.length - past;
+      out.push({
+        id: 'pickup-cutoff',
+        type: past > 0 ? 'danger' : 'warning',
+        icon: past > 0 ? 'danger' : 'warning',
+        title: 'PO pengambilan di batas cut-off',
+        body: [
+          past > 0 ? `${past} PO lewat cut-off masih terbuka` : '',
+          near > 0 ? `${near} PO cut-off dalam ${S.NEAR_CUTOFF_DAYS} hari` : '',
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        link: 'menu:PO Pengambilan',
+        ts: now,
+        count: cutoff.length,
+      });
+    }
+  }
+  if (canView('sales')) {
+    const late = S.unbilledAging(now, UNBILLED_DAYS);
+    if (late.length > 0) {
+      const trips = late.reduce((n, r) => n + r.count, 0);
+      const value = late.reduce((n, r) => n + r.value, 0);
+      out.push({
+        id: 'pickup-unbilled',
+        type: 'warning',
+        icon: 'receivable',
+        title: `Pengambilan belum ditagih lebih dari ${UNBILLED_DAYS} hari`,
+        body: `${late.length} pelanggan · ${trips} truk · ${idr(value)}`,
+        link: 'menu:Tagih Pelanggan',
+        ts: now,
+        count: late.length,
+      });
+    }
+  }
+  return out;
+}
+
 export function checkAlerts() {
   const DB = window.DB;
   if (!DB) {
     return [];
   }
   const now = today();
-  const next = [...balanceAlerts(now), ...lowStockAlerts(DB, now), ...budgetAlerts(DB, now)];
+  const next = [
+    ...balanceAlerts(now),
+    ...tradingAlerts(now),
+    ...lowStockAlerts(DB, now),
+    ...budgetAlerts(DB, now),
+  ];
 
   const prevIds = new Set(_alerts.map(a => a.id));
   const added = next.filter(a => !prevIds.has(a.id));
