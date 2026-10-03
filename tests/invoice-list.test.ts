@@ -58,3 +58,34 @@ describe('invoice list paging', () => {
     expect(view.querySelector('.inv-pager')!.textContent).toContain('16–20 dari 20');
   });
 });
+
+describe('invoice status strip', () => {
+  it('counts invoices per stage and filters the list', () => {
+    const db = w().DB;
+    db.salesInvoices[0].status = 'Cancelled';
+    db.salesInvoices[1].status = 'Paid';
+    db.salesReceipts.push({
+      id: 'SR-1',
+      date: '2026-09-03',
+      status: 'Posted',
+      invoiceId: 'SI-02',
+      amount: 1000,
+    });
+    const view = document.getElementById('view-invoices')!;
+    view.innerHTML = w().renderInvoices();
+    const seg = (k: string) =>
+      view.querySelector(`.ostrip-seg[data-stage="${k}"] .ostrip-count`)!.textContent;
+    const open = Number(seg('open'));
+    const overdue = Number(seg('overdue'));
+    expect(open + overdue).toBe(18);
+    expect(seg('paid')).toBe('1');
+    expect(seg('cancelled')).toBe('1');
+
+    actions.invStage(undefined, 'SI', 'cancelled');
+    expect(view.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(view.querySelector('.ostrip-note')!.textContent).toContain('Dibatalkan');
+
+    actions.invStage(undefined, 'SI', '');
+    expect(view.querySelectorAll('tbody tr')).toHaveLength(15);
+  });
+});

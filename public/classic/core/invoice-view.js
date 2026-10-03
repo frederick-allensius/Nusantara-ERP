@@ -27,6 +27,14 @@
   // Lists show one page at a time (same size as the other lists).
   const PAGE_SIZE = 15;
   const pageOf = { SI: 1, PI: 1, SR: 1, PP: 1 };
+  // Status strip filter of the invoice lists ('' = all).
+  const stageOf = { SI: '', PI: '' };
+  const INV_STAGES = [
+    ['open', 'Belum jatuh tempo'],
+    ['overdue', 'Lewat jatuh tempo'],
+    ['paid', 'Lunas'],
+    ['cancelled', 'Dibatalkan'],
+  ];
 
   const TYPES = {
     SI: {
@@ -166,6 +174,71 @@
     );
   }
 
+  // Where an invoice's money stands: open (not yet due), overdue, paid,
+  // cancelled; '' for a draft.
+  function invoiceStage(type, d, today) {
+    if (d.status === 'Cancelled') {
+      return 'cancelled';
+    }
+    if (!B() || !B().isActiveInvoice(d)) {
+      return '';
+    }
+    const side = TYPES[type].side;
+    if (B().invoiceBalance(side, d).outstanding <= B().EPS) {
+      return 'paid';
+    }
+    const due = B().dueDateFor(side, d);
+    return due && due < today ? 'overdue' : 'open';
+  }
+
+  // Strip of the invoice list (same look as the order lists): count and money
+  // per stage; a segment filters the list, a second click clears it.
+  function stripHTML(type) {
+    const t = TYPES[type];
+    const today = todayStr();
+    const short = typeof window.idrShort === 'function' ? window.idrShort : money;
+    const sums = {};
+    INV_STAGES.forEach(([key]) => {
+      sums[key] = { count: 0, value: 0 };
+    });
+    (db()[t.coll] || []).forEach(d => {
+      const key = invoiceStage(type, d, today);
+      if (!sums[key]) {
+        return;
+      }
+      sums[key].count++;
+      sums[key].value +=
+        key === 'open' || key === 'overdue'
+          ? B().invoiceBalance(t.side, d).outstanding
+          : Number(d.amount) || 0;
+    });
+    const segs = INV_STAGES.map(([key, label]) => {
+      const on = stageOf[type] === key;
+      const sum = sums[key];
+      const value =
+        (key === 'open' || key === 'overdue' ? 'sisa ' : '') + short(Math.round(sum.value));
+      return `<button type="button" class="ostrip-seg${on ? ' is-active' : ''}${sum.count ? '' : ' is-empty'}"
+        data-action="invStage" data-type="${type}" data-val="${on ? '' : key}" data-stage="${key}" aria-pressed="${on}">
+        <span class="ostrip-label">${esc(label)}</span>
+        <span class="ostrip-count">${sum.count}</span>
+        <span class="ostrip-value">${esc(value)}</span>
+      </button>`;
+    }).join('');
+    const month = today.slice(0, 7);
+    const thisMonth = (db()[t.coll] || []).filter(
+      d => B().isActiveInvoice(d) && String(d.date || '').slice(0, 7) === month
+    );
+    const note = stageOf[type]
+      ? `<div class="ostrip-note" role="status">Menampilkan: <strong>${esc(
+          (INV_STAGES.find(s => s[0] === stageOf[type]) || [])[1] || ''
+        )}</strong> <span aria-hidden="true">·</span>
+        <button type="button" class="link-btn" data-action="invStage" data-type="${type}" data-val="">Hapus filter</button></div>`
+      : `<div class="ostrip-note">Bulan ini: ${thisMonth.length} faktur · ${money(
+          thisMonth.reduce((s2, d) => s2 + (Number(d.amount) || 0), 0)
+        )}</div>`;
+    return `<div class="ostrip" role="group" aria-label="Status ${esc(t.label.toLowerCase())}"><div class="ostrip-track" data-n="4">${segs}</div></div>${note}`;
+  }
+
   function statsHTML(type) {
     const t = TYPES[type];
     const statRow = window.statRow;
@@ -174,29 +247,7 @@
     }
     const month = todayStr().slice(0, 7);
     if (isInvoice(type)) {
-      const items = B()
-        .openItems(t.side)
-        .filter(it => it.docType === type);
-      const outstanding = items.reduce((s, it) => s + it.outstanding, 0);
-      const overdueItems = items.filter(it => it.overdue);
-      const overdue = overdueItems.reduce((s, it) => s + it.outstanding, 0);
-      const thisMonth = (db()[t.coll] || []).filter(
-        d => B().isActiveInvoice(d) && String(d.date || '').slice(0, 7) === month
-      );
-      return statRow([
-        { label: 'Belum dibayar', value: money(outstanding), sub: `${items.length} faktur` },
-        {
-          label: 'Lewat jatuh tempo',
-          value: money(overdue),
-          sub: `${overdueItems.length} faktur`,
-          color: overdue > 0 ? 'var(--danger)' : undefined,
-        },
-        {
-          label: 'Faktur bulan ini',
-          value: money(thisMonth.reduce((s, d) => s + (Number(d.amount) || 0), 0)),
-          sub: `${thisMonth.length} faktur`,
-        },
-      ]);
+      return stripHTML(type);
     }
     const posted = (db()[t.coll] || []).filter(d => d.status === 'Posted');
     const monthDocs = posted.filter(d => String(d.date || '').slice(0, 7) === month);
@@ -251,9 +302,16 @@
 
   function listHTML(type) {
     const t = TYPES[type];
-    const all = (db()[t.coll] || []).slice().sort(byDateDesc);
+    let all = (db()[t.coll] || []).slice().sort(byDateDesc);
     if (all.length === 0) {
       return emptyHTML(type);
+    }
+    if (isInvoice(type) && stageOf[type]) {
+      const today0 = todayStr();
+      all = all.filter(d => invoiceStage(type, d, today0) === stageOf[type]);
+      if (all.length === 0) {
+        return `<div class="card"><div class="empty-inline">Tidak ada faktur pada tahap ini.</div></div>`;
+      }
     }
     const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
     pageOf[type] = Math.min(Math.max(1, pageOf[type] || 1), pages);
@@ -276,7 +334,7 @@
             <td class="${overdue ? 't-danger' : 't-muted'}">${fmtDate(due)}</td>
             <td class="t-num">${money(d.amount || 0)}</td>
             <td class="t-num">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
-            <td>${badge(d.status)}${overdue ? ' <span class="chip chip-danger">Lewat tempo</span>' : ''}</td>
+            <td>${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
             <td class="t-actions"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
           </tr>`;
         })
@@ -1030,6 +1088,14 @@
         activeTab = val;
         refresh();
         syncMenu();
+      }
+      return true;
+    });
+    window.ERP.registerAction('invStage', function (_id, type, val) {
+      if (type === 'SI' || type === 'PI') {
+        stageOf[type] = INV_STAGES.some(st => st[0] === val) ? val : '';
+        pageOf[type] = 1;
+        refresh();
       }
       return true;
     });

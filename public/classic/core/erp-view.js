@@ -425,8 +425,8 @@ window.openOrderStage = openOrderStage;
 // Row badge of an order: once delivered/received (or a pickup order is done)
 // the row shows where its money stands — the same stage as the strip above.
 const STAGE_BADGE = {
-  delivered: ['warning', 'Belum faktur'],
-  unpaid: ['info', 'Belum lunas'],
+  delivered: ['purple', 'Belum faktur'],
+  unpaid: ['warning', 'Belum lunas'],
   paid: ['success', 'Lunas'],
 };
 function orderStageBadge(side, o) {

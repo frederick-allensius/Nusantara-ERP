@@ -1651,6 +1651,11 @@ tfoot td {
   background: var(--surface-active);
   color: var(--text-secondary);
 }
+.badge-purple {
+  background: color-mix(in srgb, var(--chart-4) 13%, transparent);
+  color: var(--chart-4);
+}
+.badge-purple::before,
 .badge-green::before,
 .badge-success::before,
 .badge-yellow::before,
@@ -2785,6 +2790,9 @@ select.inline-status {
   gap: 0 18px;
   padding: 3px;
 }
+.ostrip-track[data-n='4'] {
+  grid-template-columns: repeat(4, minmax(132px, 1fr));
+}
 .ostrip-seg {
   position: relative;
   display: flex;
@@ -2871,6 +2879,12 @@ select.inline-status {
 }
 .ostrip-seg[data-stage='paid'] {
   --ostrip-dot: var(--success);
+}
+.ostrip-seg[data-stage='overdue'] {
+  --ostrip-dot: var(--danger);
+}
+.ostrip-seg[data-stage='open'] {
+  --ostrip-dot: var(--warning);
 }
 .ostrip-count {
   font-size: var(--fs-xl);
