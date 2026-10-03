@@ -92,7 +92,7 @@ function buildInvoiceDoc(type, data) {
       discount += d;
       const sub = l.subtotal != null ? Number(l.subtotal) : g - d;
       return `<tr>
-        <td>${escapeHtml(l.itemName || it.name || '')}</td>
+        <td>${escapeHtml(l.itemName || it.name || '')}${l.note ? `<div class="inv-label inv-ln">${escapeHtml(l.note)}</div>` : ''}</td>
         <td class="r">${qtyFmt(l.qty)}</td>
         <td class="c">${escapeHtml(l.unit || it.unit || '')}</td>
         <td class="r">${num(l.price)}</td>
@@ -137,6 +137,7 @@ function buildInvoiceDoc(type, data) {
     .inv-items thead th { background:#1b3a5b; color:#fff; font-weight:bold; text-align:left; padding:8px; }
     .inv-items tbody td { padding:7px 8px; border-bottom:1px solid #d8dde3; }
     .inv-items .r { text-align:right; } .inv-items .c { text-align:center; }
+    .inv-items .inv-ln { font-size:10px; padding:1px 0 0; }
     .inv-bottom { width:100%; margin-top:10px; }
     .inv-bottom > td { vertical-align:top; }
     .inv-tot { width:100%; }
