@@ -95,7 +95,7 @@
   ];
 
   // Other Payment category → posting slot. Unlisted categories use purchaseExpense.
-  const PAYMENT_CATEGORY_SLOTS = { Gaji: 'salaryExpense' };
+  const PAYMENT_CATEGORY_SLOTS = { Gaji: 'salaryExpense', 'Biaya Bank': 'bankFee' };
 
   function db() {
     return window.DB || {};
