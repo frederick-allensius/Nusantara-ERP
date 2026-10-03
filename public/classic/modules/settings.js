@@ -600,6 +600,18 @@ function showBackupManager() {
       </button>
     </div>
 
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.8125rem;font-weight:700">Arsip Excel</div>
+        <div style="font-size:.75rem;color:var(--muted)">Data utama per tahun dalam satu file Excel, untuk disimpan di hard disk atau dibaca akuntan. Untuk pemulihan tetap pakai Export ke File.</div>
+      </div>
+      <select class="form-select" id="archiveYear" aria-label="Tahun arsip" style="width:auto">
+        ${(window.NSAArchive ? window.NSAArchive.years() : []).map(y => `<option value="${y}">${y}</option>`).join('')}
+        <option value="">Semua tahun</option>
+      </select>
+      <button class="btn-ghost" id="downloadArchive">Unduh</button>
+    </div>
+
     <button class="btn-ghost" id="openExcelImport" style="width:100%;margin-bottom:12px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -635,6 +647,16 @@ function showBackupManager() {
       } catch (error) {
         showToast(`Gagal export: ${error.message}`, 'danger');
       }
+    });
+
+    // Excel archive of one year (or all years)
+    document.getElementById('downloadArchive')?.addEventListener('click', () => {
+      const year = document.getElementById('archiveYear')?.value || '';
+      if (!window.NSAArchive || !window.NSAArchive.download(year)) {
+        showToast('Ekspor Excel belum tersedia', 'danger');
+        return;
+      }
+      showToast(`Arsip Excel ${year || 'semua tahun'} diunduh`, 'success');
     });
 
     // Import backup
