@@ -187,7 +187,7 @@ document tab, ledger, sales list, dashboard.
 3. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; pitch sample outputs; remove `harness.local/`.
 
-## Session 2026-10-03 — friend's branch + meeting requirements (DONE except items below)
+## Session 2026-10-03 — friend's branch + meeting requirements (DONE)
 
 Requirements: `D:\1. Work\ERP-Lisa-Kenneth\meeting notes 14092026.txt` + recording
 `meeting 14092026.mkv`. Requirement → solution → status: `docs/11-KEBUTUHAN-MEETING-14-SEP-2026.md`
@@ -214,10 +214,16 @@ harness (fresh demo data loaded in memory): Ringkasan, PO Pengambilan, Tagih Pel
 Rekap Pengambilan, Laporan per Periode (Pengambilan), Surat Jalan hint, Kelola Backup archive,
 Pengeluaran Lain recap, Entri Harian, Catat Pengambilan at 375px — no console errors, TB balanced.
 
-Remaining:
-- Docs 01–10, MEETING_KIT, SJ_VALIDATION_DEMO, READMEs sync (agent worktree in progress; check
-  `git branch --list 'worktree-agent-*'` for an unmerged docs commit).
-- Deploy needed by the owner: firestore.rules + functions (adminSetModules).
-- Housekeeping: `.claude/worktrees/agent-*` (merged; some contain a node_modules JUNCTION to the
-  main checkout — remove with `git worktree remove --force` only after deleting the junction with
-  `cmd /c rmdir`, never recursive delete); `harness.local/` (git-ignored) when verification is over.
+Later commits: bed22bf docs 01–10, MEETING_KIT §7 (pickup demo), SJ_VALIDATION_DEMO, READMEs;
+8d3a071 pickup POs out of Penerimaan Barang, aging row of a trip opens the surat jalan, doc 11 fixes.
+Checks at 8d3a071: vitest 34 files / 464 tests, tsc, eslint, vite build pass.
+
+Known gaps (documented, not built): a recorded trip can't be cancelled/deleted (weight only via
+recap); no screen for default truck capacity or bank-account ↔ ledger-account link; cut-off sweep
+runs when PO Pengambilan opens (Ringkasan flags overdue POs meanwhile); some older findings in
+docs 03/07 still describe issues 08 marks fixed (T-04/05/12/14/15/42, T-13/21/27).
+
+Owner decisions: docs/11 §8 and §7. Deploy by the owner: firestore.rules + functions (adminSetModules).
+Housekeeping left to the user: `.claude/worktrees/agent-*` (merged; some contain a node_modules
+JUNCTION to the main checkout — delete the junction with `cmd /c rmdir` first, then
+`git worktree remove --force`); scratchpad `friend` worktree. `harness.local/` removed.
