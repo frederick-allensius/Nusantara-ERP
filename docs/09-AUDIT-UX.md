@@ -63,10 +63,11 @@ Aplikasi punya **dua** sistem tab di dalam halaman:
 
 Rincian menu lama → baru ada di [02-PETA-MODUL-DAN-NAVIGASI.md](02-PETA-MODUL-DAN-NAVIGASI.md). Prinsipnya:
 
-- **Satu sidebar berlabel** (bisa diciutkan menjadi ikon), grup mengikuti alur kerja: Ringkasan → Penjualan → Pembelian → Persediaan → Kas & Bank → Akuntansi → Aset Tetap → Laporan → Data Master → Pengaturan.
+- **Satu sidebar berlabel** (bisa diciutkan menjadi ikon), grup mengikuti alur kerja: Ringkasan → Entri Harian → Pengambilan → Penjualan → Pembelian → Persediaan → Kas & Bank → Akuntansi → Aset Tetap → Laporan → Data Master → Pengaturan. Alur pengambilan (inti usaha) berada dalam satu grup; **Entri Harian** mengumpulkan tugas rutin admin dalam satu halaman.
 - **Bahasa Indonesia** untuk semua label; istilah Inggris dipertahankan hanya bila lebih dikenal (Sales Order, Purchase Order, PPN, e-Faktur).
 - **Tidak ada fitur yang dihapus**; fitur yang jarang dipakai tetap ada di grupnya.
-- Menu disembunyikan sesuai peran (RBAC) seperti sebelumnya.
+- Menu disembunyikan sesuai peran (RBAC) seperti sebelumnya, dan dapat dipersempit per pengguna lewat **Akses menu**.
+- **Keterbacaan:** ukuran teks bisa dipilih per perangkat di menu pengguna — Normal, Besar (bawaan), Sangat besar; seluruh tampilan ikut membesar.
 
 ---
 
@@ -77,16 +78,20 @@ Dashboard dibangun ulang hanya dari data yang benar-benar dicatat aplikasi. Tida
 | Blok | Pertanyaan yang dijawab | Sumber data |
 |---|---|---|
 | Kas & bank | Berapa uang yang tersedia? | Saldo akun kas/bank di buku besar |
-| Piutang | Berapa tagihan belum dibayar, berapa yang lewat jatuh tempo? | Faktur Penjualan belum lunas − penerimaan |
-| Hutang | Berapa kewajiban ke supplier, apa yang segera jatuh tempo? | Faktur Pembelian belum lunas − pembayaran |
+| Piutang | Berapa tagihan belum dibayar, berapa yang lewat jatuh tempo? | Faktur Penjualan belum lunas − penerimaan, SO terkirim belum difakturkan, pengambilan belum ditagih |
+| Hutang | Berapa kewajiban ke supplier, apa yang segera jatuh tempo? | Faktur Pembelian belum lunas − pembayaran, penerimaan/pengambilan belum difakturkan |
 | Penjualan & laba kotor bulan ini | Bagaimana bulan ini dibanding hari yang sama bulan lalu? | Jurnal pendapatan & HPP |
-| Perlu tindakan | Pesanan dikonfirmasi belum dikirim, surat jalan pending, penawaran menunggu jawaban, draft | Status dokumen |
+| Alur pengambilan | Berapa PO supplier terbuka dan sisa kuotanya, surat jalan siap, truk yang sudah mengambil bulan ini; di sisi pelanggan: belum ditagih → ditagih belum lunas → lunas; di sisi supplier: belum ditagih supplier → ditagih belum dibayar → dibayar | PO pengambilan, truk, faktur dari truk (nilai termasuk PPN) |
+| Tagihan pelanggan | Per pelanggan: berapa belum ditagih, ditagih belum lunas, lewat jatuh tempo, diterima bulan ini? | Saldo terbuka (sama dengan umur piutang) dan penerimaan |
+| PO pengambilan berjalan | PO mana yang hampir habis kuotanya atau mendekati/lewat batas pengambilan? | PO pengambilan: kuota, surat jalan terpakai, batas |
+| Tonase per bulan | Berapa ton diambil per bulan (6 bulan), naik atau turun; per pelanggan bulan ini; per PO 3 bulan | Netto truk per bulan, per satuan |
+| Perlu tindakan | Pengambilan belum ditagih, perubahan timbangan belum ditindaklanjuti, PO lewat cut-off / hampir penuh, tagihan supplier berbeda dari pengambilan; pesanan dikonfirmasi belum dikirim, surat jalan pending, penawaran menunggu jawaban, draft | Status dokumen dan data pengambilan |
 | Jatuh tempo terdekat | Tagihan dan kewajiban mana yang harus diurus lebih dulu? | Saldo faktur penjualan & pembelian |
 | Stok menipis | Barang apa yang harus dibeli? | Stok vs stok minimum |
 | Tren 6 bulan | Arah penjualan vs pembelian | Jurnal per bulan |
 | Aktivitas terbaru | Apa yang baru terjadi? | Log audit (bila kosong: dokumen terbaru) |
 
-Blok bisa disembunyikan per browser lewat **Atur Tampilan**. Selama data perusahaan belum lengkap, dashboard menampilkan daftar periksanya.
+Blok bisa disembunyikan per browser lewat **Atur Tampilan**. Selama data perusahaan belum lengkap, dashboard menampilkan daftar periksanya. Blok dan baris pengambilan hanya tampil untuk pengguna yang boleh membuka modulnya (Pembelian untuk alur pengambilan, PO berjalan, tonase, dan timbangan; Penjualan untuk tagihan pelanggan); tahap dan baris di blok tersebut membuka menu terkait.
 
 **REQUIRES USER CONFIRMATION:** urutan prioritas blok dan apakah ada angka lain yang dipantau pemilik setiap hari (mis. target penjualan, pengiriman hari ini).
 

@@ -60,7 +60,9 @@ Istilah yang muncul di aplikasi dan dokumentasi, dijelaskan dengan bahasa sehari
 | DPP | Dasar Pengenaan Pajak — nilai sebelum PPN |
 | PKP | Pengusaha Kena Pajak — perusahaan yang wajib memungut PPN |
 | NPWP | Nomor Pokok Wajib Pajak |
-| e-Faktur | Aplikasi/format resmi DJP untuk faktur pajak |
+| e-Faktur | Aplikasi/format resmi DJP untuk faktur pajak (format lama) |
+| Coretax | Sistem administrasi pajak DJP yang dipakai untuk faktur pajak. **Ekspor Coretax** di aplikasi membuat file XML faktur pajak keluaran per masa pajak untuk diimpor di Coretax |
+| Masa pajak | Periode pelaporan pajak bulanan (mis. Oktober 2026) |
 | PPh 23 | Pajak penghasilan atas jasa tertentu (dipotong pembeli jasa) |
 | PPh 21 | Pajak penghasilan atas gaji karyawan |
 | SPT Masa PPN | Laporan PPN bulanan ke kantor pajak |
@@ -78,6 +80,29 @@ Istilah yang muncul di aplikasi dan dokumentasi, dijelaskan dengan bahasa sehari
 | Multi-gudang | Stok dicatat terpisah per lokasi gudang |
 | Pengiriman sebagian | Satu pesanan dikirim dalam beberapa kali pengiriman |
 
+## Pengambilan (trading)
+
+| Istilah | Arti sederhana |
+|---|---|
+| Pengambilan | Truk pelanggan mengambil barang langsung di lokasi supplier; barang tidak masuk gudang perusahaan |
+| PO pelanggan | Pesanan dari pelanggan, dicatat sebagai Pesanan Penjualan (SO) |
+| PO pengambilan | PO ke supplier (satu barang) yang sudah dibuka untuk diambil truk pelanggan, terhubung ke satu PO pelanggan |
+| Surat jalan pengambilan | Surat jalan untuk satu truk, dibuat sekaligus saat PO dibuka, bernomor `<No PO>/01`, `/02`, … Status: Siap, Diambil, Ditagih, Batal |
+| Trip / truk | Satu kali pengambilan oleh satu truk dengan satu surat jalan dan satu hasil timbangan |
+| Kapasitas truk | Muatan per truk yang dipakai menghitung jumlah surat jalan (bawaan 35 ton) |
+| Bruto / Tara / Netto | Berat truk bermuatan / berat truk kosong / berat barang (bruto − tara). Netto menjadi jumlah yang ditagih |
+| Tiket timbangan | Bukti hasil timbang dari supplier; nomornya dan fotonya bisa disimpan di pengambilan |
+| Kuota PO | Jumlah di PO supplier; pengambilan yang melebihinya ditolak kecuali dikonfirmasi, dan PO ditutup saat kuota terpenuhi |
+| Cut-off / batas pengambilan | Tanggal terakhir PO boleh dipakai (bawaan akhir bulan). Setelah itu PO ditutup dan surat jalan sisa dibatalkan |
+| Selesai | Status PO supplier/PO pelanggan pengambilan yang sudah ditutup |
+| Rekap timbangan | File Excel dari bagian timbangan supplier berisi semua truk (No SJ, tanggal, No. Polisi, bruto, tara, netto); diimpor lewat **Impor Rekap Timbangan** |
+| Perubahan timbangan | Berat truk yang berubah setelah dicatat, biasanya dari rekap yang diperbarui supplier. Bila truk sudah ditagih, faktur tidak berubah dan muncul peringatan sampai ditindaklanjuti |
+| Tagih Pelanggan | Membuat satu faktur penjualan dari truk-truk satu pelanggan dalam satu periode |
+| Tagihan Supplier | Mencatat faktur dari supplier dan mencocokkan tonase & harganya dengan truk yang sudah diambil |
+| Belum ditagih | Truk yang sudah diambil tetapi belum masuk faktur; dihitung sebagai piutang tanpa jatuh tempo |
+| Harga Supplier (tanggal berlaku) | Harga beli dari supplier yang berlaku mulai tanggal tertentu; dipakai otomatis untuk truk yang diambil sejak tanggal itu |
+| Rekonsiliasi Timbangan | Untuk penerimaan barang ke gudang: membandingkan qty pesanan, surat jalan, dan timbangan sebelum faktur pembelian dibuat |
+
 ## Sistem
 
 | Istilah | Arti sederhana |
@@ -85,6 +110,10 @@ Istilah yang muncul di aplikasi dan dokumentasi, dijelaskan dengan bahasa sehari
 | ERP | Enterprise Resource Planning — satu sistem untuk berbagai bagian bisnis |
 | Data master | Data acuan: pelanggan, supplier, barang, gudang, akun |
 | RBAC / Peran | Pengaturan hak akses berdasarkan jabatan pengguna |
+| Akses menu | Daftar kelompok menu yang boleh dibuka seorang pengguna, diatur admin di Manajemen Pengguna; hanya mempersempit peran |
+| Entri Harian | Halaman pintasan tugas harian: catat pengambilan, impor rekap timbangan, tagih pelanggan, biaya operasional |
+| Arsip Excel | File Excel berisi data utama satu tahun (Kelola Backup), untuk disimpan atau dibaca akuntan; bukan untuk memulihkan data |
+| Ukuran teks | Pilihan besar huruf di menu pengguna: Normal, Besar (bawaan), Sangat besar |
 | 2FA / Verifikasi 2 langkah | Login memakai password + kode dari aplikasi di HP |
 | Log audit | Catatan siapa mengubah data apa dan kapan |
 | Recycle bin | Tempat penyimpanan sementara data yang dihapus |

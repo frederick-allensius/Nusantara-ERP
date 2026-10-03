@@ -8,7 +8,7 @@
 
 ## 1. Masalah yang diselesaikan
 
-Di bisnis trading (batu alam, pasir, material curah), supplier sering mengirim
+Di bisnis trading (batu split, pasir, material curah), supplier sering mengirim
 **rekap tagihan** sendiri lewat email atau file Excel. Rekap ini kadang:
 
 - **melebih-lebihkan tonase** (mis. truk sebenarnya bawa 30 ton, di rekap ditulis
@@ -19,9 +19,16 @@ Kalau rekap itu langsung dijadikan dasar faktur, perusahaan **membayar barang
 yang tidak pernah datang**. Selisih kecil per truk, tapi menumpuk besar sebulan.
 
 **Sumber kebenaran** kita adalah data lapangan: **netto timbangan** (bruto − tara)
-dan harga yang tercatat saat **Rekonsiliasi Penerimaan** (modul Timbangan &
-Rekonsiliasi). Alat ini membandingkan rekap supplier terhadap data itu, baris per
-baris, lalu **menandai setiap selisih** sebelum faktur dibuat.
+dan harga yang tercatat saat **Rekonsiliasi Timbangan** (menu Pembelian →
+Rekonsiliasi Timbangan, atas penerimaan barang yang dicatat di Pembelian →
+Penerimaan Barang). Alat ini membandingkan rekap supplier terhadap data itu, baris
+per baris, lalu **menandai setiap selisih** sebelum faktur dibuat.
+
+Alat ini untuk barang yang **diterima lewat Penerimaan Barang**. Untuk **PO
+pengambilan** (truk pelanggan mengambil langsung di supplier), tagihan supplier
+dicocokkan di **Pengambilan → Tagihan Supplier**: tonase dan harga di tagihan
+dibandingkan dengan truk yang sudah dicatat — lihat
+[03 §V6](03-ALUR-TRANSAKSI.md#v6-tagihan-supplier).
 
 ---
 
@@ -29,8 +36,8 @@ baris, lalu **menandai setiap selisih** sebelum faktur dibuat.
 
 ```
 PO Pembelian
-   └─ Surat Jalan & Timbangan (bruto/tara/netto)   ← data lapangan
-        └─ Rekonsiliasi Penerimaan (netto + harga)  ← sumber kebenaran
+   └─ Penerimaan Barang: Surat Jalan & Timbangan (bruto/tara/netto)  ← data lapangan
+        └─ Rekonsiliasi Timbangan (netto + harga)  ← sumber kebenaran
              └─ Validasi SJ Supplier                 ← alat ini
                   ├─ lampirkan rekap supplier (Excel)
                   ├─ cocokkan per No. PO / No. DO / item
@@ -40,8 +47,9 @@ PO Pembelian
 ```
 
 Pencocokan baris memakai **No. PO / No. DO + nama item**. Selisih tonase atau
-harga di atas **toleransi kecil** (default 0,05 ton atau 1%, dan Rp 1 atau 0,5%
-untuk harga) akan ditandai. Toleransi ini dapat diatur.
+harga ditandai bila melewati **toleransi kecil**: tonase lebih dari 0,05 ton
+**dan** lebih dari 1%; harga lebih dari Rp 1 **dan** lebih dari 0,5% (nilai
+bawaan). Toleransi ini dapat diatur.
 
 Baris rekap yang **tidak punya padanan** di data lapangan juga ditonjolkan
 (potensi tagihan fiktif).
@@ -84,9 +92,10 @@ Harga) juga dikenali.
 
 ## 4. Langkah demo (±3 menit)
 
-1. Buka menu **Purchases → Validasi SJ Supplier**.
+1. Buka menu **Pembelian → Validasi SJ Supplier**.
 2. Klik **Muat Contoh Demo** di kanan atas header.
-   - Ini menanam satu penerimaan terekonsiliasi (Surat Jalan / timbangan) berisi
+   - Ini menyimpan satu penerimaan contoh yang sudah direkonsiliasi (Surat Jalan /
+     timbangan) ke data — pakai hanya di instalasi demo — berisi
      dua item: **Batu Andesit 20cm** (netto 24,6 ton @ Rp 185.000) dan **Pasir
      Cor** (netto 30 ton @ Rp 210.000), plus rekap supplier contoh.
 3. Perhatikan hasil cross-check:
