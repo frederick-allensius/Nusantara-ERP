@@ -2,36 +2,40 @@
 // Nusantara ERP — Ringkasan (dashboard)  (modules/dashboard.js)
 //
 // Answers "what does the owner or admin need to know right now?" (docs/09 §4),
-// using only records the application keeps:
-//   • Kas & bank          — ledger balance of cash/bank accounts (GL.trialBalance)
-//   • Piutang / Hutang     — open items, overdue and due soon (Balances.summary)
-//   • Penjualan bulan ini  — revenue and COGS journal lines, compared with last month
-//   • Tren 6 bulan         — revenue vs purchases per month from journals
-//   • Perlu tindakan       — documents waiting for their next step (statuses),
-//                            trips not yet billed, weight changes after billing,
-//                            pickup POs at their cut-off or quota
-//   • Jatuh tempo, stok menipis, aktivitas terbaru (audit log)
-//   • Trading pickups (window.TradingSummary over trading.js): Alur pengambilan,
-//     Tagihan pelanggan, PO pengambilan berjalan, Tonase per bulan — see
-//     _dashTrading below. Hidden for roles that cannot view the module.
-// Blocks can be hidden per browser ("Atur Tampilan"); the company data checklist
-// shows until the basics are filled in.
+// using only records the application keeps. Top to bottom:
+//   • Header with the period switch (Bulan ini · 3 bulan · Tahun ini); the
+//     choice is kept per browser and drives every period figure on the page
+//   • Kas & bank, Piutang, Hutang (GL.trialBalance, Balances.summary) and the
+//     gross profit of the period (revenue and COGS journal lines)
+//   • Alur transaksi — the flow of the period as bands whose thickness follows
+//     the value: pickups (TradingSummary.pipeline) Diambil → Ditagih → Dibayar
+//     for customers and suppliers, and warehouse orders per stage
+//     (OrderPipeline.summary). See _dashTrading below.
+//   • Perlu tindakan — documents waiting for their next step, most important
+//     first; Tren 6 bulan — sales vs purchases from journals, or pickup tonnage
+//   • Optional blocks, off until switched on in "Atur Tampilan": Tagihan
+//     pelanggan, PO pengambilan berjalan, Tonase per bulan, Jatuh tempo, Stok
+//     menipis, Aktivitas terbaru.
+// Blocks are hidden for roles that cannot view their module. The company data
+// checklist shows until the basics are filled in.
 //
 // Classic script sharing the bundle's global scope: renderDashboard, initCharts,
 // destroyCharts and _initChartsImpl are globals used by nav.js and erp-view.js.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-var DASH_HIDDEN_KEY = 'nsa_dash_hidden_v2';
+// Hidden block ids per browser. Without a stored choice the blocks marked
+// `on: false` stay hidden.
+var DASH_HIDDEN_KEY = 'nsa_dash_hidden_v3';
 var DASH_BLOCKS = [
-  { id: 'pipeline', label: 'Alur pengambilan' },
-  { id: 'collections', label: 'Tagihan pelanggan' },
-  { id: 'pickupPOs', label: 'PO pengambilan berjalan' },
-  { id: 'tonnage', label: 'Tonase per bulan' },
-  { id: 'trend', label: 'Penjualan & pembelian 6 bulan' },
-  { id: 'actions', label: 'Perlu tindakan' },
-  { id: 'due', label: 'Jatuh tempo terdekat' },
-  { id: 'stock', label: 'Stok menipis' },
-  { id: 'activity', label: 'Aktivitas terbaru' },
+  { id: 'pipeline', label: 'Alur transaksi', on: true },
+  { id: 'actions', label: 'Perlu tindakan', on: true },
+  { id: 'trend', label: 'Tren 6 bulan', on: true },
+  { id: 'collections', label: 'Tagihan pelanggan', on: false },
+  { id: 'pickupPOs', label: 'PO pengambilan berjalan', on: false },
+  { id: 'tonnage', label: 'Tonase per bulan', on: false },
+  { id: 'due', label: 'Jatuh tempo terdekat', on: false },
+  { id: 'stock', label: 'Stok menipis', on: false },
+  { id: 'activity', label: 'Aktivitas terbaru', on: false },
 ];
 var DASH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 var DASH_COLLECTIONS = {
@@ -66,10 +70,17 @@ var DASH_VERBS = { create: 'dibuat', update: 'diubah', status: 'status diubah', 
 function _dashHidden() {
   try {
     var v = JSON.parse(localStorage.getItem(DASH_HIDDEN_KEY));
-    return Array.isArray(v) ? v : [];
+    if (Array.isArray(v)) {
+      return v;
+    }
   } catch (_) {
-    return [];
+    /* storage unavailable */
   }
+  return DASH_BLOCKS.filter(function (b) {
+    return !b.on;
+  }).map(function (b) {
+    return b.id;
+  });
 }
 
 function _dashSetHidden(ids) {
@@ -110,6 +121,8 @@ function initCharts() {
   _chartInitTimer = setTimeout(_initChartsImpl, 60);
 }
 
+// Tren 6 bulan: sales vs purchases from journals ("Rp"), or the net weight of
+// pickup trips per month ("Ton", TradingSummary.monthlyTonnage).
 function _initChartsImpl() {
   var canvas = document.getElementById('dashTrendChart');
   if (typeof Chart === 'undefined' || !canvas || !document.body.contains(canvas)) {
@@ -119,38 +132,73 @@ function _initChartsImpl() {
   var tok = function (name, fallback) {
     return (css.getPropertyValue(name) || '').trim() || fallback;
   };
-  var series = _dashMonthly(6);
   var font = { family: tok('--font-sans', 'system-ui, sans-serif'), size: 11 };
   var money = typeof idr === 'function' ? idr : String;
   var short = typeof idrShort === 'function' ? idrShort : String;
+  var monthLabel = function (k) {
+    return DASH_MONTHS[Number(String(k).slice(5, 7)) - 1];
+  };
+  var bar = function (label, data, color) {
+    return {
+      label: label,
+      data: data,
+      backgroundColor: color,
+      borderRadius: 4,
+      maxBarThickness: 22,
+    };
+  };
+  var labels;
+  var datasets;
+  var tipValue;
+  var tickValue;
+  if (canvas.getAttribute('data-mode') === 'ton') {
+    var m = _dashTrading.tonnage();
+    var unit = m.unit || '';
+    var qty = function (v) {
+      return Number(v || 0).toLocaleString('id-ID', { maximumFractionDigits: 1 });
+    };
+    labels = m.keys.map(monthLabel);
+    datasets = [
+      bar(
+        'Netto',
+        m.totals.map(function (t) {
+          return t.value;
+        }),
+        tok('--chart-2', '#3b82f6')
+      ),
+    ];
+    tipValue = function (v) {
+      return qty(v) + (unit ? ' ' + unit : '');
+    };
+    tickValue = qty;
+  } else {
+    var series = _dashMonthly(6);
+    labels = series.keys.map(monthLabel);
+    datasets = [
+      bar(
+        'Penjualan',
+        series.keys.map(function (k) {
+          return Math.round(series.data[k].revenue);
+        }),
+        tok('--chart-1', '#06845c')
+      ),
+      bar(
+        'Pembelian',
+        series.keys.map(function (k) {
+          return Math.round(series.data[k].purchases);
+        }),
+        tok('--chart-3', '#d97706')
+      ),
+    ];
+    tipValue = money;
+    tickValue = function (v) {
+      return short(v).replace('Rp ', '');
+    };
+  }
 
   charts.dashTrend = new Chart(canvas, {
     type: 'bar',
-    data: {
-      labels: series.keys.map(function (k) {
-        return DASH_MONTHS[Number(k.slice(5, 7)) - 1];
-      }),
-      datasets: [
-        {
-          label: 'Penjualan',
-          data: series.keys.map(function (k) {
-            return Math.round(series.data[k].revenue);
-          }),
-          backgroundColor: tok('--chart-1', '#06845c'),
-          borderRadius: 4,
-          maxBarThickness: 22,
-        },
-        {
-          label: 'Pembelian',
-          data: series.keys.map(function (k) {
-            return Math.round(series.data[k].purchases);
-          }),
-          backgroundColor: tok('--chart-3', '#d97706'),
-          borderRadius: 4,
-          maxBarThickness: 22,
-        },
-      ],
-    },
+    data: { labels: labels, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -169,7 +217,7 @@ function _initChartsImpl() {
           bodyFont: font,
           callbacks: {
             label: function (c) {
-              return c.dataset.label + ': ' + money(c.raw);
+              return c.dataset.label + ': ' + tipValue(c.raw);
             },
           },
         },
@@ -187,9 +235,7 @@ function _initChartsImpl() {
             font: font,
             color: tok('--chart-text', '#66716d'),
             maxTicksLimit: 5,
-            callback: function (v) {
-              return short(v).replace('Rp ', '');
-            },
+            callback: tickValue,
           },
         },
       },
@@ -280,6 +326,8 @@ function _dashBalances(side) {
   return Balances.summary(side);
 }
 
+// Rows for "Perlu tindakan", most important first (`rank`): money not yet
+// billed, billed figures that no longer match, then the order flow.
 function _dashActions() {
   var so = DB.salesOrders || [];
   var po = DB.purchaseOrders || [];
@@ -299,22 +347,22 @@ function _dashActions() {
     );
   }, 0);
   // Orders opened for pickup and their surat jalan slots are followed in the
-  // pickup blocks: a slot stays 'Pending' until a truck uses it, and the orders
+  // pickup rows: a slot stays 'Pending' until a truck uses it, and the orders
   // stay 'Confirmed' until their quota or cut-off closes them.
   var notPickup = function (o) {
     return !o.pickupFlow && o.pickup !== true;
   };
-  // The pickup flow is the core of the business: its rows come first.
   return _dashTrading
     .actions()
     .concat([
       {
-        label: 'Pesanan penjualan belum dikirim',
-        hint: 'Dikonfirmasi atau lunas, barang belum keluar',
+        label: 'Pesanan terkirim tanpa faktur',
+        hint: 'Barang sudah dikirim, faktur belum dibuat',
         count: so.filter(function (o) {
-          return (o.status === 'Confirmed' || o.status === 'Paid') && notPickup(o);
+          return o.status === 'Delivered' && !invoiced('sales', o.id);
         }).length,
-        open: 'Pesanan Penjualan',
+        open: 'Faktur Penjualan',
+        rank: 3,
       },
       {
         label: 'Pengiriman belum selesai',
@@ -323,22 +371,16 @@ function _dashActions() {
           return (d.status === 'Pending' || d.status === 'In Transit') && notPickup(d);
         }).length,
         open: 'Surat Jalan',
+        rank: 6,
       },
       {
-        label: 'Pesanan terkirim tanpa faktur',
-        hint: 'Barang sudah dikirim, faktur belum dibuat',
+        label: 'Pesanan penjualan belum dikirim',
+        hint: 'Dikonfirmasi atau lunas, barang belum keluar',
         count: so.filter(function (o) {
-          return o.status === 'Delivered' && !invoiced('sales', o.id);
+          return (o.status === 'Confirmed' || o.status === 'Paid') && notPickup(o);
         }).length,
-        open: 'Faktur Penjualan',
-      },
-      {
-        label: 'Penawaran menunggu jawaban',
-        hint: 'Penawaran penjualan yang sudah dikirim',
-        count: (DB.salesQuotations || []).filter(function (q) {
-          return q.status === 'Sent';
-        }).length,
-        open: 'Penawaran Penjualan',
+        open: 'Pesanan Penjualan',
+        rank: 7,
       },
       {
         label: 'Pesanan pembelian belum diterima',
@@ -347,16 +389,36 @@ function _dashActions() {
           return (o.status === 'Confirmed' || o.status === 'Paid') && notPickup(o);
         }).length,
         open: 'Pesanan Pembelian',
+        rank: 8,
+      },
+      {
+        label: 'Penawaran menunggu jawaban',
+        hint: 'Penawaran penjualan yang sudah dikirim',
+        count: (DB.salesQuotations || []).filter(function (q) {
+          return q.status === 'Sent';
+        }).length,
+        open: 'Penawaran Penjualan',
+        rank: 9,
       },
       {
         label: 'Dokumen masih draft',
         hint: 'Pesanan dan faktur yang belum diposting',
         count: drafts,
         open: 'Pesanan Penjualan',
+        rank: 10,
       },
     ])
     .filter(function (r) {
       return r.count > 0;
+    })
+    .map(function (r, i) {
+      return { row: r, i: i };
+    })
+    .sort(function (a, b) {
+      return a.row.rank - b.row.rank || a.i - b.i;
+    })
+    .map(function (x) {
+      return x.row;
     });
 }
 
@@ -440,12 +502,15 @@ function _dashEmpty(text) {
   return '<div class="empty-inline">' + escapeHtml(text) + '</div>';
 }
 
-// ── Trading pickups ──────────────────────────────────────────────────────────
-// Blocks over window.TradingSummary (core/trading-summary.js): Alur pengambilan,
-// Tagihan pelanggan, PO pengambilan berjalan, Tonase per bulan, and the rows the
-// pickup flow adds to "Perlu tindakan". Every figure is counted from pickup POs,
-// their surat jalan, trips and the invoices that list those trips. Kept in one
-// object so this file adds a single name to the shared scope.
+// ── Period, flow, trend and trading blocks ───────────────────────────────────
+// Kept in one object so this file adds a single name to the shared scope:
+//   • the period switch (Bulan ini · 3 bulan · Tahun ini), kept per browser
+//   • Alur transaksi: pickups (window.TradingSummary over trading.js) and
+//     warehouse orders (window.OrderPipeline) drawn as bands
+//   • Tren 6 bulan card, in Rupiah or tonnage
+//   • the pickup rows of "Perlu tindakan" and the optional blocks Tagihan
+//     pelanggan, PO pengambilan berjalan and Tonase per bulan
+// Every figure is counted from documents; nothing here writes to DB.
 var _dashTrading = (function () {
   var MONTHS_LONG = [
     'Januari',
@@ -462,11 +527,23 @@ var _dashTrading = (function () {
     'Desember',
   ];
   var LIST_LIMIT = 6;
-  var ARROW =
-    '<span class="pipe-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>';
+  var PERIOD_KEY = 'nsa_dash_period';
+  var TREND_KEY = 'nsa_dash_trend';
+  var PERIODS = {
+    month: { label: 'Bulan ini', tile: 'bulan ini' },
+    '3m': { label: '3 bulan', tile: '3 bulan' },
+    year: { label: 'Tahun ini', tile: 'tahun ini' },
+  };
+  var PERIOD_ORDER = ['month', '3m', 'year'];
+  var DEFAULT_PERIOD = '3m';
+  // Tab of Alur transaksi chosen in this session (kept across re-renders).
+  var chosenTab = null;
 
   function S() {
     return window.TradingSummary || null;
+  }
+  function OP() {
+    return window.OrderPipeline || null;
   }
   // Respect the role's module access (rbac.js); pickup pages are 'purchases',
   // customer billing is 'sales'.
@@ -497,6 +574,19 @@ var _dashTrading = (function () {
       })
       .join(' · ');
   }
+  // Compact form for the flow: { Ton: 5946.2 } → "5.946 t"
+  function qtyShort(map) {
+    return Object.keys(map || {})
+      .filter(function (u) {
+        return Math.abs(Number(map[u]) || 0) > 0.0005;
+      })
+      .map(function (u) {
+        var v = Number(map[u]) || 0;
+        var n = v.toLocaleString('id-ID', { maximumFractionDigits: Math.abs(v) >= 100 ? 0 : 1 });
+        return n + (u ? ' ' + (/^ton$/i.test(u) ? 't' : u) : '');
+      })
+      .join(' · ');
+  }
   function today() {
     return typeof Balances !== 'undefined' && Balances.todayISO
       ? Balances.todayISO()
@@ -516,9 +606,87 @@ var _dashTrading = (function () {
   function pct(v) {
     return Math.round(Math.abs(v) * 100) + '%';
   }
+  function trucks(n) {
+    return n + ' truk';
+  }
 
   function hasData() {
     return !!S() && S().hasData();
+  }
+
+  // ── Period ─────────────────────────────────────────────────────────────────
+  function periodKey() {
+    try {
+      var v = localStorage.getItem(PERIOD_KEY);
+      if (PERIODS[v]) {
+        return v;
+      }
+    } catch (_) {
+      /* storage unavailable */
+    }
+    return DEFAULT_PERIOD;
+  }
+  function setPeriod(key) {
+    if (!PERIODS[key]) {
+      return false;
+    }
+    try {
+      localStorage.setItem(PERIOD_KEY, key);
+    } catch (_) {
+      /* storage unavailable */
+    }
+    return true;
+  }
+  // { key, label, months, from, to }: from the 1st of the first month to today.
+  // Bulan ini = this month, 3 bulan = this month and the two before, Tahun ini
+  // = since 1 January.
+  function period(key) {
+    key = PERIODS[key] ? key : periodKey();
+    var to = today();
+    var y = Number(to.slice(0, 4));
+    var m = Number(to.slice(5, 7));
+    var months = key === 'month' ? 1 : key === '3m' ? 3 : m;
+    return {
+      key: key,
+      label: PERIODS[key].label,
+      tile: PERIODS[key].tile,
+      months: months,
+      from: _dashMonthKey(new Date(y, m - months, 1)) + '-01',
+      to: to,
+    };
+  }
+  // "1 Agu – 3 Okt 2026"
+  function rangeLabel(per) {
+    var a = String(per.from).split('-');
+    var b = String(per.to).split('-');
+    return (
+      Number(a[2]) +
+      ' ' +
+      DASH_MONTHS[Number(a[1]) - 1] +
+      (a[0] !== b[0] ? ' ' + a[0] : '') +
+      ' – ' +
+      _dashDate(per.to)
+    );
+  }
+  function periodSwitch(per) {
+    return (
+      '<div class="seg-tabs dash-period" role="group" aria-label="Periode">' +
+      PERIOD_ORDER.map(function (k) {
+        var on = k === per.key;
+        return (
+          '<button type="button" class="seg-tab' +
+          (on ? ' active' : '') +
+          '" aria-pressed="' +
+          on +
+          '" data-action="dashPeriod" data-val="' +
+          k +
+          '">' +
+          esc(PERIODS[k].label) +
+          '</button>'
+        );
+      }).join('') +
+      '</div>'
+    );
   }
 
   // ── Perlu tindakan ─────────────────────────────────────────────────────────
@@ -554,6 +722,7 @@ var _dashTrading = (function () {
           .join(' · '),
         count: ub.count,
         open: 'Tagih Pelanggan',
+        rank: 1,
       });
     }
     if (can('purchases')) {
@@ -563,6 +732,7 @@ var _dashTrading = (function () {
         hint: 'Berat berubah setelah pengambilan ditagih',
         count: diffs.alerts.length,
         open: 'Perubahan Timbangan',
+        rank: 2,
       });
       var pos = S()
         .poProgress(asOf)
@@ -590,195 +760,585 @@ var _dashTrading = (function () {
             .join(' · ') || 'PO pengambilan',
         count: pos.length,
         open: 'PO Pengambilan',
+        rank: 5,
       });
       rows.push({
         label: 'Tagihan supplier berbeda dari pengambilan',
         hint: 'Jumlah atau harga di faktur supplier tidak sama dengan timbangan',
         count: diffs.invoices,
         open: 'Tagihan Supplier',
+        rank: 4,
       });
     }
     return rows;
   }
 
-  // ── Alur pengambilan ───────────────────────────────────────────────────────
-  function stage(o) {
-    var zero = !o.count;
-    return (
-      '<button type="button" class="pipe-stage' +
-      (o.tone && !zero ? ' is-' + o.tone : '') +
-      (zero ? ' is-zero' : '') +
-      '" data-dash-open="' +
-      esc(o.open) +
-      '"><span class="pipe-stage-label">' +
-      esc(o.label) +
-      '</span><span class="pipe-stage-count">' +
-      o.count +
-      ' <small>' +
-      esc(o.noun) +
-      '</small></span><span class="pipe-stage-sub">' +
-      esc(o.sub || ' ') +
-      '</span></button>'
-    );
+  // ── Alur transaksi: data ───────────────────────────────────────────────────
+  // Pickups of the period as cumulative stages per side, from
+  // TradingSummary.pipeline (each trip is in exactly one billing state per side):
+  //   Diambil = every trip taken · Ditagih = on an invoice (open or paid) ·
+  //   Dibayar = on a paid invoice
+  // The leaks between stages are the trips that stopped there, so
+  // Diambil − Ditagih = belum ditagih and Ditagih − Dibayar = belum lunas.
+  function stageOf(label, parts, extra) {
+    var st = { label: label, count: 0, value: 0 };
+    parts.forEach(function (p) {
+      st.count += p.count;
+      st.value += p.value;
+    });
+    return Object.assign(st, extra || {});
   }
-  function flow(stages) {
-    return '<div class="pipe-flow">' + stages.map(stage).join(ARROW) + '</div>';
+  function shareOf(st, base) {
+    return base.value > 0.5 ? trucks(st.count) + ' · ' + pct(st.value / base.value) : trucks(st.count);
   }
-  function tripSub(st) {
-    if (!st.count) {
-      return 'Tidak ada';
+  function leakOf(after, st, text, open, tone) {
+    return { after: after, count: st.count, value: st.value, text: text, open: open, tone: tone || '' };
+  }
+  function pickupFlow(per) {
+    per = per || period();
+    var p = S().pipeline({ from: per.from, to: per.to }, { asOf: per.to });
+    var bands = [];
+    if (can('sales')) {
+      var taken = stageOf('Diambil', [p.taken], { open: 'Rekap Pengambilan' });
+      taken.sub = [trucks(taken.count), qtyShort(p.taken.qty)].filter(Boolean).join(' · ');
+      var billed = stageOf('Ditagih', [p.billed, p.paid]);
+      billed.sub = shareOf(billed, taken);
+      var paid = stageOf('Dibayar', [p.paid]);
+      paid.sub = shareOf(paid, taken);
+      bands.push({
+        key: 'sales',
+        label: 'Ke pelanggan',
+        stages: [taken, billed, paid],
+        leaks: [
+          leakOf(0, p.unbilled, 'belum ditagih', 'Tagih Pelanggan', 'warning'),
+          leakOf(1, p.billed, 'belum lunas', 'Faktur Penjualan'),
+        ],
+      });
     }
-    return [qty(st.qty), short(st.value)].filter(Boolean).join(' · ');
+    var sTaken = stageOf('Diambil', [p.supplierUnbilled, p.supplierBilled, p.supplierPaid], {
+      open: 'Rekap Pengambilan',
+    });
+    sTaken.sub = trucks(sTaken.count);
+    var sBilled = stageOf('Ditagih', [p.supplierBilled, p.supplierPaid]);
+    sBilled.sub = shareOf(sBilled, sTaken);
+    var sPaid = stageOf('Dibayar', [p.supplierPaid]);
+    sPaid.sub = shareOf(sPaid, sTaken);
+    bands.push({
+      key: 'purchases',
+      label: 'Dari supplier',
+      stages: [sTaken, sBilled, sPaid],
+      leaks: [
+        leakOf(0, p.supplierUnbilled, 'belum ditagih supplier', 'Tagihan Supplier', 'warning'),
+        leakOf(1, p.supplierBilled, 'belum dibayar', 'Faktur Pembelian'),
+      ],
+    });
+    var T = window.Trading;
+    return {
+      period: per,
+      pipeline: p,
+      bands: bands,
+      max: maxValue(bands),
+      alerts: T && typeof T.openAlerts === 'function' ? T.openAlerts().length : 0,
+    };
+  }
+  function maxValue(bands) {
+    var max = 0;
+    bands.forEach(function (b) {
+      b.stages.forEach(function (s) {
+        max = Math.max(max, s.value);
+      });
+    });
+    return max;
+  }
+  // Warehouse orders of the period (pickup orders left out) per stage.
+  function orderFlow(side, per) {
+    per = per || period();
+    return OP().summary(side, { from: per.from, to: per.to, pickup: false });
+  }
+  // Tabs of Alur transaksi that have data the role may see, in this order.
+  function flowTabs() {
+    var tabs = [];
+    if (can('purchases') && hasData()) {
+      tabs.push({ key: 'pickup', label: 'Pengambilan' });
+    }
+    if (OP()) {
+      if (can('sales') && OP().summary('sales', { pickup: false }).total > 0) {
+        tabs.push({ key: 'sales', label: 'Penjualan gudang' });
+      }
+      if (can('purchases') && OP().summary('purchases', { pickup: false }).total > 0) {
+        tabs.push({ key: 'purchases', label: 'Pembelian gudang' });
+      }
+    }
+    return tabs;
   }
 
-  function pipelineCard(asOf) {
-    var head = function (sub, side) {
-      return (
-        '<div class="card-head"><div><div class="card-title">Alur pengambilan</div>' +
-        '<div class="card-sub">' +
-        esc(sub) +
-        '</div></div>' +
-        (side || '') +
-        '</div>'
-      );
+  // ── Alur transaksi: drawing ────────────────────────────────────────────────
+  // Each band is an SVG path stretched to the card width (viewBox units: 100
+  // per stage column; px vertically). A band is flat across the first part of a
+  // column and bends to the next stage's thickness in the rest. Thickness
+  // follows the value on one scale for every band of the tab.
+  var FN = { col: 100, flat: 55, tmax: 56, tmin: 2, room: 26 };
+  function thick(v, max) {
+    if (!(v > 0.5) || !(max > 0)) {
+      return 0;
+    }
+    return Math.max(FN.tmin, (v / max) * FN.tmax);
+  }
+  function r2(v) {
+    return Math.round(v * 100) / 100;
+  }
+  function bandPath(ts, h) {
+    var cy = h / 2;
+    var n = ts.length;
+    var W = FN.col;
+    var top = function (i) {
+      return r2(cy - ts[i] / 2);
     };
-    if (!hasData()) {
+    var bot = function (i) {
+      return r2(cy + ts[i] / 2);
+    };
+    var d = 'M0 ' + top(0);
+    for (var i = 0; i < n; i++) {
+      if (i === n - 1) {
+        d += ' L' + n * W + ' ' + top(i);
+        break;
+      }
+      var x1 = i * W + FN.flat;
+      var x2 = (i + 1) * W;
+      var mid = (x1 + x2) / 2;
+      d +=
+        ' L' + x1 + ' ' + top(i) +
+        ' C' + mid + ' ' + top(i) + ' ' + mid + ' ' + top(i + 1) + ' ' + x2 + ' ' + top(i + 1);
+    }
+    d += ' L' + n * W + ' ' + bot(n - 1);
+    for (var j = n - 1; j >= 0; j--) {
+      d += ' L' + j * W + ' ' + bot(j);
+      if (j > 0) {
+        var xe = (j - 1) * W + FN.flat;
+        var m2 = (xe + j * W) / 2;
+        d += ' C' + m2 + ' ' + bot(j) + ' ' + m2 + ' ' + bot(j - 1) + ' ' + xe + ' ' + bot(j - 1);
+      }
+    }
+    return d + ' Z';
+  }
+  // Middle of the bend after stage `i`, as a share of the width.
+  function leakLeft(i, n) {
+    return r2(((i * FN.col + FN.flat + (i + 1) * FN.col) / 2 / (n * FN.col)) * 100);
+  }
+  // A stage cell: opens a menu entry (`open`) or runs a registered action.
+  function stageAttrs(st) {
+    if (st.open) {
+      return ' data-dash-open="' + esc(st.open) + '"';
+    }
+    if (st.action) {
       return (
-        '<div class="card dash-pipe">' +
-        head('PO supplier → surat jalan → truk mengambil → tagihan → lunas') +
-        '<div class="empty-inline dash-pipe-empty">Belum ada PO pengambilan. Bagian ini terisi setelah PO supplier dibuka untuk pengambilan: surat jalan yang siap dipakai, truk yang sudah mengambil dan ditimbang, lalu tagihan ke pelanggan dan dari supplier sampai lunas.' +
-        '<div><button type="button" class="btn-ghost btn-sm" data-dash-open="PO Pengambilan">Buka PO Pengambilan</button></div></div>' +
-        '</div>'
+        ' data-action="' +
+        esc(st.action.name) +
+        '" data-type="' +
+        esc(st.action.type) +
+        '" data-val="' +
+        esc(st.action.val) +
+        '"'
       );
     }
-    var p = S().pipeline(undefined, { asOf: asOf });
-    var alerts = S().supplierDiffs().alerts.length;
-    var side = alerts
-      ? '<button type="button" class="chip chip-warning dash-chip-btn" data-dash-open="Perubahan Timbangan">' +
-        alerts +
-        ' perubahan timbangan belum ditindaklanjuti</button>'
-      : '';
-    var remaining = qty(p.openPOs.remaining);
-    var top = flow([
-      {
-        label: 'PO supplier terbuka',
-        count: p.openPOs.count,
-        noun: 'PO',
-        sub: p.openPOs.count
-          ? remaining
-            ? 'Sisa kuota ' + remaining
-            : 'Kuota sudah terambil'
-          : 'Tidak ada',
-        open: 'PO Pengambilan',
-      },
-      {
-        label: 'Surat jalan siap dipakai',
-        count: p.slots.count,
-        noun: 'SJ',
-        sub: p.slots.count ? 'Belum dipakai truk' : 'Tidak ada',
-        open: 'Catat Pengambilan',
-      },
-      {
-        label: 'Sudah diambil bulan ini',
-        count: p.taken.count,
-        noun: 'truk',
-        sub: tripSub(p.taken),
-        open: 'Rekap Pengambilan',
-      },
-    ]);
-    var lane = function (title, stages, note) {
-      return (
-        '<div class="pipe-lane"><div class="pipe-lane-label">' +
-        esc(title) +
-        '</div>' +
-        flow(stages) +
-        (note || '') +
-        '</div>'
-      );
-    };
+    return '';
+  }
+  function cellBox(st, cls, inner, aria) {
+    var zero = !(st.value > 0.5) && !st.count ? ' is-zero' : '';
+    var attrs = stageAttrs(st);
+    return attrs
+      ? '<button type="button" class="' +
+          cls +
+          zero +
+          '"' +
+          attrs +
+          (aria ? ' aria-label="' + esc(aria) + '"' : '') +
+          '>' +
+          inner +
+          '</button>'
+      : '<div class="' + cls + zero + '">' + inner + '</div>';
+  }
+  function leakChip(lk, style) {
+    return (
+      '<button type="button" class="dash-leak' +
+      (lk.tone ? ' is-' + lk.tone : '') +
+      '" data-dash-open="' +
+      esc(lk.open) +
+      '"' +
+      (style ? ' style="' + style + '"' : '') +
+      '>' +
+      esc(lk.count + ' ' + lk.text + ' · ' + short(lk.value)) +
+      '</button>'
+    );
+  }
+  function bandLabel(b) {
+    return (
+      '<div class="dash-fn-label"><i class="dash-swatch is-' +
+      b.key +
+      '" aria-hidden="true"></i>' +
+      esc(b.label) +
+      '</div>'
+    );
+  }
+
+  // Wide layout: stage columns over SVG bands, leak chips on the bends.
+  function funnelWide(bands, max) {
+    var n = bands[0].stages.length;
+    var multi = bands.length > 1;
+    var html = '<div class="dash-fn" style="--n:' + n + '">';
+    if (multi) {
+      html +=
+        '<div class="dash-fn-grid dash-fn-names" aria-hidden="true">' +
+        bands[0].stages
+          .map(function (s) {
+            return '<span>' + esc(s.label) + '</span>';
+          })
+          .join('') +
+        '</div>';
+    }
+    bands.forEach(function (b) {
+      var ts = b.stages.map(function (s) {
+        return thick(s.value, max);
+      });
+      var h = Math.ceil(Math.max(Math.max.apply(null, ts), FN.room)) + 6;
+      var cells = b.stages
+        .map(function (s) {
+          var inner =
+            (multi ? '' : '<span class="dash-fn-name">' + esc(s.label) + '</span>') +
+            '<span class="dash-fn-value">' +
+            esc(short(s.value)) +
+            '</span><span class="dash-fn-sub">' +
+            esc(s.sub || '') +
+            '</span>';
+          var aria = s.label + (multi ? ', ' + b.label.toLowerCase() : '') + ': ' + short(s.value) + ', ' + (s.sub || '');
+          return cellBox(s, 'dash-fn-cell', inner, aria);
+        })
+        .join('');
+      var chips = (b.leaks || [])
+        .filter(function (lk) {
+          return lk.count > 0;
+        })
+        .map(function (lk) {
+          return leakChip(lk, 'left:' + leakLeft(lk.after, n) + '%');
+        })
+        .join('');
+      html +=
+        '<div class="dash-fn-band">' +
+        (multi ? bandLabel(b) : '') +
+        '<div class="dash-fn-grid">' +
+        cells +
+        '</div><div class="dash-fn-plot">' +
+        '<svg class="dash-fn-svg" viewBox="0 0 ' +
+        n * FN.col +
+        ' ' +
+        h +
+        '" preserveAspectRatio="none" width="100%" height="' +
+        h +
+        '" aria-hidden="true" focusable="false"><path class="dash-band is-' +
+        b.key +
+        '" d="' +
+        bandPath(ts, h) +
+        '"/></svg>' +
+        chips +
+        '</div></div>';
+    });
+    return html + '</div>';
+  }
+
+  // Narrow layout: one row per stage with a proportional bar.
+  function funnelList(bands, max) {
+    var multi = bands.length > 1;
+    return (
+      '<div class="dash-fl">' +
+      bands
+        .map(function (b) {
+          return (
+            '<div class="dash-fl-band">' +
+            (multi ? bandLabel(b) : '') +
+            b.stages
+              .map(function (s, i) {
+                var w = max > 0 && s.value > 0.5 ? Math.max(1, r2((s.value / max) * 100)) : 0;
+                var inner =
+                  '<span class="dash-fl-name">' +
+                  esc(s.label) +
+                  '</span><span class="dash-fl-value">' +
+                  esc(short(s.value)) +
+                  '</span><span class="dash-fl-bar"><i class="is-' +
+                  b.key +
+                  '" style="width:' +
+                  w +
+                  '%"></i></span><span class="dash-fl-sub">' +
+                  esc(s.sub || '') +
+                  '</span>';
+                var leaks = (b.leaks || [])
+                  .filter(function (lk) {
+                    return lk.after === i && lk.count > 0;
+                  })
+                  .map(function (lk) {
+                    return leakChip(lk);
+                  })
+                  .join('');
+                return cellBox(s, 'dash-fl-row', inner) + leaks;
+              })
+              .join('') +
+            '</div>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function funnel(bands, max) {
+    return funnelWide(bands, max) + funnelList(bands, max);
+  }
+
+  // ── Alur transaksi: panels ─────────────────────────────────────────────────
+  function pickupPanel(per) {
+    var f = pickupFlow(per);
+    var p = f.pipeline;
+    var html = p.taken.count
+      ? funnel(f.bands, f.max)
+      : _dashEmpty('Belum ada pengambilan pada periode ini.');
+    // Trips from before the period that are still not billed.
     var carry = function (st, text, open) {
       return st.count
-        ? '<button type="button" class="link-btn pipe-note" data-dash-open="' +
+        ? '<button type="button" class="link-btn" data-dash-open="' +
             esc(open) +
             '">' +
-            esc('+ ' + st.count + ' truk ' + text + ' · ' + tripSub(st)) +
+            esc('+ ' + trucks(st.count) + ' sebelum ' + _dashDate(per.from) + ' ' + text + ' · ' + short(st.value)) +
             '</button>'
         : '';
     };
-    var lanes =
-      '<div class="pipe-lanes">' +
-      (can('sales')
-        ? lane(
-            'Tagihan ke pelanggan',
-            [
-              {
-                label: 'Belum ditagih',
-                count: p.unbilled.count,
-                noun: 'truk',
-                sub: tripSub(p.unbilled),
-                open: 'Tagih Pelanggan',
-                tone: 'warning',
-              },
-              {
-                label: 'Ditagih, belum lunas',
-                count: p.billed.count,
-                noun: 'truk',
-                sub: tripSub(p.billed),
-                open: 'Penerimaan Pembayaran',
-              },
-              {
-                label: 'Lunas',
-                count: p.paid.count,
-                noun: 'truk',
-                sub: tripSub(p.paid),
-                open: 'Faktur Penjualan',
-                tone: 'success',
-              },
-            ],
-            carry(p.carryOver.unbilled, 'bulan sebelumnya belum ditagih', 'Tagih Pelanggan')
-          )
+    var notes = [
+      can('sales') ? carry(p.carryOver.unbilled, 'belum ditagih', 'Tagih Pelanggan') : '',
+      carry(p.carryOver.supplierUnbilled, 'belum ditagih supplier', 'Tagihan Supplier'),
+    ].filter(Boolean);
+    if (notes.length) {
+      html += '<div class="dash-flow-notes">' + notes.join('') + '</div>';
+    }
+    var po = p.openPOs;
+    var facts = [po.count ? po.count + ' PO berjalan' : 'Tidak ada PO berjalan'];
+    if (po.count && qtyShort(po.remaining)) {
+      facts.push('sisa kuota ' + qtyShort(po.remaining));
+    }
+    if (p.slots.count) {
+      facts.push(p.slots.count + ' surat jalan siap');
+    }
+    html +=
+      '<div class="dash-flow-foot"><span class="dash-flow-facts">' +
+      esc(facts.join(' · ')) +
+      (f.alerts
+        ? ' <button type="button" class="dash-leak is-warning" data-dash-open="Perubahan Timbangan">' +
+          f.alerts +
+          ' perubahan timbangan</button>'
         : '') +
-      lane(
-        'Tagihan dari supplier',
-        [
-          {
-            label: 'Belum ditagih supplier',
-            count: p.supplierUnbilled.count,
-            noun: 'truk',
-            sub: tripSub(p.supplierUnbilled),
-            open: 'Tagihan Supplier',
-          },
-          {
-            label: 'Ditagih, belum dibayar',
-            count: p.supplierBilled.count,
-            noun: 'truk',
-            sub: tripSub(p.supplierBilled),
-            open: 'Pembayaran ke Supplier',
-          },
-          {
-            label: 'Dibayar',
-            count: p.supplierPaid.count,
-            noun: 'truk',
-            sub: tripSub(p.supplierPaid),
-            open: 'Faktur Pembelian',
-            tone: 'success',
-          },
-        ],
-        carry(
-          p.carryOver.supplierUnbilled,
-          'bulan sebelumnya belum ditagih supplier',
-          'Tagihan Supplier'
-        )
-      ) +
+      '</span><button type="button" class="link-btn" data-dash-open="PO Pengambilan">PO Pengambilan</button></div>';
+    return html;
+  }
+
+  function orderPanel(side, per) {
+    var s = orderFlow(side, per);
+    if (!s.total) {
+      return _dashEmpty(
+        side === 'sales'
+          ? 'Tidak ada pesanan penjualan gudang pada periode ini.'
+          : 'Tidak ada pesanan pembelian gudang pada periode ini.'
+      );
+    }
+    var band = {
+      key: side,
+      label: side === 'sales' ? 'Penjualan gudang' : 'Pembelian gudang',
+      stages: s.stages.map(function (st) {
+        return {
+          key: st.key,
+          label: st.label,
+          count: st.count,
+          value: st.value,
+          sub:
+            st.count +
+            ' pesanan' +
+            (st.key === 'unpaid' && st.outstanding > 0.5 ? ' · sisa ' + short(st.outstanding) : ''),
+          action: { name: 'dashOrderStage', type: side, val: st.key },
+        };
+      }),
+      leaks: [],
+    };
+    return funnel([band], maxValue([band]));
+  }
+
+  function flowCard(per) {
+    if (!can('sales') && !can('purchases')) {
+      return '';
+    }
+    var tabs = flowTabs();
+    var active = tabs.some(function (t) {
+      return t.key === chosenTab;
+    })
+      ? chosenTab
+      : tabs.length
+        ? tabs[0].key
+        : null;
+    var tablist =
+      tabs.length > 1
+        ? '<div class="seg-tabs seg-tabs-sm dash-flow-tabs" role="tablist" aria-label="Alur transaksi">' +
+          tabs
+            .map(function (t) {
+              var on = t.key === active;
+              return (
+                '<button type="button" class="seg-tab' +
+                (on ? ' active' : '') +
+                '" role="tab" id="dash-flow-tab-' +
+                t.key +
+                '" aria-controls="dash-flow-' +
+                t.key +
+                '" aria-selected="' +
+                on +
+                '" data-action="dashFlowTab" data-val="' +
+                t.key +
+                '">' +
+                esc(t.label) +
+                '</button>'
+              );
+            })
+            .join('') +
+          '</div>'
+        : '';
+    var sub = tabs.length === 1 ? tabs[0].label + ' · nilai termasuk PPN' : 'Nilai termasuk PPN';
+    var head =
+      '<div class="card-head"><div><div class="card-title">Alur transaksi</div><div class="card-sub">' +
+      esc(sub) +
+      '</div></div>' +
+      tablist +
       '</div>';
+    if (!tabs.length) {
+      return (
+        '<div class="card dash-flow"><div class="dash-flow-body">' +
+        head +
+        _dashEmpty('Belum ada pesanan atau pengambilan.') +
+        '</div></div>'
+      );
+    }
+    var panels = tabs
+      .map(function (t) {
+        var body = t.key === 'pickup' ? pickupPanel(per) : orderPanel(t.key, per);
+        return (
+          '<div class="dash-flow-panel" id="dash-flow-' +
+          t.key +
+          '" data-flow-panel="' +
+          t.key +
+          '"' +
+          (tabs.length > 1 ? ' role="tabpanel" aria-labelledby="dash-flow-tab-' + t.key + '"' : '') +
+          (t.key === active ? '' : ' hidden') +
+          '>' +
+          body +
+          '</div>'
+        );
+      })
+      .join('');
+    return '<div class="card dash-flow"><div class="dash-flow-body">' + head + panels + '</div></div>';
+  }
+
+  // Switch tabs in place (no re-render); remembered for this session.
+  function showTab(key, root) {
+    chosenTab = key;
+    var card = (root && root.closest && root.closest('.dash-flow')) || document.querySelector('.dash-flow');
+    if (!card) {
+      return;
+    }
+    card.querySelectorAll('[data-action="dashFlowTab"]').forEach(function (b) {
+      var on = b.getAttribute('data-val') === key;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    card.querySelectorAll('[data-flow-panel]').forEach(function (p) {
+      p.hidden = p.getAttribute('data-flow-panel') !== key;
+    });
+  }
+
+  // ── Tren 6 bulan ───────────────────────────────────────────────────────────
+  function tonnage() {
+    return S().monthlyTonnage(6, { asOf: today() });
+  }
+  function tonAvailable() {
+    return can('purchases') && hasData() && tonnage().hasData;
+  }
+  function trendMode() {
+    var v = null;
+    try {
+      v = localStorage.getItem(TREND_KEY);
+    } catch (_) {
+      /* storage unavailable */
+    }
+    return v === 'ton' && tonAvailable() ? 'ton' : 'rp';
+  }
+  function setTrendMode(mode) {
+    try {
+      localStorage.setItem(TREND_KEY, mode === 'ton' ? 'ton' : 'rp');
+    } catch (_) {
+      /* storage unavailable */
+    }
+  }
+  function trendCard() {
+    var ton = tonAvailable();
+    var mode = trendMode();
+    var switcher = ton
+      ? '<div class="seg-tabs seg-tabs-sm" role="group" aria-label="Satuan grafik">' +
+        [
+          ['rp', 'Rp'],
+          ['ton', 'Ton'],
+        ]
+          .map(function (o) {
+            var on = o[0] === mode;
+            return (
+              '<button type="button" class="seg-tab' +
+              (on ? ' active' : '') +
+              '" aria-pressed="' +
+              on +
+              '" data-action="dashTrendMode" data-val="' +
+              o[0] +
+              '">' +
+              o[1] +
+              '</button>'
+            );
+          })
+          .join('') +
+        '</div>'
+      : '';
+    var sub;
+    var legend;
+    var body;
+    if (mode === 'ton') {
+      var unit = tonnage().unit || '';
+      sub = 'Netto timbangan pengambilan' + (unit ? ' (' + unit + ')' : '');
+      legend =
+        '<div class="chart-legend"><span><i class="is-ton"></i>Netto' +
+        (unit ? ' ' + esc(unit) : '') +
+        '</span><button type="button" class="link-btn" data-action="dashTonnagePO">Detail</button></div>';
+      body =
+        '<div class="chart-wrap"><canvas id="dashTrendChart" data-mode="ton" role="img" aria-label="Grafik tonase pengambilan enam bulan terakhir"></canvas></div>';
+    } else {
+      var six = _dashMonthly(6);
+      var any = six.keys.some(function (k) {
+        return six.data[k].revenue || six.data[k].purchases;
+      });
+      sub = 'Penjualan dan pembelian dari jurnal';
+      legend = any
+        ? '<div class="chart-legend"><span><i class="is-sales"></i>Penjualan</span><span><i class="is-purchases"></i>Pembelian</span></div>'
+        : '';
+      body = any
+        ? '<div class="chart-wrap"><canvas id="dashTrendChart" data-mode="rp" role="img" aria-label="Grafik penjualan dan pembelian enam bulan terakhir"></canvas></div>'
+        : _dashEmpty('Belum ada penjualan atau pembelian yang diposting dalam 6 bulan terakhir.');
+    }
     return (
-      '<div class="card dash-pipe">' +
-      head(
-        'Pengambilan ' + monthLong(p.period.key) + ' dan statusnya di faktur · nilai termasuk PPN',
-        side
-      ) +
-      top +
-      lanes +
+      '<div class="card dash-trend"><div class="card-head"><div><div class="card-title">Tren 6 bulan</div>' +
+      '<div class="card-sub">' +
+      esc(sub) +
+      '</div></div>' +
+      switcher +
+      '</div>' +
+      legend +
+      body +
       '</div>'
     );
   }
@@ -1107,6 +1667,7 @@ var _dashTrading = (function () {
     );
   }
 
+  // Netto per customer, per customer PO and per supplier PO, last 3 months.
   function openTonnagePO() {
     if (!S() || typeof openModal !== 'function') {
       return;
@@ -1117,7 +1678,7 @@ var _dashTrading = (function () {
         monthShort(k) + (i === m.keys.length - 1 && m.partial ? ' (1–' + m.throughDay + ')' : '')
       );
     });
-    // rows: { number, party, unit, values, trend }
+    // rows: { title, sub, doc, unit, values, trend }
     var table = function (title, rows, first) {
       if (!rows.length) {
         return '';
@@ -1137,11 +1698,12 @@ var _dashTrading = (function () {
         rows
           .map(function (r) {
             return (
-              '<tr><td><span class="doc-no">' +
-              esc(r.number || '—') +
-              '</span><div class="dash-list-sub">' +
-              esc(r.party || '—') +
-              '</div></td>' +
+              '<tr><td>' +
+              (r.doc
+                ? '<span class="doc-no">' + esc(r.title || '—') + '</span>'
+                : esc(r.title || '—')) +
+              (r.sub ? '<div class="dash-list-sub">' + esc(r.sub) + '</div>' : '') +
+              '</td>' +
               r.values
                 .map(function (v) {
                   return (
@@ -1161,15 +1723,22 @@ var _dashTrading = (function () {
       );
     };
     openModal(
-      'Tonase per PO',
+      'Tonase per bulan',
       '<p class="form-hint dash-modal-hint">' +
         esc('Netto timbangan per bulan. Tren: bulan ini dibanding ' + basePeriod(m) + '.') +
         '</p>' +
         (m.hasData
           ? table(
+              'Per pelanggan',
+              m.customers.map(function (r) {
+                return Object.assign({}, r, { title: r.name });
+              }),
+              'Pelanggan'
+            ) +
+            table(
               'Per PO pelanggan',
               m.salesOrders.map(function (r) {
-                return Object.assign({}, r, { party: r.customer });
+                return Object.assign({}, r, { title: r.number, sub: r.customer, doc: true });
               }),
               'PO pelanggan'
             ) +
@@ -1177,7 +1746,9 @@ var _dashTrading = (function () {
               'Per PO supplier',
               m.purchaseOrders.map(function (r) {
                 return Object.assign({}, r, {
-                  party: r.supplier + (r.customer ? ' → ' + r.customer : ''),
+                  title: r.number,
+                  sub: r.supplier + (r.customer ? ' → ' + r.customer : ''),
+                  doc: true,
                 });
               }),
               'PO supplier'
@@ -1188,9 +1759,9 @@ var _dashTrading = (function () {
     );
   }
 
-  // ── Page section ───────────────────────────────────────────────────────────
+  // ── Optional pickup blocks ─────────────────────────────────────────────────
   // show(id) tells whether a block is switched on in "Atur Tampilan".
-  function render(show) {
+  function extras(show) {
     if (!S()) {
       return '';
     }
@@ -1198,9 +1769,6 @@ var _dashTrading = (function () {
     var data = hasData();
     var buy = can('purchases');
     var html = '';
-    if (show('pipeline') && buy) {
-      html += pipelineCard(asOf);
-    }
     var row = [];
     if (show('collections') && can('sales')) {
       row.push(collectionsCard(asOf));
@@ -1220,7 +1788,21 @@ var _dashTrading = (function () {
   return {
     hasData: hasData,
     actions: actions,
-    render: render,
+    period: period,
+    periodKey: periodKey,
+    setPeriod: setPeriod,
+    rangeLabel: rangeLabel,
+    periodSwitch: periodSwitch,
+    pickupFlow: pickupFlow,
+    orderFlow: orderFlow,
+    flowTabs: flowTabs,
+    flowCard: flowCard,
+    showTab: showTab,
+    tonnage: tonnage,
+    trendMode: trendMode,
+    setTrendMode: setTrendMode,
+    trendCard: trendCard,
+    extras: extras,
     openCustomersAll: openCustomersAll,
     openTonnagePO: openTonnagePO,
   };
@@ -1237,24 +1819,19 @@ function renderDashboard() {
   var now = new Date();
   var todayIso =
     typeof Balances !== 'undefined' && Balances.todayISO ? Balances.todayISO() : _dashMonthKey(now);
+  var per = _dashTrading.period();
 
-  // KPI tiles
+  // KPI tiles: one figure and at most one short line each.
   var cash = _dashCash();
   var ar = _dashBalances('sales');
   var ap = _dashBalances('purchases');
-  var arUnbilled = ar.items.reduce(function (s, it) {
-    return s + (it.unbilled ? it.outstanding : 0);
-  }, 0);
-  var months = _dashMonthly(2);
-  var cur = months.data[months.keys[1]];
-  var gross = cur.revenue - cur.cogs;
-  // This month so far against the same days of last month, not the whole month.
-  var prevDays = Math.min(now.getDate(), new Date(now.getFullYear(), now.getMonth(), 0).getDate());
-  var prev = _dashMonthly(2, prevDays).data[months.keys[0]];
-  var delta =
-    prev.revenue > 0 ? Math.round(((cur.revenue - prev.revenue) / prev.revenue) * 100) : null;
-  var prevMonth = DASH_MONTHS[Number(months.keys[0].slice(5, 7)) - 1];
-  var prevPeriod = (prevDays > 1 ? '1–' + prevDays : '1') + ' ' + prevMonth;
+  var months = _dashMonthly(per.months);
+  var revenue = 0;
+  var cogs = 0;
+  months.keys.forEach(function (k) {
+    revenue += months.data[k].revenue;
+    cogs += months.data[k].cogs;
+  });
 
   var tile = function (o) {
     return (
@@ -1274,55 +1851,39 @@ function renderDashboard() {
       '</span></button>'
     );
   };
+  var openSub = function (b, none) {
+    return b.overdue > 0.5
+      ? { sub: short(b.overdue) + ' lewat jatuh tempo', tone: 'danger' }
+      : { sub: b.count ? 'Belum ada yang lewat jatuh tempo' : none, tone: '' };
+  };
+  var arSub = openSub(ar, 'Tidak ada piutang terbuka');
+  var apSub = openSub(ap, 'Tidak ada hutang terbuka');
 
   var tiles = [
     tile({
       label: 'Kas & bank',
       value: money(cash.total),
-      sub: cash.accounts.length
-        ? cash.accounts
-            .slice(0, 3)
-            .map(function (a) {
-              return a.name + ' ' + short(a.balance);
-            })
-            .join(' · ')
-        : 'Belum ada saldo kas atau bank',
+      sub: cash.accounts.length ? cash.accounts.length + ' rekening' : 'Belum ada saldo kas atau bank',
       open: 'Riwayat Kas & Bank',
     }),
     tile({
       label: 'Piutang',
       value: money(ar.total),
-      sub:
-        (ar.overdueCount
-          ? short(ar.overdue) + ' lewat jatuh tempo · ' + ar.overdueCount + ' dokumen'
-          : ar.count
-            ? ar.count + ' dokumen belum lunas, belum ada yang lewat tempo'
-            : 'Tidak ada tagihan terbuka') +
-        // Trips not yet invoiced are part of the receivable (Balances): say so.
-        (arUnbilled > 0.5 ? ' · termasuk ' + short(arUnbilled) + ' belum ditagih' : ''),
-      tone: ar.overdueCount ? 'warning' : '',
+      sub: arSub.sub,
+      tone: arSub.tone,
       open: 'Faktur Penjualan',
     }),
     tile({
       label: 'Hutang',
       value: money(ap.total),
-      sub: ap.overdueCount
-        ? short(ap.overdue) + ' lewat jatuh tempo · ' + ap.overdueCount + ' dokumen'
-        : ap.dueSoon
-          ? short(ap.dueSoon) + ' jatuh tempo dalam 7 hari'
-          : ap.count
-            ? ap.count + ' dokumen belum lunas'
-            : 'Tidak ada hutang terbuka',
-      tone: ap.overdueCount ? 'danger' : ap.dueSoon ? 'warning' : '',
+      sub: apSub.sub,
+      tone: apSub.tone,
       open: 'Faktur Pembelian',
     }),
     tile({
-      label: 'Penjualan bulan ini',
-      value: money(cur.revenue),
-      sub:
-        'Laba kotor ' +
-        short(gross) +
-        (delta === null ? '' : ' · ' + (delta >= 0 ? '+' : '−') + Math.abs(delta) + '% vs ' + prevPeriod),
+      label: 'Laba kotor ' + per.tile,
+      value: money(revenue - cogs),
+      sub: 'Penjualan ' + short(revenue),
       open: 'Laba Rugi',
     }),
   ].join('');
@@ -1359,56 +1920,51 @@ function renderDashboard() {
       '</div></div>';
   }
 
-  // Trend
-  var trend = '';
-  if (show('trend')) {
-    var six = _dashMonthly(6);
-    var anyData = six.keys.some(function (k) {
-      return six.data[k].revenue || six.data[k].purchases;
-    });
-    trend =
-      '<div class="card dash-trend">' +
-      '<div class="card-head"><div><div class="card-title">Penjualan & pembelian</div>' +
-      '<div class="card-sub">6 bulan terakhir, dari jurnal yang diposting</div></div>' +
-      (anyData
-        ? '<div class="chart-legend"><span><i style="background:var(--chart-1)"></i>Penjualan</span>' +
-          '<span><i style="background:var(--chart-3)"></i>Pembelian</span></div>'
-        : '') +
-      '</div>' +
-      (anyData
-        ? '<div class="chart-wrap"><canvas id="dashTrendChart" role="img" aria-label="Grafik penjualan dan pembelian enam bulan terakhir"></canvas></div>'
-        : _dashEmpty('Belum ada penjualan atau pembelian yang diposting dalam 6 bulan terakhir.')) +
-      '</div>';
-  }
+  // Alur transaksi
+  var flow = show('pipeline') ? _dashTrading.flowCard(per) : '';
 
-  // Needs action
+  // Needs action: the most important rows first, the rest behind a toggle.
   var actions = '';
   if (show('actions')) {
     var rows = _dashActions();
+    var row = function (r) {
+      return (
+        '<button type="button" class="dash-list-row" data-dash-open="' +
+        escapeHtml(r.open) +
+        '"><span class="dash-list-main"><span class="dash-list-title">' +
+        escapeHtml(r.label) +
+        '</span><span class="dash-list-sub">' +
+        escapeHtml(r.hint) +
+        '</span></span><span class="dash-count">' +
+        r.count +
+        '</span></button>'
+      );
+    };
+    var shown = 5;
+    var rest = rows.slice(shown);
     actions = _dashCard(
       'Perlu tindakan',
       'Dokumen yang menunggu langkah berikutnya',
       rows.length
         ? '<div class="dash-list-body">' +
-            rows
-              .map(function (r) {
-                return (
-                  '<button type="button" class="dash-list-row" data-dash-open="' +
-                  escapeHtml(r.open) +
-                  '"><span class="dash-list-main"><span class="dash-list-title">' +
-                  escapeHtml(r.label) +
-                  '</span><span class="dash-list-sub">' +
-                  escapeHtml(r.hint) +
-                  '</span></span><span class="dash-count">' +
-                  r.count +
-                  '</span></button>'
-                );
-              })
-              .join('') +
-            '</div>'
+            rows.slice(0, shown).map(row).join('') +
+            (rest.length
+              ? '<div class="dash-more" id="dash-actions-more" hidden>' + rest.map(row).join('') + '</div>'
+              : '') +
+            '</div>' +
+            (rest.length
+              ? '<button type="button" class="link-btn dash-more-btn" data-action="dashActionsMore" data-val="' +
+                rest.length +
+                '" aria-expanded="false" aria-controls="dash-actions-more">+ ' +
+                rest.length +
+                ' lainnya</button>'
+              : '')
         : _dashEmpty('Tidak ada dokumen yang menunggu tindakan.')
     );
   }
+
+  // Trend
+  var trend = show('trend') ? _dashTrading.trendCard() : '';
 
   // Due soon (receivables and payables)
   var due = '';
@@ -1584,7 +2140,7 @@ function renderDashboard() {
     activity = _dashCard(title, sub, body);
   }
 
-  var rowA = [trend, actions].filter(Boolean);
+  var split = [actions, trend].filter(Boolean);
   var rowB = [due, stock, activity].filter(Boolean);
   var dateLabel = now.toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -1594,30 +2150,36 @@ function renderDashboard() {
   });
 
   return (
-    '<div class="sec-hdr"><div><h1>Ringkasan</h1><p>' +
-    escapeHtml(dateLabel) +
-    ' · dihitung dari transaksi yang tercatat</p></div>' +
-    '<div><button type="button" class="btn-ghost" data-action="dashLayout">Atur Tampilan</button></div></div>' +
+    '<div class="sec-hdr dash-hdr"><div><h1>Ringkasan</h1><p>' +
+    escapeHtml(dateLabel + ' · periode ' + _dashTrading.rangeLabel(per)) +
+    '</p></div>' +
+    '<div class="dash-hdr-tools">' +
+    _dashTrading.periodSwitch(per) +
+    '<button type="button" class="btn-ghost btn-sm" data-action="dashLayout">Atur Tampilan</button></div></div>' +
     prep +
     '<div class="dash-kpis">' +
     tiles +
     '</div>' +
-    _dashTrading.render(show) +
-    (rowA.length ? '<div class="dash-row dash-row-a">' + rowA.join('') + '</div>' : '') +
+    flow +
+    (split.length ? '<div class="dash-row dash-row-split">' + split.join('') + '</div>' : '') +
+    _dashTrading.extras(show) +
     (rowB.length ? '<div class="dash-row dash-row-b">' + rowB.join('') + '</div>' : '')
   );
 }
 
 // ── Interactions ─────────────────────────────────────────────────────────────
-// Tiles, list rows and links carry the sidebar entry they open.
+// Tiles, list rows, stages and links carry the sidebar entry they open.
 document.addEventListener('click', function (e) {
   var el = e.target && e.target.closest ? e.target.closest('[data-dash-open]') : null;
   if (!el) {
     return;
   }
   e.preventDefault();
+  var label = el.getAttribute('data-dash-open');
   if (window.NSANav) {
-    window.NSANav.open(el.getAttribute('data-dash-open'));
+    window.NSANav.open(label);
+  } else if (window.NSAMenu && typeof window.NSAMenu.handle === 'function') {
+    window.NSAMenu.handle(null, label);
   }
 });
 
@@ -1625,19 +2187,30 @@ document.addEventListener('click', function (e) {
   function _reg() {
     ERP.registerAction('dashLayout', function () {
       var hidden = _dashHidden();
+      var opt = function (b) {
+        return (
+          '<label class="dash-opt"><input type="checkbox" class="dash-opt-input" value="' +
+          b.id +
+          '"' +
+          (hidden.indexOf(b.id) === -1 ? ' checked' : '') +
+          '><span>' +
+          escapeHtml(b.label) +
+          '</span></label>'
+        );
+      };
       var body =
-        '<p class="form-hint" style="margin:0 0 12px">Pilih bagian yang ditampilkan. Pilihan tersimpan di browser ini.</p>' +
-        DASH_BLOCKS.map(function (b) {
-          return (
-            '<label class="dash-opt"><input type="checkbox" class="dash-opt-input" value="' +
-            b.id +
-            '"' +
-            (hidden.indexOf(b.id) === -1 ? ' checked' : '') +
-            '><span>' +
-            escapeHtml(b.label) +
-            '</span></label>'
-          );
-        }).join('');
+        '<p class="form-hint dash-modal-hint">Pilih bagian yang ditampilkan. Pilihan tersimpan di browser ini.</p>' +
+        DASH_BLOCKS.filter(function (b) {
+          return b.on;
+        })
+          .map(opt)
+          .join('') +
+        '<h4 class="dash-modal-sub">Bagian tambahan</h4>' +
+        DASH_BLOCKS.filter(function (b) {
+          return !b.on;
+        })
+          .map(opt)
+          .join('');
       if (typeof openModal === 'function') {
         openModal(
           'Atur Tampilan Ringkasan',
@@ -1646,6 +2219,50 @@ document.addEventListener('click', function (e) {
             '<button class="btn" data-action="dashLayoutApply">Terapkan</button>'
         );
       }
+      return true;
+    });
+
+    ERP.registerAction('dashPeriod', function (_id, _type, val) {
+      if (_dashTrading.setPeriod(val)) {
+        _refreshDashboard();
+      }
+      return true;
+    });
+
+    ERP.registerAction('dashFlowTab', function (_id, _type, val, e) {
+      _dashTrading.showTab(val, e && e.target);
+      return true;
+    });
+
+    // A stage of the warehouse flow: the order list filtered to that stage
+    // when the list offers it, otherwise the order list itself.
+    ERP.registerAction('dashOrderStage', function (_id, side, key) {
+      if (typeof window.openOrderStage === 'function') {
+        window.openOrderStage(side, key);
+      } else if (window.NSANav) {
+        window.NSANav.open(side === 'sales' ? 'Pesanan Penjualan' : 'Pesanan Pembelian');
+      } else if (typeof window.navigate === 'function') {
+        window.navigate(side === 'sales' ? 'sales' : 'purchase');
+      }
+      return true;
+    });
+
+    ERP.registerAction('dashTrendMode', function (_id, _type, val) {
+      _dashTrading.setTrendMode(val);
+      _refreshDashboard();
+      return true;
+    });
+
+    ERP.registerAction('dashActionsMore', function (_id, _type, val, e) {
+      var btn = e && e.target && e.target.closest ? e.target.closest('.dash-more-btn') : null;
+      var more = document.getElementById('dash-actions-more');
+      if (!btn || !more) {
+        return true;
+      }
+      var open = more.hidden;
+      more.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      btn.textContent = open ? 'Tampilkan lebih sedikit' : '+ ' + val + ' lainnya';
       return true;
     });
 
