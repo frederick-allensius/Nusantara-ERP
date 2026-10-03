@@ -420,11 +420,18 @@
         '<div class="card"><div class="empty-inline">Modul pengambilan belum termuat. Muat ulang halaman.</div></div>'
       );
     }
+    var b = window._pickupBilling;
+    if (b && typeof b.isActive === 'function' && b.isActive()) {
+      setTimeout(b.afterRender, 0);
+      return b.html();
+    }
     var p = PAGES[S.page] || PAGES.orders;
     return p.render();
   }
 
   function show(page) {
+    var b = window._pickupBilling;
+    if (b && typeof b.leave === 'function') b.leave();
     S.page = PAGES[page] ? page : 'orders';
     if (typeof window.invalidateView === 'function') window.invalidateView('pickups');
     if (typeof window.navigate === 'function') window.navigate('pickups');

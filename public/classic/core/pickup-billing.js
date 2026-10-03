@@ -1109,9 +1109,12 @@
     return document.getElementById('view-pickups');
   }
 
-  function render() {
-    var el = container();
-    if (!el) return;
+  // #view-pickups is shared with pickup-view.js: while a billing page is open,
+  // renderPickups() (any re-render of the view, e.g. after a refused save) asks
+  // this file for its page instead of showing a pickup screen.
+  var active = false;
+
+  function pageHTML() {
     var body;
     if (!T()) {
       body =
@@ -1120,7 +1123,13 @@
     } else {
       body = S.page === 'customer' ? customerHTML() : supplierHTML();
     }
-    el.innerHTML = '<div id="pb-root" data-page="' + S.page + '">' + body + '</div>';
+    return '<div id="pb-root" data-page="' + S.page + '">' + body + '</div>';
+  }
+
+  function render() {
+    var el = container();
+    if (!el) return;
+    el.innerHTML = pageHTML();
     syncPartial();
   }
 
@@ -1149,6 +1158,7 @@
   }
 
   function open(page) {
+    active = true;
     S.page = page;
     // Opening from the menu starts at the overview.
     S[page] = freshState();
@@ -1621,6 +1631,14 @@
     },
     openSupplierBilling: function () {
       open('supplier');
+    },
+    isActive: function () {
+      return active;
+    },
+    html: pageHTML,
+    afterRender: syncPartial,
+    leave: function () {
+      active = false;
     },
   };
 })();

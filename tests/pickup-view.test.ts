@@ -47,6 +47,7 @@ beforeAll(async () => {
   await import('../public/classic/core/balances.js');
   await import('../public/classic/core/trading.js');
   await import('../public/classic/core/pickup-view.js');
+  await import('../public/classic/core/pickup-billing.js');
 
   w().XLSX = XLSX;
   w().NSAXlsx = { download: vi.fn() };
@@ -483,5 +484,17 @@ describe('Rekap Pengambilan', () => {
     expect(view()).toContain('Tidak ada pengambilan pada filter ini.');
     setVal('pv-trip-from', MONTH_START, 'change');
     setVal('pv-trip-cust', '', 'change');
+  });
+});
+
+describe('shared page with the billing screens', () => {
+  it('keeps an open billing page on re-render and leaves it from a pickup screen', () => {
+    w()._pickupBilling.openCustomerBilling();
+    expect(document.getElementById('pb-root')).toBeTruthy();
+    w().navigate('pickups'); // e.g. the re-render after a refused save
+    expect(document.getElementById('pb-root')).toBeTruthy();
+    PV().openOrders();
+    expect(document.getElementById('pb-root')).toBeNull();
+    expect(view()).toContain('PO Pengambilan');
   });
 });
