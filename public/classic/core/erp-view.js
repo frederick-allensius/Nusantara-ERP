@@ -2956,15 +2956,16 @@ function _agingSection(side) {
     .sort((a, b) => b.daysOverdue - a.daysOverdue || String(a.dueDate).localeCompare(String(b.dueDate)));
   const rowsHtml = sorted
     .map(it => {
+      // Unbilled pickup trips are listed as their surat jalan (docType 'DO').
       const open =
         it.docType === 'SI' || it.docType === 'PI'
           ? `data-action="invView" data-type="${it.docType}"`
-          : `data-action="${it.docType === 'SO' ? 'viewSO' : 'viewPO'}"`;
+          : `data-action="${it.docType === 'SO' ? 'viewSO' : it.docType === 'DO' ? 'viewDO' : 'viewPO'}"`;
       return `<tr class="row-link" ${open} data-id="${escapeHtml(it.id)}">
         <td class="doc-no">${escapeHtml(docNum(it.number, it.id))}</td>
         <td class="t-strong">${escapeHtml(it.party || '—')}</td>
         <td class="t-muted">${escapeHtml(it.date)}</td>
-        <td class="${it.overdue ? 't-danger' : 't-muted'}">${escapeHtml(it.dueDate || '—')}</td>
+        <td class="${it.overdue ? 't-danger' : 't-muted'}">${escapeHtml(it.dueDate || (it.unbilled ? 'Belum ditagih' : '—'))}</td>
         <td class="t-num">${idr(it.outstanding)}</td>
         <td>${it.overdue ? `<span class="chip chip-danger">${it.daysOverdue} hari</span>` : '<span class="t-muted">—</span>'}</td>
       </tr>`;

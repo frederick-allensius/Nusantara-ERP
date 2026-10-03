@@ -849,8 +849,12 @@
   }
 
   function addReceiptModal() {
+    // Pickup POs (pickupFlow, trading.js) are taken by trucks straight from the
+    // supplier and never enter the warehouse — they are recorded in Pengambilan.
     var pos = (db().purchaseOrders || []).filter(function (o) {
-      return o.status === 'Confirmed' || o.status === 'Draft' || o.status === 'Paid';
+      return (
+        !o.pickupFlow && (o.status === 'Confirmed' || o.status === 'Draft' || o.status === 'Paid')
+      );
     });
     var opts = pos
       .map(function (o) {
