@@ -187,43 +187,37 @@ document tab, ledger, sales list, dashboard.
 3. Final summary for the user: firestore rules/functions need a manual deploy; open
    decisions requiring confirmation; pitch sample outputs; remove `harness.local/`.
 
-## Session 2026-10-03 — friend's branch + meeting requirements (IN PROGRESS)
+## Session 2026-10-03 — friend's branch + meeting requirements (DONE except items below)
 
 Requirements: `D:\1. Work\ERP-Lisa-Kenneth\meeting notes 14092026.txt` + recording
-`meeting 14092026.mkv` (speech 17–93 min). Transcript chunks (Whisper small, greedy) in the
-session scratchpad `meeting/run3/part00–09.txt`; parts 04–09 were still transcribing.
-If missing, re-run per chunk (ffmpeg split from 240 s, 600 s chunks; whisper `--model small
---language id --condition_on_previous_text False --beam_size 1 --temperature 0`).
+`meeting 14092026.mkv`. Requirement → solution → status: `docs/11-KEBUTUHAN-MEETING-14-SEP-2026.md`
+(§8 lists the owner decisions still open). Security/cloud/PC: `docs/12-*`.
 
-Done (commits on this branch):
-- 282703c merge of origin/feat/trading-refactor-pipeline (friend: weighbridge on goods
-  receipts, Rekonsiliasi, SJ validation, funnels, Laporan per Periode, Entri Harian, dual-view).
-- 3427750 adjustable text size (rem everywhere, "Ukuran teks" in user menu, default Besar).
-- a02771d Ekspor Coretax (XML, corrected output-tax rows), tests/coretax-export.test.ts.
-- b22c01a trading core: trading.js (pickup POs, SJ slots ceil(qty/35), quota + month-end
-  cut-off, trips with bruto/tara/netto, supplier price by date, invoices from trips with doIds,
-  recap matching + weight-change alerts), gl.js buildPickupJournals, balances unbilled trips,
-  SO/PO 'Closed', DO 'Cancelled', menu group Pengambilan (#view-pickups) with placeholder
-  pickup-view.js / pickup-billing.js. tests/trading-pickups.test.ts.
+Commits (branch revamp/ui-and-accounting, oldest first):
+- 282703c merge origin/feat/trading-refactor-pipeline (weighbridge receipts, Rekonsiliasi, SJ
+  validation, funnels, Laporan per Periode, Entri Harian, dual-view). All remote branches merged.
+- 3427750 text size (rem, Normal/Besar/Sangat besar). a02771d Ekspor Coretax XML.
+- b22c01a trading core (trading.js, gl buildPickupJournals, balances unbilled trips, SO/PO Closed,
+  DO Cancelled, menu group Pengambilan).
+- 2997581 docs 11 + 12. 48020df Arsip Excel (archive-export.js). 11b1c71 per-user Akses menu.
+- 0627f7a Tagih Pelanggan / Tagihan Supplier. 12319a6 trips writable with purchases OR sales
+  (rbac recordModules, rules canWriteDoc); PO/SO auto-close only when the user may edit them.
+- b311178 Kas & Bank recap/categories/bank charges. 6e8851d receive grid + per-receipt PI +
+  GL.receivedNotInvoiced. 7886321 trading demo data. a6c67bb trip HPP follows the covering PI.
+- 1344ee2 Pengambilan screens. aff49c2 Ringkasan pickup blocks, Entri Harian, notifications.
+- 33a14a5 shared #view-pickups keeps billing page. d2ad227 follow-ups (unbilled trips not
+  overdue, PO form supplier price by date, Surat Jalan list excludes pickup SJ, Laporan per
+  Periode trips, DO status after cancelling per-receipt PI). 055d337 docs 11/ARSITEKTUR/structure.
 
-- 2997581 docs 11 (meeting requirements → solution → status) and 12 (security, cloud, cost, PC).
-- 11b1c71 (merged) per-user "Akses menu": users/{uid}.modules narrows the role; rbac.js,
-  erp-crud.js editor, firestore.rules moduleAllowed(), functions adminSetModules,
-  tests/user-module-access.test.ts. Needs rules + functions deploy.
-- 48020df Kelola Backup → Arsip Excel (archive-export.js, window.NSAArchive), test.
-- ce49387 docs: access + archive (ARSITEKTUR §8/§10/§11, docs 11, 12).
+Checks at d2ad227: vitest 34 files / 464 tests, tsc, eslint, vite build all pass. Browser pass in
+harness (fresh demo data loaded in memory): Ringkasan, PO Pengambilan, Tagih Pelanggan (+ re-render),
+Rekap Pengambilan, Laporan per Periode (Pengambilan), Surat Jalan hint, Kelola Backup archive,
+Pengeluaran Lain recap, Entri Harian, Catat Pengambilan at 375px — no console errors, TB balanced.
 
-Next (planned as parallel worktree agents; check `git worktree list` /
-`.claude/worktrees/` for unfinished agent work before redoing):
-1. Per-user module access — DONE (merged).
-2. pickup-view.js pages (PO Pengambilan, Catat Pengambilan with ticket photo, Impor Rekap
-   Timbangan, Perubahan Timbangan, Rekap Pengambilan) — agent started.
-3. pickup-billing.js (Tagih Pelanggan weekly from trips; Tagihan Supplier with qty/price
-   compare; invoice-view cancel → Trading.releaseInvoice; invoice print shows line notes).
-4. Ringkasan pipeline view from trips (funnel-report rework, unbilled, alerts, cut-off),
-   Entri Harian tasks, notifications for weight alerts/cut-off, exclude pickup slots from
-   "pengiriman belum selesai"; friend modules → colour tokens.
-5. Friend cleanup: receive-grid weighing columns lost in the merge; pipeline-extras
-   invoiceFromReceipt (numeric id → DocEngine number, sourceType 'PO', terms due date).
-6. Demo data for the trading flow; 7. docs (meeting requirements doc, docs sync, security
-   & cloud/PC recommendation); remove harness.local/.
+Remaining:
+- Docs 01–10, MEETING_KIT, SJ_VALIDATION_DEMO, READMEs sync (agent worktree in progress; check
+  `git branch --list 'worktree-agent-*'` for an unmerged docs commit).
+- Deploy needed by the owner: firestore.rules + functions (adminSetModules).
+- Housekeeping: `.claude/worktrees/agent-*` (merged; some contain a node_modules JUNCTION to the
+  main checkout — remove with `git worktree remove --force` only after deleting the junction with
+  `cmd /c rmdir`, never recursive delete); `harness.local/` (git-ignored) when verification is over.
