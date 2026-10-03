@@ -206,10 +206,16 @@ Done (commits on this branch):
   SO/PO 'Closed', DO 'Cancelled', menu group Pengambilan (#view-pickups) with placeholder
   pickup-view.js / pickup-billing.js. tests/trading-pickups.test.ts.
 
+- 2997581 docs 11 (meeting requirements → solution → status) and 12 (security, cloud, cost, PC).
+- 11b1c71 (merged) per-user "Akses menu": users/{uid}.modules narrows the role; rbac.js,
+  erp-crud.js editor, firestore.rules moduleAllowed(), functions adminSetModules,
+  tests/user-module-access.test.ts. Needs rules + functions deploy.
+- 48020df Kelola Backup → Arsip Excel (archive-export.js, window.NSAArchive), test.
+- ce49387 docs: access + archive (ARSITEKTUR §8/§10/§11, docs 11, 12).
+
 Next (planned as parallel worktree agents; check `git worktree list` /
 `.claude/worktrees/` for unfinished agent work before redoing):
-1. Per-user module access (allowlist narrowing the role; client + firestore.rules +
-   functions; Manajemen Pengguna UI) — agent started.
+1. Per-user module access — DONE (merged).
 2. pickup-view.js pages (PO Pengambilan, Catat Pengambilan with ticket photo, Impor Rekap
    Timbangan, Perubahan Timbangan, Rekap Pengambilan) — agent started.
 3. pickup-billing.js (Tagih Pelanggan weekly from trips; Tagihan Supplier with qty/price
