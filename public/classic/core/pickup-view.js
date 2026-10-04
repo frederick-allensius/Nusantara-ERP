@@ -503,7 +503,7 @@
 
     var html = header(
       'PO Pengambilan',
-      'PO supplier yang diambil bertahap oleh truk pelanggan. Setiap truk memakai satu surat jalan.',
+      '',
       button('Catat Pengambilan', 'addPickupTrip', null, 'btn') +
         button('Impor Rekap Timbangan', 'pvGoRecap')
     );
@@ -1423,11 +1423,7 @@
   function renderRecord() {
     var t = T();
     var ctx = recordContext();
-    var html = header(
-      'Catat Pengambilan',
-      'Catat setiap truk yang mengambil barang: surat jalan, truk, sopir, dan hasil timbangan.',
-      button('PO Pengambilan', 'pvGoOrders')
-    );
+    var html = header('Catat Pengambilan', '', button('PO Pengambilan', 'pvGoOrders'));
     var last = S.rec.last;
     if (last) {
       html +=
@@ -1925,11 +1921,7 @@
 
   function renderRecap() {
     var rc = S.recap;
-    var html = header(
-      'Impor Rekap Timbangan',
-      'Rekap Excel dari bagian timbangan supplier dicocokkan dengan surat jalan, tanpa mengetik ulang.',
-      button('PO Pengambilan', 'pvGoOrders')
-    );
+    var html = header('Impor Rekap Timbangan', '', button('PO Pengambilan', 'pvGoOrders'));
 
     html +=
       '<div class="card"><div class="card-title">Format file</div>' +
@@ -2255,11 +2247,7 @@
     var alerts = t.openAlerts().sort(function (a, b) {
       return String(b.weightAlert.at || '').localeCompare(String(a.weightAlert.at || ''));
     });
-    var html = header(
-      'Perubahan Timbangan',
-      'Berat surat jalan yang berubah setelah dicatat, misalnya karena rekap timbangan diperbarui supplier.',
-      button('Impor Rekap Timbangan', 'pvGoRecap')
-    );
+    var html = header('Perubahan Timbangan', '', button('Impor Rekap Timbangan', 'pvGoRecap'));
 
     // Open alerts as cards: few at a time, and each needs its action in reach on
     // any screen width.
@@ -2488,7 +2476,7 @@
 
     var html = header(
       'Rekap Pengambilan',
-      'Semua truk yang sudah mengambil barang: tanggal, barang, truk, sopir, dan berat.',
+      '',
       button('Ekspor Excel', 'pvTripExport', null, 'btn', trips.length ? '' : ' disabled')
     );
     html +=
