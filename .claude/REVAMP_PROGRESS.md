@@ -258,6 +258,8 @@ page height). Report for the owner (mobile-viewable): https://claude.ai/artifact
   b830230 '+' only on create buttons; sw cache v1.1.4.
 - First-screen bold text: Pesanan 44→1, Pembelian 45→1, Surat Jalan 37→1, Neraca Saldo 52→2.
 - Checks: vitest 46 files / 561 tests, tsc, eslint, build.
-Open (owner): remove stat tiles that repeat statement totals; fold Pajak & PPN document lists;
-card layout for list tables on phones.
-
+Owner approved and done: fa3fc3f stat tiles repeating statement totals removed (balance line kept),
+Pajak & PPN document lists folded; 13222f1 (merged) phone card layout for 16 lists (.list-cards,
+data-cell roles, mobile.css; sorting via ⋯ → Urutkan on phones). Checks: 47 files / 578 tests.
+Open: full-width action buttons on cards and name-keyed card lines (agent's choice, confirm with
+owner); 360px phones: two row combinations put the row button on its own line.
