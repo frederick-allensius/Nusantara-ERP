@@ -60,6 +60,8 @@ const classicAll = [
   'public/classic/core/erp-view.js',
   // erp-patch.js merged into erp-crud.js + erp-view.js (2026-06-10)
   'public/classic/core/xlsx-export.js',
+  // list-pager.js: shared paging bar for long lists (journals, cash history, reports).
+  'public/classic/core/list-pager.js',
   // archive-export.js: year archive workbook (Kelola Backup); uses NSAXlsx + Trading.
   'public/classic/core/archive-export.js',
   'public/classic/core/budget-gl-extras.js',

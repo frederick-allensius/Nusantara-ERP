@@ -1554,8 +1554,9 @@ tfoot td {
   background: transparent;
 }
 
-/* Pager under a flush list card (invoice-view.js) */
-.inv-pager {
+/* Pager under a list (invoice-view.js; list-pager.js NSAPager) */
+.inv-pager,
+.list-pager {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1565,11 +1566,21 @@ tfoot td {
   font-size: var(--fs-xs);
   color: var(--muted);
 }
-.inv-pager .btn-ghost {
+.inv-pager .btn-ghost,
+.list-pager .btn-ghost {
   height: auto;
-  min-height: 0;
-  padding: 3px 10px;
+  min-height: 32px;
+  padding: 3px 12px;
   font-size: var(--fs-xs);
+}
+/* Touch screens: pager buttons big enough for a thumb */
+@media (pointer: coarse), (max-width: 560px) {
+  .inv-pager .btn-ghost,
+  .list-pager .btn-ghost,
+  [data-action='pageNav'] {
+    min-height: 40px;
+    min-width: 72px;
+  }
 }
 
 .data-table.compact th,
