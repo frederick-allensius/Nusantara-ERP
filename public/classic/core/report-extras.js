@@ -20,8 +20,6 @@
     window.showToast && window.showToast(msg, type || 'success');
   }
 
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   var VAT_RATE = 0.11;
 
   function injectView(html) {
@@ -151,16 +149,16 @@
         (r.action
           ? 'data-action="' + r.action + '"' + (r.val ? ' data-val="' + esc(r.val) + '"' : '')
           : 'data-action="navView" data-view="' + esc(r.view || '') + '"') +
-        ' style="display:flex;align-items:center;gap:11px;padding:12px 13px;border:1px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface);text-align:left;width:100%">' +
+        '>' +
         '<span class="report-card-icon" aria-hidden="true">' +
         reportIcon(r.cat) +
         '</span>' +
-        '<span style="min-width:0;flex:1"><span style="display:block;font-size:.8125rem;font-weight:700">' +
+        '<span class="report-card-text"><span class="report-card-name">' +
         esc(r.name) +
-        '</span><span style="display:block;font-size:.75rem;color:var(--muted)">' +
+        '</span><span class="report-card-desc">' +
         esc(r.desc) +
         '</span></span>' +
-        '<svg style="flex:none;color:var(--muted)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>' +
+        '<svg class="report-card-go" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
         '</button>'
       );
     }
@@ -169,16 +167,14 @@
       .map(function (cat) {
         var items = cats[cat].map(reportCard).join('');
         return (
-          '<div class="report-cat-block" style="margin-bottom:18px">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">' +
-          '<span style="font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">' +
+          '<div class="report-cat-block">' +
+          '<div class="report-cat-head">' +
           esc(cat) +
-          '</span>' +
-          '<span style="font-size:.75rem;font-weight:700;color:var(--muted);background:var(--bg);border-radius:99px;padding:1px 8px">' +
+          ' <span class="report-cat-count">' +
           cats[cat].length +
           '</span>' +
           '</div>' +
-          '<div class="report-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">' +
+          '<div class="report-grid">' +
           items +
           '</div>' +
           '</div>'
@@ -186,18 +182,16 @@
       })
       .join('');
 
+    // The search field (and its placeholder) says what the page is; no subtitle.
     injectView(
-      '<div class="sec-hdr"><div><h1>Daftar Laporan</h1><p>' +
-        reports.length +
-        ' laporan tersedia dalam sistem Nusantara ERP</p></div></div>' +
-        '<div style="position:relative;max-width:380px;margin-bottom:18px">' +
-        '<svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-        '<input id="report-search" type="text" placeholder="Cari laporan…" autocomplete="off" ' +
-        'style="width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:9px;font-size:.8125rem;background:var(--surface);color:var(--text)">' +
+      '<div class="sec-hdr"><div><h1>Daftar Laporan</h1></div></div>' +
+        '<div class="report-search">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<input id="report-search" class="form-input" type="text" placeholder="Cari laporan…" autocomplete="off" aria-label="Cari laporan">' +
         '</div>' +
         '<div id="report-list-body">' +
         sections +
-        '<div id="report-empty" style="display:none;padding:30px;text-align:center;color:var(--muted);font-size:.8125rem">Tidak ada laporan yang cocok dengan pencarian.</div>' +
+        '<div id="report-empty" class="report-empty" hidden>Tidak ada laporan yang cocok dengan pencarian.</div>' +
         '</div>'
     );
   }
@@ -218,7 +212,7 @@
       block.style.display = visible ? '' : 'none';
     });
     var empty = document.getElementById('report-empty');
-    if (empty) empty.style.display = anyVisible ? 'none' : '';
+    if (empty) empty.hidden = anyVisible;
   });
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -339,6 +333,7 @@
 
     var ppnKurang = outputPPN - inputPPN;
     var ppnStatus = ppnKurang > 0 ? 'Kurang Bayar' : ppnKurang < 0 ? 'Lebih Bayar' : 'Nihil';
+    // Only the net figure carries a colour: it is a status (to pay / overpaid).
     var ppnColor = ppnKurang > 0 ? 'var(--danger)' : ppnKurang < 0 ? 'var(--info)' : 'var(--muted)';
 
     function rowsHTML(rows, emptyText) {
@@ -346,37 +341,61 @@
         rows
           .map(function (r) {
             return (
-              '<tr><td class="td-p" style="font-size:.75rem">' +
+              '<tr><td class="td-p rep-sm">' +
               esc(r.date) +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p rep-sm">' +
               esc(r.number) +
-              '<div style="font-size:.75rem;color:var(--muted)">' +
+              '<div class="t-muted">' +
               esc(r.kind) +
               '</div></td>' +
               '<td class="td-p">' +
               esc(r.party) +
               '</td>' +
-              '<td class="td-p" style="text-align:right">' +
+              '<td class="td-p t-num">' +
               money(r.dpp) +
               '</td>' +
-              '<td class="td-p" style="text-align:right">' +
+              '<td class="td-p t-num">' +
               money(r.ppn) +
               '</td>' +
               '</tr>'
             );
           })
           .join('') ||
-        '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">' +
-          emptyText +
-          '</td></tr>'
+        '<tr><td colspan="5" class="td-empty">' + emptyText + '</td></tr>'
       );
     }
     var soRows = rowsHTML(data.output, 'Tidak ada penjualan ber-PPN di periode ini.');
     var poRows = rowsHTML(data.input, 'Tidak ada pembelian ber-PPN di periode ini.');
 
+    function sideCard(title, count, partyLabel, rows, dpp, ppn) {
+      return (
+        '<div class="card">' +
+        '<div class="card-head"><div class="card-title">' +
+        title +
+        ' <span class="t-muted rep-count">(' +
+        count +
+        ' transaksi)</span></div></div>' +
+        '<div style="overflow-x:auto"><table>' +
+        '<thead><tr><th>Tanggal</th><th>Dokumen</th><th>' +
+        partyLabel +
+        '</th><th class="t-num">DPP</th><th class="t-num">PPN</th></tr></thead>' +
+        '<tbody>' +
+        rows +
+        '</tbody>' +
+        '<tfoot><tr class="rep-total"><td colspan="3" class="td-p">TOTAL</td>' +
+        '<td class="td-p t-num">' +
+        money(dpp) +
+        '</td>' +
+        '<td class="td-p t-num">' +
+        money(ppn) +
+        '</td></tr></tfoot>' +
+        '</table></div></div>'
+      );
+    }
+
     injectView(
-      '<div class="sec-hdr"><div><h1>Rekap PPN</h1><p>PPN keluaran dan masukan per masa pajak dari dokumen yang sudah diposting. Faktur pajak dan pelaporan SPT tetap dilakukan melalui aplikasi DJP.</p></div>' +
+      '<div class="sec-hdr"><div><h1>Rekap PPN</h1><p>Per masa pajak, dari dokumen yang sudah diposting. Faktur pajak dan SPT tetap lewat aplikasi DJP.</p></div>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
         '<select class="form-select" id="spt-period" style="font-size:.8125rem">' +
         pOpts +
@@ -385,12 +404,12 @@
         '<button class="btn-ghost" data-action="exportSPT">Ekspor CSV</button>' +
         '</div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val" style="color:var(--danger)">' +
+        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val">' +
         money(outputPPN) +
         '</div><div class="stat-sub">DPP ' +
         money(outputDPP) +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val" style="color:var(--success)">' +
+        '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val">' +
         money(inputPPN) +
         '</div><div class="stat-sub">DPP ' +
         money(inputDPP) +
@@ -402,68 +421,12 @@
         '">' +
         money(Math.abs(ppnKurang)) +
         '</div><div class="stat-sub">PPN neto</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Periode</div><div class="stat-val" style="font-size:1.125rem">' +
+        '<div class="card stat-card"><div class="stat-label">Periode</div><div class="stat-val">' +
         period +
         '</div><div class="stat-sub">Masa Pajak</div></div>' +
         '</div>' +
-        '<div class="card" style="margin-bottom:14px">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
-        'PPN Keluaran — Penjualan (' +
-        soInPeriod.length +
-        ' transaksi)</div>' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">Dokumen</th><th style="' +
-        TH +
-        '">Pelanggan</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">DPP</th><th style="' +
-        TH +
-        'text-align:right">PPN</th></tr></thead>' +
-        '<tbody>' +
-        soRows +
-        '</tbody>' +
-        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:.75rem">TOTAL</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700">' +
-        money(outputDPP) +
-        '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700;color:var(--danger)">' +
-        money(outputPPN) +
-        '</td></tr></tfoot>' +
-        '</table></div></div>' +
-        '<div class="card">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">' +
-        'PPN Masukan — Pembelian (' +
-        poInPeriod.length +
-        ' transaksi)</div>' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">Dokumen</th><th style="' +
-        TH +
-        '">Supplier</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">DPP</th><th style="' +
-        TH +
-        'text-align:right">PPN</th></tr></thead>' +
-        '<tbody>' +
-        poRows +
-        '</tbody>' +
-        '<tfoot><tr><td colspan="3" class="td-p" style="font-weight:700;font-size:.75rem">TOTAL</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700">' +
-        money(inputDPP) +
-        '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700;color:var(--success)">' +
-        money(inputPPN) +
-        '</td></tr></tfoot>' +
-        '</table></div></div>'
+        sideCard('PPN Keluaran — Penjualan', soInPeriod.length, 'Pelanggan', soRows, outputDPP, outputPPN) +
+        sideCard('PPN Masukan — Pembelian', poInPeriod.length, 'Supplier', poRows, inputDPP, inputPPN)
     );
 
     // Attach refresh handler
@@ -716,16 +679,16 @@
             var pct = salesTotal > 0 ? Math.round((c.total / salesTotal) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-              '<span style="font-size:.875rem;font-weight:800;color:var(--muted);width:18px">' +
+              '<span class="rep-rank">' +
               (i + 1) +
               '</span>' +
-              '<div style="flex:1"><div style="font-size:.8125rem;font-weight:600;margin-bottom:2px">' +
+              '<div style="flex:1"><div class="rep-rank-name">' +
               esc(c.name) +
               '</div>' +
               '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--primary);width:' +
               pct +
               '%"></div></div>' +
-              '</div><div style="font-size:.75rem;font-weight:700;text-align:right;white-space:nowrap">' +
+              '</div><div class="t-num rep-sm">' +
               money(c.total) +
               '</div></div>'
             );
@@ -740,16 +703,16 @@
               top5Items[0].total > 0 ? Math.round((it.total / top5Items[0].total) * 100) : 0;
             return (
               '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
-              '<span style="font-size:.875rem;font-weight:800;color:var(--muted);width:18px">' +
+              '<span class="rep-rank">' +
               (i + 1) +
               '</span>' +
-              '<div style="flex:1"><div style="font-size:.8125rem;font-weight:600;margin-bottom:2px">' +
+              '<div style="flex:1"><div class="rep-rank-name">' +
               esc(it.name) +
               '</div>' +
               '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--warning);width:' +
               pct +
               '%"></div></div>' +
-              '</div><div style="font-size:.75rem;font-weight:700;text-align:right;white-space:nowrap">' +
+              '</div><div class="t-num rep-sm">' +
               money(it.total) +
               '</div></div>'
             );
@@ -762,55 +725,54 @@
         today() +
         '</p></div>' +
         '<button class="btn-ghost" data-action="refreshAI">Muat ulang</button></div>' +
-        '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Penjualan Tahun Ini</div><div class="stat-val" style="font-size:1.125rem">' +
+        '<div class="stat-row rep-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
+        '<div class="card stat-card"><div class="stat-label">Penjualan Tahun Ini</div><div class="stat-val">' +
         money(totalRevenue) +
         '</div><div class="stat-sub">' +
         sales.length.toLocaleString('id-ID') +
         ' dokumen penjualan</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Laba Kotor Tahun Ini</div><div class="stat-val" style="font-size:1.125rem;color:' +
-        (grossProfit >= 0 ? 'var(--success)' : 'var(--danger)') +
+        '<div class="card stat-card"><div class="stat-label">Laba Kotor Tahun Ini</div><div class="stat-val' +
+        (grossProfit < 0 ? ' fin-neg' : '') +
         '">' +
         money(grossProfit) +
         '</div><div class="stat-sub">Margin ' +
         profitMargin +
         '%</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val" style="font-size:1.125rem">' +
+        '<div class="card stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val">' +
         money(curMonthRevenue) +
         '</div><div class="stat-sub"' +
         (revenueGrowth === null
           ? '>Belum ada pembanding'
-          : ' style="color:' +
-            (Number(revenueGrowth) >= 0 ? 'var(--success)' : 'var(--danger)') +
-            '">' +
+          : (Number(revenueGrowth) < 0 ? ' style="color:var(--danger)"' : '') +
+            '>' +
             (Number(revenueGrowth) >= 0 ? '+' : '−') +
             Math.abs(revenueGrowth) +
             '% vs tgl 1–' +
             prevDays +
             ' bulan lalu') +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Piutang Belum Lunas</div><div class="stat-val" style="font-size:1.125rem' +
-        (ar.overdueCount ? ';color:var(--warning)' : '') +
-        '">' +
+        '<div class="card stat-card"><div class="stat-label">Piutang Belum Lunas</div><div class="stat-val"' +
+        (ar.overdueCount ? ' style="color:var(--warning)"' : '') +
+        '>' +
         money(ar.total) +
         '</div><div class="stat-sub">' +
         (ar.overdueCount ? money(ar.overdue) + ' lewat jatuh tempo' : ar.count + ' dokumen') +
         '</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:14px">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Temuan dari data transaksi</div>' +
+        '<div class="card-head"><div class="card-title">Temuan dari data transaksi</div></div>' +
         insightHtml +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">' +
-        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Pelanggan Teratas</div>' +
+        '<div class="fin-2col">' +
+        '<div class="card"><div class="card-head"><div class="card-title">5 Pelanggan Teratas</div></div>' +
         top5CustHtml +
         '</div>' +
-        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">5 Barang Terlaris</div>' +
+        '<div class="card"><div class="card-head"><div class="card-title">5 Barang Terlaris</div></div>' +
         top5ItemHtml +
         '</div>' +
         '</div>' +
         '<div class="card">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Tren 6 Bulan Terakhir</div>' +
+        '<div class="card-head"><div class="card-title">Tren 6 Bulan Terakhir</div></div>' +
         '<div style="display:flex;align-items:flex-end;gap:6px;height:100px">' +
         trendBars +
         '</div>' +

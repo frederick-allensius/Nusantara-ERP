@@ -3246,6 +3246,464 @@ select.inline-status {
   margin-bottom: 16px;
 }
 
+/* ── 24b. REPORTS, LEDGER, TAX & CASH PAGES ──────────────────────────────────── */
+/* Buku Besar (gl-view.js), Laporan Keuangan (financial-reports.js), Pajak
+   (tax-extras.js, report-extras.js), Kas & Bank (bank-extras.js) and Anggaran /
+   Penggajian / Audit Jurnal (budget-gl-extras.js). One rule throughout: bold
+   only for totals and subtotals, colour only for meaning (a negative amount, a
+   warning, the bottom line), the accent only for links and toggles. */
+
+/* Stat tiles that repeat a total shown right below them: plain and smaller */
+.gl-recap .stat-val,
+.fin-recap .stat-val {
+  font-size: var(--fs-lg);
+  font-weight: 500;
+}
+
+/* Buku Besar: Neraca Saldo and Bagan Akun tables */
+.gl-tb th,
+.gl-tb td,
+.jv-lines td {
+  font-size: var(--fs-xs);
+}
+.gl-tb td {
+  padding: 7px 10px;
+}
+.gl-tb th {
+  padding: 8px 10px;
+}
+.gl-col-code {
+  width: 90px;
+}
+.gl-col-amt {
+  width: 150px;
+}
+.gl-col-type {
+  width: 170px;
+}
+.gl-col-cur {
+  width: 70px;
+}
+.gl-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+.gl-total-label {
+  text-align: right;
+}
+.gl-empty {
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.gl-count {
+  margin-bottom: 10px;
+  font-size: var(--fs-xs);
+}
+.card-head > .gl-count {
+  margin-bottom: 0;
+}
+
+/* Buku Besar → Jurnal: one box per journal */
+.gl-jv {
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+}
+.gl-jv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-sunken);
+  font-size: var(--fs-xs);
+}
+.jv-lines td {
+  padding: 4px 10px;
+}
+.jv-lines .gl-total td {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border-top-width: 1px;
+}
+.jv-lines .gl-total-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Laporan Keuangan: period bar and statements */
+.fin-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.fin-period label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.fin-period .form-input {
+  width: 138px;
+  padding: 4px 8px;
+  font-size: var(--fs-xs);
+}
+.fin-period .btn-ghost {
+  padding: 3px 8px;
+  font-size: var(--fs-xs);
+}
+.fin-meta {
+  margin-bottom: 14px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.fin-group {
+  margin: 20px 0 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.fin-meta + .fin-group {
+  margin-top: 0;
+}
+.fin-sec {
+  margin-bottom: 16px;
+}
+.fin-sec-head,
+.fin-sec-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.fin-sec-head {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.fin-lines td,
+.fin-cf-lines td,
+.fin-cf-lines th {
+  padding: 7px 10px;
+  font-size: var(--fs-xs);
+}
+.fin-lines tfoot td {
+  border-top: 1px solid var(--border-strong);
+}
+/* Same column widths in every section, so the account names line up */
+.fin-lines td.acct-no {
+  width: 90px;
+}
+.fin-lines td.t-num {
+  width: 170px;
+}
+.fin-total td {
+  font-weight: 700;
+}
+.fin-total td:first-child {
+  text-align: right;
+}
+.fin-none {
+  padding: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+.fin-neg {
+  color: var(--danger);
+}
+.fin-pos {
+  color: var(--success);
+}
+.fin-subtotal,
+.fin-grand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.fin-major {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  font-size: var(--fs-md);
+}
+.fin-grand {
+  margin-bottom: 20px;
+  background: transparent;
+  border-top: 2px solid var(--border-strong);
+  border-radius: 0;
+  font-size: var(--fs-base);
+}
+.fin-pct {
+  margin-left: 10px;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--muted);
+}
+.fin-alert {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+}
+.fin-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+/* Laporan Keuangan → Arus Kas: one block per activity */
+.fin-cf {
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+}
+.fin-cf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface-sunken);
+}
+.fin-cf-io {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.fin-cf-net {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.fin-cf-scroll {
+  overflow-x: auto;
+}
+
+/* Phones: statement columns size to their content so account names keep room */
+@media (max-width: 560px) {
+  .fin-lines td.acct-no,
+  .fin-lines td.t-num,
+  .gl-col-code,
+  .gl-col-amt,
+  .gl-col-type,
+  .gl-col-cur {
+    width: auto;
+  }
+  .fin-lines td,
+  .fin-cf-lines td,
+  .fin-cf-lines th {
+    padding: 7px 6px;
+  }
+  .fin-sec-head {
+    padding: 8px 6px;
+  }
+  .fin-cf-head {
+    padding: 10px 12px;
+  }
+}
+
+/* Pajak & PPN (tax-extras.js): label/value facts, documents, explanations */
+.tax-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-xs);
+}
+.tax-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tax-doc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--fs-xs);
+}
+.tax-doc:last-child {
+  border-bottom: 0;
+}
+.tax-doc-sub {
+  margin-top: 1px;
+  color: var(--muted);
+}
+.tax-none {
+  padding: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+/* "Penjelasan": longer explanations stay one click away */
+.tax-explain {
+  margin-top: 10px;
+  font-size: var(--fs-xs);
+}
+.notice + .tax-explain {
+  margin: -6px 0 14px;
+}
+.tax-explain summary {
+  width: max-content;
+  color: var(--primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+.tax-explain summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tax-explain p {
+  max-width: 76ch;
+  margin-top: 6px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.tax-stat-text {
+  font-size: var(--fs-md);
+}
+.tax-warn-list {
+  margin: 6px 0 0 18px;
+}
+
+/* Daftar Laporan, Rekap PPN, Analisis Bisnis (report-extras.js) */
+.report-search {
+  position: relative;
+  max-width: 380px;
+  margin-bottom: 18px;
+}
+.report-search svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.report-search .form-input {
+  width: 100%;
+  padding-left: 34px;
+}
+.report-cat-block {
+  margin-bottom: 18px;
+}
+.report-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.report-cat-count {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--muted);
+}
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 10px;
+}
+.report-card-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  text-align: left;
+  cursor: pointer;
+}
+.report-card-text {
+  flex: 1;
+  min-width: 0;
+}
+.report-card-name {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.report-card-desc {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.report-card-go {
+  flex: none;
+  color: var(--muted);
+}
+.report-empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.rep-sm {
+  font-size: var(--fs-xs);
+}
+.rep-total td {
+  font-weight: 700;
+}
+/* A count next to a card title stays regular */
+.rep-count,
+.budget-count {
+  font-weight: 400;
+}
+.rep-stats .stat-val {
+  font-size: var(--fs-lg);
+}
+.rep-rank {
+  width: 18px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+.rep-rank-name {
+  margin-bottom: 2px;
+  font-size: var(--fs-sm);
+}
+
+/* Kas & Bank (bank-extras.js) */
+.bank-sub {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* Anggaran, Riwayat Akun, Audit Jurnal (budget-gl-extras.js) */
+.budget-pct {
+  font-size: var(--fs-xs);
+}
+.budget-warn {
+  color: var(--warning);
+}
+.budget-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+.budget-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.budget-sm {
+  font-size: var(--fs-xs);
+}
+
 /* ── 25. INVENTORY STATUS ────────────────────────────────────────────────────── */
 .stock-low {
   color: var(--danger);

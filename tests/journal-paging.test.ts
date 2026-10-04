@@ -3,6 +3,8 @@
 // and the amounts stay on one line (they were cut off on phones).
 // ═══════════════════════════════════════════════════════════════════════════════
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 const w = () => window as any;
 const actions: Record<string, (id?: string, type?: string, val?: string) => unknown> = {};
@@ -43,7 +45,7 @@ beforeEach(() => {
 });
 
 const view = () => document.getElementById('view-ledger')!;
-const journalCards = () => view().querySelectorAll('.card > div[style*="border-radius:10px"]');
+const journalCards = () => view().querySelectorAll('.card > .gl-jv');
 
 describe('Jurnal paging', () => {
   it('shows 20 newest journals, then the next page, and resets on a filter change', () => {
@@ -68,6 +70,9 @@ describe('Jurnal paging', () => {
     const amount = Array.from(card.querySelectorAll('td')).find(td =>
       /Rp/.test(td.textContent || '')
     )!;
-    expect(amount.getAttribute('style')).toContain('white-space:nowrap');
+    // .t-num (style.css) keeps figures on one line.
+    expect(amount.classList.contains('t-num')).toBe(true);
+    const css = readFileSync(resolve(__dirname, '../style.css'), 'utf8');
+    expect(css).toMatch(/\.t-num \{[^}]*white-space: nowrap;/);
   });
 });
