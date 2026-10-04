@@ -78,7 +78,7 @@ describe('Audit Jurnal', () => {
     expect(refs(v)[0]).toBe('SI.2026.01');
     expect(pagerText(v)).toContain('1–25 dari 60');
     // The header still counts every journal.
-    expect(v.textContent).toContain('60 total');
+    expect(v.textContent).toContain('60 jurnal');
 
     clickPage(v, 2);
     expect(v.querySelectorAll('#aj-tbody tr')).toHaveLength(25);
@@ -189,7 +189,7 @@ describe('Riwayat Kas & Bank', () => {
     const v = await open();
     const all = [w().idrFull(200000), w().idrFull(20000), w().idrFull(180000)];
     expect(stats(v)).toEqual(all);
-    expect(v.textContent).toContain('60 total');
+    expect(v.textContent).toContain('60 transaksi');
     clickPage(v, 2);
     clickPage(v, 3);
     expect(rows(v)).toHaveLength(10);

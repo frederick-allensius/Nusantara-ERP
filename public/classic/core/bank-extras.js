@@ -55,8 +55,6 @@
     }, 0);
   }
 
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
   // Pengeluaran Lain categories. 'Transport' was offered for a while next to
   // 'Transportasi'; records saved with it read as Transportasi everywhere (list,
   // recap, export) while the stored value stays as it is — see normCategory().
@@ -260,8 +258,6 @@
       partyLabel: 'Penerima',
       sheetName: 'Pengeluaran',
       fileName: 'Pengeluaran-Lain',
-      color: 'var(--danger)',
-      ledgerNote: 'Setiap pengeluaran dijurnal ke akun bebannya, jadi ikut masuk Laba Rugi.',
     },
     income: {
       collection: 'otherDeposits',
@@ -269,8 +265,6 @@
       partyLabel: 'Pembayar',
       sheetName: 'Penerimaan',
       fileName: 'Penerimaan-Lain',
-      color: 'var(--success)',
-      ledgerNote: 'Setiap penerimaan dijurnal ke akun pendapatannya, jadi ikut masuk Laba Rugi.',
     },
   };
   // Period shown per page: 'YYYY-MM' or 'all'. Starts at the current month.
@@ -454,7 +448,6 @@
         label: isAllPeriods(period) ? 'Total semua periode' : 'Total ' + recap.label,
         value: money(recap.total),
         sub: recap.count + ' transaksi',
-        color: k.color,
       },
     ];
     if (!isAllPeriods(period)) {
@@ -463,7 +456,6 @@
         label: 'Sepanjang waktu',
         value: money(overall.total),
         sub: overall.count + ' transaksi',
-        color: k.color,
       });
     }
     var body = recap.rows.length
@@ -476,7 +468,7 @@
               esc(c.accounts.map(accountText).join(', ')) +
               '</td><td class="t-num">' +
               c.count +
-              '</td><td class="t-num t-strong">' +
+              '</td><td class="t-num">' +
               money(c.amount) +
               '</td></tr>'
             );
@@ -503,11 +495,9 @@
       esc(addLabel) +
       '</button></div></div>' +
       statRowHTML(stats) +
-      '<div class="card"><div class="card-head"><div><div class="card-title">Rekap per kategori — ' +
+      '<div class="card"><div class="card-head"><div class="card-title">Rekap per kategori — ' +
       esc(recap.label) +
-      '</div><div class="card-sub">' +
-      esc(k.ledgerNote) +
-      '</div></div></div>' +
+      '</div></div>' +
       '<div class="table-wrap"><table class="data-table compact"><thead><tr><th>Kategori</th><th>Akun</th>' +
       '<th class="t-num">Transaksi</th><th class="t-num">Jumlah</th></tr></thead><tbody>' +
       body +
@@ -538,21 +528,21 @@
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(p.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p"><span class="doc-no">' +
               esc(p.number || p.id) +
-              '</td>' +
+              '</span></td>' +
               '<td class="td-p">' +
               esc(p.payee || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span class="cat">' +
               esc(normCategory(p.category) || '—') +
-              '</span><div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
+              '</span><div class="bank-sub">' +
               esc(accountLabel(p.accountNo || defaultAccountFor('expense', p.category))) +
               '</div></td>' +
               '<td class="td-p" style="font-size:.75rem">' +
               esc(p.method || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;color:var(--danger)">' +
+              '<td class="td-p t-num">' +
               money(p.amount) +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -576,30 +566,14 @@
       recapPageTopHTML(
         'expense',
         'Pengeluaran Lain',
-        'Biaya dan pengeluaran kas/bank di luar pembelian barang — otomatis dijurnal',
+        'Biaya kas/bank di luar pembelian barang; dijurnal ke akun beban, jadi ikut masuk Laba Rugi.',
         'addOP',
         '+ Catat Pengeluaran'
       ) +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">No.</th><th style="' +
-        TH +
-        '">Penerima</th>' +
-        '<th style="' +
-        TH +
-        '">Kategori</th><th style="' +
-        TH +
-        '">Metode</th><th style="' +
-        TH +
-        'text-align:right">Jumlah</th>' +
-        '<th style="' +
-        TH +
-        '">Keterangan</th><th style="' +
-        TH +
-        '"></th></tr></thead>' +
+        '<thead><tr><th>Tanggal</th><th>No.</th><th>Penerima</th>' +
+        '<th>Kategori</th><th>Metode</th><th class="t-num">Jumlah</th>' +
+        '<th>Keterangan</th><th></th></tr></thead>' +
         '<tbody>' +
         rows +
         '</tbody></table></div>'
@@ -694,21 +668,21 @@
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(d.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p"><span class="doc-no">' +
               esc(d.number || d.id) +
-              '</td>' +
+              '</span></td>' +
               '<td class="td-p">' +
               esc(d.payer || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span class="cat">' +
               esc(normCategory(d.category) || '—') +
-              '</span><div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
+              '</span><div class="bank-sub">' +
               esc(accountLabel(d.accountNo || defaultAccountFor('income', d.category))) +
               '</div></td>' +
               '<td class="td-p" style="font-size:.75rem">' +
               esc(d.method || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;color:var(--success)">' +
+              '<td class="td-p t-num">' +
               money(d.amount) +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -732,30 +706,14 @@
       recapPageTopHTML(
         'income',
         'Penerimaan Lain',
-        'Uang masuk ke kas/bank di luar penjualan barang — otomatis dijurnal',
+        'Uang masuk di luar penjualan barang; dijurnal ke akun pendapatan, jadi ikut masuk Laba Rugi.',
         'addOD',
         '+ Catat Penerimaan'
       ) +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">No.</th><th style="' +
-        TH +
-        '">Dari</th>' +
-        '<th style="' +
-        TH +
-        '">Kategori</th><th style="' +
-        TH +
-        '">Metode</th><th style="' +
-        TH +
-        'text-align:right">Jumlah</th>' +
-        '<th style="' +
-        TH +
-        '">Keterangan</th><th style="' +
-        TH +
-        '"></th></tr></thead>' +
+        '<thead><tr><th>Tanggal</th><th>No.</th><th>Dari</th>' +
+        '<th>Kategori</th><th>Metode</th><th class="t-num">Jumlah</th>' +
+        '<th>Keterangan</th><th></th></tr></thead>' +
         '<tbody>' +
         rows +
         '</tbody></table></div>'
@@ -853,9 +811,9 @@
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
               esc(t.date) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p"><span class="doc-no">' +
               esc(t.number || t.id) +
-              '</td>' +
+              '</span></td>' +
               '<td class="td-p" style="font-size:.75rem">' +
               esc(fromAcc ? fromAcc.name : t.fromAccountId) +
               '</td>' +
@@ -863,10 +821,10 @@
               '<td class="td-p" style="font-size:.75rem">' +
               esc(toAcc ? toAcc.name : t.toAccountId) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700">' +
+              '<td class="td-p t-num">' +
               money(t.amount) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-size:.75rem;color:var(--danger)">' +
+              '<td class="td-p t-num">' +
               (t.fee ? money(t.fee) : '—') +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -883,30 +841,12 @@
       : '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">Belum ada transfer antar rekening.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Transfer Antar Rekening</h1><p>Pemindahan dana antar rekening perusahaan — otomatis dijurnal</p></div>' +
+      '<div class="sec-hdr"><div><h1>Transfer Antar Rekening</h1><p>Otomatis dijurnal.</p></div>' +
         '<button class="btn" data-action="addBT">+ Buat Transfer</button></div>' +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">No.</th><th style="' +
-        TH +
-        '">Dari</th><th style="' +
-        TH +
-        '"></th>' +
-        '<th style="' +
-        TH +
-        '">Ke</th><th style="' +
-        TH +
-        'text-align:right">Jumlah</th><th style="' +
-        TH +
-        'text-align:right">Biaya</th>' +
-        '<th style="' +
-        TH +
-        '">Keterangan</th><th style="' +
-        TH +
-        '"></th></tr></thead>' +
+        '<thead><tr><th>Tanggal</th><th>No.</th><th>Dari</th><th></th>' +
+        '<th>Ke</th><th class="t-num">Jumlah</th><th class="t-num">Biaya</th>' +
+        '<th>Keterangan</th><th></th></tr></thead>' +
         '<tbody>' +
         rows +
         '</tbody></table></div>'
@@ -996,7 +936,7 @@
     var accRows = accounts
       .map(function (a) {
         return (
-          '<tr><td class="td-p" style="font-weight:700">' +
+          '<tr><td class="td-p">' +
           esc(a.name) +
           '</td>' +
           '<td class="td-p">' +
@@ -1005,7 +945,7 @@
           '<td class="td-p" style="font-size:.75rem">' +
           esc(a.accountNumber) +
           '</td>' +
-          '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--warning-bg);color:var(--warning)">Manual</span></td>' +
+          '<td class="td-p"><span class="badge badge-warning">Manual</span></td>' +
           '</tr>'
         );
       })
@@ -1017,9 +957,9 @@
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
         '<div style="width:44px;height:44px;border-radius:10px;background:var(--info-bg);display:flex;align-items:center;justify-content:center">' +
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
-        '<div><div style="font-weight:700">Status Koneksi</div>' +
+        '<div><div class="card-title">Status Koneksi</div>' +
         '<div style="font-size:.75rem;color:var(--muted)">Koneksi API perbankan</div></div>' +
-        '<span style="margin-left:auto;font-size:.75rem;font-weight:700;padding:4px 12px;background:var(--warning-bg);color:var(--warning);border-radius:6px">Belum Terhubung</span>' +
+        '<span class="badge badge-warning" style="margin-left:auto">Belum Terhubung</span>' +
         '</div>' +
         '<div style="padding:16px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);line-height:1.6">' +
         '<strong>Untuk mengaktifkan SmartLink e-Banking:</strong><br>' +
@@ -1029,7 +969,7 @@
         '<em style="color:var(--danger)">Catatan: Integrasi langsung memerlukan kontrak bisnis dengan bank.</em>' +
         '</div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Konfigurasi API</div>' +
+        '<div class="card-head"><div class="card-title">Konfigurasi API</div></div>' +
         '<div class="form-row">' +
         '<div class="form-group"><label class="form-label">Kode Bank</label>' +
         '<input class="form-input" id="sl-bank" value="' +
@@ -1047,18 +987,10 @@
         '<div style="display:flex;gap:10px;margin-top:12px">' +
         '<button class="btn" id="saveSmartLink">Simpan Konfigurasi</button>' +
         '<button class="btn-ghost" id="testSmartLink">Test Koneksi</button></div></div>' +
-        '<div class="card"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Rekening Terdaftar</div>' +
+        '<div class="card"><div class="card-head"><div class="card-title">Rekening Terdaftar</div></div>' +
         '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
-        '<th style="' +
-        TH +
-        '">Nama Rekening</th><th style="' +
-        TH +
-        '">Bank</th>' +
-        '<th style="' +
-        TH +
-        '">No. Rekening</th><th style="' +
-        TH +
-        '">Status</th>' +
+        '<th>Nama Rekening</th><th>Bank</th>' +
+        '<th>No. Rekening</th><th>Status</th>' +
         '</tr></thead><tbody>' +
         accRows +
         '</tbody></table></div>'
@@ -1104,9 +1036,9 @@
             }, 0);
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p"><span class="doc-no">' +
               esc(s.id) +
-              '</td>' +
+              '</span></td>' +
               '<td class="td-p">' +
               esc(acc ? acc.name : s.accountId) +
               '</td>' +
@@ -1116,10 +1048,10 @@
               '<td class="td-p" style="text-align:center">' +
               entryCount +
               ' baris</td>' +
-              '<td class="td-p" style="text-align:right;color:var(--danger)">' +
+              '<td class="td-p t-num">' +
               money(totalDebit) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;color:var(--success)">' +
+              '<td class="td-p t-num">' +
               money(totalCredit) +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
@@ -1139,26 +1071,12 @@
       : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Belum ada rekening koran diinput.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Rekening Koran</h1><p>Rekening koran per rekening dan periode</p></div>' +
+      '<div class="sec-hdr"><div><h1>Rekening Koran</h1></div>' +
         '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div>' +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">ID</th><th style="' +
-        TH +
-        '">Rekening</th><th style="' +
-        TH +
-        '">Periode</th>' +
-        '<th style="' +
-        TH +
-        'text-align:center">Baris</th><th style="' +
-        TH +
-        'text-align:right">Total Debit</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">Total Kredit</th><th style="' +
-        TH +
-        '"></th></tr></thead>' +
+        '<thead><tr><th>ID</th><th>Rekening</th><th>Periode</th>' +
+        '<th style="text-align:center">Baris</th><th class="t-num">Total Debit</th>' +
+        '<th class="t-num">Total Kredit</th><th></th></tr></thead>' +
         '<tbody>' +
         rows +
         '</tbody></table></div>'
@@ -1376,14 +1294,14 @@
     var rows =
       pg.rows
         .map(function (e) {
-          var flowColor = e.flow === 'in' ? 'var(--success)' : e.flow === 'out' ? 'var(--danger)' : 'var(--muted)';
+          // Money out is the negative movement: red, the rest plain.
           var prefix = e.flow === 'in' ? '+' : e.flow === 'out' ? '−' : '⇄';
           return (
             '<tr>' +
             '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
             esc(e.date) +
             '</td>' +
-            '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+            '<td class="td-p"><span class="cat">' +
             esc(e.type) +
             '</span></td>' +
             '<td class="td-p" style="font-size:.75rem">' +
@@ -1392,8 +1310,8 @@
             '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             esc(e.method) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;font-weight:700;color:' +
-            flowColor +
+            '<td class="td-p t-num' +
+            (e.flow === 'out' ? ' fin-neg' : '') +
             '">' +
             prefix +
             ' ' +
@@ -1410,20 +1328,8 @@
 
     return (
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr><th style="' +
-      TH +
-      '">Tanggal</th><th style="' +
-      TH +
-      '">Tipe</th><th style="' +
-      TH +
-      '">Referensi</th>' +
-      '<th style="' +
-      TH +
-      '">Metode</th><th style="' +
-      TH +
-      'text-align:right">Jumlah</th><th style="' +
-      TH +
-      '">Keterangan</th></tr></thead>' +
+      '<thead><tr><th>Tanggal</th><th>Tipe</th><th>Referensi</th>' +
+      '<th>Metode</th><th class="t-num">Jumlah</th><th>Keterangan</th></tr></thead>' +
       '<tbody>' +
       rows +
       '</tbody></table></div>' +
@@ -1451,18 +1357,18 @@
       }, 0);
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Riwayat Kas &amp; Bank</h1><p>Riwayat seluruh transaksi kas &amp; bank (' +
+      '<div class="sec-hdr"><div><h1>Riwayat Kas &amp; Bank</h1><p>' +
         entries.length.toLocaleString('id-ID') +
-        ' total)</p></div></div>' +
+        ' transaksi, terbaru di atas</p></div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val" style="color:var(--success)">' +
+        '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val">' +
         money(totalIn) +
         '</div><div class="stat-sub">Pelanggan, uang muka &amp; penerimaan lain</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Total Keluar</div><div class="stat-val" style="color:var(--danger)">' +
+        '<div class="card stat-card"><div class="stat-label">Total Keluar</div><div class="stat-val">' +
         money(totalOut) +
         '</div><div class="stat-sub">Supplier, uang muka &amp; pengeluaran lain</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Net Posisi</div><div class="stat-val" style="color:' +
-        (totalIn - totalOut >= 0 ? 'var(--success)' : 'var(--danger)') +
+        '<div class="card stat-card"><div class="stat-label">Net Posisi</div><div class="stat-val' +
+        (totalIn - totalOut < 0 ? ' fin-neg' : '') +
         '">' +
         money(Math.abs(totalIn - totalOut)) +
         '</div><div class="stat-sub">' +
@@ -1826,7 +1732,7 @@
 
     if (!statements.length) {
       injectView(
-        '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan buku besar</p></div>' +
+        '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1></div>' +
           '<div><button class="btn-ghost" data-action="bxChargeNew">Catat biaya bank</button></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
           '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
@@ -1872,10 +1778,10 @@
             '<td class="td-p" style="font-size:.75rem">' +
             esc(e.description) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:var(--danger)">' +
+            '<td class="td-p t-num">' +
             (e.debit ? money(e.debit) : '—') +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:var(--success)">' +
+            '<td class="td-p t-num">' +
             (e.credit ? money(e.credit) : '—') +
             '</td>' +
             '<td class="td-p">' +
@@ -1948,7 +1854,7 @@
     }
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1><p>Pencocokan rekening koran dengan transaksi sistem</p></div>' +
+      '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1></div>' +
         '<div>' +
         (statements.length > 1
           ? '<select class="form-select" data-action="bxReconcileSel" aria-label="Rekening koran" style="width:auto;min-width:14rem">' +
@@ -1960,13 +1866,13 @@
         '">Catat biaya bank</button></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
-        '<div><div style="font-size:.75rem;color:var(--muted)">Rekening</div><div style="font-weight:700">' +
+        '<div><div class="bank-sub">Rekening</div><div>' +
         esc(acc ? acc.name : latestBS.accountId) +
         '</div></div>' +
-        '<div><div style="font-size:.75rem;color:var(--muted)">Periode</div><div style="font-weight:700">' +
+        '<div><div class="bank-sub">Periode</div><div>' +
         esc(latestBS.period) +
         '</div></div>' +
-        '<div><div style="font-size:.75rem;color:var(--muted)">Progress</div><div style="font-weight:700">' +
+        '<div><div class="bank-sub">Progress</div><div>' +
         reconciledCount +
         '/' +
         bsEntries.length +
@@ -2013,22 +1919,10 @@
         ]) +
         notice +
         '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">Keterangan Bank</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">Debit</th><th style="' +
-        TH +
-        'text-align:right">Kredit</th>' +
-        '<th style="' +
-        TH +
-        '">Dicatat</th>' +
-        '<th style="' +
-        TH +
-        'text-align:center">Cocok ✓</th></tr></thead>' +
+        '<thead><tr><th>Tanggal</th><th>Keterangan Bank</th>' +
+        '<th class="t-num">Debit</th><th class="t-num">Kredit</th>' +
+        '<th>Dicatat</th>' +
+        '<th style="text-align:center">Cocok ✓</th></tr></thead>' +
         '<tbody>' +
         bsRows +
         '</tbody></table></div>'
@@ -2111,9 +2005,9 @@
               esc(e.date) +
               '</td><td class="td-p">' +
               esc(e.description) +
-              '</td><td class="td-p" style="text-align:right;color:var(--danger)">' +
+              '</td><td class="td-p t-num">' +
               (e.debit ? money(e.debit) : '—') +
-              '</td><td class="td-p" style="text-align:right;color:var(--success)">' +
+              '</td><td class="td-p t-num">' +
               (e.credit ? money(e.credit) : '—') +
               '</td></tr>'
             );
@@ -2121,15 +2015,7 @@
           .join('');
         modal(
           'Rekening Koran — ' + s.id,
-          '<table style="width:100%;border-collapse:collapse"><thead><tr><th style="' +
-            TH +
-            '">Tanggal</th><th style="' +
-            TH +
-            '">Keterangan</th><th style="' +
-            TH +
-            'text-align:right">Debit</th><th style="' +
-            TH +
-            'text-align:right">Kredit</th></tr></thead><tbody>' +
+          '<table style="width:100%;border-collapse:collapse"><thead><tr><th>Tanggal</th><th>Keterangan</th><th class="t-num">Debit</th><th class="t-num">Kredit</th></tr></thead><tbody>' +
             eRows +
             '</tbody></table>',
           '<button class="btn-ghost" data-action="closeModal">Tutup</button>',

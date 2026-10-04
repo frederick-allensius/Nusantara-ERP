@@ -92,9 +92,9 @@
       .map(function (b) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+          '<td class="td-p"><span class="doc-no">' +
           esc(b.id) +
-          '</td>' +
+          '</span></td>' +
           '<td class="td-p">' +
           esc(b.accountCode) +
           ' — ' +
@@ -103,7 +103,7 @@
           '<td class="td-p">' +
           esc(b.period) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-weight:700">' +
+          '<td class="td-p t-num">' +
           money(b.amount) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -128,19 +128,14 @@
 
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Anggaran',
-            'Penyusunan anggaran per akun & periode',
-            'Tambah Budget',
-            'addBudget'
-          )
+        ? window.secHdr('Anggaran', '', 'Tambah Budget', 'addBudget')
         : '<h1>Budget</h1>';
 
     var stats =
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total Budget', value: budgets.length + ' item', sub: 'Anggaran terdaftar' },
-            { label: 'Total Nilai', value: money(total), sub: 'Seluruh periode', color: 'var(--primary)' },
+            { label: 'Total Nilai', value: money(total), sub: 'Seluruh periode' },
           ])
         : '';
 
@@ -285,8 +280,10 @@
       var actual = Math.abs(calcActualForAccount(g.code, periodFrom, periodTo));
       var variance = g.budgetTotal - actual;
       var pct = g.budgetTotal > 0 ? Math.round((actual / g.budgetTotal) * 100) : 0;
+      // The bar shows the status (red over budget, amber above 80%); the figures
+      // stay plain except an overspent variance.
       var color = pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--success)';
-      var varColor = variance < 0 ? 'var(--danger)' : 'var(--success)';
+      var pctClass = pct > 100 ? ' fin-neg' : pct > 80 ? ' budget-warn' : '';
       totalBudget += g.budgetTotal;
       totalActual += actual;
 
@@ -294,31 +291,29 @@
 
       return (
         '<tr>' +
-        '<td class="td-p" style="font-weight:600">' + esc(g.code) + '</td>' +
+        '<td class="td-p acct-no">' + esc(g.code) + '</td>' +
         '<td class="td-p">' + esc(g.name) + '</td>' +
         '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' + esc(periodList) + '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700">' + money(g.budgetTotal) + '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700">' + money(actual) + '</td>' +
-        '<td class="td-p" style="text-align:right;font-weight:700;color:' + varColor + '">' + money(variance) + '</td>' +
+        '<td class="td-p t-num">' + money(g.budgetTotal) + '</td>' +
+        '<td class="td-p t-num">' + money(actual) + '</td>' +
+        '<td class="td-p t-num' + (variance < 0 ? ' fin-neg' : '') + '">' + money(variance) + '</td>' +
         '<td class="td-p"><div style="display:flex;align-items:center;gap:8px">' +
         '<div style="flex:1;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden">' +
         '<div style="height:100%;width:' + Math.min(pct, 100) + '%;background:' + color + ';border-radius:4px"></div></div>' +
-        '<span style="font-size:.75rem;font-weight:700;color:' + color + '">' + pct + '%</span></div></td>' +
+        '<span class="budget-pct' + pctClass + '">' + pct + '%</span></div></td>' +
         '</tr>'
       );
     }).join('');
 
     var totalVariance = totalBudget - totalActual;
     var totalPct = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
-    var totalColor = totalVariance < 0 ? 'var(--danger)' : 'var(--success)';
-
     var footer = rows ?
-      '<tfoot><tr style="border-top:2px solid var(--border);background:var(--bg)">' +
-      '<td class="td-p" colspan="3" style="font-weight:700">TOTAL</td>' +
-      '<td class="td-p" style="text-align:right;font-weight:700">' + money(totalBudget) + '</td>' +
-      '<td class="td-p" style="text-align:right;font-weight:700">' + money(totalActual) + '</td>' +
-      '<td class="td-p" style="text-align:right;font-weight:700;color:' + totalColor + '">' + money(totalVariance) + '</td>' +
-      '<td class="td-p" style="font-weight:700;font-size:.75rem">' + totalPct + '%</td>' +
+      '<tfoot><tr class="budget-total">' +
+      '<td class="td-p" colspan="3">TOTAL</td>' +
+      '<td class="td-p t-num">' + money(totalBudget) + '</td>' +
+      '<td class="td-p t-num">' + money(totalActual) + '</td>' +
+      '<td class="td-p t-num' + (totalVariance < 0 ? ' fin-neg' : '') + '">' + money(totalVariance) + '</td>' +
+      '<td class="td-p">' + totalPct + '%</td>' +
       '</tr></tfoot>' : '';
 
     return { rows: rows, footer: footer, totalBudget: totalBudget, totalActual: totalActual, count: filtered.length };
@@ -342,8 +337,8 @@
       typeof window.statRow === 'function'
         ? window.statRow([
             { label: 'Total Budget', value: money(result.totalBudget), sub: result.count + ' item anggaran' },
-            { label: 'Total Realisasi', value: money(result.totalActual), sub: 'Dari jurnal GL', color: 'var(--primary)' },
-            { label: 'Over Budget', value: String(overBudget), sub: 'Akun melebihi anggaran', color: overBudget > 0 ? 'var(--danger)' : 'var(--success)' },
+            { label: 'Total Realisasi', value: money(result.totalActual), sub: 'Dari jurnal GL' },
+            { label: 'Over Budget', value: String(overBudget), sub: 'Akun melebihi anggaran', color: overBudget > 0 ? 'var(--danger)' : '' },
           ])
         : '';
 
@@ -411,7 +406,7 @@
           '<td class="td-p">' +
           esc(t.toAccount) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-weight:700">' +
+          '<td class="td-p t-num">' +
           money(t.amount) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -424,17 +419,12 @@
 
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Transfer Anggaran',
-            'Pemindahan anggaran antar akun',
-            'Transfer Baru',
-            'newBudgetTransfer'
-          )
+        ? window.secHdr('Transfer Anggaran', '', 'Transfer Baru', 'newBudgetTransfer')
         : '<h1>Budget Transfer</h1>';
 
     var html =
       header +
-      '<div class="card"><div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Riwayat Transfer</div>' +
+      '<div class="card"><div class="card-head"><div class="card-title">Riwayat Transfer</div></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>Tanggal</th><th>Dari Akun</th><th>Ke Akun</th><th style="text-align:right">Jumlah</th><th>Catatan</th></tr></thead>' +
       '<tbody>' +
@@ -553,7 +543,7 @@
 
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr('Riwayat Akun', 'Riwayat transaksi per akun buku besar')
+        ? window.secHdr('Riwayat Akun', '')
         : '<h1>Riwayat Akun</h1>';
 
     var acOptions = accounts
@@ -567,7 +557,7 @@
     var html =
       header +
       '<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-      '<label style="font-size:.75rem;font-weight:700">Pilih Akun</label>' +
+      '<label class="budget-label" for="ah-account">Pilih Akun</label>' +
       '<select id="ah-account" class="form-select" style="min-width:280px">' +
       acOptions +
       '</select>' +
@@ -619,19 +609,19 @@
               '<td class="td-p" style="font-size:.75rem">' +
               esc(j.date) +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">' +
+              '<td class="td-p"><span class="doc-no">' +
               esc(j.number || j.id || '—') +
-              '</td>' +
+              '</span></td>' +
               '<td class="td-p" style="font-size:.75rem">' +
               esc(l.memo || j.memo || j.description || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right">' +
+              '<td class="td-p t-num">' +
               (d ? money(d) : '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right">' +
+              '<td class="td-p t-num">' +
               (c ? money(c) : '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700">' +
+              '<td class="td-p t-num">' +
               money(runningBalance) +
               '</td>' +
               '</tr>'
@@ -652,24 +642,24 @@
     });
 
     result.innerHTML =
-      '<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:10px">' +
-      '<div style="font-size:.875rem;font-weight:700">Riwayat Transaksi (' +
+      '<div class="card"><div class="card-head">' +
+      '<div class="card-title">Riwayat Transaksi <span class="t-muted budget-count">(' +
       filtered.length +
-      ' jurnal)</div>' +
-      '<div style="font-size:.75rem;color:var(--muted)">Saldo: <strong>' +
+      ' jurnal)</span></div>' +
+      '<div class="t-muted budget-sm">Saldo: ' +
       money(runningBalance) +
-      '</strong></div></div>' +
+      '</div></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>Tanggal</th><th>No. Jurnal</th><th>Keterangan</th><th style="text-align:right">Debit</th><th style="text-align:right">Kredit</th><th style="text-align:right">Saldo</th></tr></thead>' +
       '<tbody>' +
       (rows ||
         '<tr><td colspan="6" class="td-empty">Tidak ada transaksi untuk akun ini.</td></tr>') +
       '</tbody>' +
-      '<tfoot><tr style="font-weight:700;border-top:2px solid var(--border)"><td colspan="3">Total</td><td style="text-align:right">' +
+      '<tfoot><tr class="budget-total"><td colspan="3">Total</td><td class="t-num">' +
       money(totalDebit) +
-      '</td><td style="text-align:right">' +
+      '</td><td class="t-num">' +
       money(totalCredit) +
-      '</td><td style="text-align:right">' +
+      '</td><td class="t-num">' +
       money(runningBalance) +
       '</td></tr></tfoot>' +
       '</table></div></div>';
@@ -687,13 +677,13 @@
       .map(function (a) {
         var statusBadge =
           a.status === 'Posted'
-            ? '<span class="badge" style="background:var(--info-bg);color:var(--info)">Diposting</span>'
-            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>';
+            ? '<span class="badge badge-info">Diposting</span>'
+            : '<span class="badge badge-warning">Draft</span>';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+          '<td class="td-p"><span class="doc-no">' +
           esc(a.id) +
-          '</td>' +
+          '</span></td>' +
           '<td class="td-p" style="font-size:.75rem">' +
           esc(a.date) +
           '</td>' +
@@ -705,7 +695,7 @@
           '<td class="td-p">' +
           esc(a.description) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-weight:700">' +
+          '<td class="td-p t-num">' +
           money(a.amount) +
           '</td>' +
           '<td class="td-p">' +
@@ -854,10 +844,10 @@
         var gross = (e.salary || 0) + (e.transportAllowance || 0) + (e.mealAllowance || 0);
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+          '<td class="td-p"><span class="doc-no">' +
           esc(e.id) +
-          '</td>' +
-          '<td class="td-p" style="font-weight:700">' +
+          '</span></td>' +
+          '<td class="td-p">' +
           esc(e.name) +
           '</td>' +
           '<td class="td-p">' +
@@ -872,7 +862,7 @@
           '<td class="td-p" style="text-align:right">' +
           money(e.mealAllowance || 0) +
           '</td>' +
-          '<td class="td-p" style="text-align:right;font-weight:700">' +
+          '<td class="td-p t-num">' +
           money(gross) +
           '</td>' +
           '<td class="td-p">' +
@@ -895,31 +885,31 @@
       .map(function (r) {
         var statusBadge;
         if (r.paid) {
-          statusBadge = '<span class="badge" style="background:var(--success-bg);color:var(--success)">Dibayar</span>';
+          statusBadge = '<span class="badge badge-success">Dibayar</span>';
         } else if (r.posted) {
-          statusBadge = '<span class="badge" style="background:var(--info-bg);color:var(--info)">Diposting</span>';
+          statusBadge = '<span class="badge badge-info">Diposting</span>';
         } else {
-          statusBadge = '<span class="badge" style="background:var(--surface-sunken);color:var(--text-secondary)">Draft</span>';
+          statusBadge = '<span class="badge badge-neutral">Draft</span>';
         }
         var actions = '';
         if (!r.posted) {
           actions += '<button class="action-ghost" data-action="postPayroll" data-id="' + esc(r.id) + '">Posting ke Jurnal</button> ';
         }
         if (r.posted && !r.paid) {
-          actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '" style="color:var(--success)">Bayar</button> ';
+          actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '">Bayar</button> ';
         }
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+          '<td class="td-p"><span class="doc-no">' +
           esc(r.id) +
-          '</td>' +
+          '</span></td>' +
           '<td class="td-p">' +
           esc(r.period) +
           '</td>' +
           '<td class="td-p">' +
           r.employeeCount +
           ' karyawan</td>' +
-          '<td class="td-p" style="text-align:right;font-weight:700">' +
+          '<td class="td-p t-num">' +
           money(r.totalAmount) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
@@ -938,12 +928,7 @@
 
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Penggajian',
-            'Kelola karyawan dan proses gaji bulanan',
-            'Tambah Karyawan',
-            'addEmployee'
-          )
+        ? window.secHdr('Penggajian', '', 'Tambah Karyawan', 'addEmployee')
         : '<h1>Penggajian</h1>';
 
     var postedCount = payrollRuns.filter(function (r) { return r.posted; }).length;
@@ -958,26 +943,25 @@
               label: 'Total Gaji/bln',
               value: money(totalPayroll),
               sub: 'Gaji + tunjangan',
-              color: 'var(--primary)',
             },
             { label: 'Proses Gaji', value: String(payrollRuns.length), sub: postedCount + ' diposting, ' + paidCount + ' dibayar' },
-            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Diposting, belum dibayar', color: unpaidPosted > 0 ? 'var(--warning)' : 'var(--success)' },
+            { label: 'Belum Bayar', value: String(unpaidPosted), sub: 'Diposting, belum dibayar', color: unpaidPosted > 0 ? 'var(--warning)' : '' },
           ])
         : '';
 
     var html =
       header +
       stats +
-      '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:.875rem;font-weight:700">Data Karyawan</div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-head">' +
+      '<div class="card-title">Data Karyawan</div></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>ID</th><th>Nama</th><th>Jabatan</th><th style="text-align:right">Gaji Pokok</th><th style="text-align:right">T. Transport</th><th style="text-align:right">T. Makan</th><th style="text-align:right">Total</th><th>Aksi</th></tr></thead>' +
       '<tbody>' +
       (empRows || '<tr><td colspan="8" class="td-empty">Belum ada data karyawan.</td></tr>') +
       '</tbody>' +
       '</table></div></div>' +
-      '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:.875rem;font-weight:700">Riwayat Proses Gaji</div>' +
+      '<div class="card"><div class="card-head">' +
+      '<div class="card-title">Riwayat Proses Gaji</div>' +
       '<button class="btn" data-action="runPayroll" style="font-size:.75rem">Proses Gaji</button></div>' +
       '<div class="table-wrap"><table style="width:100%">' +
       '<thead><tr><th>ID</th><th>Periode</th><th>Karyawan</th><th style="text-align:right">Total</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>' +
@@ -1435,16 +1419,16 @@
             '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
             esc(j.date || '') +
             '</td>' +
-            '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+            '<td class="td-p"><span class="doc-no">' +
             esc(j.number || j.ref || j.id || '') +
-            '</td>' +
+            '</span></td>' +
             '<td class="td-p" style="font-size:.75rem">' +
             esc(j.memo || j.description || '—') +
             '</td>' +
             '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
             accList +
             '</td>' +
-            '<td class="td-p" style="text-align:right;font-weight:700;font-size:.75rem">' +
+            '<td class="td-p t-num budget-sm">' +
             money(debitTotal) +
             '</td>' +
             '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -1487,14 +1471,11 @@
         })
         .join('');
 
-    var TH =
-      'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
-
     injectView(
       'finance',
-      '<div class="sec-hdr"><div><h1>Audit Jurnal</h1><p>Semua entri jurnal — ' +
+      '<div class="sec-hdr"><div><h1>Audit Jurnal</h1><p>' +
         journals.length.toLocaleString('id-ID') +
-        ' total</p></div></div>' +
+        ' jurnal, terbaru di atas</p></div></div>' +
         '<div class="card" style="margin-bottom:12px">' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
         '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Dari</label>' +
@@ -1514,21 +1495,9 @@
         '<div style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
         '<thead><tr>' +
-        '<th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">Referensi</th>' +
-        '<th style="' +
-        TH +
-        '">Memo</th><th style="' +
-        TH +
-        '">Akun</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">Jumlah</th><th style="' +
-        TH +
-        '">Sumber</th>' +
+        '<th>Tanggal</th><th>Referensi</th>' +
+        '<th>Memo</th><th>Akun</th>' +
+        '<th class="t-num">Jumlah</th><th>Sumber</th>' +
         '</tr></thead>' +
         '<tbody id="aj-tbody">' +
         first.rows +

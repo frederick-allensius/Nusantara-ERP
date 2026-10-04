@@ -67,57 +67,57 @@
   }
 
   // ── Trial Balance tab ───────────────────────────────────────────────────────
+  // Account rows in regular weight; only the TOTAL row is bold (style.css .gl-…).
   function trialTab() {
     const tb = window.GL
       ? window.GL.trialBalance()
       : { rows: [], totalDebit: 0, totalCredit: 0, balanced: true };
     const rows =
       tb.rows.length === 0
-        ? `<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--muted);font-size:.8125rem">
+        ? `<tr><td colspan="4" class="gl-empty">
              Belum ada jurnal. Saldo akun terbentuk saat dokumen diposting atau jurnal umum dicatat.
            </td></tr>`
         : tb.rows
             .map(
-              r => `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(r.no)}</td>
-          <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${esc(r.name)}
-            <span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
-          <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600">${r.debit ? money(r.debit) : '—'}</td>
-          <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:600">${r.credit ? money(r.credit) : '—'}</td>
+              r => `<tr>
+          <td class="acct-no">${esc(r.no)}</td>
+          <td>${esc(r.name)}<span class="t-muted"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
+          <td class="t-num">${r.debit ? money(r.debit) : '—'}</td>
+          <td class="t-num">${r.credit ? money(r.credit) : '—'}</td>
         </tr>`
             )
             .join('');
 
+    // The two totals repeat the TOTAL row below; kept, but quiet (.gl-recap).
     return `
     ${
       typeof window.statRow === 'function'
-        ? window.statRow([
-            { label: 'Total Debit', value: money(tb.totalDebit), sub: 'Seluruh akun' },
-            { label: 'Total Kredit', value: money(tb.totalCredit), sub: 'Seluruh akun' },
+        ? `<div class="gl-recap">${window.statRow([
+            { label: 'Total Debit', value: money(tb.totalDebit), sub: '' },
+            { label: 'Total Kredit', value: money(tb.totalCredit), sub: '' },
             {
               label: 'Status',
               value: tb.balanced ? 'Seimbang ✓' : 'Tidak Seimbang',
               sub: tb.balanced ? 'Debit = Kredit' : 'Periksa jurnal',
               color: tb.balanced ? 'var(--success)' : 'var(--danger)',
             },
-          ])
+          ])}</div>`
         : ''
     }
     <div class="card">
-      <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Neraca Saldo</div>
       <div class="table-wrap">
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:var(--bg)">
-            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kode</th>
-            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama Akun</th>
-            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:150px">Debit</th>
-            <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:150px">Kredit</th>
+        <table class="gl-tb">
+          <thead><tr>
+            <th class="gl-col-code">Kode</th>
+            <th>Nama Akun</th>
+            <th class="t-num gl-col-amt">Debit</th>
+            <th class="t-num gl-col-amt">Kredit</th>
           </tr></thead>
           <tbody>${rows}</tbody>
-          <tfoot><tr style="border-top:2px solid var(--border)">
-            <td colspan="2" style="padding:9px 10px;font-size:.75rem;font-weight:800;text-align:right">TOTAL</td>
-            <td style="padding:9px 10px;font-size:.8125rem;font-weight:800;text-align:right">${money(tb.totalDebit)}</td>
-            <td style="padding:9px 10px;font-size:.8125rem;font-weight:800;text-align:right">${money(tb.totalCredit)}</td>
+          <tfoot><tr class="gl-total">
+            <td colspan="2" class="gl-total-label">TOTAL</td>
+            <td class="t-num">${money(tb.totalDebit)}</td>
+            <td class="t-num">${money(tb.totalCredit)}</td>
           </tr></tfoot>
         </table>
       </div>
@@ -146,7 +146,7 @@
       )
       .join('');
     const head = `<div class="card-head">
-        <div class="card-title">Daftar Jurnal <span class="t-muted">(${journals.length})</span></div>
+        <div class="gl-count t-muted">${journals.length} jurnal</div>
         <div class="seg-tabs seg-tabs-sm" role="tablist" aria-label="Sumber jurnal">${filters}</div>
       </div>`;
     if (journals.length === 0) {
@@ -171,26 +171,27 @@
         const lines = (j.lines || [])
           .map(
             l => `<tr>
-            <td class="jv-code" style="padding:4px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(l.accountNo)}</td>
-            <td style="padding:4px 10px;font-size:.75rem">${esc(l.accountName)}${l.memo ? `<span style="color:var(--muted);font-size:.75rem"> · ${esc(l.memo)}</span>` : ''}</td>
-            <td class="jv-debit" style="padding:4px 10px;font-size:.75rem;text-align:right;white-space:nowrap">${l.debit ? money(l.debit) : ''}</td>
-            <td class="jv-credit" style="padding:4px 10px;font-size:.75rem;text-align:right;white-space:nowrap">${l.credit ? money(l.credit) : ''}</td>
+            <td class="jv-code acct-no">${esc(l.accountNo)}</td>
+            <td>${esc(l.accountName)}${l.memo ? `<span class="t-muted"> · ${esc(l.memo)}</span>` : ''}</td>
+            <td class="jv-debit t-num">${l.debit ? money(l.debit) : ''}</td>
+            <td class="jv-credit t-num">${l.credit ? money(l.credit) : ''}</td>
           </tr>`
           )
           .join('');
-        return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg)">
-            <div style="font-size:.75rem;font-weight:700">${esc(j.number || j.id)}
-              <span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(src)}</span></div>
-            <div class="jv-date" style="font-size:.75rem;color:var(--muted)">${esc(j.date || '')}</div>
+        // One box per journal (style.css .gl-jv): number and source on top, the
+        // lines in regular weight, only the Total row bold.
+        return `<div class="gl-jv">
+          <div class="gl-jv-head">
+            <div><span class="doc-no">${esc(j.number || j.id)}</span><span class="t-muted"> · ${esc(src)}</span></div>
+            <div class="jv-date t-muted">${esc(j.date || '')}</div>
           </div>
-          <div class="jv-scroll"><table class="jv-lines" style="width:100%;border-collapse:collapse">
+          <div class="jv-scroll"><table class="jv-lines">
             <tbody>${lines}</tbody>
-            <tfoot><tr style="border-top:1px solid var(--border)">
+            <tfoot><tr class="gl-total">
               <td class="jv-code"></td>
-              <td style="padding:5px 10px;font-size:.75rem;font-weight:700;text-align:right;color:var(--muted)">Total</td>
-              <td class="jv-debit" style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right;white-space:nowrap">${money(j.totals ? j.totals.debit : 0)}</td>
-              <td class="jv-credit" style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right;white-space:nowrap">${money(j.totals ? j.totals.credit : 0)}</td>
+              <td class="gl-total-label">Total</td>
+              <td class="jv-debit t-num">${money(j.totals ? j.totals.debit : 0)}</td>
+              <td class="jv-credit t-num">${money(j.totals ? j.totals.credit : 0)}</td>
             </tr></tfoot>
           </table></div>
         </div>`;
@@ -212,22 +213,23 @@
     const chart = db().accountsChart || [];
     const rows = chart
       .map(
-        a => `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:7px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(a.no)}</td>
-        <td style="padding:7px 10px;font-size:.75rem;font-weight:600">${esc(a.name)}</td>
-        <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${esc(TYPE_LABEL[a.type] || a.type)}</td>
-        <td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${esc(a.currency || 'IDR')}</td>
+        a => `<tr>
+        <td class="acct-no">${esc(a.no)}</td>
+        <td>${esc(a.name)}</td>
+        <td class="t-muted">${esc(TYPE_LABEL[a.type] || a.type)}</td>
+        <td class="t-num t-muted">${esc(a.currency || 'IDR')}</td>
       </tr>`
       )
       .join('');
+    // The tab already names the list; the card head only carries the count.
     return `<div class="card">
-      <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Bagan Akun (${chart.length})</div>
-      <div class="table-wrap"><table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:var(--bg)">
-          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kode</th>
-          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama Akun</th>
-          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left;width:170px">Tipe</th>
-          <th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;width:70px">Mata Uang</th>
+      <div class="gl-count t-muted">${chart.length} akun</div>
+      <div class="table-wrap"><table class="gl-tb">
+        <thead><tr>
+          <th class="gl-col-code">Kode</th>
+          <th>Nama Akun</th>
+          <th class="gl-col-type">Tipe</th>
+          <th class="t-num gl-col-cur">Mata Uang</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
@@ -237,12 +239,7 @@
   function renderLedger() {
     const header =
       typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Buku Besar',
-            'Neraca saldo, jurnal, dan bagan akun',
-            'Buat Jurnal Umum',
-            'glPostJV'
-          )
+        ? window.secHdr('Buku Besar', '', 'Buat Jurnal Umum', 'glPostJV')
         : '<h1>Buku Besar</h1>';
     let bodyHtml = '';
     if (activeTab === 'journals') {

@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════
-//  TAX EXTRAS  — Ekspor Coretax (faktur pajak keluaran), Tax Invoice Email,
-//  e-Faktur format lama
+//  TAX EXTRAS  — Pajak & PPN page, Ekspor Coretax (faktur pajak keluaran),
+//  Tax Invoice Email, e-Faktur format lama
 // ══════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -29,9 +29,6 @@
   function closeM() {
     window.closeModal && window.closeModal();
   }
-
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
 
   function injectView(html) {
     window.invalidateView && window.invalidateView('tax');
@@ -327,6 +324,155 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // § 0  PAJAK & PPN (view 'tax')
+  // ══════════════════════════════════════════════════════════════════════════
+  // Page renderer of the tax view. It takes the place of renderTax() in
+  // erp-view.js (getRenderer() resolves the global when the view renders) and
+  // shows the same figures from calcTaxSummary() in a quieter layout: plain
+  // figures, regular-weight rows, and the explanations behind a "Penjelasan"
+  // toggle (style.css .tax-…).
+  function taxFact(label, value) {
+    return (
+      '<div class="tax-fact"><span class="t-muted">' +
+      esc(label) +
+      '</span><span class="t-num">' +
+      esc(value) +
+      '</span></div>'
+    );
+  }
+
+  function taxExplain(text) {
+    return (
+      '<details class="tax-explain"><summary>Penjelasan</summary><p>' +
+      esc(text) +
+      '</p></details>'
+    );
+  }
+
+  function taxDocCard(title, docs, partyKey, emptyText) {
+    var body = docs.length
+      ? docs
+          .map(function (o) {
+            var num =
+              typeof window.docNum === 'function' ? window.docNum(o.number, o.id) : o.number || o.id;
+            return (
+              '<div class="tax-doc"><div><div class="doc-no">' +
+              esc(num) +
+              '</div><div class="tax-doc-sub">' +
+              esc(o[partyKey] || '—') +
+              ' · ' +
+              esc(o.date || '—') +
+              '</div></div><div class="t-num">' +
+              money(o.amount || 0) +
+              '</div></div>'
+            );
+          })
+          .join('')
+      : '<div class="tax-none">' + esc(emptyText) + '</div>';
+    return (
+      '<div class="card"><div class="card-head"><div class="card-title">' +
+      esc(title) +
+      '</div></div>' +
+      body +
+      '</div>'
+    );
+  }
+
+  function renderTaxPage() {
+    if (typeof window.calcTaxSummary !== 'function') return '';
+    var summary = window.calcTaxSummary();
+    var tax = summary.tax;
+    var ratePct = (tax.ppnRate * 100).toFixed(2).replace(/\.00$/, '');
+    var roundingLabel =
+      tax.rounding === 'floor'
+        ? 'Dibulatkan ke bawah'
+        : tax.rounding === 'ceil'
+          ? 'Dibulatkan ke atas'
+          : 'Dibulatkan normal';
+    var newestFirst = function (list) {
+      return list
+        .slice()
+        .sort(function (a, b) {
+          return String(b.date || '').localeCompare(String(a.date || ''));
+        })
+        .slice(0, 5);
+    };
+    var efakturCount = summary.salesOrders.filter(function (o) {
+      return o.status === 'Paid' || o.status === 'Delivered';
+    }).length;
+
+    var header =
+      typeof window.secHdr === 'function'
+        ? window.secHdr('Pajak & PPN', '', 'Ubah Pengaturan Pajak', 'editTaxSettings')
+        : '<h1>Pajak &amp; PPN</h1>';
+    var stats =
+      typeof window.statRow === 'function'
+        ? window.statRow([
+            {
+              label: 'PPN Keluaran',
+              value: money(summary.outputTax),
+              sub: summary.salesOrders.length + ' transaksi',
+            },
+            {
+              label: 'PPN Masukan',
+              value: money(summary.inputTax),
+              sub: summary.purchaseOrders.length + ' transaksi',
+            },
+            {
+              label: 'PPN Terutang',
+              value: money(summary.netTax),
+              sub: 'Keluaran − Masukan',
+              color: summary.netTax < 0 ? 'var(--danger)' : '',
+            },
+            { label: 'Tarif PPN', value: ratePct + '%', sub: roundingLabel },
+          ])
+        : '';
+
+    return (
+      header +
+      stats +
+      '<div class="fin-2col">' +
+      '<div class="card"><div class="card-head"><div class="card-title">Dasar Perhitungan</div></div>' +
+      '<div class="tax-facts">' +
+      taxFact('Penjualan kena pajak', money(summary.salesBase)) +
+      taxFact('Pembelian kena pajak', money(summary.purchaseBase)) +
+      taxFact('Transaksi dengan tax eksplisit', String(summary.salesWithTax + summary.purchaseWithTax)) +
+      '</div>' +
+      taxExplain(
+        'PPN dihitung dari total transaksi non-draft. Jika transaksi memiliki nilai tax, ' +
+          'nilai tersebut dipakai. Jika tidak, sistem menghitung amount × tarif PPN.'
+      ) +
+      '</div>' +
+      '<div class="card"><div class="card-head"><div class="card-title">Status Kepatuhan</div></div>' +
+      '<div class="tax-facts">' +
+      taxFact('Status PKP', tax.pkp ? 'Terdaftar' : 'Belum PKP') +
+      taxFact('NPWP', tax.npwp) +
+      taxFact('e-Faktur siap kirim', efakturCount + ' transaksi') +
+      '</div>' +
+      taxExplain('e-Faktur siap kirim dihitung dari transaksi penjualan berstatus Paid/Delivered.') +
+      '</div>' +
+      '</div>' +
+      '<div class="fin-2col">' +
+      taxDocCard(
+        'Dasar Penjualan (PPN Keluaran)',
+        newestFirst(summary.salesOrders),
+        'customer',
+        'Belum ada penjualan tercatat.'
+      ) +
+      taxDocCard(
+        'Dasar Pembelian (PPN Masukan)',
+        newestFirst(summary.purchaseOrders),
+        'supplier',
+        'Belum ada pembelian tercatat.'
+      ) +
+      '</div>'
+    );
+  }
+  // erp-view.js loads earlier in the bundle; without its figures the page keeps
+  // the renderer it already has.
+  if (typeof window.calcTaxSummary === 'function') window.renderTax = renderTaxPage;
+
+  // ══════════════════════════════════════════════════════════════════════════
   // § 1  FAKTUR PAJAK KELUARAN — ekspor Coretax (dan CSV format lama)
   // ══════════════════════════════════════════════════════════════════════════
   var _efPeriod = null;
@@ -412,8 +558,8 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Ekspor Coretax</h1><p>Faktur pajak keluaran per masa pajak — ' +
-        'file XML untuk diimpor di Coretax DJP (Faktur Keluaran → Impor)</p></div>' +
+      '<div class="sec-hdr"><div><h1>Ekspor Coretax</h1><p>File XML faktur pajak keluaran untuk ' +
+        'Coretax DJP (Faktur Keluaran → Impor)</p></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
         '<button class="btn-ghost" data-action="exportCTAS" title="Format CSV aplikasi e-Faktur lama">CSV format lama</button>' +
@@ -437,11 +583,11 @@
         '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val">' +
         money(totalPPN) +
         '</div><div class="stat-sub">Sama dengan Rekap PPN</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">NPWP perusahaan</div><div class="stat-val" style="font-size:var(--fs-md)">' +
+        '<div class="card stat-card"><div class="stat-label">NPWP perusahaan</div><div class="stat-val tax-stat-text">' +
         esc(cfg.npwp || 'Belum diatur') +
         '</div></div></div>' +
         (warnings.length
-          ? '<div class="notice notice-warning"><div><strong>Periksa sebelum ekspor</strong><ul style="margin:6px 0 0 18px">' +
+          ? '<div class="notice notice-warning"><div><strong>Periksa sebelum ekspor</strong><ul class="tax-warn-list">' +
             warnings
               .map(function (w) {
                 return '<li>' + esc(w) + '</li>';
@@ -449,8 +595,11 @@
               .join('') +
             '</ul></div></div>'
           : '') +
-        '<div class="notice notice-info">Format XML mengikuti contoh dari template konverter DJP. ' +
-        'Uji impor pertama di Coretax sebelum dipakai rutin, dan cocokkan kode barang (6 digit) serta kode satuan di Konfigurasi.</div>' +
+        '<div class="notice notice-info">Uji impor pertama di Coretax sebelum dipakai rutin; ' +
+        'cocokkan kode barang dan kode satuan di Konfigurasi.</div>' +
+        taxExplain(
+          'Format XML mengikuti contoh dari template konverter DJP. Kode barang Coretax terdiri dari 6 digit.'
+        ) +
         '<div class="card" style="overflow-x:auto"><table class="data-table" style="width:100%">' +
         '<thead><tr><th>Tanggal</th><th>No. Dokumen</th><th>Pelanggan</th><th>NPWP</th>' +
         '<th style="text-align:right">DPP</th><th style="text-align:right">PPN</th><th>No. Faktur Pajak</th><th></th></tr></thead><tbody>' +
@@ -555,7 +704,7 @@
             '<td class="td-p" style="font-size:.75rem">' +
             esc(l.to) +
             '</td>' +
-            '<td class="td-p" style="text-align:center"><span style="font-size:.75rem;padding:2px 6px;border-radius:4px;background:var(--success-bg);color:var(--success);font-weight:700">Terkirim</span></td>' +
+            '<td class="td-p" style="text-align:center"><span class="badge badge-success">Terkirim</span></td>' +
             '</tr>'
           );
         })
@@ -563,56 +712,34 @@
       '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--muted)">Belum ada email dikirim.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Kirim Faktur Pajak via Email</h1><p>Kirim faktur pajak via email ke pelanggan</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kirim Faktur Pajak via Email</h1></div>' +
         '<button class="btn" data-action="sendAllTaxEmail">Kirim Semua</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Faktur</div><div class="stat-val">' +
         invoices.length +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Sudah Dikirim</div><div class="stat-val" style="color:var(--success)">' +
+        '<div class="card stat-card"><div class="stat-label">Sudah Dikirim</div><div class="stat-val">' +
         sent.length +
         '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Belum Dikirim</div><div class="stat-val" style="color:var(--danger)">' +
+        '<div class="card stat-card"><div class="stat-label">Belum Dikirim</div><div class="stat-val">' +
         pending.length +
         '</div></div>' +
         '</div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Antrian Pengiriman (' +
+        '<div class="card-head"><div class="card-title">Antrian Pengiriman (' +
         pending.length +
-        ')</div>' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">No. Faktur</th><th style="' +
-        TH +
-        '">Pelanggan</th>' +
-        '<th style="' +
-        TH +
-        '">Email</th><th style="' +
-        TH +
-        'text-align:right">PPN</th><th style="' +
-        TH +
-        '"></th></tr></thead>' +
+        ')</div></div>' +
+        '<div style="overflow-x:auto"><table>' +
+        '<thead><tr><th>Tanggal</th><th>No. Faktur</th><th>Pelanggan</th>' +
+        '<th>Email</th><th class="t-num">PPN</th><th></th></tr></thead>' +
         '<tbody>' +
         pendingRows +
         '</tbody></table></div></div>' +
         '<div class="card">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Log Pengiriman</div>' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Waktu</th><th style="' +
-        TH +
-        '">Faktur</th><th style="' +
-        TH +
-        '">Pelanggan</th>' +
-        '<th style="' +
-        TH +
-        '">Email Tujuan</th><th style="' +
-        TH +
-        'text-align:center">Status</th></tr></thead>' +
+        '<div class="card-head"><div class="card-title">Log Pengiriman</div></div>' +
+        '<div style="overflow-x:auto"><table>' +
+        '<thead><tr><th>Waktu</th><th>Faktur</th><th>Pelanggan</th>' +
+        '<th>Email Tujuan</th><th style="text-align:center">Status</th></tr></thead>' +
         '<tbody>' +
         logRows +
         '</tbody></table></div></div>'
@@ -662,7 +789,7 @@
             '<td class="td-p" style="text-align:right">' +
             inv.dpp +
             '</td>' +
-            '<td class="td-p" style="text-align:right;color:var(--info)">' +
+            '<td class="td-p" style="text-align:right">' +
             inv.ppn +
             '</td>' +
             '</tr>'
@@ -672,7 +799,7 @@
       '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada faktur.</td></tr>';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>e-Faktur Format Lama</h1><p>Format lama e-Faktur (CSV) — kompatibel aplikasi versi sebelum 4.x</p></div>' +
+      '<div class="sec-hdr"><div><h1>e-Faktur Format Lama</h1><p>CSV untuk aplikasi e-Faktur versi sebelum 4.x</p></div>' +
         '<div style="display:flex;gap:8px">' +
         (monthOpts
           ? '<select class="form-select" id="legacy-month" style="font-size:.8125rem">' +
@@ -680,31 +807,15 @@
             '</select>'
           : '') +
         '<button class="btn" data-action="exportLegacyCSV">Export CSV Legacy</button></div></div>' +
-        '<div class="card" style="background:var(--warning-bg);border:1px solid transparent;padding:12px 18px;margin-bottom:16px;font-size:.75rem">' +
-        '<strong>Format lama:</strong> Gunakan format ini hanya jika aplikasi e-Faktur Anda masih versi lama (sebelum 4.0). ' +
-        'Untuk versi terbaru, gunakan menu <strong>e-Faktur CTAS</strong>.' +
-        '</div>' +
+        '<div class="notice notice-warning">Pakai format ini hanya untuk aplikasi e-Faktur versi lama (sebelum 4.0); ' +
+        'untuk versi terbaru gunakan menu Ekspor Coretax.</div>' +
         '<div class="card">' +
-        '<div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Preview Data Faktur</div>' +
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">#</th><th style="' +
-        TH +
-        '">Tgl (YYYYMMDD)</th>' +
-        '<th style="' +
-        TH +
-        '">No. Faktur</th><th style="' +
-        TH +
-        '">Nama Pembeli</th>' +
-        '<th style="' +
-        TH +
-        '">NPWP Pembeli</th><th style="' +
-        TH +
-        'text-align:right">DPP</th>' +
-        '<th style="' +
-        TH +
-        'text-align:right">PPN</th></tr></thead>' +
+        '<div class="card-head"><div class="card-title">Preview Data Faktur</div></div>' +
+        '<div style="overflow-x:auto"><table>' +
+        '<thead><tr><th>#</th><th>Tgl (YYYYMMDD)</th>' +
+        '<th>No. Faktur</th><th>Nama Pembeli</th>' +
+        '<th>NPWP Pembeli</th><th class="t-num">DPP</th>' +
+        '<th class="t-num">PPN</th></tr></thead>' +
         '<tbody>' +
         rows +
         '</tbody></table></div>' +
@@ -1041,6 +1152,7 @@
   });
 
   window._taxExtras = {
+    renderTaxPage: renderTaxPage,
     openEFakturCTAS: openEFakturCTAS,
     getVatInvoices: getVatInvoices,
     coretaxXml: coretaxXml,
