@@ -64,7 +64,7 @@ describe('Jurnal paging', () => {
   it('keeps amounts on one line inside a scrollable table', () => {
     w()._ledgerExtras.openTab('journals');
     const card = journalCards()[0];
-    expect(card.querySelector('.table-wrap table')).toBeTruthy();
+    expect(card.querySelector('.jv-scroll table')).toBeTruthy();
     const amount = Array.from(card.querySelectorAll('td')).find(td =>
       /Rp/.test(td.textContent || '')
     )!;

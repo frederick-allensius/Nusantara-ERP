@@ -1480,6 +1480,11 @@ tfoot td {
   font-size: var(--fs-base);
 }
 
+/* Journal lines (gl-view.js): scroll inside the journal box if ever needed */
+.jv-scroll {
+  overflow-x: auto;
+}
+
 /* Row "Edit" button (helpers.js actionBtns): quiet until hovered */
 .row-edit {
   display: inline-flex;

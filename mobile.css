@@ -1302,11 +1302,55 @@
   .stat-row > .card {
     padding: 12px;
   }
+  /* !important: some pages size their figures inline */
   .stat-row .stat-val,
   .stat-row .stat-value {
-    font-size: 1rem;
+    font-size: .875rem !important;
+    overflow-wrap: normal;
   }
   .stat-row .stat-sub {
     white-space: normal;
+  }
+}
+
+/* Jurnal on phones: drop the account-code column so the amounts fit, and keep
+   the journal date on one line. */
+@media (max-width: 560px) {
+  .jv-lines .jv-code {
+    display: none;
+  }
+  /* Each line: account on the left, its one amount (labelled Debit/Kredit)
+     on the right — the two amount columns don't fit side by side. */
+  .jv-lines,
+  .jv-lines tbody,
+  .jv-lines tfoot {
+    display: block;
+  }
+  .jv-lines tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .jv-lines td:empty {
+    display: none;
+  }
+  .jv-lines tfoot .jv-credit {
+    grid-column: 2;
+  }
+  .jv-lines .jv-debit::before,
+  .jv-lines .jv-credit::before {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .jv-lines .jv-debit::before {
+    content: 'Debit';
+  }
+  .jv-lines .jv-credit::before {
+    content: 'Kredit';
+  }
+  .jv-date {
+    white-space: nowrap;
   }
 }
