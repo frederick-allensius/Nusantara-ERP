@@ -808,7 +808,7 @@
   }
   @container view (max-width: 600px) {
     .stat-row {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .chart-2col {
       grid-template-columns: 1fr;
@@ -1123,7 +1123,6 @@
 @media (max-width: 768px) {
   /* Force single column — wins specificity over style.css fixed grids. */
   .kpi-grid,
-  .stat-row,
   .finance-kpi-grid,
   .dash-grid-3,
   .dash-grid-2,
@@ -1288,5 +1287,26 @@
 @keyframes ptrSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Stat tiles on phones: two per row and compact, so a page's figures fit on
+   the first screen instead of one tall tile per row. Very narrow screens
+   (≤360px, rule above) keep one per row. */
+@media (max-width: 768px) and (min-width: 361px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+  .stat-row > .stat-card,
+  .stat-row > .card {
+    padding: 12px;
+  }
+  .stat-row .stat-val,
+  .stat-row .stat-value {
+    font-size: 1rem;
+  }
+  .stat-row .stat-sub {
+    white-space: normal;
   }
 }

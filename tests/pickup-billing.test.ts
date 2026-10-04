@@ -112,7 +112,8 @@ function setField(id: string, value: string, type: 'change' | 'input' = 'change'
   f.value = value;
   f.dispatchEvent(new Event(type, { bubbles: true }));
 }
-const text = () => page().textContent || '';
+// Currency uses a non-breaking space after "Rp"; compare as plain spaces.
+const text = () => (page().textContent || '').replace(/\u00a0/g, ' ');
 const rows = () => Array.from(page().querySelectorAll('tbody tr'));
 
 function ledger() {

@@ -15,6 +15,9 @@
 
   let activeTab = 'trial'; // 'trial' | 'journals' | 'chart'
   let journalFilter = 'all'; // 'all' | 'auto' | 'manual'
+  // Journals list one page at a time (hundreds of journals otherwise render at once).
+  const JOURNAL_PAGE_SIZE = 20;
+  let journalPage = 1;
   // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
   const TAB_ENTRY = { trial: 'Neraca Saldo', journals: 'Jurnal', chart: 'Bagan Akun' };
 
@@ -153,7 +156,11 @@
           : 'Belum ada jurnal. Jurnal otomatis terbentuk saat barang dikirim atau diterima, faktur diterbitkan, pembayaran dicatat, dan transaksi kas & bank disimpan.';
       return `<div class="card">${head}<div class="empty-inline">${empty}</div></div>`;
     }
-    const cards = journals
+    const pg = window.NSAPager
+      ? window.NSAPager.page(journals, journalPage, JOURNAL_PAGE_SIZE)
+      : { rows: journals, page: 1 };
+    journalPage = pg.page;
+    const cards = pg.rows
       .map(j => {
         const src =
           j.source === 'manual'
@@ -166,8 +173,8 @@
             l => `<tr>
             <td style="padding:4px 10px;font-size:.75rem;font-family:monospace;color:var(--muted)">${esc(l.accountNo)}</td>
             <td style="padding:4px 10px;font-size:.75rem">${esc(l.accountName)}${l.memo ? `<span style="color:var(--muted);font-size:.75rem"> · ${esc(l.memo)}</span>` : ''}</td>
-            <td style="padding:4px 10px;font-size:.75rem;text-align:right">${l.debit ? money(l.debit) : ''}</td>
-            <td style="padding:4px 10px;font-size:.75rem;text-align:right">${l.credit ? money(l.credit) : ''}</td>
+            <td style="padding:4px 10px;font-size:.75rem;text-align:right;white-space:nowrap">${l.debit ? money(l.debit) : ''}</td>
+            <td style="padding:4px 10px;font-size:.75rem;text-align:right;white-space:nowrap">${l.credit ? money(l.credit) : ''}</td>
           </tr>`
           )
           .join('');
@@ -177,18 +184,26 @@
               <span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(src)}</span></div>
             <div style="font-size:.75rem;color:var(--muted)">${esc(j.date || '')}</div>
           </div>
-          <table style="width:100%;border-collapse:collapse">
+          <div class="table-wrap"><table style="width:100%;border-collapse:collapse">
             <tbody>${lines}</tbody>
             <tfoot><tr style="border-top:1px solid var(--border)">
               <td colspan="2" style="padding:5px 10px;font-size:.75rem;font-weight:700;text-align:right;color:var(--muted)">Total</td>
-              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right">${money(j.totals ? j.totals.debit : 0)}</td>
-              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right">${money(j.totals ? j.totals.credit : 0)}</td>
+              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right;white-space:nowrap">${money(j.totals ? j.totals.debit : 0)}</td>
+              <td style="padding:5px 10px;font-size:.75rem;font-weight:800;text-align:right;white-space:nowrap">${money(j.totals ? j.totals.credit : 0)}</td>
             </tr></tfoot>
-          </table>
+          </table></div>
         </div>`;
       })
       .join('');
-    return `<div class="card">${head}${cards}</div>`;
+    const pager = window.NSAPager
+      ? window.NSAPager.html({
+          total: journals.length,
+          page: journalPage,
+          size: JOURNAL_PAGE_SIZE,
+          action: 'glJournalPage',
+        })
+      : '';
+    return `<div class="card">${head}${cards}${pager}</div>`;
   }
 
   // ── Chart of Accounts tab ───────────────────────────────────────────────────
@@ -408,6 +423,7 @@
       activeTab = TAB_ENTRY[tab] ? tab : 'trial';
       if (filter) {
         journalFilter = filter;
+        journalPage = 1;
       }
       if (typeof window.invalidateView === 'function') {
         window.invalidateView('ledger');
@@ -428,9 +444,18 @@
       }
       return true;
     });
+    window.ERP.registerAction('glJournalPage', function (id, type, val) {
+      const page = Number(val);
+      if (page >= 1) {
+        journalPage = page;
+        refresh();
+      }
+      return true;
+    });
     window.ERP.registerAction('glJournalFilter', function (id, type, val) {
       if (val) {
         journalFilter = val;
+        journalPage = 1;
         refresh();
         syncMenu();
       }

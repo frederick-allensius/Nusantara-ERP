@@ -234,8 +234,9 @@ describe('status strip', () => {
     expect(byKey.delivered.count).toBe(2); // SO-N, SO-OLD
     expect(byKey.unpaid.count).toBe(1);
     expect(byKey.unpaid.outstanding).toBe(25_000_000);
-    expect(seg('sales', 'unpaid').textContent).toContain('sisa Rp 25 jt');
-    expect(seg('sales', 'confirmed').textContent).toContain('Rp 101 jt');
+    const plain = (el: Element) => (el.textContent || '').replace(/\u00a0/g, ' ');
+    expect(plain(seg('sales', 'unpaid'))).toContain('sisa Rp 25 jt');
+    expect(plain(seg('sales', 'confirmed'))).toContain('Rp 101 jt');
     // No stat tiles on the order lists; the strip carries the figures.
     expect(viewEl('sales').querySelector('.stat-row')).toBeNull();
   });

@@ -67,9 +67,11 @@ export function sanitizeInput(value, type = 'text') {
 // ── Formatting Helpers ───────────────────────────────────────────────────────
 // Full Rupiah (no Md/jt abbreviation) so figures match Accurate's display exactly and
 // are easy to compare. Use idrShort() if a compact form is ever needed.
+// Currency text keeps "Rp" and the number together (non-breaking space), so a
+// narrow column never leaves "Rp" alone on its own line.
 export function idr(v) {
   const neg = v < 0;
-  return `${neg ? '-' : ''}Rp ${Math.round(Math.abs(v || 0)).toLocaleString('id-ID')}`;
+  return `${neg ? '-' : ''}Rp\u00a0${Math.round(Math.abs(v || 0)).toLocaleString('id-ID')}`;
 }
 
 // Abbreviated form for tight spaces (mobile cards, summary lines).
@@ -77,7 +79,7 @@ export function idr(v) {
 export function idrShort(v) {
   const n = Number(v);
   if (!Number.isFinite(n) || n === 0) {
-    return 'Rp 0';
+    return 'Rp\u00a00';
   }
   const neg = n < 0;
   const abs = Math.abs(n);
@@ -94,12 +96,12 @@ export function idrShort(v) {
   } else {
     body = `${Math.round(abs)}`;
   }
-  return `${neg ? '-' : ''}Rp ${body}`;
+  return `${neg ? '-' : ''}Rp\u00a0${body}`;
 }
 
 export function idrFull(v) {
   const neg = v < 0;
-  return `${neg ? '-' : ''}Rp ${Math.abs(v).toLocaleString('id-ID')}`;
+  return `${neg ? '-' : ''}Rp\u00a0${Math.abs(v).toLocaleString('id-ID')}`;
 }
 
 export function today() {
