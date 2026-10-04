@@ -382,6 +382,10 @@
 
   // In-memory filter state so re-renders keep the operator's selections.
   var _state = { from: '', to: '', month: '', customer: '', supplier: '', po: '', kind: '' };
+  // Result table page (list-pager.js). The totals above it cover every row;
+  // a new filter or a fresh open starts again at page 1.
+  var PAGE_SIZE = 25;
+  var _page = 1;
 
   function _readState() {
     function val(id) {
@@ -401,13 +405,13 @@
     'text-align:left;padding:12px 14px;font-size:.8125rem;color:var(--text-secondary);font-weight:700;border-bottom:1px solid var(--border)';
   var TD = 'padding:11px 14px;font-size:.875rem;border-bottom:1px solid var(--border)';
 
-  function _rowsHtml(result) {
-    if (!result.rows.length) {
+  function _rowsHtml(rows) {
+    if (!rows.length) {
       return (
         '<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--muted);font-size:.8125rem">Belum ada data yang cocok dengan filter.</td></tr>'
       );
     }
-    return result.rows
+    return rows
       .map(function (r) {
         var k = KIND[r.kind] || KIND.sales;
         var tag =
@@ -427,7 +431,7 @@
             : '');
         return (
           '<tr>' +
-          '<td style="' + TD + '">' + esc(r.date) + '</td>' +
+          '<td style="' + TD + ';white-space:nowrap">' + esc(r.date) + '</td>' +
           '<td style="' + TD + '">' + tag + '</td>' +
           '<td style="' + TD + '">' + numberCell + '</td>' +
           '<td style="' + TD + '">' + esc(r.party || '—') + '</td>' +
@@ -442,6 +446,8 @@
   }
 
   function _resultHtml(result) {
+    var pg = window.NSAPager.page(result.rows, _page, PAGE_SIZE);
+    _page = pg.page;
     return (
       '<div class="stat-row" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:14px">' +
       '<div class="card stat-card"><div class="stat-label">Total Pembelian</div><div class="stat-val" style="font-size:1.125rem;color:' +
@@ -482,8 +488,10 @@
       '<th style="' + TH + '">Status</th>' +
       '<th style="' + TH + ';text-align:right">Nilai</th>' +
       '</tr></thead><tbody id="cr-tbody">' +
-      _rowsHtml(result) +
-      '</tbody></table></div></div>'
+      _rowsHtml(pg.rows) +
+      '</tbody></table></div>' +
+      window.NSAPager.html({ total: pg.total, page: pg.page, size: PAGE_SIZE, action: 'crPage' }) +
+      '</div>'
     );
   }
 
@@ -522,6 +530,7 @@
 
   function openCustomRange() {
     var db = window.DB || {};
+    _page = 1;
     var result = filterTransactions(db, _state);
     var inputCss =
       'padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.8125rem;background:var(--surface);color:var(--text)';
@@ -529,7 +538,7 @@
     injectView(
       '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
+        '<div class="cr-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Dari Tanggal' +
         '<input type="date" id="cr-from" value="' + esc(_state.from) + '" style="' + inputCss + '"></label>' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Sampai Tanggal' +
@@ -553,7 +562,7 @@
         '</select></label>' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Nomor PO / Dokumen' +
         '<input type="text" id="cr-po" value="' + esc(_state.po) + '" placeholder="mis. PO.2026.06" style="' + inputCss + '"></label>' +
-        '<div style="display:flex;gap:8px">' +
+        '<div class="cr-actions" style="display:flex;gap:8px">' +
         '<button class="btn-primary" data-action="crApply" style="flex:1">Terapkan</button>' +
         '<button class="btn-ghost" data-action="crReset">Reset</button>' +
         '</div>' +
@@ -564,12 +573,18 @@
     );
   }
 
-  // Re-run the filter and repaint only the result region (keeps filter inputs).
-  function _apply() {
-    _readState();
+  // Repaint only the result region (keeps filter inputs) for the applied filter.
+  function _repaint() {
     var result = filterTransactions(window.DB || {}, _state);
     var host = document.getElementById('cr-result');
     if (host) host.innerHTML = _resultHtml(result);
+  }
+
+  // Re-run the filter from the inputs; the result starts at page 1.
+  function _apply() {
+    _readState();
+    _page = 1;
+    _repaint();
   }
 
   function _reset() {
@@ -586,6 +601,10 @@
       if (!btn) return;
       if (btn.dataset.action === 'crApply') _apply();
       else if (btn.dataset.action === 'crReset') _reset();
+      else if (btn.dataset.action === 'crPage') {
+        _page = Number(btn.dataset.val) || 1;
+        _repaint();
+      }
     });
   }
 
