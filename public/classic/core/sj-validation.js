@@ -712,7 +712,8 @@
             'Validasi SJ Supplier',
             'Cocokkan tonase & harga Surat Jalan lapangan dengan rekap supplier sebelum faktur',
             'Muat Contoh Demo',
-            'sjvSeedDemo'
+            'sjvSeedDemo',
+            { showSub: true }
           )
         : '<h1>Validasi SJ Supplier</h1>';
 

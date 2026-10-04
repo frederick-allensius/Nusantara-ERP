@@ -15,7 +15,7 @@ function renderMasterData() {
     const supps = applyPage([...DB.suppliers], 'master_supp');
 
     const row = s => `<tr data-action="viewSupplier" data-id="${escapeHtml(s.id)}" class="row-link">
-      <td class="td-p t-strong">${escapeHtml(s.name)}</td>
+      <td class="td-p list-key">${escapeHtml(s.name)}</td>
       <td class="td-p t-muted">${escapeHtml(s.contact || '—')}</td>
       <td class="td-p t-muted">${escapeHtml(s.phone || '—')}</td>
       <td class="td-p t-muted">${escapeHtml(s.address || '—')}</td>
@@ -24,7 +24,7 @@ function renderMasterData() {
     </tr>`;
 
     return `
-  ${secHdr('Supplier', 'Rekanan pembelian beserta jumlah pesanan pembeliannya', 'Tambah Supplier', 'addSupplier')}
+  ${secHdr('Supplier', '', 'Tambah Supplier', 'addSupplier')}
   ${statRow([
     { label: 'Supplier terdaftar', value: String(total), sub: 'Seluruh data supplier' },
     { label: 'Pernah menerima PO', value: String(withOrders), sub: 'Punya minimal satu pesanan pembelian' },
@@ -58,7 +58,7 @@ function renderMasterData() {
   const custs = applyPage([...DB.customers], 'master_cust');
 
   const row = c => `<tr data-action="viewCustomer" data-id="${escapeHtml(c.id)}" class="row-link">
-      <td class="td-p t-strong">${escapeHtml(c.name)}</td>
+      <td class="td-p list-key">${escapeHtml(c.name)}</td>
       <td class="td-p t-muted">${escapeHtml(c.phone || '—')}</td>
       <td class="td-p t-muted">${escapeHtml(c.address || '—')}</td>
       <td class="td-p t-num">${soCountByCustomer[c.name] || 0}</td>
@@ -66,7 +66,7 @@ function renderMasterData() {
     </tr>`;
 
   return `
-  ${secHdr('Pelanggan', 'Pelanggan beserta jumlah pesanan penjualannya', 'Tambah Pelanggan', 'addCustomer')}
+  ${secHdr('Pelanggan', '', 'Tambah Pelanggan', 'addCustomer')}
   ${statRow([
     { label: 'Pelanggan terdaftar', value: String(total), sub: 'Seluruh data pelanggan' },
     { label: 'Pernah memesan', value: String(withOrders), sub: 'Punya minimal satu pesanan penjualan' },

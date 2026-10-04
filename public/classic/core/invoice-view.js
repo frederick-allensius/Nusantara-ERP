@@ -191,8 +191,8 @@
     return due && due < today ? 'overdue' : 'open';
   }
 
-  // Strip of the invoice list (same look as the order lists): count and money
-  // per stage; a segment filters the list, a second click clears it.
+  // Strip of the invoice list (same light tabs as the order lists): count and
+  // money per stage; a tab filters the list, a second click clears it.
   function stripHTML(type) {
     const t = TYPES[type];
     const today = todayStr();
@@ -328,10 +328,10 @@
           const due = active ? B().dueDateFor(t.side, d) : d.dueDate || '';
           const overdue = active && bal.outstanding > B().EPS && due && due < today;
           return `<tr class="row-link" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">
-            <td class="doc-no">${esc(docNo(d))}</td>
-            <td class="t-strong">${esc(d[t.party] || '—')}</td>
-            <td class="t-muted">${fmtDate(d.date)}</td>
-            <td class="${overdue ? 't-danger' : 't-muted'}">${fmtDate(due)}</td>
+            <td class="list-no">${esc(docNo(d))}</td>
+            <td>${esc(d[t.party] || '—')}</td>
+            <td class="t-muted t-nowrap">${fmtDate(d.date)}</td>
+            <td class="${overdue ? 't-danger' : 't-muted'} t-nowrap">${fmtDate(due)}</td>
             <td class="t-num">${money(d.amount || 0)}</td>
             <td class="t-num">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
             <td>${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
@@ -346,9 +346,9 @@
         .map(d => {
           const inv = (db()[invColl] || []).find(i => same(i.id, d.invoiceId));
           return `<tr class="row-link" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">
-            <td class="doc-no">${esc(docNo(d))}</td>
-            <td class="t-strong">${esc(d[t.party] || '—')}</td>
-            <td class="t-muted">${fmtDate(d.date)}</td>
+            <td class="list-no">${esc(docNo(d))}</td>
+            <td>${esc(d[t.party] || '—')}</td>
+            <td class="t-muted t-nowrap">${fmtDate(d.date)}</td>
             <td class="t-muted">${esc(inv ? docNo(inv) : d.invoiceNumber || d.invoiceId || '—')}</td>
             <td class="t-muted">${esc(d.paymentMethod || '—')}</td>
             <td class="t-num">${money(d.amount || 0)}</td>

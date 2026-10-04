@@ -136,8 +136,6 @@ export default [
         lineItemsHTML: 'readonly',
         initLineItems: 'readonly',
         exportBtn: 'readonly',
-        filterBtn: 'readonly',
-        dateFilterBar: 'readonly',
         sortTh: 'readonly',
         pagerHTML: 'readonly',
         emptyRow: 'readonly',

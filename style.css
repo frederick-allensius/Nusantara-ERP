@@ -1412,7 +1412,9 @@ body.nav-collapsed .sidebar-collapse svg {
   margin-bottom: -18px;
 }
 .card-flush > .table-wrap,
-.card-flush > .tbl-wrap {
+.card-flush > .tbl-wrap,
+.card-flush > .table-wrap:last-child,
+.card-flush > .tbl-wrap:last-child {
   margin: 0;
   border-top: 0;
 }
@@ -1436,7 +1438,7 @@ thead th {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
   font-size: .75rem;
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   white-space: nowrap;
 }
@@ -1462,6 +1464,48 @@ td,
 tfoot td {
   border-top: 1px solid var(--border);
   font-weight: 600;
+}
+
+/* List rows stay light: only the document number carries the brand colour
+   (list-no); the name that keys a master list is a touch heavier (list-key).
+   Parties, amounts and quantities are regular text, dates muted. */
+.list-no {
+  color: var(--primary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.list-key {
+  font-weight: 500;
+}
+.t-nowrap {
+  white-space: nowrap;
+}
+/* Status inside a list table reads as coloured text with its dot; the filled
+   pill stays for dialogs, cards and headers. */
+tbody .badge {
+  height: auto;
+  padding: 0;
+  background: transparent;
+}
+tbody .badge-purple {
+  color: color-mix(in srgb, var(--chart-4) 82%, var(--text));
+}
+/* Row checkbox column, shown only while choosing rows ("Pilih beberapa") */
+.sel-cell {
+  width: 1%;
+  padding-right: 4px;
+  text-align: center;
+}
+.card > .table-wrap .sel-cell:first-child {
+  padding-left: 20px;
+}
+.sel-cell input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: middle;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 /* "Versi baru tersedia" card (src/pwa-register.js) */
@@ -1506,6 +1550,10 @@ tfoot td {
   background: var(--surface-hover);
   color: var(--primary);
   outline: none;
+}
+.row-edit-danger:hover,
+.row-edit-danger:focus-visible {
+  color: var(--danger);
 }
 
 /* "Hapus …? Batal / Ya, hapus" inside a dialog footer (erp-view.js armDelete) */
@@ -2888,88 +2936,65 @@ select.inline-status {
   background-size: 10px;
 }
 
-/* ── 21b. ORDER LISTS: status strip, row menu, export/import menu ────────────── */
-/* Status strip on Pesanan Penjualan / Pembelian: five equal segments joined by
-   chevrons. It scrolls inside its own box when the screen is too narrow. */
+/* ── 21b. LISTS: status strip, toolbar, row menu, "⋯" menu ───────────────────── */
+/* Status strip (Pesanan Penjualan / Pembelian, Faktur): one row of light tabs —
+   label and count, the money in small muted text below. The chosen stage is
+   underlined. It scrolls sideways inside itself on narrow screens. */
 .ostrip {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
+  /* A scrollbar thumb here would read like a tab underline */
+  scrollbar-width: none;
 }
+.ostrip::-webkit-scrollbar {
+  display: none;
+}
+/* The hairline under the tabs; the chosen tab's underline is drawn over it */
 .ostrip-track {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(132px, 1fr));
-  grid-template-rows: auto auto auto;
-  gap: 0 18px;
-  padding: 3px;
-}
-.ostrip-track[data-n='4'] {
-  grid-template-columns: repeat(4, minmax(132px, 1fr));
+  display: flex;
+  gap: 0 28px;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 2px;
+  box-shadow: inset 0 -1px 0 var(--border-light);
 }
 .ostrip-seg {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  color: var(--text);
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: baseline;
+  gap: 1px 6px;
+  padding: 6px 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
   font-family: var(--font-sans);
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
 }
 .ostrip-seg:hover {
-  border-color: var(--border-strong);
+  color: var(--text);
 }
 .ostrip-seg:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: var(--r-xs);
 }
 .ostrip-seg.is-active {
-  border-color: var(--primary);
-  background: var(--primary-muted);
-  box-shadow: inset 0 0 0 1px var(--primary);
-}
-.ostrip-seg.is-active:focus-visible {
-  box-shadow:
-    inset 0 0 0 1px var(--primary),
-    var(--focus-ring);
-}
-/* Chevron in the gap to the next stage */
-.ostrip-seg:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: -14px;
-  width: 7px;
-  height: 7px;
-  border-top: 1.5px solid var(--muted-light);
-  border-right: 1.5px solid var(--muted-light);
-  transform: translateY(-50%) rotate(45deg);
-  pointer-events: none;
-}
-/* Label, count and value line up across the segments even when a label wraps */
-@supports (grid-template-rows: subgrid) {
-  .ostrip-seg {
-    display: grid;
-    grid-row: span 3;
-    grid-template-rows: subgrid;
-    row-gap: 2px;
-    align-content: start;
-    justify-items: start;
-  }
+  border-bottom-color: var(--text);
+  color: var(--text);
 }
 .ostrip-label {
-  max-width: 100%;
-  font-size: var(--fs-xs);
+  grid-column: 1;
+  font-size: var(--fs-sm);
   font-weight: 500;
   line-height: 1.35;
-  color: var(--muted);
 }
 .ostrip-label::before {
   content: '';
@@ -3000,20 +3025,22 @@ select.inline-status {
   --ostrip-dot: var(--warning);
 }
 .ostrip-count {
-  font-size: var(--fs-xl);
-  font-weight: 650;
-  line-height: 1.2;
+  grid-column: 2;
+  font-size: var(--fs-sm);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
+.ostrip-seg.is-empty .ostrip-label,
 .ostrip-seg.is-empty .ostrip-count {
   color: var(--muted);
 }
 .ostrip-value {
+  grid-column: 1 / -1;
+  padding-left: 12px;
   font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
   color: var(--muted);
-  white-space: nowrap;
 }
 .ostrip-note {
   display: flex;
@@ -3024,11 +3051,13 @@ select.inline-status {
   font-size: var(--fs-xs);
   color: var(--muted);
 }
-.ostrip-note strong {
-  font-weight: 600;
+.ostrip-note strong,
+.list-note strong {
+  font-weight: 500;
   color: var(--text);
 }
-.ostrip-note .link-btn {
+.ostrip-note .link-btn,
+.list-note .link-btn {
   font-size: inherit;
 }
 /* "Pengambilan" tag beside the number of a trading pickup order */
@@ -3045,8 +3074,212 @@ select.inline-status {
   font-weight: 500;
   vertical-align: middle;
 }
+tbody .ostrip-tag {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  font-weight: 400;
+}
 
-/* Row "⋯" button and the toolbar "Ekspor / impor" button */
+/* List toolbar: period and active-filter notes on the left, "⋯" on the right */
+.list-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -6px 0 10px;
+}
+.list-tools-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+}
+/* Only "⋯" on the toolbar (Barang & Stok without a filter): keep the row short */
+.list-tools:has(> .list-tools-main:empty) {
+  margin-top: -12px;
+  margin-bottom: 2px;
+}
+.list-tools .ostrip-note {
+  margin: 0;
+}
+.list-note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.list-more {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+/* One quiet line under the toolbar (e.g. where pickup surat jalan live) */
+.list-hint {
+  margin: -2px 0 10px;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.list-hint .link-btn {
+  font-size: inherit;
+}
+.list-more .filter-drop {
+  right: 0;
+  left: auto;
+}
+
+/* "Periode: …" button and its panel */
+.period-btn,
+.list-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 400 var(--fs-sm) var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.period-btn {
+  margin-left: -8px;
+  padding: 0 8px;
+}
+.list-more-btn {
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  color: var(--muted);
+}
+.period-btn:hover,
+.list-more-btn:hover,
+.period-btn[aria-expanded='true'],
+.list-more-btn[aria-expanded='true'] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.period-btn-k {
+  color: var(--muted);
+}
+.period-btn-v {
+  color: var(--text);
+}
+.period-btn svg {
+  color: var(--muted);
+}
+.period-panel {
+  width: 272px;
+}
+.period-presets {
+  display: flex;
+  flex-direction: column;
+}
+.period-preset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--text);
+  font: 400 var(--fs-sm) var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.period-preset::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.period-preset[aria-pressed='true'] {
+  color: var(--primary);
+}
+.period-preset[aria-pressed='true']::before {
+  background: currentColor;
+}
+.period-preset:hover,
+.period-preset:focus {
+  outline: none;
+  background: var(--surface-hover);
+}
+.period-preset:focus-visible {
+  background: var(--surface-active);
+}
+.period-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 4px 4px;
+}
+.period-field {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.period-field .form-input {
+  width: 100%;
+  min-width: 0;
+}
+.period-apply {
+  justify-content: center;
+}
+
+/* "Pilih beberapa" bar: count, bulk status buttons, "Selesai" */
+.bulk-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  font-size: var(--fs-xs);
+}
+.bulk-count {
+  color: var(--text);
+  font-weight: 500;
+}
+.bulk-actions {
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  min-width: 0;
+}
+.bulk-mode .btn-ghost {
+  min-height: 30px;
+  height: auto;
+  padding: 3px 8px;
+  font-size: var(--fs-xs);
+}
+/* The status choices read as quiet text buttons */
+.bulk-actions .btn-ghost {
+  border-color: transparent;
+  background: none;
+  color: var(--text-secondary);
+}
+.bulk-actions .btn-ghost:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.bulk-mode .bulk-done {
+  margin-left: auto;
+}
+
+/* Row "⋯" button */
 .row-menu-cell {
   width: 1%;
   text-align: right;
@@ -3072,13 +3305,10 @@ select.inline-status {
   color: var(--text);
 }
 .row-menu-btn:focus-visible,
-.tool-menu-btn:focus-visible {
+.list-more-btn:focus-visible,
+.period-btn:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-}
-.tool-menu-btn[aria-expanded='true'] {
-  border-color: var(--border-strong);
-  color: var(--text);
 }
 
 /* The open menu: a fixed popover on <body>, placed by erp-view.js */
@@ -3138,6 +3368,13 @@ select.inline-status {
 .tool-menu-item svg {
   flex-shrink: 0;
   color: var(--muted);
+}
+/* Current value beside an item ("Filter status…  Terkirim") */
+.tool-menu-hint {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 .row-menu-item.is-danger {
   color: var(--danger);

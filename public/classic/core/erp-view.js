@@ -7,14 +7,14 @@
 // FIX SUMMARY
 //  • clear search    — × button clears the search field; input is also cleared
 //                      after navigating to a result via the search modal.
-//  • filter labels   — filterBtn() overrides the core stub and reads
+//  • filter labels   — the status filter (from a list's "⋯" menu) reads
 //                      FILTER_OPTIONS to display human-readable labels; an active
-//                      filter shows a "×" chip so the user can dismiss it inline.
+//                      filter is named on the toolbar with a "Hapus filter" link.
 //  • sortable tables — sortState tracks {col, dir} per view; every sortable
 //                      column header shows ↑/↓ indicators and toggles on click.
 //  • empty states    — filtered empty states name the active filter and offer a
 //                      one-click "Hapus filter" link.
-//  • export CSV      — each list view gains an "Export CSV" button that downloads
+//  • export CSV      — each list's "⋯" menu has "Ekspor CSV", which downloads
 //                      the currently filtered+sorted rows as UTF-8 CSV with BOM
 //                      (so Excel opens it cleanly).
 
@@ -92,17 +92,121 @@ function applyDateFilter(arr, view) {
   return r;
 }
 
-function dateFilterBar(view) {
+// ── Period control ("Periode: …") ─────────────────────────────────────────────
+// One button on a list toolbar shows the active range and opens a small panel
+// (the pop-up system below) with presets and a custom range. It reads and writes
+// dateFilters[view], so the rows, the status strip and the exports follow it.
+const PERIOD_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const PERIOD_PRESETS = [
+  ['month', 'Bulan ini'],
+  ['lastMonth', 'Bulan lalu'],
+  ['3months', '3 bulan terakhir'],
+  ['year', 'Tahun ini'],
+  ['all', 'Semua'],
+];
+
+// YYYY-MM-DD of a local date; month is 0-based and may overflow (Date rolls it).
+function _isoDay(y, m, d) {
+  const dt = new Date(y, m, d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// { from, to } of a preset, counted from today (or `ref`, YYYY-MM-DD).
+function periodRange(key, ref) {
+  const base = String(ref || today());
+  const y = Number(base.slice(0, 4));
+  const m = Number(base.slice(5, 7)) - 1;
+  switch (key) {
+    case 'month':
+      return { from: _isoDay(y, m, 1), to: _isoDay(y, m + 1, 0) };
+    case 'lastMonth':
+      return { from: _isoDay(y, m - 1, 1), to: _isoDay(y, m, 0) };
+    case '3months':
+      return { from: _isoDay(y, m - 2, 1), to: _isoDay(y, m + 1, 0) };
+    case 'year':
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    default:
+      return { from: '', to: '' };
+  }
+}
+
+// Preset key matching a range ('all' when empty), '' for a custom range.
+function _periodPreset(df) {
+  const from = (df && df.from) || '';
+  const to = (df && df.to) || '';
+  if (!from && !to) {
+    return 'all';
+  }
+  const hit = PERIOD_PRESETS.find(([key]) => {
+    const r = periodRange(key);
+    return key !== 'all' && r.from === from && r.to === to;
+  });
+  return hit ? hit[0] : '';
+}
+
+function _periodDay(iso, withYear) {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  if (!y || !m || !d) {
+    return String(iso);
+  }
+  return `${d} ${PERIOD_MONTHS[m - 1]}${withYear ? ` ${y}` : ''}`;
+}
+
+// "Semua", a preset name, or the range ("1 Sep – 30 Sep 2026").
+function periodLabel(view) {
   const df = dateFilters[view] || {};
-  const active = df.from || df.to;
-  return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-    <label style="font-size:.75rem;color:var(--muted)">Dari</label>
-    <input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"
-           value="${df.from || ''}" data-action="setDateFrom" data-view="${view}">
-    <label style="font-size:.75rem;color:var(--muted)">s/d</label>
-    <input type="date" class="form-input" style="padding:4px 8px;font-size:.75rem;width:138px"
-           value="${df.to || ''}" data-action="setDateTo" data-view="${view}">
-    ${active ? `<button class="btn-ghost" data-action="clearDateFilter" data-view="${view}" style="font-size:.75rem;padding:3px 8px">× Hapus</button>` : ''}
+  const preset = _periodPreset(df);
+  if (preset) {
+    return PERIOD_PRESETS.find(p => p[0] === preset)[1];
+  }
+  if (df.from && df.to) {
+    const sameYear = df.from.slice(0, 4) === df.to.slice(0, 4);
+    return `${_periodDay(df.from, !sameYear)} – ${_periodDay(df.to, true)}`;
+  }
+  return df.from ? `Sejak ${_periodDay(df.from, true)}` : `Sampai ${_periodDay(df.to, true)}`;
+}
+
+function setPeriod(view, from, to) {
+  if (!dateFilters[view]) {
+    return;
+  }
+  let a = from || '';
+  let b = to || '';
+  if (a && b && a > b) {
+    [a, b] = [b, a];
+  }
+  dateFilters[view] = { from: a, to: b };
+  pageState[view] = 1;
+  refreshActiveView();
+  // The toolbar was drawn again: keep focus on the period button.
+  const btn = document.querySelector(`#view-${view} .period-btn`);
+  if (btn) {
+    btn.focus();
+  }
+}
+
+function periodControl(view) {
+  const df = dateFilters[view] || {};
+  const preset = _periodPreset(df);
+  // Roving focus: Tab reaches the chosen preset; the arrow keys move between them.
+  const presets = PERIOD_PRESETS.map(
+    ([key, text]) =>
+      `<button type="button" class="pop-item period-preset" data-action="setPeriod" data-type="${view}" data-preset="${key}" aria-pressed="${preset === key}" tabindex="${preset === key || (!preset && key === 'month') ? '0' : '-1'}">${escapeHtml(text)}</button>`
+  ).join('');
+  return `<div class="period-wrap">
+    <button type="button" class="period-btn" data-action="toolMenu" data-pop-align="start" aria-haspopup="dialog" aria-expanded="false">
+      <span class="period-btn-k">Periode:</span>
+      <span class="period-btn-v">${escapeHtml(periodLabel(view))}</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button><div class="tool-menu period-panel" role="dialog" aria-label="Periode" hidden>
+      <div class="period-presets" role="group" aria-label="Pilihan cepat">${presets}</div>
+      <div class="tool-menu-sep" role="separator"></div>
+      <div class="period-custom">
+        <label class="period-field"><span>Dari</span><input type="date" class="form-input period-from" value="${escapeHtml(df.from || '')}"></label>
+        <label class="period-field"><span>Sampai</span><input type="date" class="form-input period-to" value="${escapeHtml(df.to || '')}"></label>
+        <button type="button" class="btn period-apply" data-action="applyPeriod" data-type="${view}" data-default>Terapkan</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -279,35 +383,28 @@ function sortTh(label, view, col) {
   </th>`;
 }
 
-// ── Filter button ─────────────────────────────────────────────────────────────
-// FIX (filter labels): overrides the stub in erp-core.js with a version that
-// reads FILTER_OPTIONS to surface human-readable labels, marks the button active
-// when a filter is applied, and inlines a dismiss × chip.
-function filterBtn(type) {
+// ── Status filter ─────────────────────────────────────────────────────────────
+// The filter drop-down (FILTER_OPTIONS, human-readable labels) opens from
+// "Filter status…" in the list's "⋯" menu. While a filter is on, the toolbar
+// names it with a one-click "Hapus filter".
+function _filterLabel(type) {
   const f = filters[type];
-  const opts = FILTER_OPTIONS[type] || [];
-  const entry = opts.find(([val]) => val === f);
-  const label = f === 'all' ? 'Filter' : entry ? entry[1] : f;
-  const isActive = f !== 'all';
+  if (!f || f === 'all') {
+    return '';
+  }
+  const entry = (FILTER_OPTIONS[type] || []).find(([val]) => val === f);
+  return entry ? entry[1] : f;
+}
 
-  const activeStyle = isActive
-    ? 'background:var(--primary-strong);color:var(--on-primary);border-color:var(--primary-strong)'
-    : '';
-
-  const clearChip = isActive
-    ? `<button data-action="clearFilter" data-type="${type}"
-         style="background:rgba(255,255,255,0.25);border:none;border-radius:4px;
-                color:#fff;font-size:.75rem;font-weight:700;padding:1px 5px;
-                cursor:pointer;margin-left:2px;line-height:1.4" title="Hapus filter">×</button>`
-    : '';
-
-  return `<div class="filter-wrap" style="display:flex;align-items:center;gap:6px">
-    <button class="filter-btn" data-action="toggleFilter" data-type="${type}" style="${activeStyle}">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      ${escapeHtml(label)}
-    </button>${clearChip}
-    <div class="filter-drop" id="filter-${type}"></div>
-  </div>`;
+function listFilterNote(type, noun) {
+  const label = _filterLabel(type);
+  if (!label) {
+    return '';
+  }
+  return `<span class="list-note" role="status">${escapeHtml(noun || 'Status')}: <strong>${escapeHtml(label)}</strong>
+    <span aria-hidden="true">·</span>
+    <button type="button" class="link-btn" data-action="clearFilter" data-type="${type}">Hapus filter</button>
+  </span>`;
 }
 
 // ── Order lists (Pesanan Penjualan / Pesanan Pembelian) ───────────────────────
@@ -338,9 +435,9 @@ function orderRows(view) {
   return applySorted(rows, view);
 }
 
-// Status strip: the five stages of OrderPipeline.summary (within the page's date
-// filter) as one row of connected segments. A segment filters the table to its
-// stage; clicking it again clears the filter.
+// Status strip: the five stages of OrderPipeline.summary (within the page's
+// period) as one row of light tabs — label and count, the money below. A tab
+// filters the table to its stage; clicking it again clears the filter.
 function orderStrip(view) {
   const P = window.OrderPipeline;
   if (!P) {
@@ -371,16 +468,16 @@ function orderStrip(view) {
   return `<div class="ostrip" role="group" aria-label="${label}"><div class="ostrip-track">${segs}</div></div>`;
 }
 
-// "Menampilkan: <tahap> · Hapus filter" above the table while a stage is picked.
+// "Menampilkan: <tahap> · Hapus filter" on the list toolbar while a stage is picked.
 function orderStageNote(view) {
   const key = stageFilters[view];
   if (!key) {
     return '';
   }
-  return `<div class="ostrip-note" role="status">Menampilkan: <strong>${escapeHtml(_orderStageLabel(view, key))}</strong>
+  return `<span class="ostrip-note list-note" role="status">Menampilkan: <strong>${escapeHtml(_orderStageLabel(view, key))}</strong>
     <span aria-hidden="true">·</span>
     <button type="button" class="link-btn" data-action="clearOrderStage" data-type="${view}">Hapus filter</button>
-  </div>`;
+  </span>`;
 }
 
 function setOrderStage(view, key) {
@@ -491,21 +588,53 @@ function pickupTag(o) {
   return o && o.pickupFlow ? '<span class="ostrip-tag">Pengambilan</span>' : '';
 }
 
-// ── Pop-up menus: row "⋯" and toolbar "Ekspor / impor" ─────────────────────────
-// The menu is rendered hidden right after its trigger button, so RBAC's button
+// ── Pop-ups: row "⋯", toolbar "⋯" and the "Periode" panel ──────────────────────
+// The pop-up is rendered hidden right after its trigger button, so RBAC's button
 // gating (guardView) applies to its items like to any other button. Opening it
 // clones that markup into one fixed popover on <body> — outside the table's
 // scroll box and the card — placed so it stays inside the viewport. Items are
-// ordinary data-action buttons handled by the click delegation below.
+// ordinary data-action buttons handled by the click delegation below. A panel
+// with fields (role="dialog", the Periode panel) keeps Tab inside itself.
 let _popMenu = null; // { el, trigger, openedAt }
 
 function _popItems() {
   if (!_popMenu) {
     return [];
   }
-  return Array.from(_popMenu.el.querySelectorAll('[role^="menuitem"]')).filter(
+  return Array.from(_popMenu.el.querySelectorAll('[role^="menuitem"], .pop-item')).filter(
     b => !b.disabled && !b.closest('[hidden]') && b.style.display !== 'none'
   );
+}
+
+function _popIsPanel() {
+  return !!_popMenu && _popMenu.el.getAttribute('role') === 'dialog';
+}
+
+// Tab / Shift+Tab cycle through the panel's fields and buttons.
+function _popTrapTab(e) {
+  const el = _popMenu.el;
+  const list = Array.from(el.querySelectorAll('input, button:not([tabindex="-1"])')).filter(
+    b => !b.disabled && !b.closest('[hidden]')
+  );
+  if (!list.length) {
+    return;
+  }
+  const a = document.activeElement;
+  const onItem = !!(a && a.classList && a.classList.contains('pop-item'));
+  if (e.shiftKey && (a === list[0] || onItem)) {
+    e.preventDefault();
+    list[list.length - 1].focus();
+  } else if (!e.shiftKey && a === list[list.length - 1]) {
+    e.preventDefault();
+    list[0].focus();
+  }
+}
+
+// A field of the open panel has focus (typing a date): scrolling or the
+// on-screen keyboard resizing the page must not close the panel.
+function _popEditing() {
+  const a = document.activeElement;
+  return !!_popMenu && !!a && a.tagName === 'INPUT' && _popMenu.el.contains(a);
 }
 
 function _focusPopItem(index) {
@@ -530,8 +659,9 @@ function _placePopMenu() {
   const r = trigger.getBoundingClientRect();
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  // Right edge on the trigger's right edge, kept inside the viewport.
-  let left = r.right - w;
+  // Right edge on the trigger's right edge (left edge for a button that starts a
+  // toolbar, data-pop-align="start"), kept inside the viewport.
+  let left = trigger.dataset.popAlign === 'start' ? r.left : r.right - w;
   left = Math.max(margin, Math.min(left, vw - w - margin));
   // Below the trigger; above it when there is no room below.
   let top = r.bottom + gap;
@@ -559,6 +689,19 @@ function _closePopMenu(focusTrigger) {
 
 function _popMenuKeys(e) {
   if (!_popMenu) {
+    return;
+  }
+  // In a field the keys belong to the field; Enter runs the panel's main button.
+  if (e.target && e.target.tagName === 'INPUT') {
+    if (e.key === 'Enter') {
+      const go = _popMenu.el.querySelector('[data-default]');
+      if (go) {
+        e.preventDefault();
+        go.click();
+      }
+    } else if (e.key === 'Tab') {
+      _popTrapTab(e);
+    }
     return;
   }
   const items = _popItems();
@@ -591,6 +734,10 @@ function _popMenuKeys(e) {
       break;
     }
     case 'Tab':
+      if (_popIsPanel()) {
+        _popTrapTab(e);
+        break;
+      }
       // Leave the menu: focus returns to its button and Tab moves on from there.
       _closePopMenu(true);
       break;
@@ -614,7 +761,9 @@ function _openPopMenu(trigger) {
   _popMenu = { el, trigger, openedAt: Date.now() };
   el.addEventListener('keydown', _popMenuKeys);
   _placePopMenu();
-  _focusPopItem(0);
+  // Focus the chosen option of a picker (Periode), else the first item.
+  const chosen = _popItems().findIndex(b => b.getAttribute('aria-pressed') === 'true');
+  _focusPopItem(chosen > -1 ? chosen : 0);
 }
 
 function _togglePopMenu(trigger) {
@@ -664,10 +813,30 @@ document.addEventListener(
 document.addEventListener(
   'keydown',
   e => {
-    if (_popMenu && e.key === 'Escape') {
+    if (e.key !== 'Escape') {
+      return;
+    }
+    if (_popMenu) {
       e.preventDefault();
       e.stopPropagation();
       _closePopMenu(true);
+      return;
+    }
+    // An open status filter drop-down closes too; focus goes back to its "⋯".
+    const drop = document.querySelector('.filter-drop.open');
+    if (drop) {
+      e.preventDefault();
+      e.stopPropagation();
+      const home = drop._homeParent || drop.parentNode;
+      _closeFilterDrop(drop);
+      if (_filterCloseCtrl) {
+        _filterCloseCtrl.abort();
+        _filterCloseCtrl = null;
+      }
+      const more = home && home.querySelector ? home.querySelector('.list-more-btn') : null;
+      if (more) {
+        more.focus();
+      }
     }
   },
   true
@@ -677,18 +846,27 @@ document.addEventListener(
 function _popMenuSettled() {
   return !!_popMenu && Date.now() - _popMenu.openedAt > 150;
 }
+// While a date field of the Periode panel is being edited the panel stays and
+// follows its button instead.
+function _popMenuMoved() {
+  if (_popEditing()) {
+    _placePopMenu();
+  } else {
+    _closePopMenu(false);
+  }
+}
 document.addEventListener(
   'scroll',
   e => {
     if (_popMenuSettled() && !(e.target instanceof Node && _popMenu.el.contains(e.target))) {
-      _closePopMenu(false);
+      _popMenuMoved();
     }
   },
   true
 );
 window.addEventListener('resize', () => {
   if (_popMenuSettled()) {
-    _closePopMenu(false);
+    _popMenuMoved();
   }
 });
 
@@ -755,10 +933,10 @@ function orderRowMenu(view, o) {
     </div>`;
 }
 
-// ── Toolbar "Ekspor / impor" menu ─────────────────────────────────────────────
-// One menu button for a list's import/export options (keys in display order):
-// csv → Export CSV, excel → Export Excel (xlsx), summary → Ringkasan PDF
-// (order-summary.js), import → Import Excel (excel-import.js).
+// ── Toolbar "⋯" menu ──────────────────────────────────────────────────────────
+// Import/export options of a list (keys in display order): csv → Export CSV,
+// excel → Export Excel (xlsx), summary → Ringkasan PDF (order-summary.js),
+// import → Import Excel (excel-import.js).
 const IO_MENU_ITEMS = {
   csv: {
     action: 'exportCSV',
@@ -782,23 +960,83 @@ const IO_MENU_ITEMS = {
   },
 };
 
-function ioMenu(view, keys) {
+function _toolItem(label, icon, attrs, hint) {
+  return `<button type="button" role="menuitem" tabindex="-1" class="tool-menu-item" ${attrs}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>
+      ${escapeHtml(label)}${hint ? `<span class="tool-menu-hint">${escapeHtml(hint)}</span>` : ''}</button>`;
+}
+
+// Export items first, then (after a line) the import.
+function ioMenuItems(view, keys) {
   const item = key => {
     const it = IO_MENU_ITEMS[key];
-    return `<button type="button" role="menuitem" tabindex="-1" class="tool-menu-item" data-action="${it.action}" data-type="${view}">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${it.icon}</svg>
-      ${escapeHtml(it.label)}</button>`;
+    return _toolItem(it.label, it.icon, `data-action="${it.action}" data-type="${view}"`);
   };
   const out = keys.filter(k => k !== 'import' && IO_MENU_ITEMS[k]).map(item);
   const inn = keys.indexOf('import') !== -1 ? [item('import')] : [];
   const sep = out.length && inn.length ? '<div class="tool-menu-sep" role="separator"></div>' : '';
-  return `<div class="tool-menu-wrap">
-    <button type="button" class="filter-btn tool-menu-btn" data-action="toolMenu" aria-haspopup="menu" aria-expanded="false">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Ekspor / impor
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-    </button><div class="tool-menu" role="menu" aria-label="Ekspor / impor" hidden>${out.join('')}${sep}${inn.join('')}</div>
+  return `${out.join('')}${sep}${inn.join('')}`;
+}
+
+const FILTER_ICON = '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>';
+const SELECT_ICON =
+  '<rect x="3" y="3" width="18" height="18" rx="3"/><polyline points="8 12 11 15 16 9"/>';
+
+// The one "⋯" button of a list toolbar: "Filter status…" (opens the status
+// drop-down kept beside the button), "Pilih beberapa" where the list has bulk
+// actions, then the import/export options. opts: { io: keys, select: bool,
+// filterLabel }.
+function listMoreMenu(view, opts) {
+  const o = opts || {};
+  const head = [];
+  if (FILTER_OPTIONS[view]) {
+    head.push(
+      _toolItem(
+        o.filterLabel || 'Filter status…',
+        FILTER_ICON,
+        `data-action="toggleFilter" data-type="${view}"`,
+        _filterLabel(view)
+      )
+    );
+  }
+  if (o.select) {
+    head.push(_toolItem('Pilih beberapa', SELECT_ICON, `data-action="soSelectMode" data-type="${view}"`));
+  }
+  const io = ioMenuItems(view, o.io || []);
+  const sep = head.length && io ? '<div class="tool-menu-sep" role="separator"></div>' : '';
+  return `<div class="filter-wrap list-more">
+    <button type="button" class="list-more-btn" data-action="toolMenu" aria-haspopup="menu" aria-expanded="false" aria-label="Opsi lainnya" title="Opsi lainnya">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button><div class="tool-menu" role="menu" aria-label="Opsi lainnya" hidden>${head.join('')}${sep}${io}</div>
+    <div class="filter-drop" id="filter-${view}"></div>
   </div>`;
+}
+
+// Toolbar row above a list: period, notes of the active filters, then "⋯".
+function listTools(main, more) {
+  return `<div class="list-tools">
+    <div class="list-tools-main">${main || ''}</div>
+    ${more}
+  </div>`;
+}
+
+// ── "Pilih beberapa" (Pesanan Penjualan) ──────────────────────────────────────
+// The checkbox column and the bulk status bar show only in selection mode,
+// entered from the "⋯" menu and left with "Selesai".
+let soSelectMode = false;
+
+function setSOSelectMode(on) {
+  soSelectMode = !!on;
+  if (!soSelectMode) {
+    soSelection.clear();
+  }
+  refreshActiveView();
+  const target = document.querySelector(
+    soSelectMode ? '#view-sales #checkAllSO' : '#view-sales .list-more-btn'
+  );
+  if (target) {
+    target.focus();
+  }
 }
 
 // ── Export CSV ────────────────────────────────────────────────────────────────
@@ -1098,7 +1336,7 @@ function navigate(id) {
 // picks up dashboard.js's version at runtime via late binding.
 
 // ── View: Sales ───────────────────────────────────────────────────────────────
-// renderSales() (status strip, checkbox selection, row menu, bulk status bar)
+// renderSales() (status strip, row menu, "Pilih beberapa" with the bulk status bar)
 // lives in the merged erp-patch section at the bottom of this file. The
 // getRenderer() switch references it by name via late binding.
 
@@ -1109,18 +1347,13 @@ function renderPurchase() {
   const paged = applyPage(orders, 'purchase');
 
   return `
-  ${secHdr('Pesanan Pembelian', 'Purchase order ke supplier beserta penerimaan barang dan pembayarannya', 'Buat PO', 'addPO')}
+  ${secHdr('Pesanan Pembelian', '', 'Buat PO', 'addPO')}
   ${orderStrip('purchase')}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-      <div style="font-size:.875rem;font-weight:700">Daftar Purchase Order</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${ioMenu('purchase', ['csv', 'excel', 'summary', 'import'])}
-        ${filterBtn('purchase')}
-      </div>
-    </div>
-    <div style="margin-bottom:12px">${dateFilterBar('purchase')}</div>
-    ${orderStageNote('purchase')}
+    ${listTools(
+      periodControl('purchase') + orderStageNote('purchase') + listFilterNote('purchase'),
+      listMoreMenu('purchase', { io: ['csv', 'excel', 'summary', 'import'] })
+    )}
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -1137,11 +1370,11 @@ function renderPurchase() {
               ? emptyRow(6, 'purchase')
               : paged
                   .map(
-                    o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary);white-space:nowrap">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
-              <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.supplier)}</td>
-              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
-              <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
+                    o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}">
+              <td class="td-p list-no">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
+              <td class="td-p">${escapeHtml(o.supplier)}</td>
+              <td class="td-p t-muted">${escapeHtml(o.date)}</td>
+              <td class="td-p t-nowrap">${idr(o.amount)}</td>
               <td class="td-p">${orderStageBadge('purchases', o)}</td>
               <td class="td-p row-menu-cell">${orderRowMenu('purchase', o)}</td>
             </tr>`
@@ -1174,7 +1407,7 @@ function renderInventory() {
   const pagedItems = applyPage(items, 'inventory');
 
   return `
-  ${secHdr('Barang & Stok', 'Daftar barang, stok, dan nilai persediaan', 'Tambah Barang', 'addItem')}
+  ${secHdr('Barang & Stok', '', 'Tambah Barang', 'addItem')}
   ${
     lowCount > 0
       ? `<div class="alert-warn">
@@ -1193,13 +1426,10 @@ function renderInventory() {
     { label: 'Kategori', value: String(cats.length), sub: 'Kelompok barang' },
   ])}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-      <div style="font-size:.875rem;font-weight:700">Katalog Item</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${ioMenu('inventory', ['csv', 'excel'])}
-        ${filterBtn('inventory')}
-      </div>
-    </div>
+    ${listTools(
+      listFilterNote('inventory', 'Filter'),
+      listMoreMenu('inventory', { io: ['csv', 'excel'], filterLabel: 'Filter barang…' })
+    )}
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -1220,14 +1450,14 @@ function renderInventory() {
               : pagedItems
                   .map(i => {
                     const isLow = i.stock < i.min;
-                    return `<tr data-action="viewItem" data-id="${escapeHtml(i.id)}" style="cursor:pointer">
-                <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(i.name)}</td>
-                <td class="td-p"><span class="cat">${escapeHtml(i.category)}</span></td>
-                <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(i.unit)}</td>
-                <td class="td-p" style="font-size:.8125rem;font-weight:800;color:${isLow ? 'var(--danger)' : 'var(--text)'}">${i.stock}</td>
-                <td class="td-p" style="font-size:.75rem;color:var(--muted)">${i.min}</td>
-                <td class="td-p" style="font-size:.75rem">${idr(i.cost)}</td>
-                <td class="td-p" style="font-size:.75rem;font-weight:700">${idr(i.sell)}</td>
+                    return `<tr data-action="viewItem" data-id="${escapeHtml(i.id)}">
+                <td class="td-p list-key">${escapeHtml(i.name)}</td>
+                <td class="td-p t-muted">${escapeHtml(i.category)}</td>
+                <td class="td-p t-muted">${escapeHtml(i.unit)}</td>
+                <td class="td-p${isLow ? ' t-danger' : ''}">${i.stock}</td>
+                <td class="td-p t-muted">${i.min}</td>
+                <td class="td-p t-nowrap">${idr(i.cost)}</td>
+                <td class="td-p t-nowrap">${idr(i.sell)}</td>
                 <td class="td-p">${badge(isLow ? 'Low' : 'OK')}</td>
                 <td class="td-p">${actionBtns('Item', i.id)}</td>
               </tr>`;
@@ -1787,20 +2017,16 @@ function renderLogistics() {
   const paged = applyPage(orders, 'logistics');
 
   return `
-  ${secHdr('Surat Jalan', 'Pengiriman barang ke pelanggan, armada, dan ekspedisi', 'Buat Surat Jalan', 'addDO')}
+  ${secHdr('Surat Jalan', '', 'Buat Surat Jalan', 'addDO')}
   <div class="list-summary">${dos.length} surat jalan · ${thisMthDO.length} bulan ini · ${uniqueDrivers} driver aktif bulan ini</div>
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-      <div style="font-size:.875rem;font-weight:700">Daftar Delivery Order</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${ioMenu('logistics', ['csv', 'excel', 'import'])}
-        ${filterBtn('logistics')}
-      </div>
-    </div>
-    <div style="margin-bottom:12px">${dateFilterBar('logistics')}</div>
+    ${listTools(
+      periodControl('logistics') + listFilterNote('logistics'),
+      listMoreMenu('logistics', { io: ['csv', 'excel', 'import'] })
+    )}
     ${
       pickupCount > 0
-        ? `<div class="empty-inline" style="margin-bottom:12px;text-align:left">Surat jalan pengambilan dari supplier (${pickupCount}) ada di menu <button class="link-btn" data-action="openPickupOrders">Pengambilan → PO Pengambilan</button>.</div>`
+        ? `<div class="list-hint">Surat jalan pengambilan dari supplier (${pickupCount}) ada di menu <button class="link-btn" data-action="openPickupOrders">Pengambilan → PO Pengambilan</button>.</div>`
         : ''
     }
     <div class="table-wrap">
@@ -1835,23 +2061,18 @@ function renderLogistics() {
                       : rawRef
                         ? `${d.soId ? 'SO' : 'PO'} · ${docNum(null, rawRef)}`
                         : '—';
-                    const refColor = d.soId
-                      ? 'var(--primary)'
-                      : d.poId
-                        ? 'var(--warning)'
-                        : 'var(--muted)';
-                    return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">${escapeHtml(docNum(d.number, d.id))}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:600;color:${refColor}">${escapeHtml(ref)}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:600">${escapeHtml(d.customer)}</td>
-              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.destination)}${
+                    return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}">
+              <td class="td-p list-no">${escapeHtml(docNum(d.number, d.id))}</td>
+              <td class="td-p t-muted t-nowrap">${escapeHtml(ref)}</td>
+              <td class="td-p">${escapeHtml(d.customer)}</td>
+              <td class="td-p t-muted">${escapeHtml(d.destination)}${
                 d.destChanged
-                  ? ` <span title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}" style="display:inline-block;font-size:.75rem;font-weight:800;color:var(--warning);background:var(--warning-bg);border:1px solid transparent;border-radius:99px;padding:1px 6px;vertical-align:middle">TUJUAN DIUBAH</span>`
+                  ? ` <span class="badge badge-warning" title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}">Tujuan diubah</span>`
                   : ''
               }</td>
-              <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date)}</td>
-              <td class="td-p" style="font-size:.75rem">${escapeHtml(d.driver)}</td>
-              <td class="td-p" style="font-size:.75rem;font-family:monospace">${escapeHtml(d.vehicle)}</td>
+              <td class="td-p t-muted">${escapeHtml(d.date)}</td>
+              <td class="td-p">${escapeHtml(d.driver)}</td>
+              <td class="td-p mono">${escapeHtml(d.vehicle)}</td>
               <td class="td-p">${badge(d.status)}</td>
               <td class="td-p">${actionBtns('DO', d.id)}</td>
             </tr>`;
@@ -1925,23 +2146,23 @@ function renderMasterData() {
 
   function custRow(c) {
     const orders = DB.salesOrders.filter(o => o.customer === c.name);
-    return `<tr data-action="viewCustomer" data-id="${escapeHtml(c.id)}" style="cursor:pointer">
-      <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(c.name)}</td>
-      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(c.phone || '—')}</td>
-      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(c.address || '—')}</td>
-      <td class="td-p" style="font-size:.75rem;font-weight:700">${orders.length} SO</td>
+    return `<tr data-action="viewCustomer" data-id="${escapeHtml(c.id)}">
+      <td class="td-p list-key">${escapeHtml(c.name)}</td>
+      <td class="td-p t-muted">${escapeHtml(c.phone || '—')}</td>
+      <td class="td-p t-muted">${escapeHtml(c.address || '—')}</td>
+      <td class="td-p">${orders.length} SO</td>
       <td class="td-p">${actionBtns('Customer', c.id)}</td>
     </tr>`;
   }
 
   function suppRow(s) {
     const orders = DB.purchaseOrders.filter(o => o.supplier === s.name);
-    return `<tr data-action="viewSupplier" data-id="${escapeHtml(s.id)}" style="cursor:pointer">
-      <td class="td-p" style="font-size:.8125rem;font-weight:700">${escapeHtml(s.name)}</td>
-      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.contact || '—')}</td>
-      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.phone || '—')}</td>
-      <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(s.address || '—')}</td>
-      <td class="td-p" style="font-size:.75rem;font-weight:700">${orders.length} PO</td>
+    return `<tr data-action="viewSupplier" data-id="${escapeHtml(s.id)}">
+      <td class="td-p list-key">${escapeHtml(s.name)}</td>
+      <td class="td-p t-muted">${escapeHtml(s.contact || '—')}</td>
+      <td class="td-p t-muted">${escapeHtml(s.phone || '—')}</td>
+      <td class="td-p t-muted">${escapeHtml(s.address || '—')}</td>
+      <td class="td-p">${orders.length} PO</td>
       <td class="td-p">${actionBtns('Supplier', s.id)}</td>
     </tr>`;
   }
@@ -2276,6 +2497,11 @@ function toggleFilter(type) {
 
   drop.classList.add('open');
   _parkFilterDrop(drop);
+  // Opened from the "⋯" menu, whose item goes away: focus the chosen option.
+  const pick = drop.querySelector('.filter-option.active') || drop.querySelector('.filter-option');
+  if (pick) {
+    pick.focus();
+  }
 
   // Cancel any stale outside-click handler from a previous open cycle
   if (_filterCloseCtrl) {
@@ -2494,6 +2720,8 @@ document.addEventListener('click', async e => {
 
     // ── Filters ───────────────────────────────────────────────────────────────
     case 'toggleFilter':
+      // From the "⋯" menu: the menu gives way to the status choices at once.
+      _closePopMenu(false);
       toggleFilter(type);
       break;
     case 'setFilter':
@@ -2742,10 +2970,26 @@ document.addEventListener('click', async e => {
       showAddAssetDisposal();
       break;
 
-    // ── Date range filter ─────────────────────────────────────────────────────
-    case 'clearDateFilter':
-      dateFilters[type] = { from: '', to: '' };
-      refreshActiveView();
+    // ── Period (Periode panel) ────────────────────────────────────────────────
+    case 'setPeriod': {
+      const r = periodRange(btn.dataset.preset);
+      setPeriod(type, r.from, r.to);
+      break;
+    }
+    case 'applyPeriod': {
+      const panel = btn.closest('.period-panel');
+      const from = panel ? panel.querySelector('.period-from') : null;
+      const to = panel ? panel.querySelector('.period-to') : null;
+      setPeriod(type, from ? from.value : '', to ? to.value : '');
+      break;
+    }
+
+    // ── "Pilih beberapa" on Pesanan Penjualan ────────────────────────────────
+    case 'soSelectMode':
+      setSOSelectMode(true);
+      break;
+    case 'soSelectDone':
+      setSOSelectMode(false);
       break;
 
     // ── Print ─────────────────────────────────────────────────────────────────
@@ -3077,27 +3321,12 @@ function handleSearch(query) {
     });
   }
 
-  // ── Date filter inputs (change event, not click) ────────────────────────────
+  // ── Change events: backup import, row checkboxes ────────────────────────────
   document.addEventListener('change', e => {
     const inp = e.target;
     const el = e.target;
 
-    // Date filter handlers (from erp-view.js)
-    if (inp.dataset.action === 'setDateFrom') {
-      const v = inp.dataset.view;
-      if (dateFilters[v]) {
-        dateFilters[v].from = inp.value;
-        pageState[v] = 1;
-        refreshActiveView();
-      }
-    } else if (inp.dataset.action === 'setDateTo') {
-      const v = inp.dataset.view;
-      if (dateFilters[v]) {
-        dateFilters[v].to = inp.value;
-        pageState[v] = 1;
-        refreshActiveView();
-      }
-    } else if (inp.dataset.action === 'importBackup') {
+    if (inp.dataset.action === 'importBackup') {
       // Same path as "Kelola Backup" (src/core/backup.js importFromFile): it
       // validates and stores the data; the page then reloads from it.
       const file = inp.files && inp.files[0];
@@ -3172,7 +3401,7 @@ function handleSearch(query) {
 // Aging section (called directly from renderFinance above, replacing the old
 // monkey-patch wrapper).
 // ═══════════════════════════════════════════════════════════════════════════════
-// § 11  OVERRIDE: renderSales — checkbox column + status strip + row menu + bulk bar
+// § 11  OVERRIDE: renderSales — status strip + row menu + selection on demand
 // ════════════════════════════════════════════════════════════════════════════════
 
 function renderSales() {
@@ -3180,44 +3409,47 @@ function renderSales() {
 
   const totalFiltered = orders.length;
   const paged = applyPage(orders, 'sales');
+  const selecting = soSelectMode;
 
   // "Select all on this page" state
   const allPageChecked = paged.length > 0 && paged.every(o => soSelection.has(o.id));
 
-  const bulkBar = `
-  <div id="bulkBar" style="display:${soSelection.size > 0 ? 'flex' : 'none'};
-    align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;
-    background:var(--bg);border:1.5px solid var(--primary);border-radius:10px;
-    margin-bottom:10px">
-    <span id="bulkCount" style="font-size:.75rem;font-weight:700;color:var(--primary)">
-      ${soSelection.size} SO dipilih
-    </span>
-    <div style="flex:1"></div>
-    <span style="font-size:.75rem;color:var(--muted)">Ubah semua ke:</span>
-    ${SO_STATUSES.map(
-      ([v, l]) =>
-        `<button class="btn-ghost" data-action="bulkSOStatus" data-status="${v}"
-         style="font-size:.75rem;padding:4px 10px">${escapeHtml(l)}</button>`
-    ).join('')}
-    <button class="btn-ghost" data-action="clearSOSelection"
-      style="font-size:.75rem;padding:4px 10px;color:var(--danger)">✕ Batal</button>
-  </div>`;
+  // Selection mode ("Pilih beberapa"): count, the bulk status buttons (shown by
+  // updateBulkBar once something is picked) and "Selesai".
+  const bulkBar = selecting
+    ? `
+  <div class="bulk-mode" role="region" aria-label="Pilih beberapa pesanan">
+    <span id="bulkCount" class="bulk-count">${soSelection.size} SO dipilih</span>
+    <div id="bulkBar" class="bulk-actions" style="display:${soSelection.size > 0 ? 'flex' : 'none'}">
+      <span class="t-muted">Ubah semua ke:</span>
+      ${SO_STATUSES.map(
+        ([v, l]) =>
+          `<button type="button" class="btn-ghost" data-action="bulkSOStatus" data-status="${v}">${escapeHtml(l)}</button>`
+      ).join('')}
+      <button type="button" class="btn-ghost" data-action="clearSOSelection">Kosongkan pilihan</button>
+    </div>
+    <button type="button" class="btn-ghost bulk-done" data-action="soSelectDone">Selesai</button>
+  </div>`
+    : '';
 
   const tableRows =
     paged.length === 0
-      ? emptyRow(7, 'sales')
+      ? emptyRow(selecting ? 7 : 6, 'sales')
       : paged
           .map(o => {
-            const checked = soSelection.has(o.id) ? 'checked' : '';
-            return `<tr data-action="viewSO" data-id="${escapeHtml(o.id)}">
-          <td style="padding:7px 8px;text-align:center;width:32px">
+            const num = docNum(o.number, o.id);
+            const check = selecting
+              ? `<td class="sel-cell">
             <input type="checkbox" class="so-check" data-action="toggleSOCheck"
-              data-id="${escapeHtml(o.id)}" ${checked} style="cursor:pointer;width:14px;height:14px">
-          </td>
-          <td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary);white-space:nowrap">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
-          <td class="td-p" style="font-size:.8125rem;font-weight:600">${escapeHtml(o.customer)}</td>
-          <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.date)}</td>
-          <td class="td-p" style="font-size:.8125rem;font-weight:800">${idr(o.amount)}</td>
+              data-id="${escapeHtml(o.id)}" ${soSelection.has(o.id) ? 'checked' : ''} aria-label="Pilih ${escapeHtml(num)}">
+          </td>`
+              : '';
+            return `<tr data-action="viewSO" data-id="${escapeHtml(o.id)}">
+          ${check}
+          <td class="td-p list-no">${escapeHtml(num)}${pickupTag(o)}</td>
+          <td class="td-p">${escapeHtml(o.customer)}</td>
+          <td class="td-p t-muted">${escapeHtml(o.date)}</td>
+          <td class="td-p t-nowrap">${idr(o.amount)}</td>
           <td class="td-p">${orderStageBadge('sales', o)}</td>
           <td class="td-p row-menu-cell">${orderRowMenu('sales', o)}</td>
         </tr>`;
@@ -3225,28 +3457,27 @@ function renderSales() {
           .join('');
 
   return `
-  ${secHdr('Pesanan Penjualan', 'Sales order dari pelanggan beserta pengiriman, faktur, dan pembayarannya', 'Buat SO', 'addSO')}
+  ${secHdr('Pesanan Penjualan', '', 'Buat SO', 'addSO')}
   ${orderStrip('sales')}
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-      <div style="font-size:.875rem;font-weight:700">Daftar Sales Order</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${ioMenu('sales', ['csv', 'summary', 'import'])}
-        ${filterBtn('sales')}
-      </div>
-    </div>
-    <div style="margin-bottom:12px">${dateFilterBar('sales')}</div>
-    ${orderStageNote('sales')}
+    ${listTools(
+      periodControl('sales') + orderStageNote('sales') + listFilterNote('sales'),
+      // While selecting, "Selesai" in the bar leaves selection mode.
+      listMoreMenu('sales', { io: ['csv', 'summary', 'import'], select: !selecting })
+    )}
     ${bulkBar}
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th style="width:32px;padding:8px;text-align:center">
+          ${
+            selecting
+              ? `<th class="sel-cell">
             <input type="checkbox" id="checkAllSO" data-action="checkAllSO"
               ${allPageChecked ? 'checked' : ''}
-              style="cursor:pointer;width:14px;height:14px"
-              title="Pilih/batalkan semua di halaman ini">
-          </th>
+              aria-label="Pilih semua di halaman ini" title="Pilih/batalkan semua di halaman ini">
+          </th>`
+              : ''
+          }
           ${sortTh('No. SO', 'sales', 'id')}
           ${sortTh('Pelanggan', 'sales', 'customer')}
           ${sortTh('Tanggal', 'sales', 'date')}

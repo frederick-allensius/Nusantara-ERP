@@ -386,7 +386,7 @@
   // ── Rendering ──────────────────────────────────────────────────────────────
   function header(c) {
     return typeof window.secHdr === 'function'
-      ? window.secHdr(c.title, c.sub)
+      ? window.secHdr(c.title, c.sub, '', '', { showSub: true })
       : '<div class="sec-hdr"><div><h1>' +
           esc(c.title) +
           '</h1><p>' +

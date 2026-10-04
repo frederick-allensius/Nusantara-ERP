@@ -334,7 +334,8 @@
             'Rekonsiliasi Timbangan',
             'Bandingkan qty pesanan, surat jalan, dan timbangan sebelum faktur',
             '',
-            ''
+            '',
+            { showSub: true }
           )
         : '<h1>Rekonsiliasi Timbangan</h1>';
 
