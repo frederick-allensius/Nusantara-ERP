@@ -52,7 +52,7 @@
   }
 
   var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  EMPLOYEE
@@ -82,43 +82,41 @@
         return (a.name || '').localeCompare(b.name || '');
       });
 
-    var statMap = {
-      Active: 'var(--success-bg)|var(--success)',
-      Inactive: 'var(--danger-bg)|var(--danger)',
-      Probation: 'var(--warning-bg)|var(--warning)',
+    // Status tone (style.css .badge-*): in a list it reads as coloured text.
+    var statTone = {
+      Active: 'success',
+      Inactive: 'danger',
+      Probation: 'warning',
     };
 
     var rows = emps.length
       ? emps
           .map(function (e) {
-            var sc = (statMap[e.status] || 'var(--surface-sunken)|var(--text-secondary)').split('|');
             return (
               '<tr>' +
-              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
+              '<td class="td-p t-muted t-nowrap">' +
               esc(e.id) +
               '</td>' +
-              '<td class="td-p" style="font-weight:700">' +
+              '<td class="td-p list-key">' +
               esc(e.name) +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p">' +
               esc(e.position || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p">' +
               esc(e.department || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p t-muted t-nowrap">' +
               esc(e.phone || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p t-muted">' +
               esc(e.email || '—') +
               '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
+              '<td class="td-p t-muted">' +
               esc(e.joinDate || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:4px;background:' +
-              sc[0] +
-              ';color:' +
-              sc[1] +
+              '<td class="td-p"><span class="badge badge-' +
+              (statTone[e.status] || 'neutral') +
               '">' +
               esc(
                 EMP_STATUS.find(function (x) {
@@ -130,11 +128,11 @@
                   : e.status || 'Aktif'
               ) +
               '</span></td>' +
-              '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editEmpM" data-id="' +
+              '<td class="td-p t-actions">' +
+              '<button type="button" class="row-edit" data-action="editEmpM" data-id="' +
               esc(e.id) +
               '">Edit</button> ' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delEmpM" data-id="' +
+              '<button type="button" class="row-edit row-edit-danger" data-action="delEmpM" data-id="' +
               esc(e.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -152,7 +150,7 @@
     });
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Karyawan</h1><p>Direktori karyawan dan jabatannya</p></div>' +
+      '<div class="sec-hdr"><div><h1>Karyawan</h1></div>' +
         '<button class="btn" data-action="addEmpM">+ Tambah Karyawan</button></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Karyawan</div><div class="stat-val">' +

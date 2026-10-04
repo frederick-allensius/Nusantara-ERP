@@ -309,7 +309,8 @@
             'Uang Muka Penjualan',
             'Uang muka yang diterima dari pelanggan, lalu dipotong dari piutangnya',
             'Terima DP',
-            'addSalesDP'
+            'addSalesDP',
+            { showSub: true }
           )
         : '<h1>Uang Muka Penjualan</h1>';
 
@@ -499,7 +500,8 @@
             'Uang Muka Pembelian',
             'Uang muka yang dibayar ke supplier, lalu dipotong dari hutangnya',
             'Bayar DP',
-            'addPurchaseDP'
+            'addPurchaseDP',
+            { showSub: true }
           )
         : '<h1>Uang Muka Pembelian</h1>';
 

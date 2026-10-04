@@ -146,11 +146,15 @@ export function badge(status) {
 }
 
 // ── UI Helpers ───────────────────────────────────────────────────────────────
-export function secHdr(title, sub, btnLabel, btnAction) {
+// Page header: title and an optional primary button. The subtitle is shown only
+// when the caller asks for it with opts.showSub — most page titles say enough on
+// their own, so `sub` is otherwise left out.
+export function secHdr(title, sub, btnLabel, btnAction, opts) {
+  const showSub = !!(sub && opts && opts.showSub);
   return `<div class="sec-hdr">
     <div>
       <h1>${escapeHtml(title)}</h1>
-      ${sub ? `<p>${escapeHtml(sub)}</p>` : ''}
+      ${showSub ? `<p>${escapeHtml(sub)}</p>` : ''}
     </div>
     ${
       btnLabel

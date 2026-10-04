@@ -1,14 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Order lists (erp-view.js): Pesanan Penjualan / Pesanan Pembelian
 //   • status strip = OrderPipeline.summary (count, value; Belum lunas = sisa)
-//   • a strip segment filters the table to its stage; clicking it again clears
+//   • a strip tab filters the table to its stage; clicking it again clears
 //   • row "⋯" menu holds the row actions; "Ubah status" runs the row status path
-//   • one "Ekspor / impor" menu per list toolbar
+//   • the toolbar: "Periode: …" (presets + custom range) and one "⋯" menu with
+//     "Filter status…", "Pilih beberapa" (sales) and the import/export options
+//   • row checkboxes and the bulk bar only while choosing ("Pilih beberapa")
+//   • list rows are light: only the document number is coloured
 //   • window.openOrderStage opens a list filtered to a stage
 //   • "Pengambilan" tag on trading pickup orders
 // Boots the real classic bundle against the app shell, like the smoke test.
 // ═══════════════════════════════════════════════════════════════════════════════
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { classicOrder } from '../vite.config.js';
@@ -183,6 +186,7 @@ beforeEach(() => {
   document.body.innerHTML = bodyHtml;
   seedDB();
   w().soSelection.clear();
+  w().setSOSelectMode(false);
   // Resets stage, status and date filters and the page of both lists.
   w().openOrderStage('purchases', '', { from: '', to: '' });
   w().openOrderStage('sales', '', { from: '', to: '' });
@@ -209,6 +213,42 @@ const popMenu = () => document.getElementById('nsa-pop-menu');
 const rowTrigger = (view: string, id: string) =>
   viewEl(view).querySelector(`tr[data-id="${id}"] [data-action="rowMenu"]`) as HTMLButtonElement;
 const tick = () => new Promise(r => setTimeout(r, 0));
+const moreBtn = (view: string) =>
+  viewEl(view).querySelector('.list-tools .list-more-btn') as HTMLButtonElement;
+const periodBtn = (view: string) =>
+  viewEl(view).querySelector('.list-tools .period-btn') as HTMLButtonElement;
+const periodText = (view: string) => periodBtn(view).textContent!.replace(/\s+/g, ' ').trim();
+
+// Opens the list's "Periode" panel and returns it.
+function openPeriod(view: string) {
+  click(periodBtn(view));
+  const panel = popMenu()!;
+  expect(panel.getAttribute('role')).toBe('dialog');
+  return panel;
+}
+// Custom range through the panel's fields and "Terapkan".
+function applyRange(view: string, from: string, to: string) {
+  const panel = openPeriod(view);
+  (panel.querySelector('.period-from') as HTMLInputElement).value = from;
+  (panel.querySelector('.period-to') as HTMLInputElement).value = to;
+  click(panel.querySelector('[data-action="applyPeriod"]'));
+}
+// Actions in the toolbar "⋯" menu (closes it again).
+function moreActions(view: string) {
+  show(view);
+  const trigger = moreBtn(view);
+  expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+  click(trigger);
+  const items = Array.from(popMenu()!.querySelectorAll('[role="menuitem"]')) as HTMLElement[];
+  items.forEach(b => expect(b.dataset.type).toBe(view));
+  click(viewEl(view).querySelector('.sec-hdr h1'));
+  return items.map(b => b.dataset.action);
+}
+// Runs an item of the toolbar "⋯" menu.
+function runMore(view: string, action: string) {
+  click(moreBtn(view));
+  click(popMenu()!.querySelector(`[data-action="${action}"]`));
+}
 
 function expectStripMatches(view: string, side: string, opts: any = {}) {
   const sum = P().summary(side, opts);
@@ -248,12 +288,26 @@ describe('status strip', () => {
     expect(viewEl('purchase').querySelector('.stat-row')).toBeNull();
   });
 
-  it('follows the page date filter', () => {
-    const from = viewEl('sales').querySelector('[data-action="setDateFrom"]') as HTMLInputElement;
-    from.value = '2026-08-01';
-    from.dispatchEvent(new Event('change', { bubbles: true }));
+  it('follows the page period', () => {
+    applyRange('sales', '2026-08-01', '');
     const sum = expectStripMatches('sales', 'sales', { from: '2026-08-01', to: '' });
     expect(sum.stages.find((s: any) => s.key === 'delivered').count).toBe(1); // SO-OLD left out
+  });
+
+  it('is a row of tabs: label and count, the money below, no boxes or chevrons', () => {
+    const strip = viewEl('sales').querySelector('.ostrip')!;
+    expect(strip.getAttribute('role')).toBe('group');
+    const tab = seg('sales', 'confirmed');
+    expect(tab.tagName).toBe('BUTTON');
+    expect(Array.from(tab.children).map(c => c.className)).toEqual([
+      'ostrip-label',
+      'ostrip-count',
+      'ostrip-value',
+    ]);
+    // Keyboard: real buttons, pressed state on the chosen stage.
+    expect(tab.getAttribute('aria-pressed')).toBe('false');
+    tab.focus();
+    expect(document.activeElement).toBe(tab);
   });
 });
 
@@ -287,15 +341,17 @@ describe('stage filter', () => {
     expect(rowIds('sales', 'viewSO').length).toBe(8);
   });
 
-  it('combines with the status filter and the date filter', () => {
+  it('combines with the status filter and the period', () => {
     click(seg('sales', 'delivered'));
     w().filters.sales = 'Delivered';
-    const from = viewEl('sales').querySelector('[data-action="setDateFrom"]') as HTMLInputElement;
-    from.value = '2026-08-01';
-    from.dispatchEvent(new Event('change', { bubbles: true }));
+    applyRange('sales', '2026-08-01', '');
     expect(rowIds('sales', 'viewSO')).toEqual(['SO-N']);
-    // The status filter button still works alongside the stage.
-    expect(viewEl('sales').querySelector('[data-action="toggleFilter"]')!.textContent).toContain(
+    // The status filter still works alongside the stage, and the toolbar names it.
+    const note = viewEl('sales').querySelector('.list-tools .list-note:not(.ostrip-note)')!;
+    expect(note.textContent).toContain('Status:');
+    expect(note.textContent).toContain('Terkirim');
+    click(moreBtn('sales'));
+    expect(popMenu()!.querySelector('[data-action="toggleFilter"]')!.textContent).toContain(
       'Terkirim'
     );
   });
@@ -328,15 +384,20 @@ describe('stage filter', () => {
 });
 
 describe('row menu', () => {
-  it('shows a status badge, a "⋯" menu and the bulk checkbox on each row', () => {
-    const row = viewEl('sales').querySelector('tr[data-id="SO-D"]')!;
-    expect(row.querySelector('select')).toBeNull();
-    expect(row.querySelector('.badge')!.textContent).toBe('Draft');
+  it('shows a status badge and a "⋯" menu on each row; checkboxes only while choosing', () => {
+    const row = () => viewEl('sales').querySelector('tr[data-id="SO-D"]')!;
+    expect(row().querySelector('select')).toBeNull();
+    expect(row().querySelector('.badge')!.textContent).toBe('Draft');
     const trigger = rowTrigger('sales', 'SO-D');
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    // Bulk selection stays.
-    expect(row.querySelector('input.so-check[data-action="toggleSOCheck"]')).toBeTruthy();
+    // No checkbox column until "Pilih beberapa".
+    expect(row().querySelector('input.so-check')).toBeNull();
+    expect(viewEl('sales').querySelector('#checkAllSO')).toBeNull();
+    expect(viewEl('sales').querySelector('#bulkBar')).toBeNull();
+    // Bulk selection stays, on demand.
+    runMore('sales', 'soSelectMode');
+    expect(row().querySelector('input.so-check[data-action="toggleSOCheck"]')).toBeTruthy();
     expect(viewEl('sales').querySelector('#checkAllSO')).toBeTruthy();
     expect(viewEl('sales').querySelector('#bulkBar [data-action="bulkSOStatus"]')).toBeTruthy();
   });
@@ -545,57 +606,335 @@ describe('row menu', () => {
   });
 });
 
-describe('Ekspor / impor menu', () => {
-  const menuActions = (view: string) => {
-    show(view);
-    const trigger = viewEl(view).querySelector('[data-action="toolMenu"]') as HTMLElement;
-    expect(trigger.textContent).toContain('Ekspor / impor');
-    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
-    click(trigger);
-    const items = Array.from(popMenu()!.querySelectorAll('[role="menuitem"]')) as HTMLElement[];
-    items.forEach(b => expect(b.dataset.type).toBe(view));
-    const out = items.map(b => b.dataset.action);
-    click(viewEl(view).querySelector('.sec-hdr h1'));
-    return out;
-  };
-
-  it('holds every import / export option of each list', () => {
-    expect(menuActions('sales')).toEqual(['exportCSV', 'printSummary', 'importXLSX']);
-    expect(menuActions('purchase')).toEqual([
+describe('toolbar "⋯" menu', () => {
+  it('holds the status filter, "Pilih beberapa" and every import / export option', () => {
+    expect(moreActions('sales')).toEqual([
+      'toggleFilter',
+      'soSelectMode',
+      'exportCSV',
+      'printSummary',
+      'importXLSX',
+    ]);
+    expect(moreActions('purchase')).toEqual([
+      'toggleFilter',
       'exportCSV',
       'exportXLSX',
       'printSummary',
       'importXLSX',
     ]);
-    expect(menuActions('logistics')).toEqual(['exportCSV', 'exportXLSX', 'importXLSX']);
-    expect(menuActions('inventory')).toEqual(['exportCSV', 'exportXLSX']);
+    expect(moreActions('logistics')).toEqual([
+      'toggleFilter',
+      'exportCSV',
+      'exportXLSX',
+      'importXLSX',
+    ]);
+    expect(moreActions('inventory')).toEqual(['toggleFilter', 'exportCSV', 'exportXLSX']);
+    show('sales');
+    click(moreBtn('sales'));
+    const labels = Array.from(popMenu()!.querySelectorAll('[role="menuitem"]')).map(b =>
+      b.textContent!.replace(/\s+/g, ' ').trim()
+    );
+    expect(labels).toEqual([
+      'Filter status…',
+      'Pilih beberapa',
+      'Ekspor CSV',
+      'Ringkasan PDF',
+      'Impor Excel',
+    ]);
   });
 
-  it('keeps the create button and the filter visible, the options only in the menu', () => {
-    for (const [view, create] of [
-      ['sales', 'addSO'],
-      ['purchase', 'addPO'],
-      ['logistics', 'addDO'],
-      ['inventory', 'addItem'],
-    ]) {
+  it('the toolbar shows only Periode and "⋯"; the create button stays in the header', () => {
+    for (const [view, create, period] of [
+      ['sales', 'addSO', true],
+      ['purchase', 'addPO', true],
+      ['logistics', 'addDO', true],
+      ['inventory', 'addItem', false],
+    ] as const) {
       show(view);
       const el = viewEl(view);
       expect(el.querySelector(`.sec-hdr [data-action="${create}"]`)).toBeTruthy();
-      expect(el.querySelector('[data-action="toggleFilter"]')).toBeTruthy();
-      el.querySelectorAll('[data-action="exportCSV"], [data-action="importXLSX"]').forEach(b =>
-        expect(b.closest('.tool-menu[hidden]')).toBeTruthy()
+      const tools = el.querySelector('.list-tools')!;
+      const visibleButtons = Array.from(tools.querySelectorAll('button')).filter(
+        b => !b.closest('[hidden]')
       );
+      expect(visibleButtons.map(b => b.className)).toEqual(
+        period ? ['period-btn', 'list-more-btn'] : ['list-more-btn']
+      );
+      // Everything else sits in the hidden menu / panel.
+      el.querySelectorAll(
+        '[data-action="toggleFilter"], [data-action="exportCSV"], [data-action="importXLSX"], input[type="date"]'
+      ).forEach(b => expect(b.closest('.tool-menu[hidden]')).toBeTruthy());
+      expect(el.querySelector('.filter-btn')).toBeNull();
     }
+  });
+
+  it('"Filter status…" opens the status choices and filters the rows', () => {
+    runMore('sales', 'toggleFilter');
+    const drop = viewEl('sales').querySelector('#filter-sales')!;
+    expect(drop.classList.contains('open')).toBe(true);
+    const options = Array.from(drop.querySelectorAll('.filter-option')).map(
+      b => (b as HTMLElement).dataset.val
+    );
+    expect(options).toEqual(['all', ...SO_STATUS_VALUES]);
+    expect(document.activeElement).toBe(drop.querySelector('.filter-option.active'));
+
+    click(drop.querySelector('[data-val="Draft"]'));
+    expect(rowIds('sales', 'viewSO')).toEqual(['SO-D']);
+    const note = viewEl('sales').querySelector('.list-tools .list-note')!;
+    expect(note.textContent).toContain('Draft');
+    click(note.querySelector('[data-action="clearFilter"]'));
+    expect(rowIds('sales', 'viewSO').length).toBe(8);
+    expect(viewEl('sales').querySelector('.list-tools .list-note')).toBeNull();
+  });
+
+  it('Escape closes the status choices and returns to "⋯"', () => {
+    runMore('sales', 'toggleFilter');
+    const drop = viewEl('sales').querySelector('#filter-sales')!;
+    expect(drop.classList.contains('open')).toBe(true);
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    expect(drop.classList.contains('open')).toBe(false);
+    expect(document.activeElement).toBe(moreBtn('sales'));
   });
 
   it('runs an option from the menu', () => {
     const print = vi.fn();
     const orig = w().printOrderSummary;
     w().printOrderSummary = print;
-    click(viewEl('sales').querySelector('[data-action="toolMenu"]'));
-    click(popMenu()!.querySelector('[data-action="printSummary"]'));
+    runMore('sales', 'printSummary');
     expect(print).toHaveBeenCalledWith('sales');
     w().printOrderSummary = orig;
+  });
+});
+
+describe('Periode', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 4, 10, 0, 0)); // 4 Oct 2026
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is one control showing the active range', () => {
+    expect(periodText('sales')).toBe('Periode: Semua');
+    expect(periodBtn('sales').getAttribute('aria-haspopup')).toBe('dialog');
+    const panel = openPeriod('sales');
+    expect(periodBtn('sales').getAttribute('aria-expanded')).toBe('true');
+    expect(
+      Array.from(panel.querySelectorAll('[data-action="setPeriod"]')).map(b => b.textContent)
+    ).toEqual(['Bulan ini', 'Bulan lalu', '3 bulan terakhir', 'Tahun ini', 'Semua']);
+    expect(panel.querySelector('[data-preset="all"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(document.activeElement).toBe(panel.querySelector('[data-preset="all"]'));
+    expect(panel.querySelectorAll('input[type="date"]')).toHaveLength(2);
+    expect(panel.querySelector('[data-action="applyPeriod"]')!.textContent).toBe('Terapkan');
+  });
+
+  it('a preset filters the rows and the strip, and names itself', async () => {
+    const panel = openPeriod('sales');
+    click(panel.querySelector('[data-preset="lastMonth"]'));
+    await tick();
+    expect(popMenu()).toBeNull();
+    expect(periodText('sales')).toBe('Periode: Bulan lalu');
+    expect(document.activeElement).toBe(periodBtn('sales'));
+    expect(rowIds('sales', 'viewSO')).not.toContain('SO-OLD');
+    expect(rowIds('sales', 'viewSO').length).toBe(7);
+    expectStripMatches('sales', 'sales', { from: '2026-09-01', to: '2026-09-30' });
+
+    click(openPeriod('sales').querySelector('[data-preset="all"]'));
+    expect(periodText('sales')).toBe('Periode: Semua');
+    expect(rowIds('sales', 'viewSO').length).toBe(8);
+  });
+
+  it('a custom range filters rows, strip and exports', () => {
+    applyRange('sales', '2026-06-01', '2026-06-30');
+    expect(periodText('sales')).toBe('Periode: 1 Jun – 30 Jun 2026');
+    expect(rowIds('sales', 'viewSO')).toEqual(['SO-OLD']);
+    expectStripMatches('sales', 'sales', { from: '2026-06-01', to: '2026-06-30' });
+    const xlsx = vi.spyOn(w().NSAXlsx, 'download').mockImplementation(() => {});
+    w().exportXLSX('sales');
+    expect((xlsx.mock.calls[0][1] as any[])[0].rows.map((r: any[]) => r[0])).toEqual(['SO-OLD']);
+    xlsx.mockRestore();
+    // The panel opens on the range in use.
+    const panel = openPeriod('sales');
+    expect((panel.querySelector('.period-from') as HTMLInputElement).value).toBe('2026-06-01');
+    expect((panel.querySelector('.period-to') as HTMLInputElement).value).toBe('2026-06-30');
+  });
+
+  it('Enter in a field applies; a reversed range is put in order', () => {
+    show('purchase');
+    const panel = openPeriod('purchase');
+    (panel.querySelector('.period-from') as HTMLInputElement).value = '2026-12-31';
+    const to = panel.querySelector('.period-to') as HTMLInputElement;
+    to.value = '2026-08-01';
+    to.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(periodText('purchase')).toBe('Periode: 1 Agu – 31 Des 2026');
+    expectStripMatches('purchase', 'purchases', { from: '2026-08-01', to: '2026-12-31' });
+  });
+
+  it('keeps Tab inside the panel and closes on Escape', () => {
+    const panel = openPeriod('sales');
+    const apply = panel.querySelector('[data-action="applyPeriod"]') as HTMLElement;
+    apply.focus();
+    apply.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(popMenu()).toBe(panel);
+    expect(document.activeElement).toBe(panel.querySelector('[data-preset="all"]'));
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    expect(popMenu()).toBeNull();
+    expect(document.activeElement).toBe(periodBtn('sales'));
+  });
+
+  it('is on Surat Jalan too, and rows follow it', () => {
+    w().DB.deliveryOrders = [
+      { id: 'DO-1', number: 'DO-1', customer: 'PT Arta', date: '2026-09-02', status: 'Sent' },
+      { id: 'DO-2', number: 'DO-2', customer: 'PT Arta', date: '2026-06-02', status: 'Sent' },
+    ];
+    show('logistics');
+    expect(periodText('logistics')).toBe('Periode: Semua');
+    click(openPeriod('logistics').querySelector('[data-preset="year"]'));
+    expect(periodText('logistics')).toBe('Periode: Tahun ini');
+    applyRange('logistics', '2026-09-01', '2026-09-30');
+    expect(periodText('logistics')).toBe('Periode: Bulan lalu');
+    expect(rowIds('logistics', 'viewDO')).toEqual(['DO-1']);
+  });
+});
+
+describe('Pilih beberapa', () => {
+  const check = (id: string) => {
+    const cb = viewEl('sales').querySelector(`.so-check[data-id="${id}"]`) as HTMLInputElement;
+    cb.checked = true;
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  it('shows the checkboxes and the bulk bar until "Selesai"', () => {
+    runMore('sales', 'soSelectMode');
+    const el = viewEl('sales');
+    expect(el.querySelectorAll('tbody .so-check')).toHaveLength(8);
+    expect(document.activeElement).toBe(el.querySelector('#checkAllSO'));
+    expect(el.querySelector('#bulkCount')!.textContent).toBe('0 SO dipilih');
+    expect((el.querySelector('#bulkBar') as HTMLElement).style.display).toBe('none');
+    // While choosing, the menu offers no second "Pilih beberapa".
+    click(moreBtn('sales'));
+    expect(popMenu()!.querySelector('[data-action="soSelectMode"]')).toBeNull();
+    click(el.querySelector('.sec-hdr h1'));
+
+    check('SO-D');
+    expect(el.querySelector('#bulkCount')!.textContent).toBe('1 SO dipilih');
+    expect((el.querySelector('#bulkBar') as HTMLElement).style.display).toBe('flex');
+
+    click(el.querySelector('[data-action="soSelectDone"]'));
+    expect(viewEl('sales').querySelector('.so-check')).toBeNull();
+    expect(viewEl('sales').querySelector('.bulk-mode')).toBeNull();
+    expect(w().soSelection.size).toBe(0);
+  });
+
+  it('bulk status change works as before', () => {
+    runMore('sales', 'soSelectMode');
+    check('SO-D');
+    check('SO-C');
+    expect(w().soSelection.size).toBe(2);
+    click(
+      viewEl('sales').querySelector(
+        '#bulkBar [data-action="bulkSOStatus"][data-status="Confirmed"]'
+      )
+    );
+    const status = (id: string) => w().DB.salesOrders.find((o: any) => o.id === id).status;
+    expect(status('SO-D')).toBe('Confirmed');
+    expect(status('SO-C')).toBe('Confirmed');
+    expect(w().DB.reservations['SO-D']).toBeTruthy();
+    expect(w().soSelection.size).toBe(0);
+    // Still choosing after the change.
+    expect(viewEl('sales').querySelectorAll('tbody .so-check')).toHaveLength(8);
+  });
+
+  it('"Pilih semua" picks the rows of the page', () => {
+    runMore('sales', 'soSelectMode');
+    const all = viewEl('sales').querySelector('#checkAllSO') as HTMLInputElement;
+    all.checked = true;
+    all.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(w().soSelection.size).toBe(8);
+  });
+});
+
+describe('light list rows', () => {
+  // Every body cell of a list: no inline bold, no t-strong; the number column
+  // is the only coloured one (list-no).
+  function expectLightRows(root: Element) {
+    const cells = Array.from(root.querySelectorAll('tbody td'));
+    expect(cells.length).toBeGreaterThan(0);
+    cells.forEach(td => {
+      const style = td.getAttribute('style') || '';
+      expect(style, td.outerHTML.slice(0, 120)).not.toMatch(/font-weight|color\s*:/);
+      expect(td.classList.contains('t-strong')).toBe(false);
+      td.querySelectorAll('[style]').forEach(inner =>
+        expect(inner.getAttribute('style')).not.toMatch(/font-weight/)
+      );
+    });
+  }
+
+  it('on the order, stock and delivery lists', () => {
+    w().DB.deliveryOrders = [
+      {
+        id: 'DO-1',
+        number: 'DO-1',
+        soId: 'SO-N',
+        customer: 'PT Arta',
+        destination: 'Proyek A',
+        destChanged: true,
+        date: '2026-09-02',
+        driver: 'Budi',
+        vehicle: 'B 1 AB',
+        status: 'Sent',
+      },
+    ];
+    for (const view of ['sales', 'purchase', 'logistics']) {
+      show(view);
+      expectLightRows(viewEl(view));
+      viewEl(view)
+        .querySelectorAll('tbody tr')
+        .forEach(tr => expect(tr.querySelector('td')!.classList.contains('list-no')).toBe(true));
+    }
+    show('inventory');
+    expectLightRows(viewEl('inventory'));
+  });
+
+  it('on Pelanggan, Supplier and Karyawan', async () => {
+    w()._masterSection = 'customers';
+    show('master');
+    expectLightRows(viewEl('master'));
+    w()._masterSection = 'suppliers';
+    show('master');
+    expectLightRows(viewEl('master'));
+    w()._masterSection = undefined;
+    w().DB.employees = [{ id: 'E1', name: 'Sari', status: 'Active' }];
+    w()._masterExtras.openEmployee();
+    await tick();
+    expectLightRows(viewEl('master'));
+    expect(viewEl('master').querySelector('tbody .badge.badge-success')!.textContent).toBe('Aktif');
+    expect(viewEl('master').querySelector('.sec-hdr p')).toBeNull();
+  });
+
+  it('on the invoice lists', () => {
+    const el = document.createElement('div');
+    el.innerHTML = w().renderInvoices();
+    expectLightRows(el);
+    el.querySelectorAll('tbody tr').forEach(tr =>
+      expect(tr.querySelector('td')!.classList.contains('list-no')).toBe(true)
+    );
+  });
+
+  it('list pages carry no subtitle and no card title repeating the page', () => {
+    for (const view of ['sales', 'purchase', 'logistics', 'inventory']) {
+      show(view);
+      const el = viewEl(view);
+      expect(el.querySelector('.sec-hdr p')).toBeNull();
+      expect(el.textContent).not.toMatch(
+        /Daftar Sales Order|Daftar Purchase Order|Daftar Delivery Order|Katalog Item/
+      );
+    }
   });
 });
 
@@ -615,9 +954,9 @@ describe('openOrderStage', () => {
     w().openOrderStage('sales', 'delivered', { from: '2026-08-01', to: '2026-12-31' });
     expect(w().activeView).toBe('sales');
     expect(rowIds('sales', 'viewSO')).toEqual(['SO-N']);
-    expect(
-      (viewEl('sales').querySelector('[data-action="setDateFrom"]') as HTMLInputElement).value
-    ).toBe('2026-08-01');
+    expect(periodText('sales')).toBe('Periode: 1 Agu – 31 Des 2026');
+    const panel = openPeriod('sales');
+    expect((panel.querySelector('.period-from') as HTMLInputElement).value).toBe('2026-08-01');
   });
 
   it('an unknown stage opens the whole list', () => {
