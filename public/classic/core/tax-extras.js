@@ -326,9 +326,8 @@
   // ══════════════════════════════════════════════════════════════════════════
   // § 0  PAJAK & PPN (view 'tax')
   // ══════════════════════════════════════════════════════════════════════════
-  // Page renderer of the tax view. It takes the place of renderTax() in
-  // erp-view.js (getRenderer() resolves the global when the view renders) and
-  // shows the same figures from calcTaxSummary() in a quieter layout: plain
+  // Page renderer of the tax view (renderTax() in erp-view.js calls it). It
+  // shows the figures from calcTaxSummary() in a quiet layout: plain
   // figures, regular-weight rows, and the explanations behind a "Penjelasan"
   // toggle (style.css .tax-…).
   function taxFact(label, value) {
@@ -468,9 +467,6 @@
       '</div>'
     );
   }
-  // erp-view.js loads earlier in the bundle; without its figures the page keeps
-  // the renderer it already has.
-  if (typeof window.calcTaxSummary === 'function') window.renderTax = renderTaxPage;
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  FAKTUR PAJAK KELUARAN — ekspor Coretax (dan CSV format lama)

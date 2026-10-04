@@ -1777,117 +1777,14 @@ function renderAssets() {
 }
 
 // ── View: Tax ─────────────────────────────────────────────────────────────────
+// Pajak & PPN page: drawn by tax-extras.js (window._taxExtras.renderTaxPage),
+// which loads later in the bundle; calcTaxSummary() above supplies its figures.
 function renderTax() {
-  const summary = calcTaxSummary();
-  const tax = summary.tax;
-  const ratePct = (tax.ppnRate * 100).toFixed(2).replace(/\.00$/, '');
-  const roundingLabel =
-    tax.rounding === 'floor'
-      ? 'Dibulatkan ke bawah'
-      : tax.rounding === 'ceil'
-        ? 'Dibulatkan ke atas'
-        : 'Dibulatkan normal';
-
-  const salesRecent = summary.salesOrders
-    .slice()
-    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 5);
-  const purchaseRecent = summary.purchaseOrders
-    .slice()
-    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 5);
-
-  const efakturCount = summary.salesOrders.filter(
-    o => o.status === 'Paid' || o.status === 'Delivered'
-  ).length;
-
-  return `
-  ${secHdr('Pajak & PPN', 'PPN keluaran dan masukan dari transaksi, serta pengaturan pajak perusahaan', 'Ubah Pengaturan Pajak', 'editTaxSettings')}
-  ${statRow([
-    {
-      label: 'PPN Keluaran',
-      value: idrFull(summary.outputTax),
-      sub: `Berdasarkan ${summary.salesOrders.length} transaksi`,
-    },
-    {
-      label: 'PPN Masukan',
-      value: idrFull(summary.inputTax),
-      sub: `Berdasarkan ${summary.purchaseOrders.length} transaksi`,
-    },
-    {
-      label: 'PPN Terutang',
-      value: idrFull(summary.netTax),
-      sub: `Keluaran - Masukan`,
-      color: summary.netTax >= 0 ? 'var(--primary)' : 'var(--danger)',
-    },
-    { label: 'Tarif PPN', value: `${ratePct}%`, sub: roundingLabel },
-  ])}
-  <div class="fin-2col">
-    <div class="card">
-      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Perhitungan</div>
-      <div style="font-size:.75rem;color:var(--muted);line-height:1.5;margin-bottom:10px">
-        PPN dihitung dari total transaksi non-draft. Jika transaksi memiliki nilai <strong>tax</strong>,
-        nilai tersebut dipakai. Jika tidak, sistem menghitung <strong>amount × tarif PPN</strong>.
-      </div>
-      <div style="font-size:.75rem;display:flex;flex-direction:column;gap:6px">
-        <div>Penjualan kena pajak: <strong>${idrFull(summary.salesBase)}</strong></div>
-        <div>Pembelian kena pajak: <strong>${idrFull(summary.purchaseBase)}</strong></div>
-        <div>Transaksi dengan tax eksplisit: <strong>${summary.salesWithTax + summary.purchaseWithTax}</strong></div>
-      </div>
-    </div>
-    <div class="card">
-      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Status Kepatuhan</div>
-      <div style="font-size:.75rem;display:flex;flex-direction:column;gap:6px">
-        <div>Status PKP: <strong>${tax.pkp ? 'Terdaftar' : 'Belum PKP'}</strong></div>
-        <div>NPWP: <strong>${escapeHtml(tax.npwp)}</strong></div>
-        <div>e-Faktur siap kirim: <strong>${efakturCount} transaksi</strong></div>
-      </div>
-      <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">
-        Berdasarkan transaksi penjualan berstatus Paid/Delivered.
-      </div>
-    </div>
-  </div>
-  <div class="fin-2col" style="margin-top:16px">
-    <div class="card">
-      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Penjualan (PPN Keluaran)</div>
-      ${
-        salesRecent.length === 0
-          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada penjualan tercatat.</div>`
-          : salesRecent
-              .map(
-                o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:.75rem;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
-            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.customer || '—')} • ${escapeHtml(o.date || '—')}</div>
-          </div>
-          <div style="font-size:.75rem;font-weight:700">${idrFull(o.amount || 0)}</div>
-        </div>`
-              )
-              .join('')
-      }
-    </div>
-    <div class="card">
-      <div style="font-size:.8125rem;font-weight:700;margin-bottom:10px">Dasar Pembelian (PPN Masukan)</div>
-      ${
-        purchaseRecent.length === 0
-          ? `<div style="font-size:.75rem;color:var(--muted);text-align:center;padding:14px">Belum ada pembelian tercatat.</div>`
-          : purchaseRecent
-              .map(
-                o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:.75rem;font-weight:700">${escapeHtml(docNum(o.number, o.id))}</div>
-            <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(o.supplier || '—')} • ${escapeHtml(o.date || '—')}</div>
-          </div>
-          <div style="font-size:.75rem;font-weight:700">${idrFull(o.amount || 0)}</div>
-        </div>`
-              )
-              .join('')
-      }
-    </div>
-  </div>`;
+  return window._taxExtras && typeof window._taxExtras.renderTaxPage === 'function'
+    ? window._taxExtras.renderTaxPage()
+    : '';
 }
 
-// ── View: Reports ─────────────────────────────────────────────────────────────
 function renderReports() {
   const taxSummary = calcTaxSummary();
   const salesTotal = taxSummary.salesBase;

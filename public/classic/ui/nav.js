@@ -543,6 +543,12 @@
       typeof window.NSAMenu.handle === 'function' &&
       window.NSAMenu.handle(item.view, label);
     if (!handled && !item.modal) {
+      // The entry shows its view's own page: drop the cached copy, which may
+      // still hold a page another entry drew into the same view (e.g. Ekspor
+      // Coretax inside Pajak & PPN).
+      if (typeof window.invalidateView === 'function') {
+        window.invalidateView(item.view);
+      }
       window.navigate(item.view);
     }
     return true;
