@@ -3490,11 +3490,34 @@ tbody .ostrip-tag {
    only for totals and subtotals, colour only for meaning (a negative amount, a
    warning, the bottom line), the accent only for links and toggles. */
 
-/* Stat tiles that repeat a total shown right below them: plain and smaller */
-.gl-recap .stat-val,
-.fin-recap .stat-val {
-  font-size: var(--fs-lg);
-  font-weight: 500;
+/* Balance check line (Neraca Saldo above the table, Neraca under the total) */
+.gl-balance,
+.fin-ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.gl-balance {
+  margin-bottom: 10px;
+}
+.fin-ok {
+  margin-top: 8px;
+}
+.gl-balance::before,
+.fin-ok::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+.gl-balance.is-off {
+  color: var(--danger);
+}
+.gl-balance.is-off::before {
+  background: var(--danger);
 }
 
 /* Buku Besar: Neraca Saldo and Bagan Akun tables */
@@ -3799,6 +3822,15 @@ tbody .ostrip-tag {
   font-weight: 500;
   cursor: pointer;
 }
+.tax-docs > summary {
+  width: max-content;
+  margin: 4px 0 12px;
+  color: var(--primary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.tax-docs > summary:hover,
 .tax-explain summary:hover {
   text-decoration: underline;
   text-underline-offset: 2px;

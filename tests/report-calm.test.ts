@@ -156,14 +156,13 @@ describe('Neraca Saldo', () => {
     expect(shown).toContain('Seimbang');
   });
 
-  it('flags an unbalanced ledger in the danger colour', () => {
+  it('shows the balance check as one line, flagged when unbalanced', () => {
+    expect(page().querySelector('.gl-balance.is-ok')!.textContent).toContain('Seimbang');
+    expect(page().querySelector('.stat-card')).toBeNull(); // totals live in the TOTAL row
     addJournal('610101', '110101', 1000, 400);
-    const v = page();
-    const status = Array.from(v.querySelectorAll('.stat-card')).find(c =>
-      text(c).includes('Status')
-    )!;
-    expect(text(status)).toContain('Tidak Seimbang');
-    expect(status.querySelector('.stat-val')!.getAttribute('style')).toContain('var(--danger)');
+    const off = page().querySelector('.gl-balance')!;
+    expect(off.classList.contains('is-off')).toBe(true);
+    expect(text(off)).toContain('Tidak seimbang');
   });
 });
 
@@ -190,7 +189,7 @@ describe('Laba Rugi', () => {
     expect(v.querySelectorAll('.fin-subtotal.fin-major')).toHaveLength(1);
   });
 
-  it('shows every account balance, the subtotals and the stat figures', () => {
+  it('shows every account balance and the subtotals, without repeating tiles', () => {
     const v = page();
     const shown = text(v);
     const tb = w().GL.trialBalance();
@@ -205,13 +204,10 @@ describe('Laba Rugi', () => {
         expect(shown).toContain(r.name);
         expect(shown).toContain(rp(val));
       });
-    // Laba Bersih: in its tile and as the bottom line of the statement.
+    // Laba Bersih is the bottom line of the statement; no tiles repeat it above.
     const bottom = v.querySelector('.fin-major .t-num')!;
     expect(bottom.textContent).toBe(w().idrFull(net));
-    const tiles = Array.from(v.querySelectorAll('.fin-recap .stat-val')).map(el => el.textContent);
-    expect(tiles).toHaveLength(4);
-    expect(tiles[3]).toBe(w().idrFull(net));
-    tiles.forEach(t => expect(v.querySelector('.fin-statement')!.textContent).toContain(t!));
+    expect(v.querySelector('.fin-recap, .stat-card')).toBeNull();
   });
 
   it('flags negative amounts in the danger colour and nothing else', () => {
@@ -257,6 +253,15 @@ describe('Pajak & PPN', () => {
     w().navigate('tax');
     return document.getElementById('view-tax')!;
   };
+
+  it('folds the latest documents behind a closed toggle', () => {
+    const docs = page().querySelector('details.tax-docs') as HTMLDetailsElement;
+    expect(docs).toBeTruthy();
+    expect(docs.open).toBe(false);
+    expect(docs.querySelector('summary')!.textContent).toContain('Dokumen terakhir');
+    expect(docs.textContent).toContain('Dasar Penjualan (PPN Keluaran)');
+    expect(docs.textContent).toContain('Dasar Pembelian (PPN Masukan)');
+  });
 
   it('is rendered by the calm page renderer, with no inline bold', () => {
     const v = page();

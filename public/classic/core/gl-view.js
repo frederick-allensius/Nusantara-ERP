@@ -88,22 +88,11 @@
             )
             .join('');
 
-    // The two totals repeat the TOTAL row below; kept, but quiet (.gl-recap).
+    // Debit/Kredit totals are in the TOTAL row; only the balance check is shown here.
     return `
-    ${
-      typeof window.statRow === 'function'
-        ? `<div class="gl-recap">${window.statRow([
-            { label: 'Total Debit', value: money(tb.totalDebit), sub: '' },
-            { label: 'Total Kredit', value: money(tb.totalCredit), sub: '' },
-            {
-              label: 'Status',
-              value: tb.balanced ? 'Seimbang ✓' : 'Tidak Seimbang',
-              sub: tb.balanced ? 'Debit = Kredit' : 'Periksa jurnal',
-              color: tb.balanced ? 'var(--success)' : 'var(--danger)',
-            },
-          ])}</div>`
-        : ''
-    }
+    <div class="gl-balance ${tb.balanced ? 'is-ok' : 'is-off'}" role="status">${
+      tb.balanced ? 'Seimbang · Debit = Kredit' : 'Tidak seimbang · periksa jurnal'
+    }</div>
     <div class="card">
       <div class="table-wrap">
         <table class="gl-tb">

@@ -271,26 +271,6 @@
     );
   }
 
-  // Stat tiles above a statement. They repeat totals shown in the statement, so
-  // they are kept quiet (.fin-recap): plain figures, red only when negative.
-  function recapTiles(items) {
-    if (typeof window.statRow !== 'function') return '';
-    return (
-      '<div class="fin-recap">' +
-      window.statRow(
-        items.map(function (s) {
-          return {
-            label: s.label,
-            value: s.value,
-            sub: s.sub,
-            color: s.color || (s.amount < 0 ? 'var(--danger)' : ''),
-          };
-        })
-      ) +
-      '</div>'
-    );
-  }
-
   // ── Profit & Loss (Laba Rugi) — full multi-step income statement ───────────
   function plTab() {
     var tb = filteredTrialBalance();
@@ -344,21 +324,9 @@
     var totalTax = sum(taxRows);
     var netProfit = incomeBeforeTax - totalTax;
 
-    var stats = recapTiles([
-      { label: 'Pendapatan', value: money(totalRevenue), amount: totalRevenue, sub: 'Penjualan bersih' },
-      { label: 'Laba Kotor', value: money(grossProfit), amount: grossProfit, sub: 'Pendapatan − HPP' },
-      {
-        label: 'Laba Usaha',
-        value: money(operatingIncome),
-        amount: operatingIncome,
-        sub: 'Setelah beban operasional',
-      },
-      { label: 'Laba Bersih', value: money(netProfit), amount: netProfit, sub: 'Setelah pajak' },
-    ]);
 
     // The tab names the statement; the card opens with the period it covers.
     return (
-      stats +
       '<div class="card fin-statement">' +
       '<div class="fin-meta">' +
       (periodFrom || periodTo
@@ -457,27 +425,6 @@
     var totalLiabEquity = totalLiabilities + totalEquityPlusRE;
     var balanced = Math.abs(totalAssets - totalLiabEquity) < 1;
 
-    var stats = recapTiles([
-      { label: 'Total Aset', value: money(totalAssets), amount: totalAssets, sub: 'Lancar + Tetap' },
-      {
-        label: 'Total Kewajiban',
-        value: money(totalLiabilities),
-        amount: totalLiabilities,
-        sub: 'Hutang usaha & lainnya',
-      },
-      {
-        label: 'Total Ekuitas',
-        value: money(totalEquityPlusRE),
-        amount: totalEquityPlusRE,
-        sub: 'Modal + laba ditahan',
-      },
-      {
-        label: 'Status',
-        value: balanced ? 'Seimbang ✓' : 'Tidak Seimbang',
-        sub: balanced ? 'Aset = Liabilitas + Ekuitas' : 'Periksa jurnal',
-        color: balanced ? 'var(--success)' : 'var(--danger)',
-      },
-    ]);
 
     function groupHead(label) {
       return '<div class="fin-group">' + label + '</div>';
@@ -495,7 +442,6 @@
     }
 
     return (
-      stats +
       '<div class="card fin-statement">' +
       '<div class="fin-meta">Posisi per ' +
       esc(periodTo || 'hari ini') +
@@ -531,7 +477,7 @@
         : '') +
       grandTotal('Total Kewajiban + Ekuitas', totalLiabEquity) +
       (balanced
-        ? ''
+        ? '<div class="fin-ok">Seimbang · Aset = Kewajiban + Ekuitas</div>'
         : '<div class="fin-alert">' +
           'Neraca tidak seimbang. Selisih: ' +
           money(Math.abs(totalAssets - totalLiabEquity)) +
@@ -644,27 +590,6 @@
     var netFinancing = financing.inflow - financing.outflow;
     var netTotal = netOperating + netInvesting + netFinancing;
 
-    var stats = recapTiles([
-      {
-        label: 'Arus Operasional',
-        value: money(netOperating),
-        amount: netOperating,
-        sub: 'Penjualan & pembelian',
-      },
-      { label: 'Arus Investasi', value: money(netInvesting), amount: netInvesting, sub: 'Aset tetap' },
-      {
-        label: 'Arus Pendanaan',
-        value: money(netFinancing),
-        amount: netFinancing,
-        sub: 'Modal & pinjaman',
-      },
-      {
-        label: 'Arus Kas Bersih',
-        value: money(netTotal),
-        amount: netTotal,
-        sub: 'Total seluruh aktivitas',
-      },
-    ]);
 
     // One block per activity: heading, Masuk/Keluar line, the net (a subtotal,
     // bold; red when negative) and the latest movements in regular weight.
@@ -740,7 +665,6 @@
       financing.details.length === 0;
 
     return (
-      stats +
       '<div class="card fin-statement">' +
       (noData
         ? '<div class="fin-empty">Belum ada arus kas tercatat. Kas akan muncul setelah ada pembayaran (SO Paid / PO Paid) atau jurnal umum yang melibatkan akun kas.</div>'

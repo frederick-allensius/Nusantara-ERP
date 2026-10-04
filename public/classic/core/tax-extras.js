@@ -451,6 +451,9 @@
       taxExplain('e-Faktur siap kirim dihitung dari transaksi penjualan berstatus Paid/Delivered.') +
       '</div>' +
       '</div>' +
+      // The latest documents behind the figures, folded: open on demand.
+      '<details class="tax-docs">' +
+      '<summary>Dokumen terakhir di balik angka ini</summary>' +
       '<div class="fin-2col">' +
       taxDocCard(
         'Dasar Penjualan (PPN Keluaran)',
@@ -464,7 +467,8 @@
         'supplier',
         'Belum ada pembelian tercatat.'
       ) +
-      '</div>'
+      '</div>' +
+      '</details>'
     );
   }
 
