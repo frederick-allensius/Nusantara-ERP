@@ -47,3 +47,15 @@ describe('secHdr', () => {
     expect(hdr.querySelector('button')).toBeNull();
   });
 });
+
+describe('secHdr button icon', () => {
+  it('shows "+" only on create buttons', async () => {
+    const { secHdr } = await import('../src/core/helpers.js');
+    const div = document.createElement('div');
+    div.innerHTML = secHdr('Pesanan Penjualan', '', 'Buat SO', 'addSO');
+    expect(div.querySelector('button svg')).toBeTruthy();
+    div.innerHTML = secHdr('Laporan Keuangan', '', 'Cetak', 'printFin');
+    expect(div.querySelector('button svg')).toBeNull();
+    expect(div.querySelector('button')!.textContent!.trim()).toBe('Cetak');
+  });
+});

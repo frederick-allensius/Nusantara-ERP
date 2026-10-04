@@ -158,10 +158,14 @@ export function secHdr(title, sub, btnLabel, btnAction, opts) {
     </div>
     ${
       btnLabel
-        ? `<button class="btn" data-action="${btnAction || ''}">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        ? `<button class="btn" data-action="${btnAction || ''}">${
+            // "+" only on buttons that create something (not e.g. "Cetak").
+            /^(Buat|Tambah|Catat)\b/i.test(btnLabel)
+              ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg> ${escapeHtml(btnLabel)}
+      </svg> `
+              : ''
+          }${escapeHtml(btnLabel)}
     </button>`
         : ''
     }
