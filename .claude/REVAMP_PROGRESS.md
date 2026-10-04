@@ -244,3 +244,20 @@ strip, row "⋯" menu and one "Ekspor / impor" menu; quieter cards.
 - Checks: vitest 39 files / 511 tests, tsc, eslint, build. Screens checked light/dark, 1440/390.
 Open (owner): Perlu tindakan order; card title "Alur transaksi"; Hapus in row menu without confirm
 (same as before); no quick status change for PO rows; trend vs same days last month.
+
+## Session 2026-10-04 — UI re-audit + second declutter pass (DONE)
+
+Audit: all 83 menu screens at 390px and 1440px (script: overflow, small text/targets, errors,
+page height). Report for the owner (mobile-viewable): https://claude.ai/artifact/UoLL76KGiFz8pcmFXj2i6g
+- bf8420b list-pager.js (NSAPager) + thumb-size pager buttons. 3569095/cf12c2b phone fixes (Jurnal
+  paging + Debit/Kredit stacked on phones, 2-col stat tiles, Rp non-breaking space).
+- f541791 (merged) paging Audit Jurnal / Riwayat Kas & Bank / Laporan per Periode.
+- 8cab015 (merged) lists: lighter rows, status as text, Periode control, one ⋯ menu, Pilih beberapa,
+  secHdr subtitles opt-in. a4252f2 (merged) reports: bold only totals, colour only status,
+  Penjelasan toggles, Laporan Keuangan print fix. 8e50127 tax renderer single + stale view fix.
+  b830230 '+' only on create buttons; sw cache v1.1.4.
+- First-screen bold text: Pesanan 44→1, Pembelian 45→1, Surat Jalan 37→1, Neraca Saldo 52→2.
+- Checks: vitest 46 files / 561 tests, tsc, eslint, build.
+Open (owner): remove stat tiles that repeat statement totals; fold Pajak & PPN document lists;
+card layout for list tables on phones.
+
