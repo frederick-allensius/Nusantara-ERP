@@ -1354,3 +1354,345 @@
     white-space: nowrap;
   }
 }
+
+/* ── LIST CARDS ON PHONES ────────────────────────────────────────────────────── */
+/* A list table marked .list-cards shows each row as a compact card at ≤560px:
+     line 1   [check] title ……………………… status [menu]
+     line 2   name …………………………………………… amount
+     line 3   meta · meta · meta        (cells marked meta, and cells with no role)
+     [ action ]                         (a wide primary row button, full width)
+   The row templates mark their cells with data-cell="check|title|status|menu|
+   name|amount|meta|action". data-cap puts a short caption before a value
+   ("Jatuh tempo 12 Okt"), data-unit a unit after it ("3 SO"). From 561px up
+   the table is unchanged. The header row is hidden on phones (in "Pilih
+   beberapa" only its "Pilih semua" stays), so the sortable columns are offered
+   under "Urutkan" in the list's toolbar "⋯" menu (.list-sort, phones only). */
+.sel-all-text {
+  display: none;
+}
+.list-sort {
+  display: flex;
+  flex-direction: column;
+}
+.list-sort-item::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.list-sort-item[aria-checked='true'] {
+  color: var(--primary);
+}
+.list-sort-item[aria-checked='true']::before {
+  background: currentColor;
+}
+@media (min-width: 561px) {
+  .list-sort {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .list-cards,
+  .list-cards > tbody,
+  .list-cards > tfoot {
+    display: block;
+    width: 100%;
+  }
+  .list-cards > thead {
+    display: none;
+  }
+
+  /* The row is one wrapping flex line; ::before and ::after are the two line
+     breaks, the cells take their place by role (order). */
+  .list-cards > tbody > tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 0;
+  }
+  .list-cards > tbody > tr::before,
+  .list-cards > tbody > tr::after {
+    content: '';
+    flex-basis: 100%;
+    height: 0;
+  }
+  .list-cards > tbody > tr::before {
+    order: 4;
+  }
+  .list-cards > tbody > tr::after {
+    order: 7;
+  }
+  /* Edge-to-edge table in a card: the text lines up with the card's content */
+  .card > .table-wrap > .list-cards > tbody > tr,
+  .card > .table-wrap > .list-cards > tfoot > tr {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+  .list-cards > tbody > tr > td,
+  .list-cards > tfoot > tr > td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  /* (the first and last cell of a table in a card are padded on desktop) */
+  .card > .table-wrap .list-cards td:first-child,
+  .card > .table-wrap .list-cards td.sel-cell:first-child {
+    padding-left: 0;
+  }
+  .card > .table-wrap .list-cards td:last-child {
+    padding-right: 0;
+  }
+  .list-cards > tbody > tr > td:empty {
+    display: none;
+  }
+
+  /* Line 1 */
+  .list-cards td[data-cell='check'] {
+    order: 0;
+    flex: none;
+    margin-right: 8px;
+  }
+  /* The title takes the room the status and menu leave; the number itself
+     never breaks. */
+  .list-cards td[data-cell='title'] {
+    order: 1;
+    flex: 1 1 0;
+    align-self: baseline;
+    min-width: auto;
+    white-space: normal;
+  }
+  .list-cards td[data-cell='title'] .doc-no {
+    white-space: normal;
+  }
+  /* "Pengambilan" tag: its own short line under the number */
+  .list-cards td[data-cell='title'] .ostrip-tag {
+    display: block;
+    margin: 2px 0 0;
+  }
+  /* A short status keeps one line; a long one wraps in the room a document
+     number (about 9.5em) and the row button leave, so the button stays on
+     line 1. */
+  .list-cards td[data-cell='status'] {
+    order: 2;
+    flex: none;
+    align-self: baseline;
+    min-width: min-content;
+    max-width: min(33%, calc(100% - 9.5em - 72px));
+    margin-left: 10px;
+    text-align: right;
+  }
+  .list-cards > tbody > tr:not(:has(> td[data-cell='menu']:not(:empty))) > td[data-cell='status'] {
+    max-width: min(50%, calc(100% - 9.5em - 10px));
+  }
+  .list-cards td[data-cell='status'] .badge {
+    line-height: 1.3;
+    white-space: normal;
+    text-align: left;
+  }
+  /* Row buttons (Edit, Lihat, …) sit on the title's baseline */
+  .list-cards td[data-cell='menu'] {
+    order: 3;
+    flex: none;
+    display: flex;
+    gap: 4px;
+    align-self: baseline;
+    margin-left: auto;
+    padding-left: 6px;
+    white-space: nowrap;
+  }
+  /* Quiet "Edit" buttons: their text lines up with the card's edge (in the
+     row padding of an edge-to-edge list) */
+  .card > .table-wrap > .list-cards td[data-cell='menu']:has(> .row-edit) {
+    margin-right: -8px;
+  }
+  /* The checkbox and the "⋯" icon (16px in its tap square) are centred on the
+     first text line at their full tap size, without making it taller */
+  .list-cards td[data-cell='check'],
+  .list-cards td[data-cell='menu']:has(> .row-menu-btn) {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    height: 1.55em;
+  }
+  .list-cards td[data-cell='menu']:has(> .row-menu-btn) {
+    padding-left: 0;
+  }
+  .card > .table-wrap > .list-cards td[data-cell='menu']:has(> .row-menu-btn) {
+    margin-right: max(-12px, calc((16px - var(--tap-min)) / 2));
+  }
+
+  /* Line 2 (a 1px basis keeps the name off the line of the break before it) */
+  .list-cards td[data-cell='name'] {
+    order: 5;
+    flex: 1 1 1px;
+    align-self: baseline;
+    display: -webkit-box;
+    margin-top: 2px;
+    text-align: left;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .list-cards td[data-cell='amount'] {
+    order: 6;
+    flex: none;
+    align-self: baseline;
+    margin: 2px 0 0 auto;
+    padding-left: 12px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Line 3: the remaining short fields, small and muted, joined by a dot */
+  .list-cards > tbody > tr > td:is([data-cell='meta'], :not([data-cell])) {
+    order: 8;
+    flex: 0 1 auto;
+    max-width: 100%;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  /* The dot follows each field that has another after it, so a wrapped line
+     ends with a dot instead of starting with one. */
+  .list-cards
+    > tbody
+    > tr
+    > td:is([data-cell='meta'], :not([data-cell])):has(
+      ~ td:is([data-cell='meta'], :not([data-cell])):not(:empty)
+    ) {
+    padding-right: 13px;
+    background: radial-gradient(circle, var(--muted) 0 1px, transparent 1.5px) no-repeat right 4px
+      center / 5px 5px;
+  }
+  .list-cards > tbody > tr > td.t-danger {
+    color: var(--danger);
+  }
+  /* Block parts of a cell (number + date, name + order) read on one line */
+  .list-cards
+    > tbody
+    > tr
+    > td:is([data-cell='title'], [data-cell='name'], [data-cell='meta'], :not([data-cell]))
+    > div:not([hidden]) {
+    display: inline;
+  }
+  .list-cards
+    > tbody
+    > tr
+    > td:is([data-cell='title'], [data-cell='name'], [data-cell='meta'], :not([data-cell]))
+    > *
+    + div::before {
+    content: ' · ';
+    font-family: var(--font-sans);
+  }
+  .list-cards > tbody > tr > td[data-cap]::before {
+    content: attr(data-cap) '\00a0';
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-weight: 400;
+  }
+  .list-cards > tbody > tr > td[data-unit]::after {
+    content: '\00a0' attr(data-unit);
+  }
+
+  /* A wide primary row button ("Buka untuk pengambilan"): last, full width */
+  .list-cards td[data-cell='action'] {
+    order: 9;
+    flex: 1 1 100%;
+    margin-top: 10px;
+  }
+  .list-cards td[data-cell='action'] > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* "Belum ada …" and other empty-state rows span the card */
+  .list-cards > tbody > tr > td[colspan],
+  .card > .table-wrap > .list-cards > tbody > tr > td[colspan] {
+    order: 0;
+    flex: 1 1 100%;
+    max-width: none;
+    margin: 0;
+    padding: 20px 0;
+    white-space: normal;
+    text-align: center;
+    font-size: var(--fs-sm);
+  }
+
+  /* Totals row under a list */
+  .list-cards > tfoot > tr {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .list-cards > tfoot td {
+    border: 0;
+  }
+  .list-cards > tfoot td:empty {
+    display: none;
+  }
+
+  /* "Pilih beberapa": the header keeps only "Pilih semua" */
+  .list-cards.is-selecting > thead {
+    display: block;
+  }
+  .list-cards.is-selecting > thead > tr {
+    display: flex;
+  }
+  .list-cards.is-selecting > thead > tr > th:not(.sel-cell) {
+    display: none;
+  }
+  .list-cards.is-selecting > thead > tr > th.sel-cell {
+    width: 100%;
+    padding: 8px 20px;
+    text-align: left;
+  }
+  .sel-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .list-cards .sel-all-text {
+    display: inline;
+  }
+}
+/* Phone cards are padded 16px (12px on the narrowest phones): the list runs to
+   the card's edges and its text lines up with the rest of the card. */
+@media (max-width: 480px) {
+  .card > .table-wrap:has(> .list-cards) {
+    margin-right: -16px;
+    margin-left: -16px;
+  }
+  .card > .table-wrap > .list-cards > tbody > tr,
+  .card > .table-wrap > .list-cards > tfoot > tr,
+  .list-cards.is-selecting > thead > tr > th.sel-cell {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .card > .table-wrap:has(> .list-cards) {
+    margin-right: -12px;
+    margin-left: -12px;
+  }
+  .card > .table-wrap > .list-cards > tbody > tr,
+  .card > .table-wrap > .list-cards > tfoot > tr,
+  .list-cards.is-selecting > thead > tr > th.sel-cell {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}

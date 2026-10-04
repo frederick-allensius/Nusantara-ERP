@@ -94,28 +94,28 @@
           .map(function (e) {
             return (
               '<tr>' +
-              '<td class="td-p t-muted t-nowrap">' +
+              '<td class="td-p t-muted t-nowrap" data-cell="title">' +
               esc(e.id) +
               '</td>' +
-              '<td class="td-p list-key">' +
+              '<td class="td-p list-key" data-cell="name">' +
               esc(e.name) +
               '</td>' +
-              '<td class="td-p">' +
+              '<td class="td-p" data-cell="meta">' +
               esc(e.position || '—') +
               '</td>' +
-              '<td class="td-p">' +
+              '<td class="td-p" data-cell="meta">' +
               esc(e.department || '—') +
               '</td>' +
-              '<td class="td-p t-muted t-nowrap">' +
+              '<td class="td-p t-muted t-nowrap" data-cell="meta">' +
               esc(e.phone || '—') +
               '</td>' +
-              '<td class="td-p t-muted">' +
+              '<td class="td-p t-muted" data-cell="meta">' +
               esc(e.email || '—') +
               '</td>' +
-              '<td class="td-p t-muted">' +
+              '<td class="td-p t-muted" data-cell="meta" data-cap="Bergabung">' +
               esc(e.joinDate || '—') +
               '</td>' +
-              '<td class="td-p"><span class="badge badge-' +
+              '<td class="td-p" data-cell="status"><span class="badge badge-' +
               (statTone[e.status] || 'neutral') +
               '">' +
               esc(
@@ -128,7 +128,7 @@
                   : e.status || 'Aktif'
               ) +
               '</span></td>' +
-              '<td class="td-p t-actions">' +
+              '<td class="td-p t-actions" data-cell="menu">' +
               '<button type="button" class="row-edit" data-action="editEmpM" data-id="' +
               esc(e.id) +
               '">Edit</button> ' +
@@ -164,7 +164,7 @@
         '</div><div class="stat-sub">Divisi berbeda</div></div>' +
         '</div>' +
         '<div class="card" style="overflow-x:auto">' +
-        '<table style="width:100%;border-collapse:collapse">' +
+        '<table class="list-cards" style="width:100%;border-collapse:collapse">' +
         '<thead><tr><th style="' +
         TH +
         '">ID</th><th style="' +

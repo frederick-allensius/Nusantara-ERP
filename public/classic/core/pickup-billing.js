@@ -458,28 +458,28 @@
         return (
           '<tr class="row-link" data-action="pbParty" data-id="' +
           esc(x.id) +
-          '"><td><strong>' +
+          '"><td data-cell="title"><strong>' +
           esc(x.name) +
           '</strong>' +
           (x.alerts
             ? ' <span class="badge badge-warning">' + x.alerts + ' timbangan berubah</span>'
             : '') +
-          '</td><td class="t-num">' +
+          '</td><td class="t-num" data-cell="name" data-unit="truk">' +
           x.trips +
-          '</td><td class="t-num">' +
+          '</td><td class="t-num" data-cell="meta" data-cap="Tonase">' +
           qty(x.qty) +
-          '</td><td class="t-num">' +
+          '</td><td class="t-num" data-cell="amount">' +
           money(x.total) +
-          '</td><td>' +
+          '</td><td data-cell="meta" data-cap="Tertua">' +
           fmtDate(x.oldest) +
-          '</td><td>' +
+          '</td><td data-cell="meta" data-cap="Faktur terakhir">' +
           (since === null
             ? '<span class="t-muted">Belum ada</span>'
             : esc(sinceText(since)) +
               ' <span class="t-muted">· ' +
               esc(x.last.number) +
               '</span>') +
-          '</td><td class="t-num"><button type="button" class="btn btn-sm" data-action="pbParty" data-id="' +
+          '</td><td class="t-num" data-cell="action"><button type="button" class="btn btn-sm" data-action="pbParty" data-id="' +
           esc(x.id) +
           '">' +
           (isCust ? 'Tagih' : 'Catat tagihan') +
@@ -493,7 +493,7 @@
       (isCust
         ? 'Pelanggan dengan pengambilan belum ditagih'
         : 'Supplier dengan pengambilan belum difakturkan') +
-      '</div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>' +
+      '</div></div><div class="table-wrap"><table class="data-table list-cards"><thead><tr><th>' +
       esc(c.partyLabel) +
       '</th><th class="t-num">Truk</th><th class="t-num">Tonase</th><th class="t-num">Nilai (termasuk PPN)</th>' +
       '<th>Pengambilan tertua</th><th>Faktur terakhir</th><th></th></tr></thead><tbody>' +

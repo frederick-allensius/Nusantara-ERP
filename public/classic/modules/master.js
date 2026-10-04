@@ -15,12 +15,12 @@ function renderMasterData() {
     const supps = applyPage([...DB.suppliers], 'master_supp');
 
     const row = s => `<tr data-action="viewSupplier" data-id="${escapeHtml(s.id)}" class="row-link">
-      <td class="td-p list-key">${escapeHtml(s.name)}</td>
-      <td class="td-p t-muted">${escapeHtml(s.contact || '—')}</td>
-      <td class="td-p t-muted">${escapeHtml(s.phone || '—')}</td>
-      <td class="td-p t-muted">${escapeHtml(s.address || '—')}</td>
-      <td class="td-p t-num">${poCountBySupplier[s.name] || 0}</td>
-      <td class="td-p">${actionBtns('Supplier', s.id)}</td>
+      <td class="td-p list-key" data-cell="title">${escapeHtml(s.name)}</td>
+      <td class="td-p t-muted" data-cell="name">${escapeHtml(s.contact || '—')}</td>
+      <td class="td-p t-muted" data-cell="meta">${escapeHtml(s.phone || '—')}</td>
+      <td class="td-p t-muted" data-cell="meta">${escapeHtml(s.address || '—')}</td>
+      <td class="td-p t-num" data-cell="amount" data-unit="PO">${poCountBySupplier[s.name] || 0}</td>
+      <td class="td-p" data-cell="menu">${actionBtns('Supplier', s.id)}</td>
     </tr>`;
 
     return `
@@ -32,7 +32,7 @@ function renderMasterData() {
   ])}
   <div class="card card-flush">
     <div class="table-wrap">
-      <table class="data-table">
+      <table class="data-table list-cards">
         ${tblHdr(['Nama', 'Kontak', 'Telepon', 'Alamat', 'Jumlah PO', 'Aksi'])}
         <tbody>
           ${
@@ -58,11 +58,11 @@ function renderMasterData() {
   const custs = applyPage([...DB.customers], 'master_cust');
 
   const row = c => `<tr data-action="viewCustomer" data-id="${escapeHtml(c.id)}" class="row-link">
-      <td class="td-p list-key">${escapeHtml(c.name)}</td>
-      <td class="td-p t-muted">${escapeHtml(c.phone || '—')}</td>
-      <td class="td-p t-muted">${escapeHtml(c.address || '—')}</td>
-      <td class="td-p t-num">${soCountByCustomer[c.name] || 0}</td>
-      <td class="td-p">${actionBtns('Customer', c.id)}</td>
+      <td class="td-p list-key" data-cell="title">${escapeHtml(c.name)}</td>
+      <td class="td-p t-muted" data-cell="name">${escapeHtml(c.phone || '—')}</td>
+      <td class="td-p t-muted" data-cell="meta">${escapeHtml(c.address || '—')}</td>
+      <td class="td-p t-num" data-cell="amount" data-unit="SO">${soCountByCustomer[c.name] || 0}</td>
+      <td class="td-p" data-cell="menu">${actionBtns('Customer', c.id)}</td>
     </tr>`;
 
   return `
@@ -74,7 +74,7 @@ function renderMasterData() {
   ])}
   <div class="card card-flush">
     <div class="table-wrap">
-      <table class="data-table">
+      <table class="data-table list-cards">
         ${tblHdr(['Nama', 'Telepon', 'Alamat', 'Jumlah SO', 'Aksi'])}
         <tbody>
           ${

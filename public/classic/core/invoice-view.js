@@ -328,14 +328,14 @@
           const due = active ? B().dueDateFor(t.side, d) : d.dueDate || '';
           const overdue = active && bal.outstanding > B().EPS && due && due < today;
           return `<tr class="row-link" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">
-            <td class="list-no">${esc(docNo(d))}</td>
-            <td>${esc(d[t.party] || '—')}</td>
-            <td class="t-muted t-nowrap">${fmtDate(d.date)}</td>
-            <td class="${overdue ? 't-danger' : 't-muted'} t-nowrap">${fmtDate(due)}</td>
-            <td class="t-num">${money(d.amount || 0)}</td>
-            <td class="t-num">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
-            <td>${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
-            <td class="t-actions"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
+            <td class="list-no" data-cell="title">${esc(docNo(d))}</td>
+            <td data-cell="name">${esc(d[t.party] || '—')}</td>
+            <td class="t-muted t-nowrap" data-cell="meta">${fmtDate(d.date)}</td>
+            <td class="${overdue ? 't-danger' : 't-muted'} t-nowrap" data-cell="meta" data-cap="Jatuh tempo">${fmtDate(due)}</td>
+            <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
+            <td class="t-num" data-cell="meta" data-cap="Sisa">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
+            <td data-cell="status">${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
+            <td class="t-actions" data-cell="menu"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
           </tr>`;
         })
         .join('');
@@ -346,19 +346,19 @@
         .map(d => {
           const inv = (db()[invColl] || []).find(i => same(i.id, d.invoiceId));
           return `<tr class="row-link" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">
-            <td class="list-no">${esc(docNo(d))}</td>
-            <td>${esc(d[t.party] || '—')}</td>
-            <td class="t-muted t-nowrap">${fmtDate(d.date)}</td>
-            <td class="t-muted">${esc(inv ? docNo(inv) : d.invoiceNumber || d.invoiceId || '—')}</td>
-            <td class="t-muted">${esc(d.paymentMethod || '—')}</td>
-            <td class="t-num">${money(d.amount || 0)}</td>
-            <td>${badge(d.status)}</td>
-            <td class="t-actions"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
+            <td class="list-no" data-cell="title">${esc(docNo(d))}</td>
+            <td data-cell="name">${esc(d[t.party] || '—')}</td>
+            <td class="t-muted t-nowrap" data-cell="meta">${fmtDate(d.date)}</td>
+            <td class="t-muted" data-cell="meta" data-cap="Faktur">${esc(inv ? docNo(inv) : d.invoiceNumber || d.invoiceId || '—')}</td>
+            <td class="t-muted" data-cell="meta">${esc(d.paymentMethod || '—')}</td>
+            <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
+            <td data-cell="status">${badge(d.status)}</td>
+            <td class="t-actions" data-cell="menu"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
           </tr>`;
         })
         .join('');
     }
-    return `<div class="card card-flush"><div class="table-wrap"><table class="data-table">
+    return `<div class="card card-flush"><div class="table-wrap"><table class="data-table list-cards">
       <thead><tr>${head}</tr></thead><tbody>${rows}</tbody>
     </table></div>${pagerHTML(type, all.length)}</div>`;
   }

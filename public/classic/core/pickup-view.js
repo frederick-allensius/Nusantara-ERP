@@ -212,6 +212,8 @@
     );
   }
   // A titled card with an edge-to-edge table (.card > .table-wrap in style.css).
+  // opts.cards: on phones each row shows as a card (rows mark their cells with
+  // data-cell; mobile.css "List cards on phones").
   function tableCard(title, sub, head, rows, opts) {
     opts = opts || {};
     return (
@@ -226,6 +228,7 @@
       (rows.length
         ? '<div class="table-wrap"><table class="data-table' +
           (opts.wrap ? '' : ' pv-table') +
+          (opts.cards ? ' list-cards' : '') +
           '"><thead><tr>' +
           head
             .map(function (h) {
@@ -560,7 +563,7 @@
         'Ditutup karena kuota terpenuhi, lewat batas pengambilan, atau ditutup manual',
         ['PO', 'Supplier', 'Pelanggan', 'Barang', 'Diambil', '#Surat jalan', 'Batas', 'Status'],
         done.map(poRow),
-        { empty: 'Belum ada PO pengambilan yang selesai.', wrap: true }
+        { empty: 'Belum ada PO pengambilan yang selesai.', wrap: true, cards: true }
       );
     } else {
       html += tableCard(
@@ -573,6 +576,7 @@
             'Belum ada PO pengambilan yang berjalan. Buka PO dari daftar "PO siap dibuka" di bawah.',
           actions: open.length ? supplierExport(open) : '',
           wrap: true,
+          cards: true,
         }
       );
     }
@@ -589,35 +593,36 @@
       '<tr data-action="pvOpenPO" data-id="' +
       esc(po.id) +
       '">' +
-      '<td class="pv-nowrap"><div class="doc-no">' +
+      '<td class="pv-nowrap" data-cell="title"><div class="doc-no">' +
       esc(poNo(po)) +
       '</div><div class="t-muted">' +
       esc(fmtDate(po.date)) +
       '</div></td>' +
-      '<td>' +
+      '<td data-cell="name">' +
       esc(po.supplier || '—') +
       '</td>' +
-      '<td>' +
+      '<td data-cell="meta" data-cap="Pelanggan"><span>' +
       esc(customerOf(po) || '—') +
+      '</span>' +
       (so ? '<div class="t-muted doc-no">' + esc(so.number || so.id) + '</div>' : '') +
       '</td>' +
-      '<td>' +
+      '<td data-cell="meta">' +
       esc(lineOf(po).itemName || '—') +
       '</td>' +
-      '<td>' +
+      '<td data-cell="amount">' +
       progress(u) +
       '</td>' +
-      '<td class="t-num">' +
+      '<td class="t-num" data-cell="meta" data-cap="Surat jalan"><span>' +
       u.tripsUsed +
       ' / ' +
       u.tripsMax +
-      '<div class="t-muted">' +
+      '</span><div class="t-muted">' +
       u.tripsOpen +
       ' siap</div></td>' +
-      '<td class="pv-nowrap">' +
+      '<td class="pv-nowrap" data-cell="meta" data-cap="Batas">' +
       cutoffCell(po, u) +
       '</td>' +
-      '<td>' +
+      '<td data-cell="status">' +
       poStatusBadge(po, u) +
       '</td>' +
       '</tr>'
@@ -671,21 +676,21 @@
       var l = lineOf(po);
       return (
         '<tr>' +
-        '<td><div class="doc-no">' +
+        '<td data-cell="title"><div class="doc-no">' +
         esc(poNo(po)) +
         '</div><div class="t-muted">' +
         esc(fmtDate(po.date)) +
         '</div></td>' +
-        '<td>' +
+        '<td data-cell="name">' +
         esc(po.supplier || '—') +
         '</td>' +
-        '<td>' +
+        '<td data-cell="meta">' +
         esc(l.itemName || '—') +
         '</td>' +
-        '<td class="t-num">' +
+        '<td class="t-num" data-cell="amount">' +
         esc(qty(l.qty, l.unit)) +
         '</td>' +
-        '<td class="t-actions">' +
+        '<td class="t-actions" data-cell="action">' +
         button('Buka untuk pengambilan', 'createPickupPO', po.id, 'btn btn-sm') +
         '</td>' +
         '</tr>'
@@ -696,7 +701,7 @@
       'PO supplier berstatus Dikonfirmasi berisi satu barang. Saat dibuka, surat jalan untuk semua truk langsung dibuat.',
       ['PO', 'Supplier', 'Barang', '#Jumlah', ''],
       rows,
-      { empty: 'Tidak ada PO supplier yang siap dibuka.' }
+      { empty: 'Tidak ada PO supplier yang siap dibuka.', cards: true }
     );
     if (multi.length) {
       html +=
@@ -2529,33 +2534,33 @@
       var inv = invs[i];
       var flags = slotFlags(d);
       return (
-        '<tr><td>' +
+        '<tr><td data-cell="meta">' +
         esc(fmtDate(d.date)) +
-        '</td><td><div class="doc-no">' +
+        '</td><td data-cell="title"><div class="doc-no">' +
         esc(d.sjNo || d.number) +
         '</div>' +
         (flags ? '<div class="pv-flags">' + flags + '</div>' : '') +
-        '</td><td class="doc-no">' +
+        '</td><td class="doc-no" data-cell="meta">' +
         esc(d.poNumber || '—') +
-        '</td><td>' +
+        '</td><td data-cell="name">' +
         esc(d.customer || '—') +
-        '</td><td>' +
+        '</td><td data-cell="meta">' +
         esc(itemOfSlot(d) || '—') +
-        '</td><td>' +
+        '</td><td data-cell="meta">' +
         esc(d.vehicle || '—') +
-        '</td><td>' +
+        '</td><td data-cell="meta" data-cap="Sopir">' +
         esc(d.driver || '—') +
-        '</td><td class="t-num">' +
+        '</td><td class="t-num" data-cell="meta" data-cap="Bruto">' +
         esc(w.gross != null ? fmtT(w.gross) : '—') +
-        '</td><td class="t-num">' +
+        '</td><td class="t-num" data-cell="meta" data-cap="Tara">' +
         esc(w.tare != null ? fmtT(w.tare) : '—') +
-        '</td><td class="t-num t-strong">' +
+        '</td><td class="t-num t-strong" data-cell="amount">' +
         esc(qty(T().netOf(d), unitOfSlot(d))) +
-        '</td><td>' +
+        '</td><td data-cell="meta" data-cap="Faktur pelanggan">' +
         (inv.si ? '<span class="doc-no">' + esc(inv.si) + '</span>' : badge('warning', 'Belum')) +
-        '</td><td>' +
+        '</td><td data-cell="meta" data-cap="Faktur supplier">' +
         (inv.pi ? '<span class="doc-no">' + esc(inv.pi) + '</span>' : badge('warning', 'Belum')) +
-        '</td><td>' +
+        '</td><td data-cell="menu">' +
         (d.ticketPhoto ? button('Foto', 'pvPhoto', d.id, 'btn-ghost btn-sm') : '') +
         '</td></tr>'
       );
@@ -2581,6 +2586,7 @@
       rows,
       {
         empty: 'Tidak ada pengambilan pada filter ini.',
+        cards: true,
         foot: trips.length
           ? '<tfoot><tr><td colspan="9">' +
             esc('Total ' + trips.length + ' truk') +
