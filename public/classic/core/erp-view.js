@@ -367,6 +367,45 @@ function refreshActiveView() {
   navigate(activeView);
 }
 
+// Sortable columns of each list ([col, label], header order). The headers use
+// sortTh; on phones, where the header row is hidden, "Urutkan" in the toolbar
+// "⋯" menu offers the same columns (listSortItems).
+const LIST_SORT = {
+  sales: [
+    ['id', 'No. SO'],
+    ['customer', 'Pelanggan'],
+    ['date', 'Tanggal'],
+    ['amount', 'Total'],
+  ],
+  purchase: [
+    ['id', 'No. PO'],
+    ['supplier', 'Supplier'],
+    ['date', 'Tanggal'],
+    ['amount', 'Total'],
+    ['status', 'Status'],
+  ],
+  inventory: [
+    ['name', 'Nama'],
+    ['category', 'Kategori'],
+    ['stock', 'Stok'],
+    ['cost', 'Harga Beli'],
+    ['sell', 'Harga Jual'],
+  ],
+  logistics: [
+    ['id', 'No. DO'],
+    ['customer', 'Pelanggan'],
+    ['destination', 'Tujuan'],
+    ['date', 'Tanggal'],
+    ['status', 'Status'],
+  ],
+};
+
+// Sortable header of a LIST_SORT column.
+function sortThOf(view, col) {
+  const entry = (LIST_SORT[view] || []).find(c => c[0] === col);
+  return sortTh(entry ? entry[1] : col, view, col);
+}
+
 /**
  * Return a sortable <th> element string.
  * `view` is the sortState key; `col` is the data-property name.
@@ -602,8 +641,15 @@ function _popItems() {
     return [];
   }
   return Array.from(_popMenu.el.querySelectorAll('[role^="menuitem"], .pop-item')).filter(
-    b => !b.disabled && !b.closest('[hidden]') && b.style.display !== 'none'
+    b => !b.disabled && !b.closest('[hidden]') && b.style.display !== 'none' && !_inHiddenGroup(b)
   );
+}
+
+// "Urutkan" in a toolbar menu is shown on phones only (mobile.css); the arrow
+// keys skip it where it is hidden.
+function _inHiddenGroup(b) {
+  const group = b.closest('.list-sort');
+  return !!group && window.getComputedStyle(group).display === 'none';
 }
 
 function _popIsPanel() {
@@ -982,10 +1028,34 @@ const FILTER_ICON = '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 
 const SELECT_ICON =
   '<rect x="3" y="3" width="18" height="18" rx="3"/><polyline points="8 12 11 15 16 9"/>';
 
+// "Urutkan" group of the toolbar "⋯" menu: on phones the list shows cards
+// without a header row, so the sortable columns are offered here. An item runs
+// the same sortCol as the column header (same column again = other direction).
+// cols: [[col, label], …] in header order. Shown on phones only (mobile.css).
+function listSortItems(view, cols, sepBefore) {
+  if (!cols || !cols.length) {
+    return '';
+  }
+  const s = sortState[view];
+  const items = cols
+    .map(([col, label]) => {
+      const on = !!s && s.col === col;
+      const hint = on ? (s.dir === 'asc' ? 'naik ↑' : 'turun ↓') : '';
+      return `<button type="button" role="menuitemradio" aria-checked="${on}" tabindex="-1" class="tool-menu-item list-sort-item"
+        data-action="sortCol" data-type="${view}" data-col="${col}">${escapeHtml(label)}${
+          hint ? `<span class="tool-menu-hint">${hint}</span>` : ''
+        }</button>`;
+    })
+    .join('');
+  return `<div class="list-sort" role="group" aria-label="Urutkan">${
+    sepBefore ? '<div class="tool-menu-sep" role="separator"></div>' : ''
+  }<div class="row-menu-head" role="presentation">Urutkan</div>${items}</div>`;
+}
+
 // The one "⋯" button of a list toolbar: "Filter status…" (opens the status
 // drop-down kept beside the button), "Pilih beberapa" where the list has bulk
-// actions, then the import/export options. opts: { io: keys, select: bool,
-// filterLabel }.
+// actions, "Urutkan" (phones), then the import/export options.
+// opts: { io: keys, select: bool, filterLabel, sort: [[col, label], …] }.
 function listMoreMenu(view, opts) {
   const o = opts || {};
   const head = [];
@@ -1002,12 +1072,14 @@ function listMoreMenu(view, opts) {
   if (o.select) {
     head.push(_toolItem('Pilih beberapa', SELECT_ICON, `data-action="soSelectMode" data-type="${view}"`));
   }
+  const sort = listSortItems(view, o.sort, head.length > 0);
   const io = ioMenuItems(view, o.io || []);
-  const sep = head.length && io ? '<div class="tool-menu-sep" role="separator"></div>' : '';
+  const sep =
+    (head.length || sort) && io ? '<div class="tool-menu-sep" role="separator"></div>' : '';
   return `<div class="filter-wrap list-more">
     <button type="button" class="list-more-btn" data-action="toolMenu" aria-haspopup="menu" aria-expanded="false" aria-label="Opsi lainnya" title="Opsi lainnya">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-    </button><div class="tool-menu" role="menu" aria-label="Opsi lainnya" hidden>${head.join('')}${sep}${io}</div>
+    </button><div class="tool-menu" role="menu" aria-label="Opsi lainnya" hidden>${head.join('')}${sort}${sep}${io}</div>
     <div class="filter-drop" id="filter-${view}"></div>
   </div>`;
 }
@@ -1352,16 +1424,19 @@ function renderPurchase() {
   <div class="card">
     ${listTools(
       periodControl('purchase') + orderStageNote('purchase') + listFilterNote('purchase'),
-      listMoreMenu('purchase', { io: ['csv', 'excel', 'summary', 'import'] })
+      listMoreMenu('purchase', {
+        io: ['csv', 'excel', 'summary', 'import'],
+        sort: LIST_SORT.purchase,
+      })
     )}
     <div class="table-wrap">
-      <table>
+      <table class="list-cards">
         <thead><tr>
-          ${sortTh('No. PO', 'purchase', 'id')}
-          ${sortTh('Supplier', 'purchase', 'supplier')}
-          ${sortTh('Tanggal', 'purchase', 'date')}
-          ${sortTh('Total', 'purchase', 'amount')}
-          ${sortTh('Status', 'purchase', 'status')}
+          ${sortThOf('purchase', 'id')}
+          ${sortThOf('purchase', 'supplier')}
+          ${sortThOf('purchase', 'date')}
+          ${sortThOf('purchase', 'amount')}
+          ${sortThOf('purchase', 'status')}
           <th class="row-menu-cell"><span class="sr-only">Aksi</span></th>
         </tr></thead>
         <tbody>
@@ -1371,12 +1446,12 @@ function renderPurchase() {
               : paged
                   .map(
                     o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}">
-              <td class="td-p list-no">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
-              <td class="td-p">${escapeHtml(o.supplier)}</td>
-              <td class="td-p t-muted">${escapeHtml(o.date)}</td>
-              <td class="td-p t-nowrap">${idr(o.amount)}</td>
-              <td class="td-p">${orderStageBadge('purchases', o)}</td>
-              <td class="td-p row-menu-cell">${orderRowMenu('purchase', o)}</td>
+              <td class="td-p list-no" data-cell="title">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
+              <td class="td-p" data-cell="name">${escapeHtml(o.supplier)}</td>
+              <td class="td-p t-muted" data-cell="meta">${escapeHtml(o.date)}</td>
+              <td class="td-p t-nowrap" data-cell="amount">${idr(o.amount)}</td>
+              <td class="td-p" data-cell="status">${orderStageBadge('purchases', o)}</td>
+              <td class="td-p row-menu-cell" data-cell="menu">${orderRowMenu('purchase', o)}</td>
             </tr>`
                   )
                   .join('')
@@ -1428,18 +1503,22 @@ function renderInventory() {
   <div class="card">
     ${listTools(
       listFilterNote('inventory', 'Filter'),
-      listMoreMenu('inventory', { io: ['csv', 'excel'], filterLabel: 'Filter barang…' })
+      listMoreMenu('inventory', {
+        io: ['csv', 'excel'],
+        filterLabel: 'Filter barang…',
+        sort: LIST_SORT.inventory,
+      })
     )}
     <div class="table-wrap">
-      <table>
+      <table class="list-cards">
         <thead><tr>
-          ${sortTh('Nama', 'inventory', 'name')}
-          ${sortTh('Kategori', 'inventory', 'category')}
+          ${sortThOf('inventory', 'name')}
+          ${sortThOf('inventory', 'category')}
           <th>Satuan</th>
-          ${sortTh('Stok', 'inventory', 'stock')}
+          ${sortThOf('inventory', 'stock')}
           <th>Min</th>
-          ${sortTh('Harga Beli', 'inventory', 'cost')}
-          ${sortTh('Harga Jual', 'inventory', 'sell')}
+          ${sortThOf('inventory', 'cost')}
+          ${sortThOf('inventory', 'sell')}
           <th>Status</th>
           <th>Aksi</th>
         </tr></thead>
@@ -1451,15 +1530,15 @@ function renderInventory() {
                   .map(i => {
                     const isLow = i.stock < i.min;
                     return `<tr data-action="viewItem" data-id="${escapeHtml(i.id)}">
-                <td class="td-p list-key">${escapeHtml(i.name)}</td>
-                <td class="td-p t-muted">${escapeHtml(i.category)}</td>
-                <td class="td-p t-muted">${escapeHtml(i.unit)}</td>
-                <td class="td-p${isLow ? ' t-danger' : ''}">${i.stock}</td>
-                <td class="td-p t-muted">${i.min}</td>
-                <td class="td-p t-nowrap">${idr(i.cost)}</td>
-                <td class="td-p t-nowrap">${idr(i.sell)}</td>
-                <td class="td-p">${badge(isLow ? 'Low' : 'OK')}</td>
-                <td class="td-p">${actionBtns('Item', i.id)}</td>
+                <td class="td-p list-key" data-cell="title">${escapeHtml(i.name)}</td>
+                <td class="td-p t-muted" data-cell="name">${escapeHtml(i.category)}</td>
+                <td class="td-p t-muted" data-cell="meta" data-cap="Satuan">${escapeHtml(i.unit)}</td>
+                <td class="td-p${isLow ? ' t-danger' : ''}" data-cell="amount" data-cap="Stok">${i.stock}</td>
+                <td class="td-p t-muted" data-cell="meta" data-cap="Min">${i.min}</td>
+                <td class="td-p t-nowrap" data-cell="meta" data-cap="Harga beli">${idr(i.cost)}</td>
+                <td class="td-p t-nowrap" data-cell="meta" data-cap="Harga jual">${idr(i.sell)}</td>
+                <td class="td-p" data-cell="status">${badge(isLow ? 'Low' : 'OK')}</td>
+                <td class="td-p" data-cell="menu">${actionBtns('Item', i.id)}</td>
               </tr>`;
                   })
                   .join('')
@@ -1919,7 +1998,7 @@ function renderLogistics() {
   <div class="card">
     ${listTools(
       periodControl('logistics') + listFilterNote('logistics'),
-      listMoreMenu('logistics', { io: ['csv', 'excel', 'import'] })
+      listMoreMenu('logistics', { io: ['csv', 'excel', 'import'], sort: LIST_SORT.logistics })
     )}
     ${
       pickupCount > 0
@@ -1927,16 +2006,16 @@ function renderLogistics() {
         : ''
     }
     <div class="table-wrap">
-      <table>
+      <table class="list-cards">
         <thead><tr>
-          ${sortTh('No. DO', 'logistics', 'id')}
+          ${sortThOf('logistics', 'id')}
           <th>Ref.</th>
-          ${sortTh('Pelanggan', 'logistics', 'customer')}
-          ${sortTh('Tujuan', 'logistics', 'destination')}
-          ${sortTh('Tanggal', 'logistics', 'date')}
+          ${sortThOf('logistics', 'customer')}
+          ${sortThOf('logistics', 'destination')}
+          ${sortThOf('logistics', 'date')}
           <th>Driver</th>
           <th>Kendaraan</th>
-          ${sortTh('Status', 'logistics', 'status')}
+          ${sortThOf('logistics', 'status')}
           <th>Aksi</th>
         </tr></thead>
         <tbody>
@@ -1959,19 +2038,19 @@ function renderLogistics() {
                         ? `${d.soId ? 'SO' : 'PO'} · ${docNum(null, rawRef)}`
                         : '—';
                     return `<tr data-action="viewDO" data-id="${escapeHtml(d.id)}">
-              <td class="td-p list-no">${escapeHtml(docNum(d.number, d.id))}</td>
-              <td class="td-p t-muted t-nowrap">${escapeHtml(ref)}</td>
-              <td class="td-p">${escapeHtml(d.customer)}</td>
-              <td class="td-p t-muted">${escapeHtml(d.destination)}${
+              <td class="td-p list-no" data-cell="title">${escapeHtml(docNum(d.number, d.id))}</td>
+              <td class="td-p t-muted t-nowrap" data-cell="meta">${escapeHtml(ref)}</td>
+              <td class="td-p" data-cell="name">${escapeHtml(d.customer)}</td>
+              <td class="td-p t-muted" data-cell="meta">${escapeHtml(d.destination)}${
                 d.destChanged
                   ? ` <span class="badge badge-warning" title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}">Tujuan diubah</span>`
                   : ''
               }</td>
-              <td class="td-p t-muted">${escapeHtml(d.date)}</td>
-              <td class="td-p">${escapeHtml(d.driver)}</td>
-              <td class="td-p mono">${escapeHtml(d.vehicle)}</td>
-              <td class="td-p">${badge(d.status)}</td>
-              <td class="td-p">${actionBtns('DO', d.id)}</td>
+              <td class="td-p t-muted" data-cell="meta">${escapeHtml(d.date)}</td>
+              <td class="td-p" data-cell="meta">${escapeHtml(d.driver)}</td>
+              <td class="td-p mono" data-cell="meta">${escapeHtml(d.vehicle)}</td>
+              <td class="td-p" data-cell="status">${badge(d.status)}</td>
+              <td class="td-p" data-cell="menu">${actionBtns('DO', d.id)}</td>
             </tr>`;
                   })
                   .join('')
@@ -2634,9 +2713,16 @@ document.addEventListener('click', async e => {
 
     // ── Sorting ───────────────────────────────────────────────────────────────
     // FIX (sortable tables): route column header clicks to sortCol()
-    case 'sortCol':
+    case 'sortCol': {
+      // From "Urutkan" in the toolbar menu: focus stays on that "⋯" button.
+      const fromMenu = !!btn.closest('#nsa-pop-menu');
       sortCol(type, col);
+      const more = fromMenu ? document.querySelector(`#view-${type} .list-more-btn`) : null;
+      if (more) {
+        more.focus();
+      }
       break;
+    }
 
     // ── Export CSV ────────────────────────────────────────────────────────────
     // FIX (export CSV)
@@ -3336,19 +3422,19 @@ function renderSales() {
           .map(o => {
             const num = docNum(o.number, o.id);
             const check = selecting
-              ? `<td class="sel-cell">
+              ? `<td class="sel-cell" data-cell="check">
             <input type="checkbox" class="so-check" data-action="toggleSOCheck"
               data-id="${escapeHtml(o.id)}" ${soSelection.has(o.id) ? 'checked' : ''} aria-label="Pilih ${escapeHtml(num)}">
           </td>`
               : '';
             return `<tr data-action="viewSO" data-id="${escapeHtml(o.id)}">
           ${check}
-          <td class="td-p list-no">${escapeHtml(num)}${pickupTag(o)}</td>
-          <td class="td-p">${escapeHtml(o.customer)}</td>
-          <td class="td-p t-muted">${escapeHtml(o.date)}</td>
-          <td class="td-p t-nowrap">${idr(o.amount)}</td>
-          <td class="td-p">${orderStageBadge('sales', o)}</td>
-          <td class="td-p row-menu-cell">${orderRowMenu('sales', o)}</td>
+          <td class="td-p list-no" data-cell="title">${escapeHtml(num)}${pickupTag(o)}</td>
+          <td class="td-p" data-cell="name">${escapeHtml(o.customer)}</td>
+          <td class="td-p t-muted" data-cell="meta">${escapeHtml(o.date)}</td>
+          <td class="td-p t-nowrap" data-cell="amount">${idr(o.amount)}</td>
+          <td class="td-p" data-cell="status">${orderStageBadge('sales', o)}</td>
+          <td class="td-p row-menu-cell" data-cell="menu">${orderRowMenu('sales', o)}</td>
         </tr>`;
           })
           .join('');
@@ -3360,25 +3446,29 @@ function renderSales() {
     ${listTools(
       periodControl('sales') + orderStageNote('sales') + listFilterNote('sales'),
       // While selecting, "Selesai" in the bar leaves selection mode.
-      listMoreMenu('sales', { io: ['csv', 'summary', 'import'], select: !selecting })
+      listMoreMenu('sales', {
+        io: ['csv', 'summary', 'import'],
+        select: !selecting,
+        sort: LIST_SORT.sales,
+      })
     )}
     ${bulkBar}
     <div class="table-wrap">
-      <table>
+      <table class="list-cards${selecting ? ' is-selecting' : ''}">
         <thead><tr>
           ${
             selecting
-              ? `<th class="sel-cell">
+              ? `<th class="sel-cell"><label class="sel-all">
             <input type="checkbox" id="checkAllSO" data-action="checkAllSO"
               ${allPageChecked ? 'checked' : ''}
-              aria-label="Pilih semua di halaman ini" title="Pilih/batalkan semua di halaman ini">
-          </th>`
+              aria-label="Pilih semua di halaman ini" title="Pilih/batalkan semua di halaman ini"><span class="sel-all-text">Pilih semua</span>
+          </label></th>`
               : ''
           }
-          ${sortTh('No. SO', 'sales', 'id')}
-          ${sortTh('Pelanggan', 'sales', 'customer')}
-          ${sortTh('Tanggal', 'sales', 'date')}
-          ${sortTh('Total', 'sales', 'amount')}
+          ${sortThOf('sales', 'id')}
+          ${sortThOf('sales', 'customer')}
+          ${sortThOf('sales', 'date')}
+          ${sortThOf('sales', 'amount')}
           <th>Status</th>
           <th class="row-menu-cell"><span class="sr-only">Aksi</span></th>
         </tr></thead>
