@@ -2166,7 +2166,7 @@ function editItem(id) {
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteItem" data-id="${escapeHtml(id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteItem" data-id="${escapeHtml(id)}" data-label="${escapeHtml(item.name || '')}">Hapus</button>
    <button class="btn" id="updateItem">Simpan</button>`
   );
   setTimeout(() => {
@@ -2453,7 +2453,7 @@ function editCustomer(id) {
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteCustomer" data-id="${escapeHtml(c.id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteCustomer" data-id="${escapeHtml(c.id)}" data-label="${escapeHtml(c.name || '')}">Hapus</button>
    <button class="btn" id="updateCustomer">Simpan</button>`
   );
   setTimeout(() => {
@@ -2811,7 +2811,7 @@ function editSupplier(id) {
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteSupplier" data-id="${escapeHtml(s.id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteSupplier" data-id="${escapeHtml(s.id)}" data-label="${escapeHtml(s.name || '')}">Hapus</button>
    <button class="btn" id="updateSupplier">Simpan</button>`
   );
   setTimeout(() => {
@@ -4554,7 +4554,7 @@ function editFleet(id) {
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteFleet" data-id="${escapeHtml(id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteFleet" data-id="${escapeHtml(id)}" data-label="${escapeHtml(v.plate || '')}">Hapus</button>
    <button class="btn" id="updateFleet">Simpan</button>`
   );
   setTimeout(() => {
@@ -4685,7 +4685,7 @@ function editExpedition(id) {
     </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="deleteExpedition" data-id="${escapeHtml(id)}">Hapus</button>
+   <button class="btn-danger" data-action="armDelete" data-do="deleteExpedition" data-id="${escapeHtml(id)}" data-label="${escapeHtml(e.name || '')}">Hapus</button>
    <button class="btn" id="updateExpedition">Simpan</button>`
   );
   setTimeout(() => {
@@ -5726,7 +5726,7 @@ function editDO(id) {
     `Edit DO — ${escapeHtml(id)}`,
     _doFormBody(o),
     `<button class="btn-ghost" data-action="closeModal">Batal</button>
-     <button class="btn-danger" data-action="deleteDO" data-id="${escapeHtml(id)}">Hapus</button>
+     <button class="btn-danger" data-action="armDelete" data-do="deleteDO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id) || '')}">Hapus</button>
      <button class="btn" id="updateDO">Simpan</button>`
   );
 
