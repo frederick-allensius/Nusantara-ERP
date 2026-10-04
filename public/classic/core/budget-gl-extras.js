@@ -1354,12 +1354,22 @@
       case 'bvaFilter':
         filterBudgetVsActual();
         break;
+      // Audit Jurnal pager
+      case 'ajPage':
+        _audit.page = Number(btn.dataset.val) || 1;
+        if (_audit.paint) _audit.paint();
+        break;
     }
   });
 
   // ══════════════════════════════════════════════════════════════════════════════
   // § AUDIT JOURNAL
   // ══════════════════════════════════════════════════════════════════════════════
+  // The entries matching the filter show 25 per page (list-pager.js). Opening the
+  // page, Filter and Reset start again at page 1.
+  var AUDIT_PAGE_SIZE = 25;
+  var _audit = { page: 1, paint: null };
+
   function openAuditJournal() {
     var journals = db().journals || [];
     var accounts = db().accountsChart || [];
@@ -1373,8 +1383,9 @@
       fTo = '',
       fAcc = '',
       fQ = '';
+    _audit.page = 1;
 
-    function renderTable(from, to, acc, q) {
+    function filterJournals(from, to, acc, q) {
       var filtered = journals.filter(function (j) {
         if (from && j.date < from) return false;
         if (to && j.date > to) return false;
@@ -1395,62 +1406,76 @@
         return true;
       });
 
-      filtered = filtered.slice().sort(function (a, b) {
+      return filtered.slice().sort(function (a, b) {
         return a.date > b.date ? -1 : a.date < b.date ? 1 : 0;
       });
-      var total = filtered.length;
-      filtered = filtered.slice(0, 200);
+    }
 
-      if (!filtered.length)
+    function renderTable(list) {
+      if (!list.length)
         return '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada jurnal ditemukan.</td></tr>';
 
-      return (
-        filtered
-          .map(function (j) {
-            var lines = j.lines || j.entries || [];
-            var debitTotal = j.totals ? j.totals.debit : lines.reduce(function (s, l) {
-              return s + (Number(l.debit) || l.debitAmount || 0);
-            }, 0);
-            var accList =
-              lines
-                .slice(0, 3)
-                .map(function (l) {
-                  var code = l.accountNo || l.account || l.accountCode || '';
-                  return esc(code + (accMap[code] ? ' ' + accMap[code].slice(0, 20) : ''));
-                })
-                .join(', ') + (lines.length > 3 ? '…' : '');
-            var src = typeof j.source === 'object' ? (j.source.docType || '—') : (j.source || '—');
-            return (
-              '<tr>' +
-              '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-              esc(j.date || '') +
-              '</td>' +
-              '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
-              esc(j.number || j.ref || j.id || '') +
-              '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
-              esc(j.memo || j.description || '—') +
-              '</td>' +
-              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-              accList +
-              '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700;font-size:.75rem">' +
-              money(debitTotal) +
-              '</td>' +
-              '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-              esc(src) +
-              '</td>' +
-              '</tr>'
-            );
-          })
-          .join('') +
-        (total > 200
-          ? '<tr><td colspan="6" style="text-align:center;padding:8px;color:var(--muted);font-size:.75rem">Menampilkan 200 dari ' +
-            total +
-            ' jurnal. Gunakan filter untuk mempersempit.</td></tr>'
-          : '')
-      );
+      return list
+        .map(function (j) {
+          var lines = j.lines || j.entries || [];
+          var debitTotal = j.totals ? j.totals.debit : lines.reduce(function (s, l) {
+            return s + (Number(l.debit) || l.debitAmount || 0);
+          }, 0);
+          var accList =
+            lines
+              .slice(0, 3)
+              .map(function (l) {
+                var code = l.accountNo || l.account || l.accountCode || '';
+                return esc(code + (accMap[code] ? ' ' + accMap[code].slice(0, 20) : ''));
+              })
+              .join(', ') + (lines.length > 3 ? '…' : '');
+          var src = typeof j.source === 'object' ? (j.source.docType || '—') : (j.source || '—');
+          return (
+            '<tr>' +
+            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
+            esc(j.date || '') +
+            '</td>' +
+            '<td class="td-p" style="font-size:.75rem;font-weight:700">' +
+            esc(j.number || j.ref || j.id || '') +
+            '</td>' +
+            '<td class="td-p" style="font-size:.75rem">' +
+            esc(j.memo || j.description || '—') +
+            '</td>' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
+            accList +
+            '</td>' +
+            '<td class="td-p" style="text-align:right;font-weight:700;font-size:.75rem">' +
+            money(debitTotal) +
+            '</td>' +
+            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
+            esc(src) +
+            '</td>' +
+            '</tr>'
+          );
+        })
+        .join('');
     }
+
+    // Rows of the current page and the pager under the table, for the filter.
+    function pageParts() {
+      var pg = window.NSAPager.page(filterJournals(fFrom, fTo, fAcc, fQ), _audit.page, AUDIT_PAGE_SIZE);
+      _audit.page = pg.page;
+      return {
+        rows: renderTable(pg.rows),
+        pager: window.NSAPager.html({ total: pg.total, page: pg.page, size: AUDIT_PAGE_SIZE, action: 'ajPage' }),
+      };
+    }
+
+    function paint() {
+      var tbody = document.getElementById('aj-tbody');
+      var pager = document.getElementById('aj-pager');
+      if (!tbody || !pager) return;
+      var parts = pageParts();
+      tbody.innerHTML = parts.rows;
+      pager.innerHTML = parts.pager;
+    }
+    _audit.paint = paint;
+    var first = pageParts();
 
     var accOpts =
       '<option value="">— Semua Akun —</option>' +
@@ -1485,7 +1510,8 @@
         '<button class="btn" id="aj-filter">Filter</button>' +
         '<button class="btn-ghost" id="aj-reset">Reset</button>' +
         '</div></div>' +
-        '<div class="card" style="overflow-x:auto">' +
+        '<div class="card">' +
+        '<div style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse">' +
         '<thead><tr>' +
         '<th style="' +
@@ -1505,9 +1531,12 @@
         '">Sumber</th>' +
         '</tr></thead>' +
         '<tbody id="aj-tbody">' +
-        renderTable('', '', '', '') +
+        first.rows +
         '</tbody>' +
-        '</table></div>'
+        '</table></div>' +
+        '<div id="aj-pager">' +
+        first.pager +
+        '</div></div>'
     );
 
     setTimeout(function () {
@@ -1518,8 +1547,8 @@
         fTo = document.getElementById('aj-to').value;
         fAcc = document.getElementById('aj-acc').value;
         fQ = (document.getElementById('aj-q').value || '').trim();
-        var tbody = document.getElementById('aj-tbody');
-        if (tbody) tbody.innerHTML = renderTable(fFrom, fTo, fAcc, fQ);
+        _audit.page = 1;
+        paint();
       }
       if (filterBtn) filterBtn.addEventListener('click', applyFilter);
       if (resetBtn)
@@ -1530,8 +1559,9 @@
           });
           var accEl = document.getElementById('aj-acc');
           if (accEl) accEl.value = '';
-          var tbody = document.getElementById('aj-tbody');
-          if (tbody) tbody.innerHTML = renderTable('', '', '', '');
+          fFrom = fTo = fAcc = fQ = '';
+          _audit.page = 1;
+          paint();
         });
     }, 60);
   }

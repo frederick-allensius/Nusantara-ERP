@@ -1253,7 +1253,13 @@
   // ══════════════════════════════════════════════════════════════════════════
   // § 6  BANK HISTORY
   // ══════════════════════════════════════════════════════════════════════════
-  function openBankHistory() {
+  // The movement list shows 25 rows per page (list-pager.js); Total Masuk /
+  // Keluar / Net Posisi cover every movement. Opening the page starts at page 1.
+  var HISTORY_PAGE_SIZE = 25;
+  var _historyPage = 1;
+
+  // Every cash & bank movement, newest first.
+  function bankHistoryEntries() {
     var entries = [];
     var accounts = getBankAccounts();
     var accMap = {};
@@ -1360,25 +1366,15 @@
     entries.sort(function (a, b) {
       return a.date > b.date ? -1 : a.date < b.date ? 1 : 0;
     });
+    return entries;
+  }
 
-    var totalIn = entries
-      .filter(function (e) {
-        return e.flow === 'in';
-      })
-      .reduce(function (s, e) {
-        return s + e.amount;
-      }, 0);
-    var totalOut = entries
-      .filter(function (e) {
-        return e.flow === 'out';
-      })
-      .reduce(function (s, e) {
-        return s + e.amount;
-      }, 0);
-
+  // The movement table for the current page and the pager under it.
+  function bankHistoryListHTML(entries) {
+    var pg = window.NSAPager.page(entries, _historyPage, HISTORY_PAGE_SIZE);
+    _historyPage = pg.page;
     var rows =
-      entries
-        .slice(0, 200)
+      pg.rows
         .map(function (e) {
           var flowColor = e.flow === 'in' ? 'var(--success)' : e.flow === 'out' ? 'var(--danger)' : 'var(--muted)';
           var prefix = e.flow === 'in' ? '+' : e.flow === 'out' ? '−' : '⇄';
@@ -1412,6 +1408,48 @@
         .join('') ||
       '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Belum ada riwayat transaksi bank.</td></tr>';
 
+    return (
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr><th style="' +
+      TH +
+      '">Tanggal</th><th style="' +
+      TH +
+      '">Tipe</th><th style="' +
+      TH +
+      '">Referensi</th>' +
+      '<th style="' +
+      TH +
+      '">Metode</th><th style="' +
+      TH +
+      'text-align:right">Jumlah</th><th style="' +
+      TH +
+      '">Keterangan</th></tr></thead>' +
+      '<tbody>' +
+      rows +
+      '</tbody></table></div>' +
+      window.NSAPager.html({ total: pg.total, page: pg.page, size: HISTORY_PAGE_SIZE, action: 'bxHistoryPage' })
+    );
+  }
+
+  function openBankHistory() {
+    _historyPage = 1;
+    var entries = bankHistoryEntries();
+
+    var totalIn = entries
+      .filter(function (e) {
+        return e.flow === 'in';
+      })
+      .reduce(function (s, e) {
+        return s + e.amount;
+      }, 0);
+    var totalOut = entries
+      .filter(function (e) {
+        return e.flow === 'out';
+      })
+      .reduce(function (s, e) {
+        return s + e.amount;
+      }, 0);
+
     injectView(
       '<div class="sec-hdr"><div><h1>Riwayat Kas &amp; Bank</h1><p>Riwayat seluruh transaksi kas &amp; bank (' +
         entries.length.toLocaleString('id-ID') +
@@ -1431,31 +1469,17 @@
         (totalIn - totalOut >= 0 ? 'Surplus' : 'Defisit') +
         '</div></div>' +
         '</div>' +
-        '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th style="' +
-        TH +
-        '">Tanggal</th><th style="' +
-        TH +
-        '">Tipe</th><th style="' +
-        TH +
-        '">Referensi</th>' +
-        '<th style="' +
-        TH +
-        '">Metode</th><th style="' +
-        TH +
-        'text-align:right">Jumlah</th><th style="' +
-        TH +
-        '">Keterangan</th></tr></thead>' +
-        '<tbody>' +
-        rows +
-        '</tbody></table>' +
-        (entries.length > 200
-          ? '<div style="text-align:center;padding:10px;font-size:.75rem;color:var(--muted)">Menampilkan 200 dari ' +
-            entries.length +
-            ' transaksi</div>'
-          : '') +
+        '<div class="card" id="bx-history-list">' +
+        bankHistoryListHTML(entries) +
         '</div>'
     );
+  }
+
+  // Pager: repaint only the movement list, so the page keeps its place.
+  function showBankHistoryPage(page) {
+    _historyPage = page;
+    var host = document.getElementById('bx-history-list');
+    if (host) host.innerHTML = bankHistoryListHTML(bankHistoryEntries());
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -2124,6 +2148,9 @@
       }
       case 'goToBankStatement':
         openBankStatement();
+        break;
+      case 'bxHistoryPage':
+        showBankHistoryPage(Number(btn.dataset.val) || 1);
         break;
       case 'bxExport':
         exportRecap(btn.dataset.kind);

@@ -1582,6 +1582,13 @@ tfoot td {
     min-width: 72px;
   }
 }
+/* Laporan per Periode (funnel-report.js): on phones Terapkan / Reset take a
+   full row of the filter grid so they stay inside the card */
+@media (max-width: 768px) {
+  .cr-filters .cr-actions {
+    grid-column: 1 / -1;
+  }
+}
 
 .data-table.compact th,
 .data-table.compact td {
