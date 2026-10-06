@@ -263,3 +263,18 @@ Pajak & PPN document lists folded; 13222f1 (merged) phone card layout for 16 lis
 data-cell roles, mobile.css; sorting via ⋯ → Urutkan on phones). Checks: 47 files / 578 tests.
 Open: full-width action buttons on cards and name-keyed card lines (agent's choice, confirm with
 owner); 360px phones: two row combinations put the row button on its own line.
+
+## Session 2026-10-06 — visual direction B (DONE)
+
+Owner: "minimalist sleek elegant beautiful"; chose mockup B (white Swiss, harness.local/mockups/b-swiss.*)
+and a classic vertical funnel (reference image harness.local/mockups/funnel-reference.png); text
+size default back to Normal ("big but not that big — forget it for now").
+- a40c46e (merged) Ringkasan vertical funnel: two funnels (Ke pelanggan green, Dari supplier ink),
+  warehouse tabs 4 cumulative layers (Dipesan → Dikirim → Difakturkan → Lunas).
+- 942c1be (merged) theme B: tokens light/dark, Geist/Geist Mono, ink primary buttons, borderless
+  sections with hairlines, KPI/stat rows without boxes, status dot+text, Normal text size default
+  (key erp_text_size_v2). 721ef15 green customer funnel, white theme-color/manifest, sw v1.1.6.
+- Vite dep cache in node_modules/.vite is shared with agent worktrees (junction): clear
+  node_modules/.vite/deps and restart the dev server if the app shows a blank screen (504 Outdated
+  Optimize Dep).
+
