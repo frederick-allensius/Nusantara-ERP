@@ -5329,11 +5329,24 @@ html[data-theme] {
   font-size: var(--fs-xs);
 }
 
-/* Alur transaksi — stages as bands whose thickness follows the value. Wide
-   cards draw SVG bands under the stage columns; narrow cards list the stages
-   with a proportional bar. The body is the size container for that switch. */
+/* Alur transaksi — classic vertical funnels: one layer per stage, narrowing
+   downward, in one hue from light (top) to dark (bottom). Sales sides are the
+   brand green, purchase sides ink. Each layer is a row: the stage text on the
+   left, its slice of the funnel on the right (inline SVG stretched to the row),
+   so text never sits on a shape. Flat fills, 2px gaps, no outlines. The pickup
+   tab puts Ke pelanggan and Dari supplier side by side on wide cards. */
 .dash-flow {
+  --dash-funnel-sales-hi: var(--chart-1);
+  --dash-funnel-sales-lo: color-mix(in oklab, var(--chart-1) 24%, var(--surface));
+  --dash-funnel-ink-hi: var(--text);
+  --dash-funnel-ink-lo: color-mix(in oklab, var(--text) 14%, var(--surface));
+  --dash-funnel-leak: var(--warning);
   margin-bottom: 12px;
+}
+[data-theme='dark'] .dash-flow {
+  --dash-funnel-ink-hi: color-mix(in oklab, var(--text) 90%, var(--surface));
+  --dash-funnel-ink-lo: color-mix(in oklab, var(--text) 15%, var(--surface));
+  --dash-funnel-leak: color-mix(in oklab, var(--warning) 80%, var(--surface));
 }
 .dash-flow-body {
   container-type: inline-size;
@@ -5341,218 +5354,179 @@ html[data-theme] {
 .dash-flow-panel[hidden] {
   display: none;
 }
-.dash-fn {
-  --n: 3;
-}
-.dash-fn-grid {
+.dash-funnels {
   display: grid;
-  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px 56px;
+  max-width: 680px;
+  margin-top: 4px;
 }
-.dash-fn-names {
-  margin-bottom: 8px;
-  padding-bottom: 6px;
+.dash-funnel {
+  --dash-funnel-hi: var(--dash-funnel-sales-hi);
+  --dash-funnel-lo: var(--dash-funnel-sales-lo);
+  min-width: 0;
+  container-type: inline-size;
+}
+.dash-funnel.is-purchases {
+  --dash-funnel-hi: var(--dash-funnel-ink-hi);
+  --dash-funnel-lo: var(--dash-funnel-ink-lo);
+}
+.dash-funnel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border-light);
-  font-size: var(--fs-xs);
+}
+.dash-funnel-title {
+  font-size: var(--fs-sm);
   font-weight: 600;
+  color: var(--text);
+}
+.dash-funnel-unit {
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
-.dash-fn-band + .dash-fn-band {
-  margin-top: 14px;
+/* Rows of one funnel are equally tall (the tallest label wins when text
+   wraps), so the layers keep one height. */
+.dash-funnel-body {
+  display: grid;
+  grid-auto-rows: minmax(64px, 1fr);
+  row-gap: 2px;
 }
-.dash-fn-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--text-secondary);
+.dash-funnel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 24px;
 }
-.dash-swatch {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  background: var(--chart-1);
-}
-.dash-swatch.is-purchases {
-  background: var(--chart-3);
-}
-.dash-fn-cell {
+/* Each label starts at the same height in its row (one rhythm down the
+   column), whether it has two lines or three. */
+.dash-funnel-label {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   align-items: flex-start;
-  gap: 1px;
   min-width: 0;
-  margin: 0 0 0 -6px;
-  padding: 4px 6px;
+  padding: 3px 0 2px;
+}
+.dash-funnel-row + .dash-funnel-row .dash-funnel-label {
+  box-shadow: 0 -1px 0 var(--border-light);
+}
+.dash-funnel-stage {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   border: 0;
-  border-radius: var(--r-xs);
   background: none;
   color: inherit;
   font: inherit;
   text-align: left;
 }
-button.dash-fn-cell {
+button.dash-funnel-stage {
   cursor: pointer;
 }
-button.dash-fn-cell:hover {
-  background: var(--surface-hover);
+.dash-funnel-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 12px;
 }
-.dash-fn-name {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: var(--fs-xs);
+.dash-funnel-name {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--muted);
-  text-overflow: ellipsis;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
   white-space: nowrap;
 }
-.dash-fn-value {
-  font-size: var(--fs-lg);
-  font-weight: 650;
-  line-height: 1.25;
+.dash-funnel-value {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   white-space: nowrap;
 }
-.dash-fn-sub {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: var(--fs-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.is-zero .dash-fn-value,
-.is-zero .dash-fl-value {
+.dash-funnel-stage.is-zero .dash-funnel-value {
   color: var(--muted);
 }
-.dash-fn-plot {
-  position: relative;
-  margin-top: 4px;
-}
-.dash-fn-svg {
-  display: block;
-  width: 100%;
-}
-.dash-band {
-  fill: var(--chart-1);
-  fill-opacity: 0.8;
-}
-.dash-band.is-purchases {
-  fill: var(--chart-3);
-}
-[data-theme='dark'] .dash-band {
-  fill-opacity: 0.55;
-}
-.dash-leak {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  margin: 0;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-full);
-  background: var(--surface);
-  color: var(--text-secondary);
-  font: 500 var(--fs-xs) / 1 var(--font-sans);
+.dash-funnel-desc {
+  font-size: var(--fs-xs);
+  line-height: 1.3;
   font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.dash-funnel-desc > span,
+.dash-funnel-leak > span {
   white-space: nowrap;
+}
+button.dash-funnel-stage:hover .dash-funnel-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dash-funnel-leak,
+.dash-funnel-alert,
+.dash-funnel-note {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
   cursor: pointer;
 }
-.dash-leak:hover {
-  color: var(--text);
+.dash-funnel-leak {
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+  color: var(--dash-funnel-leak);
+}
+.dash-funnel-alert {
+  color: var(--dash-funnel-leak);
+}
+.dash-funnel-note {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.dash-funnel-leak:hover,
+.dash-funnel-alert:hover,
+.dash-funnel-note:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.dash-leak.is-warning {
-  border-color: color-mix(in srgb, var(--warning) 55%, transparent);
-  color: var(--warning);
+.dash-funnel-plot {
+  position: relative;
+  min-width: 0;
 }
-.dash-fn-plot .dash-leak {
+.dash-funnel-shape {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
-.dash-fl {
-  display: none;
-  flex-direction: column;
-  gap: 12px;
+.dash-funnel-layer {
+  fill: var(--dash-funnel-hi);
+  fill: color-mix(in oklab, var(--dash-funnel-hi) calc(var(--t, 1) * 100%), var(--dash-funnel-lo));
+  transition: opacity var(--dur) var(--ease);
 }
-.dash-fl-band {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-.dash-fl-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3px 12px;
-  align-items: baseline;
-  width: calc(100% + 16px);
-  margin: 0 -8px;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-button.dash-fl-row {
+.dash-funnel-row.is-link .dash-funnel-layer {
   cursor: pointer;
 }
-button.dash-fl-row:hover {
-  background: var(--surface-hover);
-}
-.dash-fl-name {
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--text);
-}
-.dash-fl-value {
-  font-size: var(--fs-sm);
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-.dash-fl-bar,
-.dash-fl-sub {
-  grid-column: 1 / -1;
-}
-.dash-fl-bar {
-  display: block;
-  height: 8px;
-  overflow: hidden;
-  border-radius: var(--r-full);
-  background: var(--surface-active);
-}
-.dash-fl-bar i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--chart-1);
-}
-.dash-fl-bar i.is-purchases {
-  background: var(--chart-3);
-}
-.dash-fl-sub {
-  font-size: var(--fs-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-.dash-fl .dash-leak {
-  margin: 0 0 4px;
+.dash-funnel-row.is-link:hover .dash-funnel-layer {
+  opacity: 0.82;
 }
 .dash-flow-notes {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: var(--fs-sm);
 }
 .dash-flow-foot {
@@ -5561,7 +5535,7 @@ button.dash-fl-row:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  margin-top: 14px;
+  margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
   font-size: var(--fs-sm);
@@ -5574,13 +5548,14 @@ button.dash-fl-row:hover {
   align-items: center;
   gap: 6px 10px;
 }
+/* Wide cards: Ke pelanggan beside Dari supplier. */
+@container (min-width: 860px) {
+  .dash-funnels.is-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+}
 @container (max-width: 639px) {
-  .dash-fn {
-    display: none;
-  }
-  .dash-fl {
-    display: flex;
-  }
   .dash-flow-tabs {
     width: 100%;
   }
@@ -5591,6 +5566,20 @@ button.dash-fl-row:hover {
     padding: 4px 6px;
     line-height: 1.2;
     white-space: normal;
+  }
+}
+/* Narrower funnels (half of a mid-size card, phones): the text keeps the
+   larger share so its lines stay whole; the shape gives way. */
+@container (max-width: 479px) {
+  .dash-funnel-row {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    column-gap: 16px;
+  }
+}
+@container (max-width: 359px) {
+  .dash-funnel-row {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    column-gap: 12px;
   }
 }
 

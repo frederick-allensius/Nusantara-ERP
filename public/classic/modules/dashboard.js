@@ -7,9 +7,10 @@
 //     choice is kept per browser and drives every period figure on the page
 //   • Kas & bank, Piutang, Hutang (GL.trialBalance, Balances.summary) and the
 //     gross profit of the period (revenue and COGS journal lines)
-//   • Alur transaksi — the flow of the period as bands whose thickness follows
-//     the value: pickups (TradingSummary.pipeline) Diambil → Ditagih → Dibayar
-//     for customers and suppliers, and warehouse orders per stage
+//   • Alur transaksi — the flow of the period as vertical funnels whose layers
+//     narrow with the value: pickups (TradingSummary.pipeline) Diambil →
+//     Ditagih → Dibayar for customers and suppliers side by side, and warehouse
+//     orders Dipesan → Dikirim/Diterima → Difakturkan → Lunas
 //     (OrderPipeline.summary). See _dashTrading below.
 //   • Perlu tindakan — documents waiting for their next step, most important
 //     first; Tren 6 bulan — sales vs purchases from journals, or pickup tonnage
@@ -506,7 +507,7 @@ function _dashEmpty(text) {
 // Kept in one object so this file adds a single name to the shared scope:
 //   • the period switch (Bulan ini · 3 bulan · Tahun ini), kept per browser
 //   • Alur transaksi: pickups (window.TradingSummary over trading.js) and
-//     warehouse orders (window.OrderPipeline) drawn as bands
+//     warehouse orders (window.OrderPipeline) drawn as vertical funnels
 //   • Tren 6 bulan card, in Rupiah or tonnage
 //   • the pickup rows of "Perlu tindakan" and the optional blocks Tagihan
 //     pelanggan, PO pengambilan berjalan and Tonase per bulan
@@ -774,12 +775,15 @@ var _dashTrading = (function () {
   }
 
   // ── Alur transaksi: data ───────────────────────────────────────────────────
-  // Pickups of the period as cumulative stages per side, from
-  // TradingSummary.pipeline (each trip is in exactly one billing state per side):
+  // Every funnel is a list of cumulative stages, widest first. A stage carries
+  // its figures (count, value), a short description (`sub`), where it opens
+  // (`open` = sidebar entry, `action` = registered action) and the `leak`: what
+  // stopped before reaching it, so stage[i − 1] − stage[i] = stage[i].leak.
+  //
+  // Pickups of the period per side, from TradingSummary.pipeline (each trip is
+  // in exactly one billing state per side):
   //   Diambil = every trip taken · Ditagih = on an invoice (open or paid) ·
   //   Dibayar = on a paid invoice
-  // The leaks between stages are the trips that stopped there, so
-  // Diambil − Ditagih = belum ditagih and Ditagih − Dibayar = belum lunas.
   function stageOf(label, parts, extra) {
     var st = { label: label, count: 0, value: 0 };
     parts.forEach(function (p) {
@@ -788,72 +792,117 @@ var _dashTrading = (function () {
     });
     return Object.assign(st, extra || {});
   }
-  function shareOf(st, base) {
-    return base.value > 0.5 ? trucks(st.count) + ' · ' + pct(st.value / base.value) : trucks(st.count);
+  // "131 truk · 95%": the count, and the value as a share of the first stage.
+  function shareOf(st, base, unit) {
+    var n = st.count + ' ' + unit;
+    return base.value > 0.5 ? n + ' · ' + pct(st.value / base.value) : n;
   }
-  function leakOf(after, st, text, open, tone) {
-    return { after: after, count: st.count, value: st.value, text: text, open: open, tone: tone || '' };
+  function leakOf(part, text, target) {
+    return Object.assign({ count: part.count, value: part.value, text: text }, target);
   }
   function pickupFlow(per) {
     per = per || period();
     var p = S().pipeline({ from: per.from, to: per.to }, { asOf: per.to });
+    var tons = qtyShort(p.taken.qty);
     var bands = [];
     if (can('sales')) {
       var taken = stageOf('Diambil', [p.taken], { open: 'Rekap Pengambilan' });
-      taken.sub = [trucks(taken.count), qtyShort(p.taken.qty)].filter(Boolean).join(' · ');
-      var billed = stageOf('Ditagih', [p.billed, p.paid]);
-      billed.sub = shareOf(billed, taken);
-      var paid = stageOf('Dibayar', [p.paid]);
-      paid.sub = shareOf(paid, taken);
+      taken.sub = [trucks(taken.count), tons].filter(Boolean).join(' · ');
+      var billed = stageOf('Ditagih', [p.billed, p.paid], {
+        leak: leakOf(p.unbilled, 'truk belum ditagih', { open: 'Tagih Pelanggan' }),
+      });
+      billed.sub = shareOf(billed, taken, 'truk');
+      var paid = stageOf('Dibayar', [p.paid], {
+        leak: leakOf(p.billed, 'belum lunas', { open: 'Faktur Penjualan' }),
+      });
+      paid.sub = shareOf(paid, taken, 'truk');
       bands.push({
         key: 'sales',
         label: 'Ke pelanggan',
-        stages: [taken, billed, paid],
-        leaks: [
-          leakOf(0, p.unbilled, 'belum ditagih', 'Tagih Pelanggan', 'warning'),
-          leakOf(1, p.billed, 'belum lunas', 'Faktur Penjualan'),
-        ],
+        unit: 'nilai jual',
+        stages: shape([taken, billed, paid]),
       });
     }
     var sTaken = stageOf('Diambil', [p.supplierUnbilled, p.supplierBilled, p.supplierPaid], {
       open: 'Rekap Pengambilan',
     });
-    sTaken.sub = trucks(sTaken.count);
-    var sBilled = stageOf('Ditagih', [p.supplierBilled, p.supplierPaid]);
-    sBilled.sub = shareOf(sBilled, sTaken);
-    var sPaid = stageOf('Dibayar', [p.supplierPaid]);
-    sPaid.sub = shareOf(sPaid, sTaken);
+    sTaken.sub = [trucks(sTaken.count), tons].filter(Boolean).join(' · ');
+    var sBilled = stageOf('Ditagih', [p.supplierBilled, p.supplierPaid], {
+      leak: leakOf(p.supplierUnbilled, 'belum ditagih supplier', { open: 'Tagihan Supplier' }),
+    });
+    sBilled.sub = shareOf(sBilled, sTaken, 'truk');
+    var sPaid = stageOf('Dibayar', [p.supplierPaid], {
+      leak: leakOf(p.supplierBilled, 'belum dibayar', { open: 'Faktur Pembelian' }),
+    });
+    sPaid.sub = shareOf(sPaid, sTaken, 'truk');
     bands.push({
       key: 'purchases',
       label: 'Dari supplier',
-      stages: [sTaken, sBilled, sPaid],
-      leaks: [
-        leakOf(0, p.supplierUnbilled, 'belum ditagih supplier', 'Tagihan Supplier', 'warning'),
-        leakOf(1, p.supplierBilled, 'belum dibayar', 'Faktur Pembelian'),
-      ],
+      unit: 'nilai beli',
+      stages: shape([sTaken, sBilled, sPaid]),
     });
     var T = window.Trading;
     return {
       period: per,
       pipeline: p,
       bands: bands,
-      max: maxValue(bands),
       alerts: T && typeof T.openAlerts === 'function' ? T.openAlerts().length : 0,
     };
-  }
-  function maxValue(bands) {
-    var max = 0;
-    bands.forEach(function (b) {
-      b.stages.forEach(function (s) {
-        max = Math.max(max, s.value);
-      });
-    });
-    return max;
   }
   // Warehouse orders of the period (pickup orders left out) per stage.
   function orderFlow(side, per) {
     per = per || period();
     return OP().summary(side, { from: per.from, to: per.to, pickup: false });
+  }
+  // The same orders as a cumulative funnel over the OrderPipeline stages:
+  //   Dipesan     = confirmed + delivered + unpaid + paid (every order past draft)
+  //   Dikirim /   = delivered + unpaid + paid
+  //   Diterima
+  //   Difakturkan = unpaid + paid
+  //   Lunas       = paid
+  // Each stage opens the order list at its own OrderPipeline stage; drafts are
+  // counted apart.
+  function orderFunnel(side, per) {
+    var s = orderFlow(side, per);
+    var by = {};
+    s.stages.forEach(function (st) {
+      by[st.key] = st;
+    });
+    var at = function (key) {
+      return { action: { name: 'dashOrderStage', type: side, val: key } };
+    };
+    var sales = side === 'sales';
+    var ordered = stageOf('Dipesan', [by.confirmed, by.delivered, by.unpaid, by.paid], at('confirmed'));
+    ordered.sub = ordered.count + ' pesanan';
+    var moved = stageOf(
+      sales ? 'Dikirim' : 'Diterima',
+      [by.delivered, by.unpaid, by.paid],
+      Object.assign(at('delivered'), {
+        leak: leakOf(by.confirmed, sales ? 'belum dikirim' : 'belum diterima', at('confirmed')),
+      })
+    );
+    var invoiced = stageOf(
+      'Difakturkan',
+      [by.unpaid, by.paid],
+      Object.assign(at('unpaid'), {
+        leak: leakOf(by.delivered, 'belum difakturkan', at('delivered')),
+      })
+    );
+    var unpaid = leakOf(by.unpaid, 'belum lunas', at('unpaid'));
+    if (by.unpaid.outstanding > 0.5 && Math.abs(by.unpaid.outstanding - by.unpaid.value) > 0.5) {
+      unpaid.note = 'sisa ' + short(by.unpaid.outstanding);
+    }
+    var paid = stageOf('Lunas', [by.paid], Object.assign(at('paid'), { leak: unpaid }));
+    [moved, invoiced, paid].forEach(function (st) {
+      st.sub = shareOf(st, ordered, 'pesanan');
+    });
+    return {
+      key: side,
+      label: sales ? 'Penjualan gudang' : 'Pembelian gudang',
+      stages: shape([ordered, moved, invoiced, paid]),
+      draft: Object.assign({ count: by.draft.count, value: by.draft.value }, at('draft')),
+      total: s.total,
+    };
   }
   // Tabs of Alur transaksi that have data the role may see, in this order.
   function flowTabs() {
@@ -873,224 +922,167 @@ var _dashTrading = (function () {
   }
 
   // ── Alur transaksi: drawing ────────────────────────────────────────────────
-  // Each band is an SVG path stretched to the card width (viewBox units: 100
-  // per stage column; px vertically). A band is flat across the first part of a
-  // column and bends to the next stage's thickness in the rest. Thickness
-  // follows the value on one scale for every band of the tab.
-  var FN = { col: 100, flat: 55, tmax: 44, tmin: 2, room: 26 };
-  function thick(v, max) {
-    if (!(v > 0.5) || !(max > 0)) {
-      return 0;
-    }
-    return Math.max(FN.tmin, (v / max) * FN.tmax);
+  // A classic vertical funnel: one layer per stage, stacked top to bottom and
+  // narrowing downward. A layer's top edge is its own width and its bottom edge
+  // the width of the next layer; the last one closes to a neck. Widths follow
+  // the value on the funnel's own scale (first stage = full width) and never
+  // grow downward. Each layer is a row: the stage text on the left, its slice
+  // of the funnel (an inline SVG stretched to the row) on the right, so text
+  // never sits on a shape. Fills are one hue from light (top) to dark.
+  var FUNNEL = { neck: 0.35, min: 0.02, h: 60 };
+  function r3(v) {
+    return Math.round(v * 1000) / 1000;
   }
-  function r2(v) {
-    return Math.round(v * 100) / 100;
+  // Adds w (top edge) and wb (bottom edge), as shares of the full width. The
+  // last layer with a value closes to the neck; empty layers are not drawn.
+  function shape(stages) {
+    var top = stages.length ? stages[0].value : 0;
+    var prev = 1;
+    stages.forEach(function (s) {
+      var w = top > 0.5 && s.value > 0.5 ? Math.max(FUNNEL.min, Math.min(1, s.value / top)) : 0;
+      w = Math.min(prev, w);
+      s.w = r3(w);
+      prev = w;
+    });
+    stages.forEach(function (s, i) {
+      var next = i < stages.length - 1 ? stages[i + 1].w : 0;
+      s.wb = next > 0 ? next : r3(s.w * FUNNEL.neck);
+    });
+    return stages;
   }
-  function bandPath(ts, h) {
-    var cy = h / 2;
-    var n = ts.length;
-    var W = FN.col;
-    var top = function (i) {
-      return r2(cy - ts[i] / 2);
-    };
-    var bot = function (i) {
-      return r2(cy + ts[i] / 2);
-    };
-    var d = 'M0 ' + top(0);
-    for (var i = 0; i < n; i++) {
-      if (i === n - 1) {
-        d += ' L' + n * W + ' ' + top(i);
-        break;
-      }
-      var x1 = i * W + FN.flat;
-      var x2 = (i + 1) * W;
-      var mid = (x1 + x2) / 2;
-      d +=
-        ' L' + x1 + ' ' + top(i) +
-        ' C' + mid + ' ' + top(i) + ' ' + mid + ' ' + top(i + 1) + ' ' + x2 + ' ' + top(i + 1);
+  // Where a stage or a leak goes: a sidebar entry or a registered action.
+  function targetAttrs(t) {
+    if (t.open) {
+      return ' data-dash-open="' + esc(t.open) + '"';
     }
-    d += ' L' + n * W + ' ' + bot(n - 1);
-    for (var j = n - 1; j >= 0; j--) {
-      d += ' L' + j * W + ' ' + bot(j);
-      if (j > 0) {
-        var xe = (j - 1) * W + FN.flat;
-        var m2 = (xe + j * W) / 2;
-        d += ' C' + m2 + ' ' + bot(j) + ' ' + m2 + ' ' + bot(j - 1) + ' ' + xe + ' ' + bot(j - 1);
-      }
-    }
-    return d + ' Z';
-  }
-  // Middle of the bend after stage `i`, as a share of the width.
-  function leakLeft(i, n) {
-    return r2(((i * FN.col + FN.flat + (i + 1) * FN.col) / 2 / (n * FN.col)) * 100);
-  }
-  // A stage cell: opens a menu entry (`open`) or runs a registered action.
-  function stageAttrs(st) {
-    if (st.open) {
-      return ' data-dash-open="' + esc(st.open) + '"';
-    }
-    if (st.action) {
+    if (t.action) {
       return (
         ' data-action="' +
-        esc(st.action.name) +
+        esc(t.action.name) +
         '" data-type="' +
-        esc(st.action.type) +
+        esc(t.action.type) +
         '" data-val="' +
-        esc(st.action.val) +
+        esc(t.action.val) +
         '"'
       );
     }
     return '';
   }
-  function cellBox(st, cls, inner, aria) {
-    var zero = !(st.value > 0.5) && !st.count ? ' is-zero' : '';
-    var attrs = stageAttrs(st);
-    return attrs
-      ? '<button type="button" class="' +
-          cls +
-          zero +
-          '"' +
-          attrs +
-          (aria ? ' aria-label="' + esc(aria) + '"' : '') +
-          '>' +
-          inner +
-          '</button>'
-      : '<div class="' + cls + zero + '">' + inner + '</div>';
-  }
-  function leakChip(lk, style) {
+  function layerPath(w, wb) {
+    var H = FUNNEL.h;
+    var x = function (share, side) {
+      return r3(50 + side * share * 50);
+    };
     return (
-      '<button type="button" class="dash-leak' +
-      (lk.tone ? ' is-' + lk.tone : '') +
-      '" data-dash-open="' +
-      esc(lk.open) +
-      '"' +
-      (style ? ' style="' + style + '"' : '') +
+      'M' + x(w, -1) + ' 0H' + x(w, 1) + 'L' + x(wb, 1) + ' ' + H + 'H' + x(wb, -1) + 'Z'
+    );
+  }
+  // "7 truk belum ditagih · Rp 39 jt" as parts that do not break inside, so a
+  // narrow column wraps only between them.
+  function parts(list) {
+    return list
+      .filter(Boolean)
+      .map(function (part) {
+        return '<span>' + esc(part) + '</span>';
+      })
+      .join(' · ');
+  }
+  function leakLine(lk) {
+    if (!lk || !lk.count) {
+      return '';
+    }
+    return (
+      '<button type="button" class="dash-funnel-leak"' +
+      targetAttrs(lk) +
       '>' +
-      esc(lk.count + ' ' + lk.text + ' · ' + short(lk.value)) +
+      parts([lk.count + ' ' + lk.text, short(lk.value), lk.note]) +
       '</button>'
     );
   }
-  function bandLabel(b) {
+  function funnelRow(band, s, i) {
+    var n = band.stages.length;
+    var attrs = targetAttrs(s);
+    var zero = !(s.value > 0.5) && !s.count ? ' is-zero' : '';
+    var inner =
+      '<span class="dash-funnel-line"><span class="dash-funnel-name">' +
+      esc(s.label) +
+      '</span><span class="dash-funnel-value">' +
+      esc(short(s.value)) +
+      '</span></span><span class="dash-funnel-desc">' +
+      parts(String(s.sub || '').split(' · ')) +
+      '</span>';
+    var aria = s.label + ', ' + band.label.toLowerCase() + ': ' + short(s.value) + ', ' + (s.sub || '');
+    var stage = attrs
+      ? '<button type="button" class="dash-funnel-stage' +
+        zero +
+        '"' +
+        attrs +
+        ' aria-label="' +
+        esc(aria) +
+        '">' +
+        inner +
+        '</button>'
+      : '<div class="dash-funnel-stage' + zero + '">' + inner + '</div>';
+    var tone = n > 1 ? r3(i / (n - 1)) : 1;
+    var layer =
+      s.w > 0
+        ? '<path class="dash-funnel-layer" style="--t:' +
+          tone +
+          '" d="' +
+          layerPath(s.w, s.wb) +
+          '"' +
+          attrs +
+          '/>'
+        : '';
     return (
-      '<div class="dash-fn-label"><i class="dash-swatch is-' +
-      b.key +
-      '" aria-hidden="true"></i>' +
-      esc(b.label) +
-      '</div>'
+      '<div class="dash-funnel-row' +
+      (attrs ? ' is-link' : '') +
+      '"><div class="dash-funnel-label">' +
+      stage +
+      leakLine(s.leak) +
+      '</div><div class="dash-funnel-plot"><svg class="dash-funnel-shape" viewBox="0 0 100 ' +
+      FUNNEL.h +
+      '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+      layer +
+      '</svg></div></div>'
     );
   }
-
-  // Wide layout: stage columns over SVG bands, leak chips on the bends.
-  function funnelWide(bands, max) {
-    var n = bands[0].stages.length;
-    var multi = bands.length > 1;
-    var html = '<div class="dash-fn" style="--n:' + n + '">';
-    if (multi) {
-      html +=
-        '<div class="dash-fn-grid dash-fn-names" aria-hidden="true">' +
-        bands[0].stages
-          .map(function (s) {
-            return '<span>' + esc(s.label) + '</span>';
-          })
-          .join('') +
-        '</div>';
-    }
-    bands.forEach(function (b) {
-      var ts = b.stages.map(function (s) {
-        return thick(s.value, max);
-      });
-      var h = Math.ceil(Math.max(Math.max.apply(null, ts), FN.room)) + 6;
-      var cells = b.stages
-        .map(function (s) {
-          var inner =
-            (multi ? '' : '<span class="dash-fn-name">' + esc(s.label) + '</span>') +
-            '<span class="dash-fn-value">' +
-            esc(short(s.value)) +
-            '</span><span class="dash-fn-sub">' +
-            esc(s.sub || '') +
-            '</span>';
-          var aria = s.label + (multi ? ', ' + b.label.toLowerCase() : '') + ': ' + short(s.value) + ', ' + (s.sub || '');
-          return cellBox(s, 'dash-fn-cell', inner, aria);
-        })
-        .join('');
-      var chips = (b.leaks || [])
-        .filter(function (lk) {
-          return lk.count > 0;
-        })
-        .map(function (lk) {
-          return leakChip(lk, 'left:' + leakLeft(lk.after, n) + '%');
-        })
-        .join('');
-      html +=
-        '<div class="dash-fn-band">' +
-        (multi ? bandLabel(b) : '') +
-        '<div class="dash-fn-grid">' +
-        cells +
-        '</div><div class="dash-fn-plot">' +
-        '<svg class="dash-fn-svg" viewBox="0 0 ' +
-        n * FN.col +
-        ' ' +
-        h +
-        '" preserveAspectRatio="none" width="100%" height="' +
-        h +
-        '" aria-hidden="true" focusable="false"><path class="dash-band is-' +
-        b.key +
-        '" d="' +
-        bandPath(ts, h) +
-        '"/></svg>' +
-        chips +
-        '</div></div>';
-    });
-    return html + '</div>';
-  }
-
-  // Narrow layout: one row per stage with a proportional bar.
-  function funnelList(bands, max) {
-    var multi = bands.length > 1;
+  // One funnel; `head` shows the band's name above it (pickup sides).
+  function funnelBlock(band, head) {
     return (
-      '<div class="dash-fl">' +
+      '<section class="dash-funnel is-' +
+      band.key +
+      '" aria-label="' +
+      esc(band.label) +
+      '">' +
+      (head
+        ? '<div class="dash-funnel-head"><span class="dash-funnel-title">' +
+          esc(band.label) +
+          '</span>' +
+          (band.unit ? ' <span class="dash-funnel-unit">' + esc(band.unit) + '</span>' : '') +
+          '</div>'
+        : '') +
+      '<div class="dash-funnel-body">' +
+      band.stages
+        .map(function (s, i) {
+          return funnelRow(band, s, i);
+        })
+        .join('') +
+      '</div></section>'
+    );
+  }
+  function funnels(bands, head) {
+    return (
+      '<div class="dash-funnels' +
+      (bands.length > 1 ? ' is-pair' : '') +
+      '">' +
       bands
         .map(function (b) {
-          return (
-            '<div class="dash-fl-band">' +
-            (multi ? bandLabel(b) : '') +
-            b.stages
-              .map(function (s, i) {
-                var w = max > 0 && s.value > 0.5 ? Math.max(1, r2((s.value / max) * 100)) : 0;
-                var inner =
-                  '<span class="dash-fl-name">' +
-                  esc(s.label) +
-                  '</span><span class="dash-fl-value">' +
-                  esc(short(s.value)) +
-                  '</span><span class="dash-fl-bar"><i class="is-' +
-                  b.key +
-                  '" style="width:' +
-                  w +
-                  '%"></i></span><span class="dash-fl-sub">' +
-                  esc(s.sub || '') +
-                  '</span>';
-                var leaks = (b.leaks || [])
-                  .filter(function (lk) {
-                    return lk.after === i && lk.count > 0;
-                  })
-                  .map(function (lk) {
-                    return leakChip(lk);
-                  })
-                  .join('');
-                return cellBox(s, 'dash-fl-row', inner) + leaks;
-              })
-              .join('') +
-            '</div>'
-          );
+          return funnelBlock(b, head);
         })
         .join('') +
       '</div>'
     );
-  }
-
-  function funnel(bands, max) {
-    return funnelWide(bands, max) + funnelList(bands, max);
   }
 
   // ── Alur transaksi: panels ─────────────────────────────────────────────────
@@ -1098,7 +1090,7 @@ var _dashTrading = (function () {
     var f = pickupFlow(per);
     var p = f.pipeline;
     var html = p.taken.count
-      ? funnel(f.bands, f.max)
+      ? funnels(f.bands, true)
       : _dashEmpty('Belum ada pengambilan pada periode ini.');
     // Trips from before the period that are still not billed.
     var carry = function (st, text, open) {
@@ -1129,7 +1121,7 @@ var _dashTrading = (function () {
       '<div class="dash-flow-foot"><span class="dash-flow-facts">' +
       esc(facts.join(' · ')) +
       (f.alerts
-        ? ' <button type="button" class="dash-leak is-warning" data-dash-open="Perubahan Timbangan">' +
+        ? ' <button type="button" class="dash-funnel-alert" data-dash-open="Perubahan Timbangan">' +
           f.alerts +
           ' perubahan timbangan</button>'
         : '') +
@@ -1138,33 +1130,24 @@ var _dashTrading = (function () {
   }
 
   function orderPanel(side, per) {
-    var s = orderFlow(side, per);
-    if (!s.total) {
-      return _dashEmpty(
-        side === 'sales'
-          ? 'Tidak ada pesanan penjualan gudang pada periode ini.'
-          : 'Tidak ada pesanan pembelian gudang pada periode ini.'
-      );
+    var f = orderFunnel(side, per);
+    var none =
+      side === 'sales'
+        ? 'Tidak ada pesanan penjualan gudang pada periode ini.'
+        : 'Tidak ada pesanan pembelian gudang pada periode ini.';
+    // Only drafts so far: no funnel yet, just the draft note below.
+    var html = f.stages[0].count
+      ? funnels([f], false)
+      : _dashEmpty(f.total ? 'Belum ada pesanan yang dikonfirmasi.' : none);
+    if (f.draft.count) {
+      html +=
+        '<div class="dash-flow-notes"><button type="button" class="dash-funnel-note"' +
+        targetAttrs(f.draft) +
+        '>' +
+        esc(f.draft.count + ' draf · ' + short(f.draft.value) + ' belum dikonfirmasi') +
+        '</button></div>';
     }
-    var band = {
-      key: side,
-      label: side === 'sales' ? 'Penjualan gudang' : 'Pembelian gudang',
-      stages: s.stages.map(function (st) {
-        return {
-          key: st.key,
-          label: st.label,
-          count: st.count,
-          value: st.value,
-          sub:
-            st.count +
-            ' pesanan' +
-            (st.key === 'unpaid' && st.outstanding > 0.5 ? ' · sisa ' + short(st.outstanding) : ''),
-          action: { name: 'dashOrderStage', type: side, val: st.key },
-        };
-      }),
-      leaks: [],
-    };
-    return funnel([band], maxValue([band]));
+    return html;
   }
 
   function flowCard(per) {
@@ -1795,6 +1778,7 @@ var _dashTrading = (function () {
     periodSwitch: periodSwitch,
     pickupFlow: pickupFlow,
     orderFlow: orderFlow,
+    orderFunnel: orderFunnel,
     flowTabs: flowTabs,
     flowCard: flowCard,
     showTab: showTab,

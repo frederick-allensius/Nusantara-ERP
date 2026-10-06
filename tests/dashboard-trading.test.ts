@@ -128,8 +128,17 @@ describe('Ringkasan — pickup data', () => {
     ]) {
       expect(html).toContain(`data-dash-open="${label}"`);
     }
-    expect(html).toContain('1 belum ditagih');
+    expect(html).toContain('1 truk belum ditagih');
     expect(html).toContain('1 belum ditagih supplier');
+    // Two funnels side by side, three layers each.
+    const view = document.createElement('div');
+    view.innerHTML = html;
+    const pair = view.querySelector('[data-flow-panel="pickup"] .dash-funnels.is-pair')!;
+    expect(
+      [...pair.querySelectorAll('.dash-funnel')].map(
+        f => f.querySelectorAll('.dash-funnel-row').length
+      )
+    ).toEqual([3, 3]);
     expect(html).toContain('1 PO berjalan');
     expect(html).toContain('2 surat jalan siap');
     // Opened for pickup, the orders leave the warehouse tabs.

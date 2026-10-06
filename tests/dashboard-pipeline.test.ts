@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Ringkasan — Alur transaksi, the period switch and the default layout
 // (modules/dashboard.js):
-//   • the pickup funnel is cumulative and reconciles with
+//   • the pickup funnels are cumulative and reconcile with
 //     TradingSummary.pipeline: Diambil ≥ Ditagih ≥ Dibayar on both sides, and
-//     the leak between two stages is exactly what stopped there
+//     the leak under a stage is exactly what stopped before it
 //   • the warehouse tabs show OrderPipeline.summary of the period, pickup
-//     orders left out, and each stage opens the order list at that stage
+//     orders left out, as cumulative layers Dipesan → Dikirim/Diterima →
+//     Difakturkan → Lunas, each opening the order list at its stage
+//   • layer widths follow the value on the funnel's own scale: the first is
+//     full width, none is wider than the one above, the last closes to a neck
 //   • tabs without data are not shown; the first tab with data is open
 //   • the period switch (Bulan ini · 3 bulan · Tahun ini) sets the range of the
 //     flow and of the gross profit tile, and is kept per browser
@@ -139,6 +142,30 @@ function seedWarehouse() {
 
 const render = (): string => w().renderDashboard();
 const D = () => w()._dashTrading;
+const page = (html: string) => {
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  return el;
+};
+const text = (el: Element | null | undefined) =>
+  (el?.textContent || '').replace(/\s+/g, ' ').trim();
+// Top and bottom edge of each drawn layer, in % of the funnel width, read
+// back from the SVG path "M x0 0 H x1 L x2 h H x3 Z".
+function edges(funnel: Element) {
+  return [...funnel.querySelectorAll('.dash-funnel-layer')].map(p => {
+    const n = (p.getAttribute('d') || '').match(/-?\d+(\.\d+)?/g)!.map(Number);
+    return { top: +(n[2] - n[0]).toFixed(1), bottom: +(n[3] - n[5]).toFixed(1) };
+  });
+}
+// The text of each row of a funnel: [stage, value, description, leak].
+function rows(funnel: Element) {
+  return [...funnel.querySelectorAll('.dash-funnel-row')].map(r => [
+    text(r.querySelector('.dash-funnel-name')),
+    text(r.querySelector('.dash-funnel-value')),
+    text(r.querySelector('.dash-funnel-desc')),
+    text(r.querySelector('.dash-funnel-leak')),
+  ]);
+}
 
 beforeEach(() => {
   localStorage.removeItem(LAYOUT_KEY);
@@ -159,20 +186,24 @@ describe('Alur transaksi — pickup funnel', () => {
     expect(buy.key).toBe('purchases');
 
     const [taken, billed, paid] = sales.stages;
+    expect(sales.stages.map((s: any) => s.label)).toEqual(['Diambil', 'Ditagih', 'Dibayar']);
     expect(taken.count).toBe(5);
     expect(taken.value).toBe(p.taken.value);
     expect(billed.count).toBe(p.billed.count + p.paid.count);
     expect(billed.value).toBe(p.billed.value + p.paid.value);
+    expect(paid.count).toBe(p.paid.count);
     expect(paid.value).toBe(p.paid.value);
     expect(taken.value).toBeGreaterThanOrEqual(billed.value);
     expect(billed.value).toBeGreaterThanOrEqual(paid.value);
-    // Leaks: what stopped between two stages.
-    const [unbilledLeak, unpaidLeak] = sales.leaks;
-    expect(unbilledLeak.count).toBe(2);
-    expect(taken.count - billed.count).toBe(unbilledLeak.count);
-    expect(taken.value - billed.value).toBe(unbilledLeak.value);
-    expect(unbilledLeak.value).toBe(p.unbilled.value);
-    expect(billed.value - paid.value).toBe(unpaidLeak.value);
+    // The leak under a stage: what stopped before reaching it.
+    expect(taken.leak).toBeUndefined();
+    expect(billed.leak.count).toBe(2);
+    expect(taken.count - billed.count).toBe(billed.leak.count);
+    expect(taken.value - billed.value).toBe(billed.leak.value);
+    expect(billed.leak.value).toBe(p.unbilled.value);
+    expect(billed.count - paid.count).toBe(paid.leak.count);
+    expect(billed.value - paid.value).toBe(paid.leak.value);
+    expect(paid.leak.value).toBe(p.billed.value);
 
     const [sTaken, sBilled, sPaid] = buy.stages;
     expect(sTaken.count).toBe(5);
@@ -181,25 +212,105 @@ describe('Alur transaksi — pickup funnel', () => {
     );
     expect(sBilled.value).toBe(p.supplierBilled.value + p.supplierPaid.value);
     expect(sPaid.value).toBe(p.supplierPaid.value);
-    expect(sTaken.value - sBilled.value).toBe(buy.leaks[0].value);
-    expect(sBilled.value - sPaid.value).toBe(buy.leaks[1].value);
-    // One scale for both bands: the largest stage value.
-    expect(flow.max).toBe(Math.max(taken.value, sTaken.value));
+    expect(sTaken.value - sBilled.value).toBe(sBilled.leak.value);
+    expect(sBilled.value - sPaid.value).toBe(sPaid.leak.value);
+    expect(sBilled.leak.value).toBe(p.supplierUnbilled.value);
+    expect(sPaid.leak.value).toBe(p.supplierBilled.value);
 
-    // The leak chips carry the same figures and open the page that handles them.
+    // Each funnel on its own scale: the first layer is full width, the others
+    // follow the value; the last closes to a neck at 35% of its width.
+    for (const band of flow.bands) {
+      const [a, b, c] = band.stages;
+      expect(a.w).toBe(1);
+      expect(b.w).toBeCloseTo(b.value / a.value, 3);
+      expect(c.w).toBeCloseTo(c.value / a.value, 3);
+      expect(a.wb).toBe(b.w);
+      expect(b.wb).toBe(c.w);
+      expect(c.wb).toBeCloseTo(c.w * 0.35, 3);
+    }
+
+    // Drawn: two funnels side by side, the rows carrying the same figures; the
+    // stage and leaks open the page that handles them.
     const short = w().idrShort;
-    const html = render();
-    expect(html).toContain(`2 belum ditagih · ${short(p.unbilled.value)}`);
-    expect(html).toContain(`1 belum lunas · ${short(p.billed.value)}`);
-    expect(html).toContain(`2 belum ditagih supplier · ${short(p.supplierUnbilled.value)}`);
-    expect(html).toContain(`1 belum dibayar · ${short(p.supplierBilled.value)}`);
-    expect(html).toContain('data-dash-open="Rekap Pengambilan"');
-    expect(html).toContain('data-dash-open="Tagih Pelanggan"');
-    expect(html).toContain('data-dash-open="Faktur Penjualan"');
-    expect(html).toContain('data-dash-open="Tagihan Supplier"');
-    expect(html).toContain('data-dash-open="Faktur Pembelian"');
-    expect(html).toContain('class="dash-fn"');
-    expect(html).toContain('class="dash-fl"');
+    const view = page(render());
+    const pair = view.querySelector('#dash-flow-pickup .dash-funnels')!;
+    expect(pair.classList.contains('is-pair')).toBe(true);
+    const [fSales, fBuy] = [...pair.querySelectorAll('.dash-funnel')];
+    expect(fSales.classList.contains('is-sales')).toBe(true);
+    expect(fBuy.classList.contains('is-purchases')).toBe(true);
+    expect(text(fSales.querySelector('.dash-funnel-head'))).toBe('Ke pelanggan nilai jual');
+    expect(text(fBuy.querySelector('.dash-funnel-head'))).toBe('Dari supplier nilai beli');
+    expect(rows(fSales)).toEqual([
+      ['Diambil', short(taken.value), '5 truk · 150 t', ''],
+      [
+        'Ditagih',
+        short(billed.value),
+        '3 truk · 60%',
+        `2 truk belum ditagih · ${short(p.unbilled.value)}`,
+      ],
+      ['Dibayar', short(paid.value), '2 truk · 40%', `1 belum lunas · ${short(p.billed.value)}`],
+    ]);
+    expect(rows(fBuy)).toEqual([
+      ['Diambil', short(sTaken.value), '5 truk · 150 t', ''],
+      [
+        'Ditagih',
+        short(sBilled.value),
+        '3 truk · 60%',
+        `2 belum ditagih supplier · ${short(p.supplierUnbilled.value)}`,
+      ],
+      [
+        'Dibayar',
+        short(sPaid.value),
+        '2 truk · 40%',
+        `1 belum dibayar · ${short(p.supplierBilled.value)}`,
+      ],
+    ]);
+    const opens = (f: Element) =>
+      [...f.querySelectorAll('button[data-dash-open]')].map(b => b.getAttribute('data-dash-open'));
+    expect(opens(fSales)).toEqual(['Rekap Pengambilan', 'Tagih Pelanggan', 'Faktur Penjualan']);
+    expect(opens(fBuy)).toEqual(['Rekap Pengambilan', 'Tagihan Supplier', 'Faktur Pembelian']);
+    // The top layer opens the same page as its stage.
+    expect(fSales.querySelector('.dash-funnel-layer')!.getAttribute('data-dash-open')).toBe(
+      'Rekap Pengambilan'
+    );
+    // The layers drawn: full width on top, never wider below, a neck at the end.
+    for (const f of [fSales, fBuy]) {
+      const e = edges(f);
+      expect(e).toEqual([
+        { top: 100, bottom: 60 },
+        { top: 60, bottom: 40 },
+        { top: 40, bottom: 14 },
+      ]);
+    }
+    // The old band drawing is gone.
+    expect(view.querySelector('.dash-fn, .dash-fl, .dash-leak, .dash-band')).toBeNull();
+  });
+
+  it('routes the clicks on stages, leaks and layers to the page that handles them', () => {
+    seedPickups();
+    const opened: string[] = [];
+    w().NSANav = { open: (label: string) => opened.push(label) };
+    document.body.innerHTML = render();
+    const click = (el: Element | null) =>
+      el!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const sales = document.querySelector('#dash-flow-pickup .dash-funnel.is-sales')!;
+    const buy = document.querySelector('#dash-flow-pickup .dash-funnel.is-purchases')!;
+    click(sales.querySelector('.dash-funnel-stage'));
+    click(sales.querySelector('.dash-funnel-layer'));
+    sales.querySelectorAll('.dash-funnel-leak').forEach(click);
+    buy.querySelectorAll('.dash-funnel-leak').forEach(click);
+    click(document.querySelector('[data-dash-open="PO Pengambilan"]'));
+    expect(opened).toEqual([
+      'Rekap Pengambilan',
+      'Rekap Pengambilan',
+      'Tagih Pelanggan',
+      'Faktur Penjualan',
+      'Tagihan Supplier',
+      'Faktur Pembelian',
+      'PO Pengambilan',
+    ]);
+    document.body.innerHTML = '';
+    w().NSANav = undefined;
   });
 
   it('shows only the supplier side to a role that cannot view sales', () => {
@@ -229,10 +340,156 @@ describe('Alur transaksi — warehouse orders', () => {
       Math.round(10 * 100000 * 1.11)
     );
 
-    const html = render();
-    expect(html).toContain('data-action="dashOrderStage" data-type="sales" data-val="draft"');
-    expect(html).toContain('data-action="dashOrderStage" data-type="purchases" data-val="paid"');
-    expect(html).toContain(w().idrShort(Math.round(10 * 100000 * 1.11)));
+    // Sales: one confirmed order in the funnel, the draft apart. Purchases:
+    // only a draft, so no funnel yet.
+    const short = w().idrShort;
+    const view = page(render());
+    const salesPanel = view.querySelector('#dash-flow-sales')!;
+    expect(rows(salesPanel)[0]).toEqual([
+      'Dipesan',
+      short(Math.round(20 * 100000 * 1.11)),
+      '1 pesanan',
+      '',
+    ]);
+    // Nothing past Dipesan yet: one layer drawn, closing to the neck rather
+    // than to a point; the empty layers keep their rows but draw nothing.
+    expect(salesPanel.querySelectorAll('.dash-funnel-row')).toHaveLength(4);
+    expect(edges(salesPanel)).toEqual([{ top: 100, bottom: 35 }]);
+    const draft = salesPanel.querySelector('.dash-funnel-note')!;
+    expect(text(draft)).toBe(
+      `1 draf · ${short(Math.round(10 * 100000 * 1.11))} belum dikonfirmasi`
+    );
+    expect(draft.getAttribute('data-action')).toBe('dashOrderStage');
+    expect(draft.getAttribute('data-type')).toBe('sales');
+    expect(draft.getAttribute('data-val')).toBe('draft');
+    const buyPanel = view.querySelector('#dash-flow-purchases')!;
+    expect(buyPanel.querySelector('.dash-funnel')).toBeNull();
+    expect(text(buyPanel)).toContain('Belum ada pesanan yang dikonfirmasi.');
+    expect(text(buyPanel.querySelector('.dash-funnel-note'))).toBe(
+      `1 draf · ${short(Math.round(15 * 90000 * 1.11))} belum dikonfirmasi`
+    );
+  });
+
+  it('stacks the OrderPipeline stages into cumulative layers', () => {
+    seedWarehouse();
+    const stage = (key: string, count: number, value: number, outstanding = 0) => ({
+      key,
+      label: key,
+      count,
+      value,
+      outstanding,
+      ids: [],
+    });
+    const spy = vi.spyOn(w().OrderPipeline, 'summary').mockImplementation((side: any) => ({
+      side,
+      total: 30,
+      stages: [
+        stage('draft', 2, 25_000_000),
+        stage('confirmed', 3, 18_000_000),
+        stage('delivered', 1, 8_000_000),
+        stage('unpaid', 10, 110_000_000, 90_000_000),
+        stage('paid', 14, 150_000_000),
+      ],
+    }));
+    try {
+      for (const side of ['sales', 'purchases']) {
+        const s = w().OrderPipeline.summary(side, {});
+        const v = (k: string) => s.stages.find((x: any) => x.key === k);
+        const sum = (keys: string[], f: 'count' | 'value') => keys.reduce((n, k) => n + v(k)[f], 0);
+        const f = D().orderFunnel(side, D().period());
+        expect(f.stages.map((x: any) => x.label)).toEqual([
+          'Dipesan',
+          side === 'sales' ? 'Dikirim' : 'Diterima',
+          'Difakturkan',
+          'Lunas',
+        ]);
+        const layers = [
+          ['confirmed', 'delivered', 'unpaid', 'paid'],
+          ['delivered', 'unpaid', 'paid'],
+          ['unpaid', 'paid'],
+          ['paid'],
+        ];
+        f.stages.forEach((st: any, i: number) => {
+          expect(st.count).toBe(sum(layers[i], 'count'));
+          expect(st.value).toBe(sum(layers[i], 'value'));
+          if (i) {
+            // What stopped before this layer is exactly the stage left behind.
+            expect(f.stages[i - 1].value - st.value).toBe(st.leak.value);
+            expect(f.stages[i - 1].count - st.count).toBe(st.leak.count);
+          }
+        });
+        expect(f.draft).toMatchObject({ count: 2, value: 25_000_000 });
+        // Widths: the first full, then never wider, ending in a neck.
+        const ws = f.stages.map((x: any) => x.w);
+        expect(ws[0]).toBe(1);
+        ws.slice(1).forEach((x: number, i: number) => expect(x).toBeLessThanOrEqual(ws[i]));
+        expect(f.stages[3].wb).toBeCloseTo(ws[3] * 0.35, 3);
+      }
+
+      const short = w().idrShort;
+      const view = page(render());
+      const salesF = view.querySelector('#dash-flow-sales .dash-funnel')!;
+      expect(rows(salesF)).toEqual([
+        ['Dipesan', short(286_000_000), '28 pesanan', ''],
+        [
+          'Dikirim',
+          short(268_000_000),
+          '25 pesanan · 94%',
+          `3 belum dikirim · ${short(18_000_000)}`,
+        ],
+        [
+          'Difakturkan',
+          short(260_000_000),
+          '24 pesanan · 91%',
+          `1 belum difakturkan · ${short(8_000_000)}`,
+        ],
+        [
+          'Lunas',
+          short(150_000_000),
+          '14 pesanan · 52%',
+          `10 belum lunas · ${short(110_000_000)} · sisa ${short(90_000_000)}`,
+        ],
+      ]);
+      expect(rows(view.querySelector('#dash-flow-purchases .dash-funnel')!)[1][3]).toBe(
+        `3 belum diterima · ${short(18_000_000)}`
+      );
+      // Each layer, its label and its leak open the order list at a stage.
+      const target = (el: Element | null) =>
+        el ? `${el.getAttribute('data-type')}:${el.getAttribute('data-val')}` : null;
+      const r = [...salesF.querySelectorAll('.dash-funnel-row')];
+      expect(r.map(x => target(x.querySelector('.dash-funnel-stage')))).toEqual([
+        'sales:confirmed',
+        'sales:delivered',
+        'sales:unpaid',
+        'sales:paid',
+      ]);
+      expect(r.map(x => target(x.querySelector('.dash-funnel-layer')))).toEqual([
+        'sales:confirmed',
+        'sales:delivered',
+        'sales:unpaid',
+        'sales:paid',
+      ]);
+      expect(r.map(x => target(x.querySelector('.dash-funnel-leak')))).toEqual([
+        null,
+        'sales:confirmed',
+        'sales:delivered',
+        'sales:unpaid',
+      ]);
+      expect(salesF.querySelector('[data-action]')!.getAttribute('data-action')).toBe(
+        'dashOrderStage'
+      );
+      // Drawn widths are non-increasing and each bottom edge meets the next top.
+      const e = edges(salesF);
+      expect(e[0].top).toBe(100);
+      e.forEach((x, i) => {
+        expect(x.bottom).toBeLessThanOrEqual(x.top);
+        if (i < e.length - 1) {
+          expect(x.bottom).toBe(e[i + 1].top);
+        }
+      });
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('opens the order list at the stage, or the order list itself', () => {
@@ -302,7 +559,7 @@ describe('Alur transaksi — tabs', () => {
     localStorage.setItem('nsa_dash_period', 'month');
     const html = render();
     expect(html).toContain('Belum ada pengambilan pada periode ini.');
-    expect(html).not.toContain('class="dash-fn"');
+    expect(html).not.toContain('class="dash-funnels');
     expect(html).toContain(`+ 1 truk sebelum ${w()._dashDate(MONTH_START)} belum ditagih`);
     expect(html).toContain('1 PO berjalan');
   });
