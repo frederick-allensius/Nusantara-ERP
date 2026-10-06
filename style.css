@@ -5449,8 +5449,9 @@ html[data-theme] {
    so text never sits on a shape. Flat fills, 2px gaps, no outlines. The pickup
    tab puts Ke pelanggan and Dari supplier side by side on wide cards. */
 .dash-flow {
-  --dash-funnel-sales-hi: var(--chart-1);
-  --dash-funnel-sales-lo: color-mix(in oklab, var(--chart-1) 24%, var(--surface));
+  /* Ke pelanggan: the brand green (theme B keeps green for money that comes in) */
+  --dash-funnel-sales-hi: var(--success);
+  --dash-funnel-sales-lo: color-mix(in oklab, var(--success) 22%, var(--surface));
   --dash-funnel-ink-hi: var(--text);
   --dash-funnel-ink-lo: color-mix(in oklab, var(--text) 14%, var(--surface));
   --dash-funnel-leak: var(--warning);
