@@ -15,6 +15,11 @@
     --sp-6: 20px;
     --sp-5: 16px;
     --sp-4: 12px;
+    --section-top: 28px;
+    --section-bottom: 32px;
+    --section-gap: 32px;
+    --fs-title: 1.25rem;
+    --fs-figure: 1.25rem;
   }
 }
 
@@ -23,6 +28,8 @@
     --topbar-h: 52px;
     --sp-8: 20px;
     --sp-6: 16px;
+    --section-top: 24px;
+    --section-bottom: 28px;
   }
 }
 
@@ -113,9 +120,7 @@
   .sidebar.open {
     transform: translate3d(0, 0, 0) !important;
     visibility: visible;
-    box-shadow:
-      4px 0 24px rgba(0, 0, 0, 0.5),
-      12px 0 48px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-xl);
     transition:
       box-shadow 0.28s cubic-bezier(0.32, 0.72, 0, 1),
       visibility 0s linear 0s;
@@ -136,9 +141,7 @@
   }
   .sidebar-backdrop.open {
     pointer-events: auto;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: var(--scrim);
   }
 
   /* ── Main content takes full width ──────────────────────────────────────────── */
@@ -228,7 +231,7 @@
 
   /* ── Content area ───────────────────────────────────────────────────────────── */
   .content {
-    padding: 16px 16px 32px;
+    padding: 24px 16px 40px;
   }
   /* The page context is in the drawer; the search field gets the room */
   .page-context {
@@ -245,6 +248,11 @@
     min-height: var(--tap-min);
     padding: 12px 18px;
     font-size: var(--fs-md);
+  }
+  /* Small buttons stay quiet: same tap height, smaller text */
+  :is(.btn, .btn-primary, .btn-ghost, .btn-danger).btn-sm {
+    padding: 0 14px;
+    font-size: var(--fs-sm);
   }
 
   .action-primary {
@@ -300,11 +308,11 @@
   /* ── Grid adjustments ───────────────────────────────────────────────────────── */
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 20px 16px;
   }
   .stat-row {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 20px 16px;
   }
   .chart-2col {
     grid-template-columns: 1fr;
@@ -354,10 +362,6 @@
     align-items: flex-start;
     gap: 8px;
   }
-  .sec-title {
-    font-size: 1.125rem;
-  }
-
   /* ── Dashboard header ───────────────────────────────────────────────────────── */
   .dash-header {
     flex-direction: column;
@@ -459,19 +463,13 @@
 
 /* ── SMALL BREAKPOINT (≤480px) — Mobile portrait ─────────────────────────────── */
 @media (max-width: 480px) {
-  /* ── KPI cards compact ──────────────────────────────────────────────────────── */
+  /* ── KPI figures compact ────────────────────────────────────────────────────── */
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 20px 16px;
   }
   .kpi-val {
-    font-size: 1.375rem;
-  }
-  .kpi-card {
-    padding: 14px 16px;
-  }
-  .kpi-label {
-    font-size: .75rem;
+    font-size: 1.25rem;
   }
   .kpi-ico {
     width: 30px;
@@ -481,7 +479,7 @@
   /* ── Stat row ───────────────────────────────────────────────────────────────── */
   .stat-row {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 20px 16px;
   }
   .stat-value {
     font-size: 1.125rem;
@@ -492,12 +490,12 @@
     grid-template-columns: 1fr;
   }
 
-  /* ── View / content area further reduced padding ────────────────────────────── */
+  /* ── Content area: one 16px margin at the sides ─────────────────────────────── */
   .view {
-    padding: 12px;
+    padding: 0;
   }
   .content {
-    padding: 12px 8px 20px;
+    padding: 20px 16px 32px;
   }
 
   /* ── Topbar minimal ─────────────────────────────────────────────────────────── */
@@ -514,9 +512,6 @@
   }
 
   /* ── Section titles smaller ─────────────────────────────────────────────────── */
-  .sec-title {
-    font-size: 1rem;
-  }
   .dash-title {
     font-size: 1.25rem;
   }
@@ -531,18 +526,6 @@
   }
   td {
     padding: 11px 10px;
-  }
-
-  /* ── Card compact ───────────────────────────────────────────────────────────── */
-  .card {
-    padding: 14px 16px;
-    border-radius: var(--r-lg);
-  }
-
-  /* ── Widget card compact ────────────────────────────────────────────────────── */
-  .widget-card {
-    padding: 14px 16px;
-    border-radius: var(--r-lg);
   }
 
   /* ── Modal full-height on very small screens ────────────────────────────────── */
@@ -666,11 +649,11 @@
 
   .kpi-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 16px;
   }
   .stat-row {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 16px;
   }
 
   .topbar {
@@ -683,15 +666,15 @@
   }
 
   .content {
-    padding: 12px 10px 24px;
+    padding: 16px 12px 28px;
   }
 
   .dash-title {
     font-size: 1.125rem;
   }
 
-  .sec-title {
-    font-size: .9375rem;
+  :root {
+    --fs-title: 1.125rem;
   }
 
   .kpi-val {
@@ -702,14 +685,6 @@
   .modal {
     max-height: 95vh;
     border-radius: var(--r) var(--r) 0 0;
-  }
-
-  .widget-card {
-    padding: 12px;
-  }
-
-  .card {
-    padding: 12px;
   }
 }
 
@@ -748,11 +723,7 @@
 
   .stat-row {
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .kpi-card {
-    padding: 12px;
+    gap: 16px;
   }
 
   .kpi-val {
@@ -836,6 +807,11 @@
 
   .filter-btn {
     min-height: 40px;
+  }
+
+  .seg-tab {
+    height: auto;
+    min-height: var(--tap-min);
   }
 
   .theme-toggle,
@@ -960,12 +936,12 @@
     overscroll-behavior-y: contain;
   }
 
-  /* Table horizontal scroll */
+  /* Table horizontal scroll (inside the page margins, lined up with the text) */
   .table-wrap,
   .tbl-wrap {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    margin: 0 -12px; /* Extend to edges */
+    margin: 0;
     border-radius: 0;
   }
 
@@ -1196,20 +1172,20 @@
   }
   .chart-summary-value {
     font-size: 1.375rem;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.1;
   }
   .chart-summary-delta {
     font-size: .8125rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--muted);
   }
   .chart-summary-delta.up {
-    color: #10b981;
+    color: var(--success);
   }
   .chart-summary-delta.down {
-    color: #ef4444;
+    color: var(--danger);
   }
   .chart-summary-hint {
     font-size: .75rem;
@@ -1247,15 +1223,13 @@
   align-items: center;
   gap: 8px;
   padding: 9px 16px 9px 13px;
-  border-radius: 999px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  border-radius: var(--r-full);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
   color: var(--text);
   font-size: .78125rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   white-space: nowrap;
   pointer-events: none;
@@ -1290,22 +1264,22 @@
   }
 }
 
-/* Stat tiles on phones: two per row and compact, so a page's figures fit on
-   the first screen instead of one tall tile per row. Very narrow screens
-   (≤360px, rule above) keep one per row. */
+/* Stat figures on phones: two per row, so a page's figures fit on the first
+   screen instead of one tall block per row. Very narrow screens (≤360px, rule
+   above) keep one per row. */
 @media (max-width: 768px) and (min-width: 361px) {
   .stat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px;
+    gap: 20px 16px;
   }
   .stat-row > .stat-card,
   .stat-row > .card {
-    padding: 12px;
+    padding: 0;
   }
   /* !important: some pages size their figures inline */
   .stat-row .stat-val,
   .stat-row .stat-value {
-    font-size: .875rem !important;
+    font-size: 1rem !important;
     overflow-wrap: normal;
   }
   .stat-row .stat-sub {
@@ -1425,11 +1399,11 @@
   .list-cards > tbody > tr::after {
     order: 7;
   }
-  /* Edge-to-edge table in a card: the text lines up with the card's content */
+  /* A list in a section: the rows line up with the section's text */
   .card > .table-wrap > .list-cards > tbody > tr,
   .card > .table-wrap > .list-cards > tfoot > tr {
-    padding-right: 20px;
-    padding-left: 20px;
+    padding-right: 0;
+    padding-left: 0;
   }
   .list-cards > tbody > tr > td,
   .list-cards > tfoot > tr > td {
@@ -1657,7 +1631,7 @@
   }
   .list-cards.is-selecting > thead > tr > th.sel-cell {
     width: 100%;
-    padding: 8px 20px;
+    padding: 8px 0;
     text-align: left;
   }
   .sel-all {
@@ -1668,31 +1642,5 @@
   }
   .list-cards .sel-all-text {
     display: inline;
-  }
-}
-/* Phone cards are padded 16px (12px on the narrowest phones): the list runs to
-   the card's edges and its text lines up with the rest of the card. */
-@media (max-width: 480px) {
-  .card > .table-wrap:has(> .list-cards) {
-    margin-right: -16px;
-    margin-left: -16px;
-  }
-  .card > .table-wrap > .list-cards > tbody > tr,
-  .card > .table-wrap > .list-cards > tfoot > tr,
-  .list-cards.is-selecting > thead > tr > th.sel-cell {
-    padding-right: 16px;
-    padding-left: 16px;
-  }
-}
-@media (max-width: 360px) {
-  .card > .table-wrap:has(> .list-cards) {
-    margin-right: -12px;
-    margin-left: -12px;
-  }
-  .card > .table-wrap > .list-cards > tbody > tr,
-  .card > .table-wrap > .list-cards > tfoot > tr,
-  .list-cards.is-selecting > thead > tr > th.sel-cell {
-    padding-right: 12px;
-    padding-left: 12px;
   }
 }

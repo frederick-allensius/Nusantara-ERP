@@ -771,15 +771,17 @@
 
   // ── Text size ("Ukuran teks") ──────────────────────────────────────────────
   // The root font size scales every screen font (style.css uses rem); the choice
-  // is per device, like the theme. public/theme-init.js applies it before paint.
+  // is per device, like the theme. public/theme-init.js applies it before paint
+  // and reads the same storage key; without a saved choice the size is Normal.
   const TEXT_SIZES = [
     ['normal', 'Normal'],
     ['besar', 'Besar'],
     ['sangat-besar', 'Sangat besar'],
   ];
+  const TEXT_SIZE_KEY = 'erp_text_size_v2';
 
   function _currentTextSize() {
-    return document.documentElement.getAttribute('data-text-size') || 'besar';
+    return document.documentElement.getAttribute('data-text-size') || 'normal';
   }
 
   function _textSizeControl() {
@@ -801,7 +803,7 @@
     }
     document.documentElement.setAttribute('data-text-size', value);
     try {
-      localStorage.setItem('erp_text_size', value);
+      localStorage.setItem(TEXT_SIZE_KEY, value);
     } catch (_e) {
       /* storage unavailable — the choice lasts for this visit */
     }
