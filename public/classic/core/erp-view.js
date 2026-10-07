@@ -1551,24 +1551,6 @@ function renderInventory() {
 }
 
 // "Bagan Akun": the chart of accounts lives in the ledger module (Buku Besar).
-function editAccounts() {
-  if (window.NSANav && window.NSANav.open('Bagan Akun')) {
-    return;
-  }
-  const openChart = () => {
-    if (window._ledgerExtras && typeof window._ledgerExtras.openTab === 'function') {
-      window._ledgerExtras.openTab('chart');
-    } else if (typeof window.navigate === 'function') {
-      window.navigate('ledger');
-    }
-  };
-  if (typeof window.ensureView === 'function') {
-    window.ensureView('ledger').then(openChart, openChart);
-  } else {
-    openChart();
-  }
-}
-
 // ── View: Ringkasan Keuangan ──────────────────────────────────────────────────
 // Every figure comes from the ledger (GL) or from Balances, so it matches the
 // financial statements, invoices and aging.
@@ -2225,31 +2207,12 @@ function renderSettings() {
 
   const items = [
     {
-      title: 'Profil Perusahaan',
-      sub: 'Nama, alamat, NPWP, logo perusahaan',
-      icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-    },
-    {
-      title: 'Keamanan & Password',
-      sub: 'Ganti password login sistem',
-      icon: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-      action: 'changePassword',
-    },
-    {
       title: 'Kelola Backup',
       sub: backupStatus.lastBackup
         ? `Backup terakhir: ${backupStatus.lastBackupDate}`
         : 'Belum ada backup otomatis',
       icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
       action: 'manageBackup',
-    },
-    {
-      title: 'Install Aplikasi',
-      sub: window.erpPwa && window.erpPwa.isStandalone()
-        ? 'Aplikasi sudah terpasang di perangkat ini ✓'
-        : 'Pasang Nusantara ERP di homescreen / desktop',
-      icon: '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><polyline points="9 9 12 12 15 9"/><line x1="12" y1="12" x2="12" y2="5"/>',
-      action: 'installPwaApp',
     },
     {
       title: 'Notifikasi Sistem',
@@ -2269,28 +2232,10 @@ function renderSettings() {
       action: 'manageUsers',
     },
     {
-      title: 'Kategori Item',
-      sub: 'Kelola kategori barang',
-      icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
-      action: 'manageItemCategories',
-    },
-    {
-      title: 'Satuan Ukur',
-      sub: 'm², ton, m³, pcs, dan lainnya',
-      icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-      action: 'manageUnits',
-    },
-    {
       title: 'Pengaturan Pajak',
       sub: 'Status PKP, tarif PPN, PPh',
       icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
       action: 'editTaxSettings',
-    },
-    {
-      title: 'Chart of Accounts',
-      sub: 'Konfigurasi akun dan pembukuan',
-      icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-      action: 'editAccounts',
     },
   ];
 
@@ -2804,15 +2749,6 @@ document.addEventListener('click', async e => {
       break;
     case 'manageUsers':
       showUserManagement();
-      break;
-    case 'manageItemCategories':
-      showItemCategories();
-      break;
-    case 'manageUnits':
-      showUnitSettings();
-      break;
-    case 'editAccounts':
-      editAccounts();
       break;
     case 'resetDB':
       resetDB();

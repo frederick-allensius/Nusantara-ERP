@@ -83,7 +83,7 @@ Status kematangan: **Lengkap** = alur utama berjalan end-to-end · **Parsial** =
 | **Penggajian** | Data karyawan, proses gaji, bayar gaji | — | Ya | Parsial (tanpa potongan PPh 21/BPJS) |
 | **Aset Tetap** | Daftar aset, kategori, mutasi, disposisi | — | **Tidak** (tanpa penyusutan) | Pencatatan saja |
 | **Pajak** | Pengaturan PPN/PKP/NPWP, rekap PPN, **Ekspor Coretax** (XML faktur pajak keluaran per masa pajak; CSV format lama tetap ada) | — | PPN ikut jurnal dokumen | Parsial (file XML perlu diuji impor di Coretax) |
-| **Laporan** | Laba Rugi, Neraca, Arus Kas, Umur Piutang/Hutang, Kartu Stok, Kartu Piutang/Hutang, Rekap PPN, Laporan per Periode (pembelian, penjualan, pengambilan), Rekap Pengambilan, analisis | — | Membaca jurnal | Parsial |
+| **Laporan** | Laba Rugi, Neraca, Arus Kas, Umur Piutang/Hutang, Kartu Stok, Kartu Piutang/Hutang, Rekap PPN (di Pajak & PPN), Laporan per Periode (pembelian, penjualan, pengambilan), Rekap Pengambilan, analisis | — | Membaca jurnal | Parsial |
 | **Pengaturan** | Profil perusahaan, pengguna & peran, akses menu per pengguna, 2FA, backup & Arsip Excel per tahun, import Excel, notifikasi, kategori, satuan, ukuran teks | — | — | Lengkap |
 | **Integrasi (API)** | API baca-saja untuk sistem lain | — | — | Siap kode; butuh deploy Firebase Functions |
 

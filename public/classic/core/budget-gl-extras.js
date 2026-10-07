@@ -945,118 +945,12 @@
     injectView('finance', html);
   }
 
+  // Penggajian adds and edits employees with the one employee form of Data
+  // Master › Karyawan (master-extras.js), which also holds the allowances.
   function addEmployeeModal(existing) {
-    var e = existing || {};
-    // Departments drive access (RBAC): an employee's department maps to a role,
-    // and the login account whose email matches gets that role. Options come
-    // from DB.settings.departments (managed in Manajemen Pengguna).
-    var depts =
-      (window.DB && window.DB.settings && Array.isArray(window.DB.settings.departments)
-        ? window.DB.settings.departments
-        : []);
-    var deptOptions =
-      '<option value="">— Tanpa Departemen —</option>' +
-      depts
-        .map(function (d) {
-          return (
-            '<option value="' +
-            esc(d.id) +
-            '"' +
-            (e.departmentId === d.id ? ' selected' : '') +
-            '>' +
-            esc(d.name) +
-            '</option>'
-          );
-        })
-        .join('');
-    var body =
-      '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:.75rem;font-weight:700">Nama Lengkap<input id="emp-name" class="form-input" value="' +
-      esc(e.name || '') +
-      '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Email (untuk akses login)<input id="emp-email" class="form-input" type="email" value="' +
-      esc(e.email || '') +
-      '" placeholder="nama@perusahaan.com" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Departemen<select id="emp-dept" class="form-input" style="width:100%;margin-top:4px">' +
-      deptOptions +
-      '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Jabatan<input id="emp-pos" class="form-input" value="' +
-      esc(e.position || '') +
-      '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Gaji Pokok<input id="emp-salary" class="form-input" type="number" min="0" value="' +
-      (e.salary || 0) +
-      '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Tunjangan Transport<input id="emp-trans" class="form-input" type="number" min="0" value="' +
-      (e.transportAllowance || 0) +
-      '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Tunjangan Makan<input id="emp-meal" class="form-input" type="number" min="0" value="' +
-      (e.mealAllowance || 0) +
-      '" style="width:100%;margin-top:4px"></label>' +
-      '</div>';
-
-    modal(
-      existing ? 'Edit Karyawan' : 'Tambah Karyawan',
-      body,
-      '<button class="btn-ghost" data-action="closeModal">Batal</button>' +
-        '<button class="btn" id="emp-save">Simpan</button>',
-      false
-    );
-
-    setTimeout(function () {
-      document.getElementById('emp-save').addEventListener('click', function () {
-        var name = document.getElementById('emp-name').value.trim();
-        var pos = document.getElementById('emp-pos').value.trim();
-        var email = (document.getElementById('emp-email').value || '').trim().toLowerCase();
-        var deptId = document.getElementById('emp-dept').value || '';
-        var salary = parseFloat(document.getElementById('emp-salary').value) || 0;
-        var trans = parseFloat(document.getElementById('emp-trans').value) || 0;
-        var meal = parseFloat(document.getElementById('emp-meal').value) || 0;
-
-        if (!name) {
-          toast('Nama karyawan wajib diisi', 'warning');
-          return;
-        }
-
-        var arr = ensureArr('employees');
-        if (existing) {
-          var idx = arr.findIndex(function (x) {
-            return x.id === existing.id;
-          });
-          if (idx >= 0)
-            Object.assign(arr[idx], {
-              name: name,
-              position: pos,
-              email: email,
-              departmentId: deptId,
-              salary: salary,
-              transportAllowance: trans,
-              mealAllowance: meal,
-            });
-        } else {
-          arr.push({
-            id: uid('EMP'),
-            name: name,
-            position: pos,
-            email: email,
-            departmentId: deptId,
-            salary: salary,
-            transportAllowance: trans,
-            mealAllowance: meal,
-            active: true,
-            createdAt: today(),
-          });
-        }
-        save();
-        closeM();
-        toast(existing ? 'Data karyawan diperbarui' : 'Karyawan ditambahkan', 'success');
-        // If this employee's email matches a registered login account, push the
-        // department's role to it (admin only — server rules enforce this too).
-        if (email && typeof window.applyDepartmentRoles === 'function') {
-          window.applyDepartmentRoles({ silent: true });
-        }
-        openPayroll();
-      });
-    }, 60);
+    if (window._masterExtras && window._masterExtras.employeeForm) {
+      window._masterExtras.employeeForm(existing, openPayroll);
+    }
   }
 
   function runPayrollModal() {

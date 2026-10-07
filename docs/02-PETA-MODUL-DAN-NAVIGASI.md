@@ -154,8 +154,6 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | **Ringkasan** | Ringkasan | Dashboard |
 | **Entri Harian** | Entri Harian | *(baru)* |
 | **Pengambilan** | PO Pengambilan | *(baru)* |
-| | Catat Pengambilan | *(baru)* |
-| | Impor Rekap Timbangan | *(baru)* |
 | | Perubahan Timbangan | *(baru)* |
 | | Rekap Pengambilan | *(baru)* |
 | | Tagih Pelanggan | *(baru)* |
@@ -171,8 +169,7 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Pelanggan | Customer |
 | **Pembelian** | Penawaran Pembelian | Purchase Quotation |
 | | Pesanan Pembelian (PO) | Purchase Order |
-| | Penerimaan Barang | Receive Item |
-| | Rekonsiliasi Timbangan | *(baru)* |
+| | Penerimaan Barang | Receive Item; termasuk Rekonsiliasi Timbangan |
 | | Validasi SJ Supplier | *(baru)* |
 | | Faktur Pembelian | Purchase Invoice |
 | | Pembayaran ke Supplier | Purchase Payment |
@@ -181,30 +178,24 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Harga Supplier | Supplier Price |
 | | Supplier | Supplier |
 | **Persediaan** | Barang & Stok | Item |
-| | Gudang | Warehouse |
-| | Transfer Antar Gudang | Item Transfer |
+| | Gudang | Warehouse; Item Transfer (tab Transfer Barang) |
 | | Penyesuaian Stok | Item Adjustment |
 | | Permintaan Barang | Item Requisition |
 | | Job Costing | Job Costing |
 | **Kas & Bank** | Pengeluaran Lain | Other Payment |
 | | Penerimaan Lain | Other Deposit |
 | | Transfer Antar Rekening | Bank Transfer |
-| | Rekening Koran | Bank Statement |
 | | Riwayat Kas & Bank | Bank History |
-| | Rekonsiliasi Bank | Bank Reconcile |
+| | Rekonsiliasi Bank | Bank Reconcile; Bank Statement (Rekening Koran) |
 | **Akuntansi** | Ringkasan Keuangan | *(halaman Keuangan tanpa menu)* |
 | | Neraca Saldo | Trial Balance |
-| | Jurnal | *(tab di Buku Besar)* |
+| | Jurnal | *(tab di Buku Besar)*; Journal Voucher (filter Jurnal Umum); Audit Journal (filter tanggal, akun, cari) |
 | | Bagan Akun | Chart of Accounts |
-| | Jurnal Umum | Journal Voucher |
 | | Riwayat Akun | Account History |
-| | Audit Jurnal | Audit Journal |
 | | Biaya Akrual | Expense Accrual |
 | | Penggajian | Employee Payroll |
-| | Anggaran | Budget |
-| | Realisasi Anggaran | Budget Monitor |
-| | Transfer Anggaran | Budget Transfer |
-| | Pajak & PPN | Tax |
+| | Anggaran | Budget; Budget Monitor (kolom realisasi); Budget Transfer |
+| | Pajak & PPN | Tax; Rekap PPN (per masa pajak) |
 | | Ekspor Coretax | *(tidak ada di menu: Ekspor e-Faktur CTAS)* |
 | **Aset Tetap** | Daftar Aset | Fixed Asset |
 | | Kategori Aset | Fixed Asset Category |
@@ -213,12 +204,10 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | | Mutasi Aset | Asset Transfer |
 | | Pelepasan Aset | FA Disposition |
 | | Aset per Lokasi | Asset per Location |
-| **Laporan** | Daftar Laporan | Report List |
-| | Laporan per Periode | *(baru)* |
+| **Laporan** | Laporan per Periode | *(baru)* |
 | | Laba Rugi | Laba Rugi (P/L), Laporan Keuangan |
 | | Neraca | Neraca (Balance Sheet) |
 | | Arus Kas | Arus Kas (Cash Flow) |
-| | Rekap PPN | *(hanya dari Daftar Laporan)* |
 | **Data Master** | Karyawan | Employee |
 | | Kontak | Contact |
 | | Kategori Pelanggan | Customer Category |
@@ -244,6 +233,27 @@ Catatan:
 - Menu **Surat Jalan** hanya menampilkan surat jalan pengiriman dari stok. Surat jalan pengambilan (dari PO pengambilan) ada di Pengambilan → PO Pengambilan; menu Surat Jalan menampilkan tautan ke sana dan menolak ubah/hapus surat jalan pengambilan.
 - **REQUIRES USER CONFIRMATION:** grup yang tidak dipakai bisnis (mis. Aset Tetap, Anggaran, Job Costing) dapat disembunyikan per peran — **tidak dihapus** — setelah dikonfirmasi.
 - Keputusan tentang tab halaman dan tab dokumen: lihat [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
+- Satu cara ke setiap halaman: halaman tidak lagi punya tab yang mengulang entri menu (mis. Laba Rugi / Neraca / Arus Kas, Faktur / Penerimaan Pembayaran). Judul halaman selalu sama dengan entri menu yang dibuka.
+
+### Halaman tanpa entri menu sendiri
+
+Nama-nama ini tetap dikenali aplikasi (dari tombol, Entri Harian, notifikasi, dan Daftar Laporan), tetapi tidak lagi tampil di sidebar karena isinya sudah ada di halaman lain. Saat dibuka, sidebar menyorot halaman tempatnya berada.
+
+| Nama | Dibuka dari / sekarang ada di | Alasan |
+|---|---|---|
+| Catat Pengambilan | Tombol **Catat Pengambilan** di PO Pengambilan, baris surat jalan di detail PO, kartu di Entri Harian | Langkah input per truk, bukan halaman tersendiri |
+| Impor Rekap Timbangan | Tombol di PO Pengambilan dan Perubahan Timbangan, kartu di Entri Harian | Langkah dari PO Pengambilan |
+| Transfer Antar Gudang | Gudang → tab **Transfer Barang** | Halaman yang sama |
+| Jurnal Umum | Jurnal → filter **Jurnal Umum**; tombol **Buat Jurnal Umum** | Halaman yang sama dengan filter |
+| Audit Jurnal | Jurnal → filter Dari / Sampai / Akun / Cari | Daftar jurnal yang sama |
+| Rekening Koran | Rekonsiliasi Bank → **Input Rekening Koran** dan daftar **Rekening koran tersimpan** | Rekonsiliasi membutuhkan rekening koran |
+| Realisasi Anggaran | Anggaran → kolom Realisasi, Selisih, Pencapaian dan filter periode | Daftar anggaran yang sama |
+| Transfer Anggaran | Anggaran → tombol **Transfer Anggaran** dan **Riwayat transfer anggaran** | Aksi pada anggaran |
+| Rekonsiliasi Timbangan | Penerimaan Barang → kolom Rekonsiliasi dan Faktur, tombol **Rekonsiliasi** / **Buat Faktur** | Daftar penerimaan yang sama |
+| Rekap PPN | Pajak & PPN → pilih masa pajak, **Ekspor CSV** | PPN dilaporkan per masa pajak |
+| Daftar Laporan | Semua isinya punya entri menu sendiri (Laba Rugi, Neraca, Arus Kas, Pajak & PPN, Jurnal, Riwayat Akun, daftar SO/PO/faktur/barang) | Hanya berisi tautan |
+
+> **REQUIRES USER CONFIRMATION:** Rekap PPN kini ikut hak akses modul Pajak (sebelumnya modul Laporan). Peran yang punya Laporan tetapi tidak punya Pajak — bawaannya peran penjualan — tidak lagi melihat angka PPN per masa.
 
 ### Isi menu yang tidak ada saat review
 
@@ -251,20 +261,28 @@ Catatan:
 |---|---|---|
 | Entri Harian | Kartu tugas harian: **Catat Pengambilan**, **Impor Rekap Timbangan**, **Tagih Pelanggan**, **Biaya Operasional** (membuka Pengeluaran Lain), dan pintasan **Buat PO**. Angka hari ini: pengambilan hari ini, perubahan timbangan, belum ditagih, biaya hari ini. Kartu yang modulnya tidak boleh dibuka pengguna tidak tampil | Pembelian |
 | PO Pengambilan | PO berjalan dan selesai (diambil vs kuota, surat jalan terpakai/siap, batas pengambilan, status); daftar **PO siap dibuka** (PO supplier Dikonfirmasi berisi satu barang) dengan tombol **Buka untuk pengambilan**; ekspor Excel untuk timbangan per supplier. Detail PO: surat jalan per truk, Catat Pengambilan, Ekspor Excel untuk timbangan, Cetak SJ, batalkan surat jalan yang belum dipakai, **Tutup PO** / **Buka kembali**. Setiap kali daftar dibuka, PO yang lewat batas pengambilan ditutup otomatis | Pembelian |
-| Catat Pengambilan | Form satu truk, nyaman dipakai di HP: PO, surat jalan, tanggal ambil, No. Polisi, sopir, bruto/tara/netto, tujuan, No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan | Pembelian |
-| Impor Rekap Timbangan | Unggah rekap Excel/CSV dari timbangan supplier; hasil dikelompokkan menjadi baru dicatat, sama, berubah, tidak cocok/bermasalah; tombol **Terapkan** | Pembelian |
+| Catat Pengambilan (tombol di PO Pengambilan) | Form satu truk, nyaman dipakai di HP: PO, surat jalan, tanggal ambil, No. Polisi, sopir, bruto/tara/netto, tujuan, No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan | Pembelian |
+| Impor Rekap Timbangan (tombol di PO Pengambilan) | Unggah rekap Excel/CSV dari timbangan supplier; hasil dikelompokkan menjadi baru dicatat, sama, berubah, tidak cocok/bermasalah; tombol **Terapkan** | Pembelian |
 | Perubahan Timbangan | Berat yang berubah setelah ditagih (ditindaklanjuti dengan **Tandai selesai** + catatan) dan riwayat semua perubahan berat | Pembelian |
 | Rekap Pengambilan | Semua truk yang sudah mengambil, disaring per periode, pelanggan, supplier, PO; total netto, belum ditagih ke pelanggan, belum ada faktur supplier; ekspor Excel | Pembelian |
 | Tagih Pelanggan | Pelanggan dengan pengambilan belum ditagih → pilih periode dan truk → satu Faktur Penjualan; cetak dan ekspor rekap Excel untuk pelanggan | Penjualan |
 | Tagihan Supplier | Catat faktur dari supplier (No. faktur supplier, tanggal, periode, tonase dan harga yang ditagih), cocokkan dengan pengambilan, lalu simpan sebagai Faktur Pembelian | Pembelian |
-| Rekonsiliasi Timbangan | Per penerimaan barang: bandingkan qty pesanan, surat jalan, dan timbangan; tetapkan qty dasar faktur; **Buat Faktur** per penerimaan | Pembelian |
+| Rekonsiliasi Timbangan (di Penerimaan Barang) | Per penerimaan barang: bandingkan qty pesanan, surat jalan, dan timbangan; tetapkan qty dasar faktur; **Buat Faktur** per penerimaan | Pembelian |
 | Validasi SJ Supplier | Cocokkan rekap supplier (Excel) dengan penerimaan yang sudah direkonsiliasi sebelum faktur dibuat — lihat [SJ_VALIDATION_DEMO.md](SJ_VALIDATION_DEMO.md) | Pembelian |
 | Ekspor Coretax | File XML faktur pajak keluaran per masa pajak untuk diimpor di Coretax, CSV format lama, pencatatan nomor faktur pajak, kode barang & satuan Coretax | Pajak |
 | Laporan per Periode | Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen; pengambilan punya total netto sendiri | Laporan |
 
 ### Menu pengguna
 
-Dibuka dari nama pengguna di bar atas: Profil & Perusahaan, Manajemen Pengguna (bila berhak mengelola pengguna), Ganti Password, Verifikasi 2 Langkah, **Kelola Backup** (termasuk **Arsip Excel** per tahun), Instal Aplikasi, Bahasa, **Ukuran teks** (Normal / Besar / Sangat besar; bawaan Besar; disimpan per perangkat), dan Keluar.
+Dibuka dari nama pengguna di bar atas: Profil & Perusahaan, Manajemen Pengguna (bila berhak mengelola pengguna), Ganti Password, Verifikasi 2 Langkah, **Kelola Backup** (termasuk **Arsip Excel** per tahun), Instal Aplikasi, Bahasa, **Ukuran teks** (Normal / Besar / Sangat besar; bawaan Normal; disimpan per perangkat), dan Keluar.
+
+### Pengaturan Umum
+
+Hanya berisi hal yang tidak punya tempat lain: Kelola Backup, Notifikasi Sistem, Manajemen Pengguna, Pengaturan Pajak, Ekspor/Impor Backup JSON, Sinkronisasi ke Firebase, dan Reset Data. Profil Perusahaan ada di menu Pengaturan dan menu pengguna; Ganti Password dan Instal Aplikasi di menu pengguna; Kategori Barang dan Satuan Barang di Data Master; Bagan Akun di Akuntansi.
+
+### Data karyawan
+
+Satu formulir karyawan dipakai di Data Master → Karyawan dan di Penggajian: profil (jabatan, departemen, status, telepon, tanggal bergabung), email dan **Departemen akses** (departemen di Manajemen Pengguna yang memberi peran pada akun login dengan email sama), serta gaji pokok dan tunjangan transport/makan.
 
 ### Notifikasi (ikon lonceng)
 

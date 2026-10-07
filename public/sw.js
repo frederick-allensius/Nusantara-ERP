@@ -66,7 +66,7 @@
 // permission and sends a test notification, wiring up the existing alert
 // scheduler (notifications.js) that had no UI entry point to grant permission.
 /* eslint-disable no-console -- service worker lifecycle logging is the point here */
-const CACHE_VERSION = 'v1.1.7';
+const CACHE_VERSION = 'v1.1.8';
 const CACHE_NAME = `nusantara-erp-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `nusantara-erp-runtime-${CACHE_VERSION}`;
 const IMAGE_CACHE = `nusantara-erp-images-${CACHE_VERSION}`;

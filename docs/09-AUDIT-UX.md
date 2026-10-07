@@ -55,7 +55,7 @@ Aplikasi punya **dua** sistem tab di dalam halaman:
 2. **Tab dokumen dipertahankan dan dirapikan**: tampil sebagai baris tab sekunder yang tenang di bawah judul modul, dengan tombol tutup, jumlah tab dibatasi, dan perilaku sama di semua modul.
 3. **REQUIRES USER CONFIRMATION:** apakah staf memang sering membuka beberapa dokumen sekaligus? Bila tidak, tab dokumen bisa diganti panel detail tunggal pada tahap berikutnya.
 
-**Status:** keputusan 1 dan 2 sudah diterapkan — `ui/view-tabs.js` dihapus; tab dokumen tampil di bawah judul modul hanya bila ada dokumen terbuka, maksimal 5, dan hanya di dalam modulnya (dari halaman lain, detail dokumen tampil sebagai dialog).
+**Status:** keputusan 1 dan 2 sudah diterapkan — `ui/view-tabs.js` dihapus; tab dokumen tampil di bawah judul modul hanya bila ada dokumen terbuka, maksimal 5, dan hanya di dalam modulnya (dari halaman lain, detail dokumen tampil sebagai dialog). Tab di dalam halaman yang mengulang entri menu juga dihapus (Faktur / Penerimaan Pembayaran, Faktur Pembelian / Pembayaran ke Supplier, Penawaran dan Retur penjualan / pembelian, Laba Rugi / Neraca / Arus Kas, Neraca Saldo / Jurnal / Bagan Akun): satu halaman per entri menu, judulnya sama dengan entri itu. Tab yang memilih isi yang tidak ada di menu (mis. Gudang / Stok per Gudang / Transfer Barang) tetap ada.
 
 ---
 

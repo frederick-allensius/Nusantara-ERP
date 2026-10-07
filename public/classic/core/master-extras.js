@@ -192,7 +192,11 @@
     );
   }
 
-  function addEmpMModal(existing) {
+  // The one employee form (DB.employees), used by Data Master › Karyawan and by
+  // Penggajian (budget-gl-extras.js): profile, the department that gives a
+  // login its role (DB.settings.departments, managed in Manajemen Pengguna)
+  // and pay. `after` runs once saved (the calling page redraws itself).
+  function employeeForm(existing, after) {
     existing = existing || {};
     var deptOpts = EMP_DEPTS.map(function (d) {
       return (
@@ -216,50 +220,88 @@
         '</option>'
       );
     }).join('');
+    var accessDepts =
+      db().settings && Array.isArray(db().settings.departments) ? db().settings.departments : [];
+    var accessOpts =
+      '<option value="">— Tanpa departemen akses —</option>' +
+      accessDepts
+        .map(function (d) {
+          return (
+            '<option value="' +
+            esc(d.id) +
+            '"' +
+            (existing.departmentId === d.id ? ' selected' : '') +
+            '>' +
+            esc(d.name) +
+            '</option>'
+          );
+        })
+        .join('');
+    var money = function (id, label, value) {
+      return (
+        '<div class="form-group"><label class="form-label" for="' +
+        id +
+        '">' +
+        label +
+        '</label>' +
+        '<input class="form-input" id="' +
+        id +
+        '" type="number" min="0" value="' +
+        (Number(value) || 0) +
+        '"></div>'
+      );
+    };
 
     modal(
       existing.id ? 'Edit Karyawan' : 'Tambah Karyawan',
       '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">Nama Lengkap</label>' +
+        '<div class="form-group"><label class="form-label" for="em-name">Nama Lengkap</label>' +
         '<input class="form-input" id="em-name" value="' +
         esc(existing.name || '') +
         '" placeholder="Nama karyawan"></div>' +
-        '<div class="form-group"><label class="form-label">Jabatan</label>' +
+        '<div class="form-group"><label class="form-label" for="em-pos">Jabatan</label>' +
         '<input class="form-input" id="em-pos" value="' +
         esc(existing.position || '') +
         '" placeholder="Staff, Supervisor, Manager..."></div>' +
         '</div>' +
         '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">Departemen</label>' +
+        '<div class="form-group"><label class="form-label" for="em-dept">Departemen</label>' +
         '<select class="form-select" id="em-dept">' +
         deptOpts +
         '</select></div>' +
-        '<div class="form-group"><label class="form-label">Status</label>' +
+        '<div class="form-group"><label class="form-label" for="em-status">Status</label>' +
         '<select class="form-select" id="em-status">' +
         statOpts +
         '</select></div>' +
         '</div>' +
         '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">Telepon</label>' +
+        '<div class="form-group"><label class="form-label" for="em-phone">Telepon</label>' +
         '<input class="form-input" id="em-phone" value="' +
         esc(existing.phone || '') +
         '" placeholder="08xx-xxxx-xxxx"></div>' +
-        '<div class="form-group"><label class="form-label">Email</label>' +
-        '<input class="form-input" id="em-email" type="email" value="' +
-        esc(existing.email || '') +
-        '" placeholder="nama@perusahaan.com"></div>' +
-        '</div>' +
-        '<div class="form-row">' +
-        '<div class="form-group"><label class="form-label">Tanggal Bergabung</label>' +
+        '<div class="form-group"><label class="form-label" for="em-join">Tanggal Bergabung</label>' +
         '<input class="form-input" id="em-join" type="date" value="' +
         esc(existing.joinDate || '') +
         '"></div>' +
-        '<div class="form-group"><label class="form-label">Gaji Pokok (Rp)</label>' +
-        '<input class="form-input" id="em-salary" type="number" min="0" value="' +
-        (existing.salary || 0) +
-        '" placeholder="0"></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+        '<div class="form-group"><label class="form-label" for="em-email">Email</label>' +
+        '<input class="form-input" id="em-email" type="email" value="' +
+        esc(existing.email || '') +
+        '" placeholder="nama@perusahaan.com">' +
+        '<div class="form-hint">Sama dengan email login, agar akun itu mendapat peran dari departemen akses.</div></div>' +
+        '<div class="form-group"><label class="form-label" for="em-access">Departemen akses</label>' +
+        '<select class="form-select" id="em-access">' +
+        accessOpts +
+        '</select>' +
+        '<div class="form-hint">Diatur di Manajemen Pengguna.</div></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+        money('em-salary', 'Gaji Pokok (Rp)', existing.salary) +
+        money('em-trans', 'Tunjangan Transport (Rp)', existing.transportAllowance) +
+        money('em-meal', 'Tunjangan Makan (Rp)', existing.mealAllowance) +
         '</div>',
-      '<button class="btn" id="saveEmpM">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveEmpM">Simpan</button>',
       true
     );
 
@@ -272,16 +314,23 @@
           toast('Nama wajib diisi', 'warning');
           return;
         }
+        var num = function (id) {
+          return parseFloat(document.getElementById(id).value) || 0;
+        };
         var arr = ensureArr('employees');
+        var email = (document.getElementById('em-email').value || '').trim().toLowerCase();
         var data = {
           name: name,
           position: document.getElementById('em-pos').value.trim(),
           department: document.getElementById('em-dept').value,
           status: document.getElementById('em-status').value,
           phone: document.getElementById('em-phone').value.trim(),
-          email: document.getElementById('em-email').value.trim(),
+          email: email,
           joinDate: document.getElementById('em-join').value,
-          salary: parseFloat(document.getElementById('em-salary').value) || 0,
+          departmentId: document.getElementById('em-access').value,
+          salary: num('em-salary'),
+          transportAllowance: num('em-trans'),
+          mealAllowance: num('em-meal'),
         };
         if (existing.id) {
           var idx = arr.findIndex(function (x) {
@@ -300,9 +349,18 @@
         save();
         closeM();
         toast(existing.id ? 'Data karyawan diperbarui' : 'Karyawan ditambahkan', 'success');
-        openEmployee();
+        // A login account with this email takes the role of the access
+        // department (admin only — server rules enforce this too).
+        if (email && typeof window.applyDepartmentRoles === 'function') {
+          window.applyDepartmentRoles({ silent: true });
+        }
+        if (typeof after === 'function') after();
       });
     }, 60);
+  }
+
+  function addEmpMModal(existing) {
+    employeeForm(existing, openEmployee);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -787,6 +845,7 @@
 
   window._masterExtras = {
     openEmployee: openEmployee,
+    employeeForm: employeeForm,
     openContact: openContact,
     openCustomerCategory: openCustomerCategory,
     openSupplierCategory: openSupplierCategory,

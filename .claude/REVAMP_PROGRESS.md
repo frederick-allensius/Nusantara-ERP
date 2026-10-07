@@ -301,3 +301,31 @@ btn-*.png, inv-*.png.
 - Checks: vitest 47 files / 580 tests, tsc, eslint, build.
 - Seen, not touched: Pengaturan "Kelola Backup" subtitle reads "undefined backup otomatis
   tersimpan"; the marketing landing page (public/styles/landing.css) keeps its own palette.
+
+## Session 2026-10-07 — one place for each feature (DONE)
+
+Owner asked why Catat Pengambilan was its own menu entry next to PO Pengambilan and to remove this
+kind of repetition across the app ("kerjakan semuanya"). Audit: every one of the 83 menu entries
+opened in the harness (title, tabs, header buttons), then the overlaps checked in code.
+- 8432f23 Hidden menu entries (`hidden` + `under` for a step, `opens` for an older name of a page
+  inside another; nav.js): still opened by label from buttons, Entri Harian, notifications; RBAC
+  access summaries skip them. Hidden: Catat Pengambilan, Impor Rekap Timbangan, Transfer Antar
+  Gudang, Jurnal Umum, Daftar Laporan. In-page tabs repeating menu entries removed (invoices,
+  quotations, returns, Laporan Keuangan, Buku Besar); page title = entry.
+- 819588d Merged pages: Rekening Koran into Rekonsiliasi Bank; Realisasi + Transfer Anggaran into
+  Anggaran (per-line realisasi from the ledger, period filter, transfer history); Rekonsiliasi
+  Timbangan into Penerimaan Barang (status, faktur, actions; PO numbers); Rekap PPN into Pajak &
+  PPN (per masa pajak, posted documents as the ledger; the all-time totals over non-draft orders
+  are gone); Audit Jurnal into Jurnal (date/account/search filters). nav.js now marks an entry whose
+  page draws into the view already on screen (was: highlight stayed on the previous entry).
+- Stage 3: one employee form (master-extras employeeForm) for Karyawan and Penggajian with profile,
+  email + Departemen akses (role via Manajemen Pengguna) and salary/allowances; Pengaturan Umum
+  keeps only Backup, Notifikasi, Manajemen Pengguna, Pengaturan Pajak, JSON export/import, sync,
+  reset (dropped tiles: Profil Perusahaan — it opened an empty "versi berikutnya" panel —,
+  Keamanan & Password, Install Aplikasi, Kategori Item, Satuan Ukur, Chart of Accounts; their
+  duplicate dialogs removed from erp-crud.js). Sidebar 83 → 72 entries. sw v1.1.8.
+- Docs: 02 §4 "Halaman tanpa entri menu sendiri" table, Pengaturan Umum, Data karyawan; 09 §2.
+- REQUIRES USER CONFIRMATION: Rekap PPN now follows the Pajak module (sales role loses it);
+  Validasi SJ Supplier vs Impor Rekap Timbangan (same idea for warehouse receipts) and its
+  "Muat Contoh Demo" button — untouched.
+
