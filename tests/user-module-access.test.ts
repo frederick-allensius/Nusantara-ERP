@@ -218,7 +218,7 @@ describe('nav gating', () => {
     loadNav();
     expect(groupHidden('accounting')).toBe(false);
     expect(entryHidden('Pajak & PPN')).toBe(false);
-    expect(entryHidden('Jurnal Umum')).toBe(true);
+    expect(entryHidden('Jurnal')).toBe(true);
     expect(groupHidden('cashbank')).toBe(true);
   });
 });

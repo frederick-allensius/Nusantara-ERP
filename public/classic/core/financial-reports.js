@@ -151,21 +151,6 @@
   }
 
   // ── Tab buttons ───────────────────────────────────────────────────────────
-  function tabBtn(id, label) {
-    var on = activeTab === id;
-    return (
-      '<button class="seg-tab' +
-      (on ? ' active' : '') +
-      '" role="tab" aria-selected="' +
-      on +
-      '" data-action="finTab" data-val="' +
-      id +
-      '">' +
-      esc(label) +
-      '</button>'
-    );
-  }
-
   // ── Period selector bar ───────────────────────────────────────────────────
   function periodBar() {
     var active = periodFrom || periodTo;
@@ -744,26 +729,22 @@
   }
 
   // ── Main renderer ─────────────────────────────────────────────────────────
+  // Statement → its sidebar entry (ui/nav.js), also the page title.
+  var TAB_ENTRY = { pl: 'Laba Rugi', bs: 'Neraca', cf: 'Arus Kas' };
+  // One statement per page; Laba Rugi, Neraca and Arus Kas are separate
+  // entries under Laporan in the sidebar.
   function renderFinancials() {
+    var title = TAB_ENTRY[activeTab] || TAB_ENTRY.pl;
     var header =
       typeof window.secHdr === 'function'
-        ? window.secHdr('Laporan Keuangan', '', 'Cetak', 'finPrint')
-        : '<h1>Laporan Keuangan</h1>';
+        ? window.secHdr(title, '', 'Cetak', 'finPrint')
+        : '<h1>' + esc(title) + '</h1>';
     var body = '';
     if (activeTab === 'bs') body = bsTab();
     else if (activeTab === 'cf') body = cfTab();
     else body = plTab();
 
-    return (
-      header +
-      '<div class="seg-tabs" role="tablist" aria-label="Laporan keuangan">' +
-      tabBtn('pl', 'Laba Rugi') +
-      tabBtn('bs', 'Neraca') +
-      tabBtn('cf', 'Arus Kas') +
-      '</div>' +
-      periodBar() +
-      body
-    );
+    return header + periodBar() + body;
   }
 
   function refresh() {
@@ -774,8 +755,6 @@
   // ── Wire up ───────────────────────────────────────────────────────────────
   window.renderFinancials = renderFinancials;
 
-  // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
-  var TAB_ENTRY = { pl: 'Laba Rugi', bs: 'Neraca', cf: 'Arus Kas' };
   function syncMenu() {
     if (TAB_ENTRY[activeTab] && window.NSANav && typeof window.NSANav.markActive === 'function') {
       window.NSANav.markActive(TAB_ENTRY[activeTab]);
@@ -795,14 +774,6 @@
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
-    window.ERP.registerAction('finTab', function (_id, _type, val) {
-      if (val) {
-        activeTab = val;
-        refresh();
-        syncMenu();
-      }
-      return true;
-    });
     window.ERP.registerAction('finPrint', function () {
       printReport();
       return true;

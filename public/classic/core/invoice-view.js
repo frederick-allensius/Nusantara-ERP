@@ -160,20 +160,6 @@
   }
 
   // ── List ────────────────────────────────────────────────────────────────────
-  function tabsHTML() {
-    const tabs = TYPES[activeTab].side === 'sales' ? ['SI', 'SR'] : ['PI', 'PP'];
-    return (
-      '<div class="seg-tabs" role="tablist">' +
-      tabs
-        .map(
-          t =>
-            `<button class="seg-tab${t === activeTab ? ' active' : ''}" role="tab" aria-selected="${t === activeTab}" data-action="invTab" data-val="${t}">${esc(TYPES[t].label)}</button>`
-        )
-        .join('') +
-      '</div>'
-    );
-  }
-
   // Where an invoice's money stands: open (not yet due), overdue, paid,
   // cancelled; '' for a draft.
   function invoiceStage(type, d, today) {
@@ -369,7 +355,7 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(t.label, t.sub, t.add, 'invNew')
         : `<h1>${esc(t.label)}</h1>`;
-    return `${header}${tabsHTML()}${statsHTML(activeTab)}${listHTML(activeTab)}`;
+    return `${header}${statsHTML(activeTab)}${listHTML(activeTab)}`;
   }
 
   function refresh() {
@@ -1083,14 +1069,6 @@
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
-    window.ERP.registerAction('invTab', function (_id, _type, val) {
-      if (val && TYPES[val]) {
-        activeTab = val;
-        refresh();
-        syncMenu();
-      }
-      return true;
-    });
     window.ERP.registerAction('invStage', function (_id, type, val) {
       if (type === 'SI' || type === 'PI') {
         stageOf[type] = INV_STAGES.some(st => st[0] === val) ? val : '';

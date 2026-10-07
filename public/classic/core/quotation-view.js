@@ -97,19 +97,6 @@
   }
 
   // ── List ────────────────────────────────────────────────────────────────────
-  function tabsHTML() {
-    return (
-      '<div class="seg-tabs" role="tablist">' +
-      ['SQ', 'PQ']
-        .map(
-          t =>
-            `<button class="seg-tab${t === activeTab ? ' active' : ''}" role="tab" aria-selected="${t === activeTab}" data-action="qtTab" data-val="${t}">${esc(TYPES[t].label)}</button>`
-        )
-        .join('') +
-      '</div>'
-    );
-  }
-
   function listHTML(type) {
     const t = TYPES[type];
     const docs = (db()[t.coll] || []).slice().sort((a, b) => ((a.date || '') < (b.date || '') ? 1 : -1));
@@ -154,7 +141,7 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(t.label, t.sub, 'Buat Penawaran', 'qtNew')
         : `<h1>${esc(t.label)}</h1>`;
-    return header + tabsHTML() + listHTML(activeTab);
+    return header + listHTML(activeTab);
   }
 
   function refresh() {
@@ -540,13 +527,6 @@
         fn(id, type, val);
         return true;
       });
-    reg('qtTab', (_id, _type, val) => {
-      if (val && TYPES[val]) {
-        activeTab = val;
-        refresh();
-        syncMenu();
-      }
-    });
     reg('qtNew', () => openFormModal(activeTab));
     reg('qtView', (id, type) => id && TYPES[type] && viewQuotation(type, id));
     reg('qtEdit', (id, type) => {

@@ -23,9 +23,7 @@
 
   function syncMenu() {
     if (window.NSANav && typeof window.NSANav.markActive === 'function') {
-      window.NSANav.markActive(
-        activeTab === 'journals' && journalFilter === 'manual' ? 'Jurnal Umum' : TAB_ENTRY[activeTab]
-      );
+      window.NSANav.markActive(TAB_ENTRY[activeTab]);
     }
   }
 
@@ -60,11 +58,6 @@
     OTHER_EXPENSE: 'Beban Lain',
     OTHER_INCOME: 'Pendapatan Lain',
   };
-
-  function tabBtn(id, label) {
-    const on = activeTab === id;
-    return `<button class="seg-tab${on ? ' active' : ''}" role="tab" aria-selected="${on}" data-action="glTab" data-val="${id}">${esc(label)}</button>`;
-  }
 
   // ── Trial Balance tab ───────────────────────────────────────────────────────
   // Account rows in regular weight; only the TOTAL row is bold (style.css .gl-…).
@@ -225,11 +218,14 @@
     </div>`;
   }
 
+  // Neraca Saldo, Jurnal and Bagan Akun are separate sidebar entries; the page
+  // title is the entry that is open.
   function renderLedger() {
+    const title = TAB_ENTRY[activeTab] || TAB_ENTRY.trial;
     const header =
       typeof window.secHdr === 'function'
-        ? window.secHdr('Buku Besar', '', 'Buat Jurnal Umum', 'glPostJV')
-        : '<h1>Buku Besar</h1>';
+        ? window.secHdr(title, '', 'Buat Jurnal Umum', 'glPostJV')
+        : `<h1>${esc(title)}</h1>`;
     let bodyHtml = '';
     if (activeTab === 'journals') {
       bodyHtml = journalsTab();
@@ -240,11 +236,6 @@
     }
     return `
     ${header}
-    <div class="seg-tabs" role="tablist" aria-label="Buku besar">
-      ${tabBtn('trial', 'Neraca Saldo')}
-      ${tabBtn('journals', 'Jurnal')}
-      ${tabBtn('chart', 'Bagan Akun')}
-    </div>
     ${bodyHtml}`;
   }
 
@@ -423,14 +414,6 @@
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
-    window.ERP.registerAction('glTab', function (id, type, val) {
-      if (val) {
-        activeTab = val;
-        refresh();
-        syncMenu();
-      }
-      return true;
-    });
     window.ERP.registerAction('glJournalPage', function (id, type, val) {
       const page = Number(val);
       if (page >= 1) {

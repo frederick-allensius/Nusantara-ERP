@@ -175,19 +175,6 @@
   }
 
   // ── List ────────────────────────────────────────────────────────────────────
-  function tabsHTML() {
-    return (
-      '<div class="seg-tabs" role="tablist">' +
-      ['SRN', 'PRN']
-        .map(
-          t =>
-            `<button class="seg-tab${t === activeTab ? ' active' : ''}" role="tab" aria-selected="${t === activeTab}" data-action="rtTab" data-val="${t}">${esc(TYPES[t].label)}</button>`
-        )
-        .join('') +
-      '</div>'
-    );
-  }
-
   function listHTML(type) {
     const t = TYPES[type];
     const docs = (db()[t.coll] || []).slice().sort((a, b) => ((a.date || '') < (b.date || '') ? 1 : -1));
@@ -227,7 +214,7 @@
       typeof window.secHdr === 'function'
         ? window.secHdr(t.label, t.sub, 'Buat Retur', 'rtNew')
         : `<h1>${esc(t.label)}</h1>`;
-    return header + tabsHTML() + listHTML(activeTab);
+    return header + listHTML(activeTab);
   }
 
   function refresh() {
@@ -583,14 +570,6 @@
   };
 
   if (window.ERP && typeof window.ERP.registerAction === 'function') {
-    window.ERP.registerAction('rtTab', function (_id, _type, val) {
-      if (val && TYPES[val]) {
-        activeTab = val;
-        refresh();
-        syncMenu();
-      }
-      return true;
-    });
     window.ERP.registerAction('rtNew', function () {
       openNewModal(activeTab);
       return true;

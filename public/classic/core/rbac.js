@@ -319,7 +319,8 @@
     const out = [];
     Object.keys(cfg).forEach(key => {
       const g = cfg[key];
-      const items = (g.items || []).filter(it => it.label);
+      // Listed entries only; hidden ones open from buttons on those pages.
+      const items = (g.items || []).filter(it => it.label && !it.hidden);
       if (!items.length) {
         if (modulesOf(g.module).indexOf(module) !== -1) {
           out.push(g.title);

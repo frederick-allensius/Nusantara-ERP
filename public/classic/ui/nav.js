@@ -63,6 +63,9 @@
   // defaults to the group's module; entries that moved between groups keep the
   // visibility they had. `modal` entries open a dialog without leaving the page;
   // `home` marks the entry shown when a shared view is opened programmatically.
+  // `hidden` entries are not listed: they are steps opened from a button or link
+  // on another page (or from Entri Harian), and light up the listed entry named
+  // in `under` while open.
   const MENU_CONFIG = {
     dashboard: {
       title: 'Ringkasan',
@@ -84,8 +87,13 @@
       module: 'purchases',
       items: [
         { label: 'PO Pengambilan', view: 'pickups', home: true },
-        { label: 'Catat Pengambilan', view: 'pickups' },
-        { label: 'Impor Rekap Timbangan', view: 'pickups' },
+        { label: 'Catat Pengambilan', view: 'pickups', hidden: true, under: 'PO Pengambilan' },
+        {
+          label: 'Impor Rekap Timbangan',
+          view: 'pickups',
+          hidden: true,
+          under: 'PO Pengambilan',
+        },
         { label: 'Perubahan Timbangan', view: 'pickups' },
         { label: 'Rekap Pengambilan', view: 'pickups' },
         { label: 'Tagih Pelanggan', view: 'pickups', module: 'sales' },
@@ -133,7 +141,7 @@
       items: [
         { label: 'Barang & Stok', view: 'inventory' },
         { label: 'Gudang', view: 'warehouse' },
-        { label: 'Transfer Antar Gudang', view: 'warehouse' },
+        { label: 'Transfer Antar Gudang', view: 'warehouse', hidden: true, under: 'Gudang' },
         { label: 'Penyesuaian Stok', view: 'adjustments' },
         { label: 'Permintaan Barang', view: 'inventory' },
         { label: 'Job Costing', view: 'inventory' },
@@ -161,7 +169,7 @@
         { heading: 'Buku Besar' },
         { label: 'Neraca Saldo', view: 'ledger' },
         { label: 'Jurnal', view: 'ledger' },
-        { label: 'Jurnal Umum', view: 'ledger' },
+        { label: 'Jurnal Umum', view: 'ledger', hidden: true, under: 'Jurnal' },
         { label: 'Bagan Akun', view: 'ledger' },
         { label: 'Riwayat Akun', view: 'finance' },
         { label: 'Audit Jurnal', view: 'finance' },
@@ -195,7 +203,7 @@
       icon: 'bar-chart-2',
       module: 'reports',
       items: [
-        { label: 'Daftar Laporan', view: 'reports' },
+        { label: 'Daftar Laporan', view: 'reports', hidden: true },
         { label: 'Laporan per Periode', view: 'reports' },
         { label: 'Laba Rugi', view: 'financials' },
         { label: 'Neraca', view: 'financials' },
@@ -325,6 +333,7 @@
           );
         }
         const items = g.items
+          .filter(it => !it.hidden)
           .map(it =>
             it.heading
               ? `<div class="nav-subhead">${escapeHtml(it.heading)}</div>`
@@ -480,11 +489,20 @@
     return first;
   }
 
+  // The listed entry that stands for `entry`: itself, or for a hidden entry the
+  // one named in its `under`.
+  function _listedLabel(entry) {
+    const g = entry && MENU_CONFIG[entry.group];
+    const it = g && entry.label ? g.items.find(i => i.label === entry.label) : null;
+    return it && it.hidden ? it.under || null : entry && entry.label;
+  }
+
   function _markActive(entry) {
     const prevGroup = _activeEntry && _activeEntry.group;
     _activeEntry = entry;
+    const listed = _listedLabel(entry);
     document.querySelectorAll('#nav .nav-item, #nav-popover .nav-item').forEach(b => {
-      const on = !!entry && b.dataset.group === entry.group && b.dataset.label === entry.label;
+      const on = !!entry && b.dataset.group === entry.group && b.dataset.label === listed;
       b.classList.toggle('active', on);
       if (on) {
         b.setAttribute('aria-current', 'page');
