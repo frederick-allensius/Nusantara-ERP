@@ -652,7 +652,7 @@ describe('Default layout', () => {
     w().openModal = undefined;
   });
 
-  it('shows the five most important actions and the rest behind a toggle', () => {
+  it('groups the actions per flow, each row: what to do, detail, how many', () => {
     seed(
       [
         order('SO-2', CUST, 10, 100000, { status: 'Draft' }),
@@ -672,8 +672,33 @@ describe('Default layout', () => {
       'Penawaran menunggu jawaban',
       'Dokumen masih draft',
     ]);
-    const html = render();
-    expect(html).toContain('+ 1 lainnya');
-    expect(html).toMatch(/id="dash-actions-more" hidden>[^]*Dokumen masih draft/);
+    const view = document.createElement('div');
+    view.innerHTML = render();
+    const groups = [...view.querySelectorAll('.dash-act-group')].map(g => ({
+      head: g.querySelector('.dash-act-head')!.textContent,
+      rows: [...g.querySelectorAll('.dash-act-row')].map(
+        r =>
+          r.querySelector('.dash-act-title')!.textContent +
+          ' | ' +
+          r.querySelector('.dash-act-count')!.textContent
+      ),
+    }));
+    expect(groups).toEqual([
+      {
+        head: 'Penjualan',
+        rows: [
+          'Buat faktur pesanan terkirim | 1 pesanan',
+          'Selesaikan pengiriman | 1 surat jalan',
+          'Kirim pesanan penjualan | 1 pesanan',
+          'Tindak lanjuti penawaran | 1 penawaran',
+        ],
+      },
+      { head: 'Pembelian', rows: ['Terima barang pesanan pembelian | 1 pesanan'] },
+      { head: 'Lainnya', rows: ['Selesaikan dokumen draft | 1 dokumen'] },
+    ]);
+    // Money waiting is marked; every row opens its page.
+    const first = view.querySelector('.dash-act-row')!;
+    expect(first.querySelector('.dash-act-count')!.classList.contains('is-urgent')).toBe(true);
+    expect(first.getAttribute('data-dash-open')).toBe('Faktur Penjualan');
   });
 });

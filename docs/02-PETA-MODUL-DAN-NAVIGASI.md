@@ -233,6 +233,7 @@ Catatan:
 - Menu **Surat Jalan** hanya menampilkan surat jalan pengiriman dari stok. Surat jalan pengambilan (dari PO pengambilan) ada di Pengambilan → PO Pengambilan; menu Surat Jalan menampilkan tautan ke sana dan menolak ubah/hapus surat jalan pengambilan.
 - **REQUIRES USER CONFIRMATION:** grup yang tidak dipakai bisnis (mis. Aset Tetap, Anggaran, Job Costing) dapat disembunyikan per peran — **tidak dihapus** — setelah dikonfirmasi.
 - Keputusan tentang tab halaman dan tab dokumen: lihat [09-AUDIT-UX.md §2](09-AUDIT-UX.md).
+- **Pengambilan**, **Penjualan**, dan **Pembelian** dibagi menjadi **Alur** (langkah berurutan pada satu garis, dengan angka dokumen yang menunggu di langkah itu — angka yang sama dengan Perlu tindakan di Ringkasan), **Lainnya**, dan **Data**. Alur Pembelian: Penawaran → Pesanan → Penerimaan Barang → Faktur → Pembayaran; Validasi SJ Supplier ada di Lainnya.
 - Satu cara ke setiap halaman: halaman tidak lagi punya tab yang mengulang entri menu (mis. Laba Rugi / Neraca / Arus Kas, Faktur / Penerimaan Pembayaran). Judul halaman selalu sama dengan entri menu yang dibuka.
 
 ### Halaman tanpa entri menu sendiri

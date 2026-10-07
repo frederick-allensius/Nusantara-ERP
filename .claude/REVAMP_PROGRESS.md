@@ -340,7 +340,10 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
 - Owner concern: submenus read as lists, "Perlu tindakan" like notes. Preview
   (harness.local/mockups/pipeline-preview.js, pp-*.png): sidebar groups split into ALUR (steps on a
   rail with pending counts) / LAINNYA / DATA; Perlu tindakan grouped per flow with one row format
-  (verb title · detail · count pill). Waiting for owner approval.
+  (verb title · detail · count pill). Approved and applied: nav.js `step` items + headings Alur /
+  Lainnya / Data in Pengambilan, Penjualan, Pembelian (rail, dot, waiting count from _dashActions,
+  refreshed on navigate and after saveDB); dashboard rows carry title/unit/flow/urgent and render
+  grouped (.dash-act-*), the "+N lainnya" toggle is gone. sw v1.1.10.
 - CV on surat jalan photos: not built; needs sample photos, supplier Excel and approval of the AI
   service cost (docs/11 already marks it REQUIRES USER CONFIRMATION).
 

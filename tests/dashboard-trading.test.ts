@@ -144,9 +144,10 @@ describe('Ringkasan — pickup data', () => {
     // Opened for pickup, the orders leave the warehouse tabs.
     expect(html).not.toContain('data-flow-panel="sales"');
     // Perlu tindakan: the unbilled trip, not the two unused surat jalan slots.
-    expect(html).toContain('Pengambilan belum ditagih');
-    expect(html).not.toContain('Pengiriman belum selesai');
-    expect(html).not.toContain('Pesanan penjualan belum dikirim');
+    expect(html).toContain('Tagih pengambilan');
+    expect(html).toContain('1 truk</span>');
+    expect(html).not.toContain('Selesaikan pengiriman');
+    expect(html).not.toContain('Kirim pesanan penjualan');
   });
 
   it('shows the optional pickup blocks once switched on', () => {
@@ -169,7 +170,7 @@ describe('Ringkasan — pickup data', () => {
     const html = render();
     expect(html).toContain('data-dash-open="Perubahan Timbangan"');
     expect(html).toContain('1 perubahan timbangan');
-    expect(html).toContain('Perubahan timbangan belum ditindaklanjuti');
+    expect(html).toContain('Periksa perubahan timbangan');
   });
 
   it('hides blocks switched off in Atur Tampilan', () => {

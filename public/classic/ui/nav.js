@@ -63,6 +63,8 @@
   // defaults to the group's module; entries that moved between groups keep the
   // visibility they had. `modal` entries open a dialog without leaving the page;
   // `home` marks the entry shown when a shared view is opened programmatically.
+  // `step` entries are the stages of a flow, listed in order under "Alur" and
+  // drawn on a rail with the number of documents waiting at each stage.
   // `hidden` entries are not listed. Either a step opened from a button or link
   // on another page (or from Entri Harian), which lights up the listed entry in
   // `under` while open; or an older name of a page that now lives inside a
@@ -87,7 +89,8 @@
       icon: 'truck',
       module: 'purchases',
       items: [
-        { label: 'PO Pengambilan', view: 'pickups', home: true },
+        { heading: 'Alur' },
+        { label: 'PO Pengambilan', view: 'pickups', home: true, step: true },
         { label: 'Catat Pengambilan', view: 'pickups', hidden: true, under: 'PO Pengambilan' },
         {
           label: 'Impor Rekap Timbangan',
@@ -95,10 +98,11 @@
           hidden: true,
           under: 'PO Pengambilan',
         },
-        { label: 'Perubahan Timbangan', view: 'pickups' },
+        { label: 'Perubahan Timbangan', view: 'pickups', step: true },
+        { label: 'Tagih Pelanggan', view: 'pickups', module: 'sales', step: true },
+        { label: 'Tagihan Supplier', view: 'pickups', step: true },
+        { heading: 'Lainnya' },
         { label: 'Rekap Pengambilan', view: 'pickups' },
-        { label: 'Tagih Pelanggan', view: 'pickups', module: 'sales' },
-        { label: 'Tagihan Supplier', view: 'pickups' },
       ],
     },
     sales: {
@@ -106,14 +110,17 @@
       icon: 'trending-up',
       module: 'sales',
       items: [
-        { label: 'Penawaran Penjualan', view: 'quotations' },
-        { label: 'Pesanan Penjualan', view: 'sales' },
-        { label: 'Surat Jalan', view: 'logistics' },
-        { label: 'Faktur Penjualan', view: 'invoices' },
-        { label: 'Penerimaan Pembayaran', view: 'invoices' },
+        { heading: 'Alur' },
+        { label: 'Penawaran Penjualan', view: 'quotations', step: true },
+        { label: 'Pesanan Penjualan', view: 'sales', step: true },
+        { label: 'Surat Jalan', view: 'logistics', step: true },
+        { label: 'Faktur Penjualan', view: 'invoices', step: true },
+        { label: 'Penerimaan Pembayaran', view: 'invoices', step: true },
+        { heading: 'Lainnya' },
         { label: 'Uang Muka Penjualan', view: 'sales' },
         { label: 'Retur Penjualan', view: 'returns' },
         { label: 'Target Penjualan', view: 'sales' },
+        { heading: 'Data' },
         { label: 'Pelanggan', view: 'master' },
       ],
     },
@@ -122,21 +129,24 @@
       icon: 'shopping-cart',
       module: 'purchases',
       items: [
-        { label: 'Penawaran Pembelian', view: 'quotations' },
-        { label: 'Pesanan Pembelian', view: 'purchase' },
-        { label: 'Penerimaan Barang', view: 'purchase' },
+        { heading: 'Alur' },
+        { label: 'Penawaran Pembelian', view: 'quotations', step: true },
+        { label: 'Pesanan Pembelian', view: 'purchase', step: true },
+        { label: 'Penerimaan Barang', view: 'purchase', step: true },
         {
           label: 'Rekonsiliasi Timbangan',
           view: 'purchase',
           hidden: true,
           opens: 'Penerimaan Barang',
         },
+        { label: 'Faktur Pembelian', view: 'invoices', step: true },
+        { label: 'Pembayaran ke Supplier', view: 'invoices', step: true },
+        { heading: 'Lainnya' },
         { label: 'Validasi SJ Supplier', view: 'purchase' },
-        { label: 'Faktur Pembelian', view: 'invoices' },
-        { label: 'Pembayaran ke Supplier', view: 'invoices' },
         { label: 'Uang Muka Pembelian', view: 'purchase' },
         { label: 'Retur Pembelian', view: 'returns' },
         { label: 'Harga Supplier', view: 'purchase' },
+        { heading: 'Data' },
         { label: 'Supplier', view: 'master' },
       ],
     },
@@ -338,14 +348,27 @@
             `${_svg(g.icon, 17, 'nav-icon')}<span class="nav-label">${title}</span></button></div>`
           );
         }
-        const items = g.items
-          .filter(it => !it.hidden)
-          .map(it =>
-            it.heading
-              ? `<div class="nav-subhead">${escapeHtml(it.heading)}</div>`
-              : `<button type="button" class="nav-item" data-group="${key}" data-view="${it.view}" ` +
-                `data-label="${escapeHtml(it.label)}" data-module="${_modulesOf(it, g)}">${escapeHtml(it.label)}</button>`
-          )
+        const listed = g.items.filter(it => !it.hidden);
+        const items = listed
+          .map((it, i) => {
+            if (it.heading) {
+              return `<div class="nav-subhead">${escapeHtml(it.heading)}</div>`;
+            }
+            const attrs =
+              `data-group="${key}" data-view="${it.view}" ` +
+              `data-label="${escapeHtml(it.label)}" data-module="${_modulesOf(it, g)}"`;
+            if (!it.step) {
+              return `<button type="button" class="nav-item" ${attrs}>${escapeHtml(it.label)}</button>`;
+            }
+            // First and last stage end the rail at their dot.
+            const first = !(listed[i - 1] && listed[i - 1].step) ? ' is-first' : '';
+            const last = !(listed[i + 1] && listed[i + 1].step) ? ' is-last' : '';
+            return (
+              `<button type="button" class="nav-item nav-step${first}${last}" ${attrs}>` +
+              `<span class="nav-step-label">${escapeHtml(it.label)}</span>` +
+              '<span class="nav-count" hidden></span></button>'
+            );
+          })
           .join('');
         return (
           `<div class="nav-section" data-group="${key}">` +
@@ -507,8 +530,49 @@
     return it && it.hidden ? it.opens || it.under || null : entry && entry.label;
   }
 
+  // Documents waiting at each flow stage: the "Perlu tindakan" rows of
+  // Ringkasan (modules/dashboard.js _dashActions), summed per entry they open.
+  function _refreshCounts() {
+    const steps = document.querySelectorAll('#nav .nav-item.nav-step');
+    if (!steps.length || typeof window._dashActions !== 'function') {
+      return;
+    }
+    let rows = [];
+    try {
+      rows = window._dashActions();
+    } catch (_) {
+      return;
+    }
+    const waiting = {};
+    rows.forEach(r => {
+      if (r.open && r.flow !== 'other') {
+        waiting[r.open] = (waiting[r.open] || 0) + (r.count || 0);
+      }
+    });
+    steps.forEach(b => {
+      const el = b.querySelector('.nav-count');
+      const n = waiting[b.dataset.label] || 0;
+      if (el) {
+        el.textContent = n ? String(n) : '';
+        el.hidden = !n;
+      }
+      if (n) {
+        b.setAttribute('title', `${b.dataset.label}: ${n} menunggu`);
+      } else {
+        b.removeAttribute('title');
+      }
+    });
+  }
+
+  let _countsTimer = null;
+  function _scheduleCounts() {
+    clearTimeout(_countsTimer);
+    _countsTimer = setTimeout(_refreshCounts, 300);
+  }
+
   function _markActive(entry) {
     const prevGroup = _activeEntry && _activeEntry.group;
+    _scheduleCounts();
     _activeEntry = entry;
     const listed = _listedLabel(entry);
     document.querySelectorAll('#nav .nav-item, #nav-popover .nav-item').forEach(b => {
@@ -685,6 +749,19 @@
     // would cancel it out on tap.
 
     _markActive(_resolveEntry(window.activeView || 'dashboard'));
+
+    // The stage counts follow the data: refreshed after every save too, not
+    // only when a page opens. Nothing runs before the save itself.
+    if (typeof window.saveDB === 'function' && !window.saveDB.navCounts) {
+      const save = window.saveDB;
+      const countedSave = function navCountedSave(...args) {
+        const r = save.apply(this, args);
+        _scheduleCounts();
+        return r;
+      };
+      countedSave.navCounts = true;
+      window.saveDB = countedSave;
+    }
 
     initTheme();
     initSearchToggle();

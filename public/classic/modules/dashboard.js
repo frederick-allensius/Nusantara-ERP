@@ -328,7 +328,11 @@ function _dashBalances(side) {
 }
 
 // Rows for "Perlu tindakan", most important first (`rank`): money not yet
-// billed, billed figures that no longer match, then the order flow.
+// billed, billed figures that no longer match, then the order flow. Each row
+// also says what to do (`title`), what its count counts (`unit`) and the flow
+// it belongs to (`flow`: pickups / sales / purchases / other); `urgent` rows
+// are money or figures to settle. The sidebar shows the same counts beside
+// the flow stages (ui/nav.js).
 function _dashActions() {
   var so = DB.salesOrders || [];
   var po = DB.purchaseOrders || [];
@@ -364,6 +368,10 @@ function _dashActions() {
         }).length,
         open: 'Faktur Penjualan',
         rank: 3,
+        title: 'Buat faktur pesanan terkirim',
+        unit: 'pesanan',
+        flow: 'sales',
+        urgent: true,
       },
       {
         label: 'Pengiriman belum selesai',
@@ -373,6 +381,9 @@ function _dashActions() {
         }).length,
         open: 'Surat Jalan',
         rank: 6,
+        title: 'Selesaikan pengiriman',
+        unit: 'surat jalan',
+        flow: 'sales',
       },
       {
         label: 'Pesanan penjualan belum dikirim',
@@ -382,6 +393,9 @@ function _dashActions() {
         }).length,
         open: 'Pesanan Penjualan',
         rank: 7,
+        title: 'Kirim pesanan penjualan',
+        unit: 'pesanan',
+        flow: 'sales',
       },
       {
         label: 'Pesanan pembelian belum diterima',
@@ -391,6 +405,9 @@ function _dashActions() {
         }).length,
         open: 'Pesanan Pembelian',
         rank: 8,
+        title: 'Terima barang pesanan pembelian',
+        unit: 'pesanan',
+        flow: 'purchases',
       },
       {
         label: 'Penawaran menunggu jawaban',
@@ -400,6 +417,9 @@ function _dashActions() {
         }).length,
         open: 'Penawaran Penjualan',
         rank: 9,
+        title: 'Tindak lanjuti penawaran',
+        unit: 'penawaran',
+        flow: 'sales',
       },
       {
         label: 'Dokumen masih draft',
@@ -407,6 +427,9 @@ function _dashActions() {
         count: drafts,
         open: 'Pesanan Penjualan',
         rank: 10,
+        title: 'Selesaikan dokumen draft',
+        unit: 'dokumen',
+        flow: 'other',
       },
     ])
     .filter(function (r) {
@@ -501,6 +524,29 @@ function _dashCard(title, sub, body, more) {
 
 function _dashEmpty(text) {
   return '<div class="empty-inline">' + escapeHtml(text) + '</div>';
+}
+
+// Flows of "Perlu tindakan", in the sidebar's order, with the sidebar's icons.
+var _DASH_FLOWS = [
+  { key: 'pickups', title: 'Pengambilan', icon: 'truck' },
+  { key: 'sales', title: 'Penjualan', icon: 'trending-up' },
+  { key: 'purchases', title: 'Pembelian', icon: 'shopping-cart' },
+  { key: 'other', title: 'Lainnya', icon: 'file' },
+];
+var _DASH_FLOW_ICONS = {
+  truck:
+    '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  'shopping-cart':
+    '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+};
+function _dashFlowIcon(name) {
+  return (
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    (_DASH_FLOW_ICONS[name] || '') +
+    '</svg>'
+  );
 }
 
 // ── Period, flow, trend and trading blocks ───────────────────────────────────
@@ -724,6 +770,10 @@ var _dashTrading = (function () {
         count: ub.count,
         open: 'Tagih Pelanggan',
         rank: 1,
+        title: 'Tagih pengambilan',
+        unit: 'truk',
+        flow: 'pickups',
+        urgent: true,
       });
     }
     if (can('purchases')) {
@@ -734,6 +784,10 @@ var _dashTrading = (function () {
         count: diffs.alerts.length,
         open: 'Perubahan Timbangan',
         rank: 2,
+        title: 'Periksa perubahan timbangan',
+        unit: 'surat jalan',
+        flow: 'pickups',
+        urgent: true,
       });
       var pos = S()
         .poProgress(asOf)
@@ -762,6 +816,9 @@ var _dashTrading = (function () {
         count: pos.length,
         open: 'PO Pengambilan',
         rank: 5,
+        title: 'Periksa PO pengambilan',
+        unit: 'PO',
+        flow: 'pickups',
       });
       rows.push({
         label: 'Tagihan supplier berbeda dari pengambilan',
@@ -769,6 +826,10 @@ var _dashTrading = (function () {
         count: diffs.invoices,
         open: 'Tagihan Supplier',
         rank: 4,
+        title: 'Cocokkan tagihan supplier',
+        unit: 'tagihan',
+        flow: 'pickups',
+        urgent: true,
       });
     }
     return rows;
@@ -1907,42 +1968,46 @@ function renderDashboard() {
   // Alur transaksi
   var flow = show('pipeline') ? _dashTrading.flowCard(per) : '';
 
-  // Needs action: the most important rows first, the rest behind a toggle.
+  // Needs action: grouped by flow in the sidebar's order, every row the same
+  // shape — what to do, the detail, how many — most important first in a flow.
   var actions = '';
   if (show('actions')) {
     var rows = _dashActions();
     var row = function (r) {
       return (
-        '<button type="button" class="dash-list-row" data-dash-open="' +
+        '<button type="button" class="dash-act-row" data-dash-open="' +
         escapeHtml(r.open) +
-        '"><span class="dash-list-main"><span class="dash-list-title">' +
-        escapeHtml(r.label) +
-        '</span><span class="dash-list-sub">' +
+        '"><span class="dash-act-main"><span class="dash-act-title">' +
+        escapeHtml(r.title || r.label) +
+        '</span><span class="dash-act-sub">' +
         escapeHtml(r.hint) +
-        '</span></span><span class="dash-count">' +
+        '</span></span><span class="dash-act-count' +
+        (r.urgent ? ' is-urgent' : '') +
+        '">' +
         r.count +
-        '</span></button>'
+        (r.unit ? ' ' + escapeHtml(r.unit) : '') +
+        '</span><svg class="dash-act-go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>'
       );
     };
-    var shown = 5;
-    var rest = rows.slice(shown);
+    var groups = _DASH_FLOWS.map(function (f) {
+      var list = rows.filter(function (r) {
+        return (r.flow || 'other') === f.key;
+      });
+      return list.length
+        ? '<div class="dash-act-group"><div class="dash-act-head"><span class="dash-act-ico">' +
+            _dashFlowIcon(f.icon) +
+            '</span>' +
+            escapeHtml(f.title) +
+            '</div>' +
+            list.map(row).join('') +
+            '</div>'
+        : '';
+    });
     actions = _dashCard(
       'Perlu tindakan',
       'Dokumen yang menunggu langkah berikutnya',
       rows.length
-        ? '<div class="dash-list-body">' +
-            rows.slice(0, shown).map(row).join('') +
-            (rest.length
-              ? '<div class="dash-more" id="dash-actions-more" hidden>' + rest.map(row).join('') + '</div>'
-              : '') +
-            '</div>' +
-            (rest.length
-              ? '<button type="button" class="link-btn dash-more-btn" data-action="dashActionsMore" data-val="' +
-                rest.length +
-                '" aria-expanded="false" aria-controls="dash-actions-more">+ ' +
-                rest.length +
-                ' lainnya</button>'
-              : '')
+        ? '<div class="dash-act-body">' + groups.join('') + '</div>'
         : _dashEmpty('Tidak ada dokumen yang menunggu tindakan.')
     );
   }
@@ -2234,19 +2299,6 @@ document.addEventListener('click', function (e) {
     ERP.registerAction('dashTrendMode', function (_id, _type, val) {
       _dashTrading.setTrendMode(val);
       _refreshDashboard();
-      return true;
-    });
-
-    ERP.registerAction('dashActionsMore', function (_id, _type, val, e) {
-      var btn = e && e.target && e.target.closest ? e.target.closest('.dash-more-btn') : null;
-      var more = document.getElementById('dash-actions-more');
-      if (!btn || !more) {
-        return true;
-      }
-      var open = more.hidden;
-      more.hidden = !open;
-      btn.setAttribute('aria-expanded', String(open));
-      btn.textContent = open ? 'Tampilkan lebih sedikit' : '+ ' + val + ' lainnya';
       return true;
     });
 
