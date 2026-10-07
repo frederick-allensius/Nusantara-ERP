@@ -540,8 +540,9 @@
       '<div class="seg-tabs" role="tablist">' +
       ['open', 'done']
         .map(function (k) {
-          var label =
-            k === 'open' ? 'Berjalan (' + open.length + ')' : 'Selesai (' + done.length + ')';
+          // The number of POs as a small badge beside the label.
+          var label = k === 'open' ? 'Berjalan' : 'Selesai';
+          var n = k === 'open' ? open.length : done.length;
           return (
             '<button type="button" role="tab" class="seg-tab' +
             (S.ordersTab === k ? ' active' : '') +
@@ -551,7 +552,9 @@
             k +
             '">' +
             esc(label) +
-            '</button>'
+            '<span class="seg-count">' +
+            n +
+            '</span></button>'
           );
         })
         .join('') +

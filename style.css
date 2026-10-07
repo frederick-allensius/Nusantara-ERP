@@ -2592,6 +2592,27 @@ textarea:user-invalid {
   color: var(--on-accent);
   font-weight: 500;
 }
+/* Number of items in a tab, as a small badge beside the label */
+.seg-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+.seg-tab.active .seg-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--on-accent);
+}
 /* Small tabs in a section head: text only, the chosen one in the accent and
    underlined */
 .seg-tabs-sm {
