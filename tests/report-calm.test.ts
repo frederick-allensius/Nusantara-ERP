@@ -248,90 +248,61 @@ describe('Laba Rugi', () => {
 });
 
 // ── Pajak & PPN ──────────────────────────────────────────────────────────────
+// One tax period (masa pajak) at a time, from the documents that post PPN to the
+// ledger — the same figures as the PPN recap in report-extras.js — then the tax
+// settings and compliance status.
 describe('Pajak & PPN', () => {
   const page = () => {
     w().navigate('tax');
     return document.getElementById('view-tax')!;
   };
+  const choose = (period: string) => {
+    const sel = page().querySelector('#tax-period') as HTMLSelectElement;
+    sel.value = period;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return document.getElementById('view-tax')!;
+  };
+  const figures = (root: Element) =>
+    Array.from(root.querySelectorAll('.stat-val'))
+      .slice(0, 3)
+      .map(e => (e.textContent || '').trim());
 
-  it('folds the latest documents behind a closed toggle', () => {
-    const docs = page().querySelector('details.tax-docs') as HTMLDetailsElement;
-    expect(docs).toBeTruthy();
-    expect(docs.open).toBe(false);
-    expect(docs.querySelector('summary')!.textContent).toContain('Dokumen terakhir');
-    expect(docs.textContent).toContain('Dasar Penjualan (PPN Keluaran)');
-    expect(docs.textContent).toContain('Dasar Pembelian (PPN Masukan)');
+  it('shows one tax period with the same figures and documents as the PPN recap', () => {
+    const v = choose('2026-09');
+    expect((v.querySelector('#tax-period') as HTMLSelectElement).value).toBe('2026-09');
+    const recap = document.createElement('div');
+    recap.innerHTML = w()._reportExtras.sptSectionHTML('2026-09');
+    expect(figures(v)).toEqual(figures(recap));
+    expect(figures(v)[0]).not.toBe('Rp 0');
+    expect(text(v)).toContain('PPN Keluaran — Penjualan');
+    expect(text(v)).toContain('PPN Masukan — Pembelian');
+    expect(v.querySelectorAll('tbody tr').length).toBe(recap.querySelectorAll('tbody tr').length);
+    // Another period, other figures.
+    const v2 = choose('2026-08');
+    recap.innerHTML = w()._reportExtras.sptSectionHTML('2026-08');
+    expect(figures(v2)).toEqual(figures(recap));
   });
 
-  it('is rendered by the calm page renderer, with no inline bold', () => {
+  it('keeps the tax settings, compliance status, export and the explanation toggle', () => {
     const v = page();
-    expect(v.querySelector('.tax-facts')).toBeTruthy();
-    expect(v.innerHTML).not.toMatch(INLINE_BOLD);
-    expect(v.querySelector('.sec-hdr p')).toBeNull(); // no subtitle repeating the title
-    v.querySelectorAll('.tax-doc').forEach(row => {
-      expect(row.querySelector('strong, b, .t-strong')).toBeNull();
-    });
-  });
-
-  it('keeps the explanations behind closed "Penjelasan" toggles', () => {
-    const v = page();
-    const toggles = Array.from(v.querySelectorAll('details.tax-explain'));
-    expect(toggles).toHaveLength(2);
-    toggles.forEach(d => {
-      expect(d.hasAttribute('open')).toBe(false);
-      expect(d.querySelector('summary')!.textContent).toBe('Penjelasan');
-    });
-    expect(text(toggles[0])).toContain('amount × tarif PPN');
-    expect(text(toggles[1])).toContain('Paid/Delivered');
-  });
-
-  it('shows every figure of the tax summary', () => {
-    const v = page();
-    const s = w().calcTaxSummary();
     const shown = text(v);
-    [s.outputTax, s.inputTax, s.netTax, s.salesBase, s.purchaseBase].forEach(n =>
-      expect(shown).toContain(rp(n))
-    );
-    expect(shown).toContain(`${s.salesOrders.length} transaksi`);
-    expect(shown).toContain(`${s.purchaseOrders.length} transaksi`);
-    expect(shown).toContain(String(s.salesWithTax + s.purchaseWithTax));
     expect(shown).toContain('01.234.567.8-901.000');
     expect(shown).toContain('Terdaftar');
     expect(shown).toContain('11%');
-    const newest = (list: any[]) =>
-      list
-        .slice()
-        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-        .slice(0, 5);
-    newest(s.salesOrders)
-      .concat(newest(s.purchaseOrders))
-      .forEach((o: any) => {
-        expect(shown).toContain(o.number || o.id);
-        expect(shown).toContain(rp(o.amount || 0));
-      });
-    expect(v.querySelectorAll('.tax-doc')).toHaveLength(
-      newest(s.salesOrders).length + newest(s.purchaseOrders).length
-    );
+    expect(v.querySelector('[data-action="editTaxSettings"]')).toBeTruthy();
+    expect(v.querySelector('[data-action="exportSPT"]')).toBeTruthy();
+    const toggles = Array.from(v.querySelectorAll('details.tax-explain'));
+    expect(toggles).toHaveLength(1);
+    expect(toggles[0].hasAttribute('open')).toBe(false);
+    expect(text(toggles[0])).toContain('Paid/Delivered');
   });
 
-  it('shows PPN Terutang plain when owed and red when negative', () => {
-    const tile = () =>
-      Array.from(page().querySelectorAll('.stat-card')).find(c =>
-        text(c).includes('PPN Terutang')
-      )!;
-    expect(w().calcTaxSummary().netTax).toBeGreaterThan(0);
-    expect(tile().querySelector('.stat-val')!.getAttribute('style')).not.toContain('--danger');
-    w().DB.purchaseOrders.push({
-      id: 'PO-T',
-      number: 'PO.T',
-      date: '2026-09-10',
-      status: 'Received',
-      supplier: 'Uji',
-      amount: 1,
-      tax: 9_000_000_000_000,
-    });
-    const val = tile().querySelector('.stat-val')!;
-    expect(val.textContent!.startsWith('-')).toBe(true);
-    expect(val.getAttribute('style')).toContain('var(--danger)');
+  it('is rendered calmly: no inline bold, colour only on the net status', () => {
+    const v = choose('2026-09');
+    expect(v.innerHTML).not.toMatch(INLINE_BOLD);
+    const tiles = Array.from(v.querySelectorAll('.stat-card .stat-val'));
+    expect(tiles[0].getAttribute('style') || '').not.toContain('color');
+    expect(tiles[1].getAttribute('style') || '').not.toContain('color');
+    expect(tiles[2].getAttribute('style') || '').toMatch(/color:var\(--(danger|info|muted)\)/);
   });
 });

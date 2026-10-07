@@ -63,9 +63,10 @@
   // defaults to the group's module; entries that moved between groups keep the
   // visibility they had. `modal` entries open a dialog without leaving the page;
   // `home` marks the entry shown when a shared view is opened programmatically.
-  // `hidden` entries are not listed: they are steps opened from a button or link
-  // on another page (or from Entri Harian), and light up the listed entry named
-  // in `under` while open.
+  // `hidden` entries are not listed. Either a step opened from a button or link
+  // on another page (or from Entri Harian), which lights up the listed entry in
+  // `under` while open; or an older name of a page that now lives inside a
+  // listed one, `opens`, which is lit up and shown in the page path.
   const MENU_CONFIG = {
     dashboard: {
       title: 'Ringkasan',
@@ -124,7 +125,12 @@
         { label: 'Penawaran Pembelian', view: 'quotations' },
         { label: 'Pesanan Pembelian', view: 'purchase' },
         { label: 'Penerimaan Barang', view: 'purchase' },
-        { label: 'Rekonsiliasi Timbangan', view: 'purchase' },
+        {
+          label: 'Rekonsiliasi Timbangan',
+          view: 'purchase',
+          hidden: true,
+          opens: 'Penerimaan Barang',
+        },
         { label: 'Validasi SJ Supplier', view: 'purchase' },
         { label: 'Faktur Pembelian', view: 'invoices' },
         { label: 'Pembayaran ke Supplier', view: 'invoices' },
@@ -141,7 +147,7 @@
       items: [
         { label: 'Barang & Stok', view: 'inventory' },
         { label: 'Gudang', view: 'warehouse' },
-        { label: 'Transfer Antar Gudang', view: 'warehouse', hidden: true, under: 'Gudang' },
+        { label: 'Transfer Antar Gudang', view: 'warehouse', hidden: true, opens: 'Gudang' },
         { label: 'Penyesuaian Stok', view: 'adjustments' },
         { label: 'Permintaan Barang', view: 'inventory' },
         { label: 'Job Costing', view: 'inventory' },
@@ -155,7 +161,7 @@
         { label: 'Pengeluaran Lain', view: 'finance' },
         { label: 'Penerimaan Lain', view: 'finance' },
         { label: 'Transfer Antar Rekening', view: 'finance' },
-        { label: 'Rekening Koran', view: 'finance' },
+        { label: 'Rekening Koran', view: 'finance', hidden: true, opens: 'Rekonsiliasi Bank' },
         { label: 'Riwayat Kas & Bank', view: 'finance' },
         { label: 'Rekonsiliasi Bank', view: 'finance' },
       ],
@@ -169,19 +175,20 @@
         { heading: 'Buku Besar' },
         { label: 'Neraca Saldo', view: 'ledger' },
         { label: 'Jurnal', view: 'ledger' },
-        { label: 'Jurnal Umum', view: 'ledger', hidden: true, under: 'Jurnal' },
+        { label: 'Jurnal Umum', view: 'ledger', hidden: true, opens: 'Jurnal' },
         { label: 'Bagan Akun', view: 'ledger' },
         { label: 'Riwayat Akun', view: 'finance' },
-        { label: 'Audit Jurnal', view: 'finance' },
+        { label: 'Audit Jurnal', view: 'ledger', hidden: true, opens: 'Jurnal' },
         { heading: 'Biaya & Anggaran' },
         { label: 'Biaya Akrual', view: 'finance' },
         { label: 'Penggajian', view: 'finance' },
         { label: 'Anggaran', view: 'finance' },
-        { label: 'Realisasi Anggaran', view: 'finance' },
-        { label: 'Transfer Anggaran', view: 'finance' },
+        { label: 'Realisasi Anggaran', view: 'finance', hidden: true, opens: 'Anggaran' },
+        { label: 'Transfer Anggaran', view: 'finance', hidden: true, opens: 'Anggaran' },
         { heading: 'Pajak' },
         { label: 'Pajak & PPN', view: 'tax', module: 'tax' },
         { label: 'Ekspor Coretax', view: 'tax', module: 'tax' },
+        { label: 'Rekap PPN', view: 'tax', module: 'tax', hidden: true, opens: 'Pajak & PPN' },
       ],
     },
     assets: {
@@ -208,7 +215,6 @@
         { label: 'Laba Rugi', view: 'financials' },
         { label: 'Neraca', view: 'financials' },
         { label: 'Arus Kas', view: 'financials' },
-        { label: 'Rekap PPN', view: 'reports' },
       ],
     },
     master: {
@@ -489,12 +495,16 @@
     return first;
   }
 
-  // The listed entry that stands for `entry`: itself, or for a hidden entry the
-  // one named in its `under`.
-  function _listedLabel(entry) {
+  function _itemOf(entry) {
     const g = entry && MENU_CONFIG[entry.group];
-    const it = g && entry.label ? g.items.find(i => i.label === entry.label) : null;
-    return it && it.hidden ? it.under || null : entry && entry.label;
+    return g && entry.label ? g.items.find(i => i.label === entry.label) || null : null;
+  }
+
+  // The listed entry that stands for `entry`: itself, or for a hidden entry the
+  // one named in its `opens` or `under`.
+  function _listedLabel(entry) {
+    const it = _itemOf(entry);
+    return it && it.hidden ? it.opens || it.under || null : entry && entry.label;
   }
 
   function _markActive(entry) {
@@ -534,7 +544,8 @@
   function _renderPageContext(entry) {
     const g = entry && MENU_CONFIG[entry.group];
     const group = g ? g.title : '';
-    const page = entry && entry.label ? entry.label : '';
+    const it = _itemOf(entry);
+    const page = it && it.hidden && it.opens ? it.opens : entry && entry.label ? entry.label : '';
     const el = document.getElementById('page-context');
     if (el) {
       el.innerHTML = page
@@ -568,6 +579,20 @@
         window.invalidateView(item.view);
       }
       window.navigate(item.view);
+    }
+    // A page drawn into the view already on screen without a navigate (e.g.
+    // Anggaran after Rekonsiliasi Bank, both in Akuntansi's finance view): the
+    // entry is marked here, as no navigate will pick it up.
+    if (
+      handled &&
+      !item.modal &&
+      window.activeView === item.view &&
+      _pendingEntry &&
+      _pendingEntry.group === group &&
+      _pendingEntry.label === label
+    ) {
+      _pendingEntry = null;
+      _markActive({ group, label });
     }
     return true;
   }

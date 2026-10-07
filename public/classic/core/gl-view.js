@@ -107,6 +107,66 @@
   }
 
   // ── Journals tab ────────────────────────────────────────────────────────────
+  // Besides the source (Semua / Otomatis / Jurnal Umum), journals filter by date,
+  // account and a search over number, memo and source document. The menu label
+  // Audit Jurnal opens this page.
+  let journalQuery = { from: '', to: '', acc: '', q: '' };
+
+  function lineAccount(l) {
+    return l.accountNo || l.account || l.accountCode || '';
+  }
+
+  function matchesQuery(j) {
+    const f = journalQuery;
+    if (f.from && (j.date || '') < f.from) {
+      return false;
+    }
+    if (f.to && (j.date || '') > f.to) {
+      return false;
+    }
+    if (f.acc && !(j.lines || j.entries || []).some(l => lineAccount(l) === f.acc)) {
+      return false;
+    }
+    if (f.q) {
+      const src =
+        j.source && typeof j.source === 'object'
+          ? `${j.source.docType || ''} ${j.source.docId || ''}`
+          : j.source === 'manual'
+            ? 'Jurnal Umum'
+            : j.source || '';
+      const hay = `${j.number || j.ref || j.id || ''} ${j.memo || j.description || ''} ${j.date || ''} ${src}`;
+      if (hay.toLowerCase().indexOf(f.q.toLowerCase()) < 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function journalFilterBar() {
+    const f = journalQuery;
+    const accOpts =
+      '<option value="">Semua akun</option>' +
+      (db().accountsChart || [])
+        .map(
+          a =>
+            `<option value="${esc(a.no)}"${a.no === f.acc ? ' selected' : ''}>${esc(a.no)} — ${esc(a.name)}</option>`
+        )
+        .join('');
+    const active = f.from || f.to || f.acc || f.q;
+    return `<div class="fin-period gl-jfilter">
+      <div><label class="form-label" for="gl-f-from">Dari</label>
+        <input class="form-input" id="gl-f-from" type="date" value="${esc(f.from)}"></div>
+      <div><label class="form-label" for="gl-f-to">Sampai</label>
+        <input class="form-input" id="gl-f-to" type="date" value="${esc(f.to)}"></div>
+      <div><label class="form-label" for="gl-f-acc">Akun</label>
+        <select class="form-select" id="gl-f-acc">${accOpts}</select></div>
+      <div class="gl-jfilter-q"><label class="form-label" for="gl-f-q">Cari</label>
+        <input class="form-input" id="gl-f-q" value="${esc(f.q)}" placeholder="No. jurnal, memo, dokumen"></div>
+      <button class="btn-ghost" data-action="glJournalQuery">Terapkan</button>
+      ${active ? '<button class="btn-ghost" data-action="glJournalQueryReset">Reset</button>' : ''}
+    </div>`;
+  }
+
   function journalsTab() {
     const journals = (db().journals || [])
       .filter(j =>
@@ -116,6 +176,7 @@
             ? j.source !== 'manual'
             : true
       )
+      .filter(matchesQuery)
       .reverse(); // newest first
     const filters = [
       ['all', 'Semua'],
@@ -131,12 +192,14 @@
         <div class="gl-count t-muted">${journals.length} jurnal</div>
         <div class="seg-tabs seg-tabs-sm" role="tablist" aria-label="Sumber jurnal">${filters}</div>
       </div>`;
+    const query = journalQuery.from || journalQuery.to || journalQuery.acc || journalQuery.q;
     if (journals.length === 0) {
-      const empty =
-        journalFilter === 'manual'
+      const empty = query
+        ? 'Tidak ada jurnal yang cocok dengan filter.'
+        : journalFilter === 'manual'
           ? 'Belum ada jurnal umum. Gunakan <strong>Buat Jurnal Umum</strong> untuk saldo awal, penyesuaian, atau transaksi yang tidak berasal dari dokumen.'
           : 'Belum ada jurnal. Jurnal otomatis terbentuk saat barang dikirim atau diterima, faktur diterbitkan, pembayaran dicatat, dan transaksi kas & bank disimpan.';
-      return `<div class="card">${head}<div class="empty-inline">${empty}</div></div>`;
+      return `${journalFilterBar()}<div class="card">${head}<div class="empty-inline">${empty}</div></div>`;
     }
     const pg = window.NSAPager
       ? window.NSAPager.page(journals, journalPage, JOURNAL_PAGE_SIZE)
@@ -187,7 +250,7 @@
           action: 'glJournalPage',
         })
       : '';
-    return `<div class="card">${head}${cards}${pager}</div>`;
+    return `${journalFilterBar()}<div class="card">${head}${cards}${pager}</div>`;
   }
 
   // ── Chart of Accounts tab ───────────────────────────────────────────────────
@@ -402,6 +465,7 @@
       if (filter) {
         journalFilter = filter;
         journalPage = 1;
+        journalQuery = { from: '', to: '', acc: '', q: '' };
       }
       if (typeof window.invalidateView === 'function') {
         window.invalidateView('ledger');
@@ -420,6 +484,22 @@
         journalPage = page;
         refresh();
       }
+      return true;
+    });
+    window.ERP.registerAction('glJournalQuery', function () {
+      const val = id => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+      };
+      journalQuery = { from: val('gl-f-from'), to: val('gl-f-to'), acc: val('gl-f-acc'), q: val('gl-f-q') };
+      journalPage = 1;
+      refresh();
+      return true;
+    });
+    window.ERP.registerAction('glJournalQueryReset', function () {
+      journalQuery = { from: '', to: '', acc: '', q: '' };
+      journalPage = 1;
+      refresh();
       return true;
     });
     window.ERP.registerAction('glJournalFilter', function (id, type, val) {

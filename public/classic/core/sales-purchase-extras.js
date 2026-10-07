@@ -761,14 +761,18 @@
   // ══════════════════════════════════════════════════════════════════════════════
   // § 4  RECEIVE ITEM (Goods Receipt from PO)
   // ══════════════════════════════════════════════════════════════════════════════
+  // Penerimaan Barang also carries Rekonsiliasi Timbangan (pipeline-extras):
+  // each receipt shows its reconciliation, its invoice and the next step.
   function openReceiveItem() {
     var receipts = ensureArr('goodsReceipts');
     var pos = db().purchaseOrders || [];
+    var px = window._pipelineExtras && window._pipelineExtras.reconCells ? window._pipelineExtras : null;
 
     var rows = receipts
       .slice()
       .reverse()
       .map(function (r) {
+        var rc = px ? px.reconCells(r) : null;
         return (
           '<tr data-action="viewReceipt" data-id="' +
           esc(r.id) +
@@ -780,7 +784,7 @@
           esc(r.date) +
           '</td>' +
           '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
-          esc(r.poId) +
+          esc(px ? px.poNumberOf(r) : r.poId) +
           '</td>' +
           '<td class="td-p">' +
           esc(r.supplierName || '—') +
@@ -793,12 +797,15 @@
             ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterima</span>'
             : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>') +
           '</td>' +
-          '<td class="td-p">' +
+          (rc ? '<td class="td-p">' + rc.status + '</td><td class="td-p">' + rc.invoice + '</td>' : '') +
+          '<td class="td-p" style="white-space:nowrap">' +
           (!r.posted
             ? '<button class="btn btn-sm" data-action="postReceipt" data-id="' +
               esc(r.id) +
               '">Terima & Stok</button> '
-            : '') +
+            : rc
+              ? rc.actions
+              : '') +
           '<button class="action-edit" data-action="delReceipt" data-id="' +
           esc(r.id) +
           '" title="Hapus" style="color:var(--danger);border-color:var(--danger)">' +
@@ -812,6 +819,9 @@
 
     var pendingPO = pos.filter(function (o) {
       return o.status === 'Confirmed';
+    }).length;
+    var unreconciled = receipts.filter(function (r) {
+      return !r.reconciled;
     }).length;
 
     var header =
@@ -829,6 +839,12 @@
         ? window.statRow([
             { label: 'Total Penerimaan', value: String(receipts.length), sub: 'Dokumen' },
             {
+              label: 'Belum direkonsiliasi',
+              value: String(unreconciled),
+              sub: 'Timbangan belum dicocokkan',
+              color: unreconciled ? 'var(--warning)' : '',
+            },
+            {
               label: 'PO Pending',
               value: String(pendingPO),
               sub: 'Menunggu penerimaan',
@@ -841,9 +857,14 @@
       header +
       stats +
       '<div class="card"><div class="table-wrap"><table style="width:100%">' +
-      '<thead><tr><th>ID</th><th>Tanggal</th><th>No. PO</th><th>Supplier</th><th>Item</th><th>Status</th><th>Aksi</th></tr></thead>' +
+      '<thead><tr><th>ID</th><th>Tanggal</th><th>No. PO</th><th>Supplier</th><th>Item</th><th>Status</th>' +
+      (px ? '<th>Rekonsiliasi</th><th>Faktur</th>' : '') +
+      '<th>Aksi</th></tr></thead>' +
       '<tbody>' +
-      (rows || '<tr><td colspan="7" class="td-empty">Belum ada penerimaan barang.</td></tr>') +
+      (rows ||
+        '<tr><td colspan="' +
+        (px ? 9 : 7) +
+        '" class="td-empty">Belum ada penerimaan barang.</td></tr>') +
       '</tbody>' +
       '</table></div></div>';
 

@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Long lists shown 25 rows per page (list-pager.js NSAPager):
 //
-//   • Audit Jurnal          (budget-gl-extras.js openAuditJournal)
 //   • Riwayat Kas & Bank    (bank-extras.js openBankHistory)
 //   • Laporan per Periode   (funnel-report.js openCustomRange)
 //
@@ -35,92 +34,8 @@ function clickPage(root: ParentNode, page: number) {
 beforeAll(async () => {
   w().idrFull = (v: number) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
   await import('../public/classic/core/list-pager.js');
-  await import('../public/classic/core/budget-gl-extras.js');
   await import('../public/classic/core/bank-extras.js');
   await import('../public/classic/core/funnel-report.js');
-});
-
-// ── Audit Jurnal ─────────────────────────────────────────────────────────────
-describe('Audit Jurnal', () => {
-  function seedJournals() {
-    const journals = [];
-    for (let i = 1; i <= 60; i++) {
-      const kind = i <= 32 ? 'SI' : 'PI';
-      journals.push({
-        id: `J-${i}`,
-        number: `${kind}.2026.${pad(i)}`,
-        date: dateOf(i),
-        memo: `Jurnal ${i}`,
-        source: kind,
-        lines: [
-          { accountNo: '110101', debit: 1000 * i, credit: 0 },
-          { accountNo: '400001', debit: 0, credit: 1000 * i },
-        ],
-      });
-    }
-    w().DB = { journals, accountsChart: [] };
-  }
-
-  async function open() {
-    document.body.innerHTML = '<div id="view-finance"></div>';
-    w().activeView = 'finance';
-    w()._budgetGLExtras.openAuditJournal();
-    await tick(80); // the Filter / Reset buttons are wired after 60 ms
-    return document.getElementById('view-finance')!;
-  }
-  const refs = (v: HTMLElement) =>
-    Array.from(v.querySelectorAll('#aj-tbody tr td:nth-child(2)')).map(td => td.textContent);
-
-  it('renders 25 entries, newest first, and the pager moves to page 2', async () => {
-    seedJournals();
-    const v = await open();
-    expect(v.querySelectorAll('#aj-tbody tr')).toHaveLength(25);
-    expect(refs(v)[0]).toBe('SI.2026.01');
-    expect(pagerText(v)).toContain('1–25 dari 60');
-    // The header still counts every journal.
-    expect(v.textContent).toContain('60 jurnal');
-
-    clickPage(v, 2);
-    expect(v.querySelectorAll('#aj-tbody tr')).toHaveLength(25);
-    expect(refs(v)[0]).toBe('SI.2026.26');
-    expect(pagerText(v)).toContain('26–50 dari 60');
-
-    clickPage(v, 3);
-    expect(refs(v)).toEqual(Array.from({ length: 10 }, (_, i) => `PI.2026.${51 + i}`));
-  });
-
-  it('filters the whole set and starts the result at page 1; Reset shows everything again', async () => {
-    seedJournals();
-    const v = await open();
-    clickPage(v, 2);
-    (document.getElementById('aj-q') as HTMLInputElement).value = 'SI.';
-    (document.getElementById('aj-filter') as HTMLButtonElement).click();
-    // 32 SI journals: page 1 of the filtered set.
-    expect(pagerText(v)).toContain('1–25 dari 32');
-    expect(refs(v).every(r => r!.startsWith('SI.'))).toBe(true);
-    clickPage(v, 2);
-    expect(refs(v)).toHaveLength(7);
-    expect(pagerText(v)).toContain('26–32 dari 32');
-
-    (document.getElementById('aj-reset') as HTMLButtonElement).click();
-    expect(pagerText(v)).toContain('1–25 dari 60');
-    expect((document.getElementById('aj-q') as HTMLInputElement).value).toBe('');
-  });
-
-  it('opens again at page 1 and shows no pager for one page', async () => {
-    seedJournals();
-    let v = await open();
-    clickPage(v, 2);
-    clickPage(v, 3);
-    expect(pagerText(v)).toContain('51–60 dari 60');
-    v = await open();
-    expect(pagerText(v)).toContain('1–25 dari 60');
-
-    w().DB.journals = w().DB.journals.slice(0, 10);
-    v = await open();
-    expect(v.querySelectorAll('#aj-tbody tr')).toHaveLength(10);
-    expect(v.querySelector('.list-pager')).toBeNull();
-  });
 });
 
 // ── Riwayat Kas & Bank ───────────────────────────────────────────────────────

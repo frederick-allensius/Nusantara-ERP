@@ -326,10 +326,13 @@
   // ══════════════════════════════════════════════════════════════════════════
   // § 0  PAJAK & PPN (view 'tax')
   // ══════════════════════════════════════════════════════════════════════════
-  // Page renderer of the tax view (renderTax() in erp-view.js calls it). It
-  // shows the figures from calcTaxSummary() in a quiet layout: plain
-  // figures, regular-weight rows, and the explanations behind a "Penjelasan"
-  // toggle (style.css .tax-…).
+  // Page renderer of the tax view (renderTax() in erp-view.js calls it): PPN of
+  // one tax period (masa pajak) from the documents that post PPN to the ledger —
+  // the figures, CSV and document lists come from report-extras.js (Rekap PPN) —
+  // then the tax settings and compliance status. Explanations sit behind a
+  // "Penjelasan" toggle (style.css .tax-…).
+  var _taxPeriod = null;
+
   function taxFact(label, value) {
     return (
       '<div class="tax-fact"><span class="t-muted">' +
@@ -348,35 +351,6 @@
     );
   }
 
-  function taxDocCard(title, docs, partyKey, emptyText) {
-    var body = docs.length
-      ? docs
-          .map(function (o) {
-            var num =
-              typeof window.docNum === 'function' ? window.docNum(o.number, o.id) : o.number || o.id;
-            return (
-              '<div class="tax-doc"><div><div class="doc-no">' +
-              esc(num) +
-              '</div><div class="tax-doc-sub">' +
-              esc(o[partyKey] || '—') +
-              ' · ' +
-              esc(o.date || '—') +
-              '</div></div><div class="t-num">' +
-              money(o.amount || 0) +
-              '</div></div>'
-            );
-          })
-          .join('')
-      : '<div class="tax-none">' + esc(emptyText) + '</div>';
-    return (
-      '<div class="card"><div class="card-head"><div class="card-title">' +
-      esc(title) +
-      '</div></div>' +
-      body +
-      '</div>'
-    );
-  }
-
   function renderTaxPage() {
     if (typeof window.calcTaxSummary !== 'function') return '';
     var summary = window.calcTaxSummary();
@@ -388,60 +362,44 @@
         : tax.rounding === 'ceil'
           ? 'Dibulatkan ke atas'
           : 'Dibulatkan normal';
-    var newestFirst = function (list) {
-      return list
-        .slice()
-        .sort(function (a, b) {
-          return String(b.date || '').localeCompare(String(a.date || ''));
-        })
-        .slice(0, 5);
-    };
     var efakturCount = summary.salesOrders.filter(function (o) {
       return o.status === 'Paid' || o.status === 'Delivered';
     }).length;
 
+    var rx = window._reportExtras;
+    var periods = rx && rx.sptPeriods ? rx.sptPeriods() : [today().slice(0, 7)];
+    var period = _taxPeriod && periods.indexOf(_taxPeriod) !== -1 ? _taxPeriod : today().slice(0, 7);
+    var pOpts = periods
+      .map(function (p) {
+        return (
+          '<option value="' +
+          esc(p) +
+          '"' +
+          (p === period ? ' selected' : '') +
+          '>' +
+          esc(periodLabel(p)) +
+          '</option>'
+        );
+      })
+      .join('');
+
     var header =
-      typeof window.secHdr === 'function'
-        ? window.secHdr('Pajak & PPN', '', 'Ubah Pengaturan Pajak', 'editTaxSettings')
-        : '<h1>Pajak &amp; PPN</h1>';
-    var stats =
-      typeof window.statRow === 'function'
-        ? window.statRow([
-            {
-              label: 'PPN Keluaran',
-              value: money(summary.outputTax),
-              sub: summary.salesOrders.length + ' transaksi',
-            },
-            {
-              label: 'PPN Masukan',
-              value: money(summary.inputTax),
-              sub: summary.purchaseOrders.length + ' transaksi',
-            },
-            {
-              label: 'PPN Terutang',
-              value: money(summary.netTax),
-              sub: 'Keluaran − Masukan',
-              color: summary.netTax < 0 ? 'var(--danger)' : '',
-            },
-            { label: 'Tarif PPN', value: ratePct + '%', sub: roundingLabel },
-          ])
+      '<div class="sec-hdr"><div><h1>Pajak &amp; PPN</h1>' +
+      '<p>Per masa pajak, dari dokumen yang sudah diposting. Faktur pajak dan SPT tetap lewat aplikasi DJP.</p></div>' +
+      '<div><select class="form-select" id="tax-period" aria-label="Masa pajak" style="width:auto">' +
+      pOpts +
+      '</select>' +
+      '<button class="btn-ghost" data-action="exportSPT">Ekspor CSV</button>' +
+      '<button class="btn-ghost" data-action="editTaxSettings">Ubah Pengaturan Pajak</button></div></div>';
+
+    var section =
+      rx && rx.sptSectionHTML
+        ? rx.sptSectionHTML(period, { label: 'Tarif PPN', value: ratePct + '%', sub: roundingLabel })
         : '';
 
     return (
       header +
-      stats +
-      '<div class="fin-2col">' +
-      '<div class="card"><div class="card-head"><div class="card-title">Dasar Perhitungan</div></div>' +
-      '<div class="tax-facts">' +
-      taxFact('Penjualan kena pajak', money(summary.salesBase)) +
-      taxFact('Pembelian kena pajak', money(summary.purchaseBase)) +
-      taxFact('Transaksi dengan tax eksplisit', String(summary.salesWithTax + summary.purchaseWithTax)) +
-      '</div>' +
-      taxExplain(
-        'PPN dihitung dari total transaksi non-draft. Jika transaksi memiliki nilai tax, ' +
-          'nilai tersebut dipakai. Jika tidak, sistem menghitung amount × tarif PPN.'
-      ) +
-      '</div>' +
+      section +
       '<div class="card"><div class="card-head"><div class="card-title">Status Kepatuhan</div></div>' +
       '<div class="tax-facts">' +
       taxFact('Status PKP', tax.pkp ? 'Terdaftar' : 'Belum PKP') +
@@ -449,28 +407,17 @@
       taxFact('e-Faktur siap kirim', efakturCount + ' transaksi') +
       '</div>' +
       taxExplain('e-Faktur siap kirim dihitung dari transaksi penjualan berstatus Paid/Delivered.') +
-      '</div>' +
-      '</div>' +
-      // The latest documents behind the figures, folded: open on demand.
-      '<details class="tax-docs">' +
-      '<summary>Dokumen terakhir di balik angka ini</summary>' +
-      '<div class="fin-2col">' +
-      taxDocCard(
-        'Dasar Penjualan (PPN Keluaran)',
-        newestFirst(summary.salesOrders),
-        'customer',
-        'Belum ada penjualan tercatat.'
-      ) +
-      taxDocCard(
-        'Dasar Pembelian (PPN Masukan)',
-        newestFirst(summary.purchaseOrders),
-        'supplier',
-        'Belum ada pembelian tercatat.'
-      ) +
-      '</div>' +
-      '</details>'
+      '</div>'
     );
   }
+
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'tax-period') {
+      _taxPeriod = e.target.value;
+      var el = document.getElementById('view-tax');
+      if (el) el.innerHTML = renderTaxPage();
+    }
+  });
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  FAKTUR PAJAK KELUARAN — ekspor Coretax (dan CSV format lama)

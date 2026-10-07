@@ -84,73 +84,213 @@
   // ══════════════════════════════════════════════════════════════════════════════
   // § 1  BUDGET
   // ══════════════════════════════════════════════════════════════════════════════
+  // One page for the budget: each line with its realisasi from the ledger,
+  // a period filter, Transfer Anggaran and the transfer history. The menu labels
+  // Realisasi Anggaran and Transfer Anggaran open this page.
+  var budgetFilter = { from: '', to: '' };
+
+  function budgetLineRow(b) {
+    var actual = Math.abs(calcActualForAccount(b.accountCode, b.period, b.period));
+    var amount = b.amount || 0;
+    var variance = amount - actual;
+    var pct = amount > 0 ? Math.round((actual / amount) * 100) : 0;
+    // The bar shows the status (red over budget, amber above 80%); the figures
+    // stay plain except an overspent variance.
+    var color = pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--success)';
+    var pctClass = pct > 100 ? ' fin-neg' : pct > 80 ? ' budget-warn' : '';
+    return {
+      actual: actual,
+      over: amount > 0 && actual > amount,
+      html:
+        '<tr>' +
+        '<td class="td-p">' +
+        esc(b.accountCode) +
+        ' — ' +
+        esc(b.accountName) +
+        (b.notes
+          ? '<div style="font-size:.75rem;color:var(--muted)">' + esc(b.notes) + '</div>'
+          : '') +
+        '</td>' +
+        '<td class="td-p">' +
+        esc(b.period) +
+        '</td>' +
+        '<td class="td-p t-num">' +
+        money(amount) +
+        '</td>' +
+        '<td class="td-p t-num">' +
+        money(actual) +
+        '</td>' +
+        '<td class="td-p t-num' +
+        (variance < 0 ? ' fin-neg' : '') +
+        '">' +
+        money(variance) +
+        '</td>' +
+        '<td class="td-p"><div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="flex:1;min-width:60px;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden">' +
+        '<div style="height:100%;width:' +
+        Math.min(pct, 100) +
+        '%;background:' +
+        color +
+        ';border-radius:4px"></div></div>' +
+        '<span class="budget-pct' +
+        pctClass +
+        '">' +
+        pct +
+        '%</span></div></td>' +
+        '<td class="td-p" style="white-space:nowrap">' +
+        '<button class="action-ghost" data-action="editBudget" data-id="' +
+        esc(b.id) +
+        '">Edit</button> ' +
+        '<button class="action-ghost" data-action="delBudget" data-id="' +
+        esc(b.id) +
+        '" style="color:var(--danger)">Hapus</button>' +
+        '</td>' +
+        '</tr>',
+    };
+  }
+
   function openBudget() {
     var budgets = ensureArr('budgets');
-    var rows = budgets
+    var transfers = ensureArr('budgetTransfers');
+    var lines = budgets.filter(function (b) {
+      if (budgetFilter.from && b.period < budgetFilter.from) return false;
+      if (budgetFilter.to && b.period > budgetFilter.to) return false;
+      return true;
+    });
+    var totalBudget = 0;
+    var totalActual = 0;
+    var overBudget = 0;
+    var rows = lines
       .slice()
       .reverse()
       .map(function (b) {
+        var r = budgetLineRow(b);
+        totalBudget += b.amount || 0;
+        totalActual += r.actual;
+        if (r.over) overBudget++;
+        return r.html;
+      })
+      .join('');
+    var totalVariance = totalBudget - totalActual;
+    var totalPct = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
+    var footer = rows
+      ? '<tfoot><tr class="budget-total">' +
+        '<td class="td-p" colspan="2">TOTAL</td>' +
+        '<td class="td-p t-num">' +
+        money(totalBudget) +
+        '</td>' +
+        '<td class="td-p t-num">' +
+        money(totalActual) +
+        '</td>' +
+        '<td class="td-p t-num' +
+        (totalVariance < 0 ? ' fin-neg' : '') +
+        '">' +
+        money(totalVariance) +
+        '</td>' +
+        '<td class="td-p">' +
+        totalPct +
+        '%</td><td></td>' +
+        '</tr></tfoot>'
+      : '';
+
+    var plus =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> ';
+    var header =
+      '<div class="sec-hdr"><div><h1>Anggaran</h1></div><div>' +
+      (budgets.length > 1
+        ? '<button class="btn-ghost" data-action="newBudgetTransfer">Transfer Anggaran</button>'
+        : '') +
+      '<button class="btn" data-action="addBudget">' +
+      plus +
+      'Tambah Anggaran</button></div></div>';
+
+    var stats =
+      budgets.length && typeof window.statRow === 'function'
+        ? window.statRow([
+            {
+              label: 'Anggaran',
+              value: money(totalBudget),
+              sub: lines.length + ' baris anggaran',
+            },
+            { label: 'Realisasi', value: money(totalActual), sub: 'Dari jurnal buku besar' },
+            {
+              label: 'Melebihi anggaran',
+              value: String(overBudget),
+              sub: 'Baris di atas anggaran',
+              color: overBudget > 0 ? 'var(--danger)' : '',
+            },
+          ])
+        : '';
+
+    var filterBar = budgets.length
+      ? '<div class="fin-period" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">' +
+        '<div><label class="form-label" for="bva-from">Periode dari</label>' +
+        '<input class="form-input" id="bva-from" type="month" value="' +
+        esc(budgetFilter.from) +
+        '" style="width:160px"></div>' +
+        '<div><label class="form-label" for="bva-to">Sampai</label>' +
+        '<input class="form-input" id="bva-to" type="month" value="' +
+        esc(budgetFilter.to) +
+        '" style="width:160px"></div>' +
+        '<button class="btn-ghost" data-action="bvaFilter">Terapkan</button>' +
+        (budgetFilter.from || budgetFilter.to
+          ? '<button class="btn-ghost" data-action="bvaReset">Reset</button>'
+          : '') +
+        '</div>'
+      : '';
+
+    var table =
+      '<div class="card"><div class="table-wrap"><table style="width:100%">' +
+      '<thead><tr><th>Akun</th><th>Periode</th><th style="text-align:right">Anggaran</th>' +
+      '<th style="text-align:right">Realisasi</th><th style="text-align:right">Selisih</th>' +
+      '<th>Pencapaian</th><th></th></tr></thead>' +
+      '<tbody>' +
+      (rows ||
+        '<tr><td colspan="7" class="td-empty">' +
+        (budgets.length
+          ? 'Tidak ada anggaran pada periode ini.'
+          : 'Belum ada anggaran. Klik Tambah Anggaran.') +
+        '</td></tr>') +
+      '</tbody>' +
+      footer +
+      '</table></div></div>';
+
+    var transferRows = transfers
+      .slice()
+      .reverse()
+      .slice(0, 20)
+      .map(function (t) {
         return (
           '<tr>' +
-          '<td class="td-p"><span class="doc-no">' +
-          esc(b.id) +
-          '</span></td>' +
-          '<td class="td-p">' +
-          esc(b.accountCode) +
-          ' — ' +
-          esc(b.accountName) +
+          '<td class="td-p" style="font-size:.75rem">' +
+          esc(t.date) +
           '</td>' +
           '<td class="td-p">' +
-          esc(b.period) +
+          esc(t.fromAccount) +
+          '</td>' +
+          '<td class="td-p">' +
+          esc(t.toAccount) +
           '</td>' +
           '<td class="td-p t-num">' +
-          money(b.amount) +
+          money(t.amount) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-          esc(b.notes || '—') +
-          '</td>' +
-          '<td class="td-p">' +
-          '<button class="action-ghost" data-action="editBudget" data-id="' +
-          esc(b.id) +
-          '">Edit</button> ' +
-          '<button class="action-ghost" data-action="delBudget" data-id="' +
-          esc(b.id) +
-          '" style="color:var(--danger)">Hapus</button>' +
+          esc(t.notes || '—') +
           '</td>' +
           '</tr>'
         );
       })
       .join('');
+    var transferCard = transferRows
+      ? '<div class="card"><div class="card-head"><div class="card-title">Riwayat transfer anggaran</div></div>' +
+        '<div class="table-wrap"><table style="width:100%">' +
+        '<thead><tr><th>Tanggal</th><th>Dari</th><th>Ke</th><th style="text-align:right">Jumlah</th><th>Catatan</th></tr></thead>' +
+        '<tbody>' +
+        transferRows +
+        '</tbody></table></div></div>'
+      : '';
 
-    var total = budgets.reduce(function (s, b) {
-      return s + (b.amount || 0);
-    }, 0);
-
-    var header =
-      typeof window.secHdr === 'function'
-        ? window.secHdr('Anggaran', '', 'Tambah Budget', 'addBudget')
-        : '<h1>Budget</h1>';
-
-    var stats =
-      typeof window.statRow === 'function'
-        ? window.statRow([
-            { label: 'Total Budget', value: budgets.length + ' item', sub: 'Anggaran terdaftar' },
-            { label: 'Total Nilai', value: money(total), sub: 'Seluruh periode' },
-          ])
-        : '';
-
-    var html =
-      header +
-      stats +
-      '<div class="card"><div class="table-wrap"><table style="width:100%">' +
-      '<thead><tr><th>ID</th><th>Akun</th><th>Periode</th><th style="text-align:right">Anggaran</th><th>Catatan</th><th>Aksi</th></tr></thead>' +
-      '<tbody>' +
-      (rows ||
-        '<tr><td colspan="6" class="td-empty">Belum ada anggaran. Klik Tambah Budget.</td></tr>') +
-      '</tbody>' +
-      '</table></div></div>';
-
-    injectView('finance', html);
+    injectView('finance', header + stats + filterBar + table + transferCard);
   }
 
   function addBudgetModal(existing) {
@@ -257,183 +397,15 @@
     return total;
   }
 
-  function renderBudgetVsActual(periodFrom, periodTo) {
-    var budgets = ensureArr('budgets');
-
-    var filtered = budgets.filter(function (b) {
-      if (periodFrom && b.period < periodFrom) return false;
-      if (periodTo && b.period > periodTo) return false;
-      return true;
-    });
-
-    var grouped = {};
-    filtered.forEach(function (b) {
-      var key = b.accountCode;
-      if (!grouped[key]) grouped[key] = { code: b.accountCode, name: b.accountName, budgetTotal: 0, items: [] };
-      grouped[key].budgetTotal += b.amount || 0;
-      grouped[key].items.push(b);
-    });
-
-    var totalBudget = 0, totalActual = 0;
-    var rows = Object.keys(grouped).map(function (key) {
-      var g = grouped[key];
-      var actual = Math.abs(calcActualForAccount(g.code, periodFrom, periodTo));
-      var variance = g.budgetTotal - actual;
-      var pct = g.budgetTotal > 0 ? Math.round((actual / g.budgetTotal) * 100) : 0;
-      // The bar shows the status (red over budget, amber above 80%); the figures
-      // stay plain except an overspent variance.
-      var color = pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--success)';
-      var pctClass = pct > 100 ? ' fin-neg' : pct > 80 ? ' budget-warn' : '';
-      totalBudget += g.budgetTotal;
-      totalActual += actual;
-
-      var periodList = g.items.map(function (b) { return b.period; }).join(', ');
-
-      return (
-        '<tr>' +
-        '<td class="td-p acct-no">' + esc(g.code) + '</td>' +
-        '<td class="td-p">' + esc(g.name) + '</td>' +
-        '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' + esc(periodList) + '</td>' +
-        '<td class="td-p t-num">' + money(g.budgetTotal) + '</td>' +
-        '<td class="td-p t-num">' + money(actual) + '</td>' +
-        '<td class="td-p t-num' + (variance < 0 ? ' fin-neg' : '') + '">' + money(variance) + '</td>' +
-        '<td class="td-p"><div style="display:flex;align-items:center;gap:8px">' +
-        '<div style="flex:1;height:8px;background:var(--surface-sunken);border-radius:4px;overflow:hidden">' +
-        '<div style="height:100%;width:' + Math.min(pct, 100) + '%;background:' + color + ';border-radius:4px"></div></div>' +
-        '<span class="budget-pct' + pctClass + '">' + pct + '%</span></div></td>' +
-        '</tr>'
-      );
-    }).join('');
-
-    var totalVariance = totalBudget - totalActual;
-    var totalPct = totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0;
-    var footer = rows ?
-      '<tfoot><tr class="budget-total">' +
-      '<td class="td-p" colspan="3">TOTAL</td>' +
-      '<td class="td-p t-num">' + money(totalBudget) + '</td>' +
-      '<td class="td-p t-num">' + money(totalActual) + '</td>' +
-      '<td class="td-p t-num' + (totalVariance < 0 ? ' fin-neg' : '') + '">' + money(totalVariance) + '</td>' +
-      '<td class="td-p">' + totalPct + '%</td>' +
-      '</tr></tfoot>' : '';
-
-    return { rows: rows, footer: footer, totalBudget: totalBudget, totalActual: totalActual, count: filtered.length };
-  }
-
   function openBudgetMonitor() {
-    var header =
-      typeof window.secHdr === 'function'
-        ? window.secHdr('Realisasi Anggaran', 'Perbandingan anggaran dengan realisasi di buku besar')
-        : '<h1>Realisasi Anggaran</h1>';
-
-    var result = renderBudgetVsActual('', '');
-
-    var overBudget = 0;
-    ensureArr('budgets').forEach(function (b) {
-      var actual = Math.abs(calcActualForAccount(b.accountCode, b.period, b.period));
-      if (actual > b.amount && b.amount > 0) overBudget++;
-    });
-
-    var stats =
-      typeof window.statRow === 'function'
-        ? window.statRow([
-            { label: 'Total Budget', value: money(result.totalBudget), sub: result.count + ' item anggaran' },
-            { label: 'Total Realisasi', value: money(result.totalActual), sub: 'Dari jurnal GL' },
-            { label: 'Over Budget', value: String(overBudget), sub: 'Akun melebihi anggaran', color: overBudget > 0 ? 'var(--danger)' : '' },
-          ])
-        : '';
-
-    var filterBar =
-      '<div class="card" style="margin-bottom:12px">' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
-      '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Periode Dari</label>' +
-      '<input class="form-input" id="bva-from" type="month" style="width:160px"></div>' +
-      '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Periode Sampai</label>' +
-      '<input class="form-input" id="bva-to" type="month" style="width:160px"></div>' +
-      '<button class="btn" data-action="bvaFilter" style="font-size:.75rem">Filter</button>' +
-      '</div></div>';
-
-    var html =
-      header + stats + filterBar +
-      '<div class="card"><div id="bva-table" class="table-wrap"><table style="width:100%">' +
-      '<thead><tr><th>Kode</th><th>Nama Akun</th><th>Periode</th><th style="text-align:right">Anggaran</th><th style="text-align:right">Realisasi</th><th style="text-align:right">Varians</th><th>Pencapaian</th></tr></thead>' +
-      '<tbody>' +
-      (result.rows || '<tr><td colspan="7" class="td-empty">Belum ada data budget. Buat budget terlebih dahulu.</td></tr>') +
-      '</tbody>' + result.footer +
-      '</table></div></div>';
-
-    injectView('finance', html);
-  }
-
-  function filterBudgetVsActual() {
-    var from = document.getElementById('bva-from');
-    var to = document.getElementById('bva-to');
-    var periodFrom = from ? from.value : '';
-    var periodTo = to ? to.value : '';
-    var result = renderBudgetVsActual(periodFrom, periodTo);
-
-    var el = document.getElementById('bva-table');
-    if (el) {
-      el.innerHTML =
-        '<table style="width:100%">' +
-        '<thead><tr><th>Kode</th><th>Nama Akun</th><th>Periode</th><th style="text-align:right">Anggaran</th><th style="text-align:right">Realisasi</th><th style="text-align:right">Varians</th><th>Pencapaian</th></tr></thead>' +
-        '<tbody>' +
-        (result.rows || '<tr><td colspan="7" class="td-empty">Tidak ada budget pada periode ini.</td></tr>') +
-        '</tbody>' + result.footer +
-        '</table>';
-    }
+    openBudget();
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
   // § 3  BUDGET TRANSFER
   // ══════════════════════════════════════════════════════════════════════════════
   function openBudgetTransfer() {
-    var budgets = ensureArr('budgets');
-    var transfers = ensureArr('budgetTransfers');
-
-    var transferRows = transfers
-      .slice()
-      .reverse()
-      .slice(0, 20)
-      .map(function (t) {
-        return (
-          '<tr>' +
-          '<td class="td-p" style="font-size:.75rem">' +
-          esc(t.date) +
-          '</td>' +
-          '<td class="td-p">' +
-          esc(t.fromAccount) +
-          '</td>' +
-          '<td class="td-p">' +
-          esc(t.toAccount) +
-          '</td>' +
-          '<td class="td-p t-num">' +
-          money(t.amount) +
-          '</td>' +
-          '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-          esc(t.notes || '—') +
-          '</td>' +
-          '</tr>'
-        );
-      })
-      .join('');
-
-    var header =
-      typeof window.secHdr === 'function'
-        ? window.secHdr('Transfer Anggaran', '', 'Transfer Baru', 'newBudgetTransfer')
-        : '<h1>Budget Transfer</h1>';
-
-    var html =
-      header +
-      '<div class="card"><div class="card-head"><div class="card-title">Riwayat Transfer</div></div>' +
-      '<div class="table-wrap"><table style="width:100%">' +
-      '<thead><tr><th>Tanggal</th><th>Dari Akun</th><th>Ke Akun</th><th style="text-align:right">Jumlah</th><th>Catatan</th></tr></thead>' +
-      '<tbody>' +
-      (transferRows ||
-        '<tr><td colspan="5" class="td-empty">Belum ada transfer budget.</td></tr>') +
-      '</tbody>' +
-      '</table></div></div>';
-
-    injectView('finance', html);
+    openBudget();
   }
 
   function budgetTransferModal() {
@@ -529,8 +501,8 @@
 
         save();
         closeM();
-        toast('Transfer budget berhasil', 'success');
-        openBudgetTransfer();
+        toast('Transfer anggaran berhasil', 'success');
+        openBudget();
       });
     }, 60);
   }
@@ -1335,13 +1307,18 @@
         break;
       }
       // Budget vs Actual filter
-      case 'bvaFilter':
-        filterBudgetVsActual();
+      case 'bvaFilter': {
+        var bf = document.getElementById('bva-from');
+        var bt = document.getElementById('bva-to');
+        budgetFilter.from = bf ? bf.value : '';
+        budgetFilter.to = bt ? bt.value : '';
+        openBudget();
         break;
-      // Audit Jurnal pager
-      case 'ajPage':
-        _audit.page = Number(btn.dataset.val) || 1;
-        if (_audit.paint) _audit.paint();
+      }
+      case 'bvaReset':
+        budgetFilter.from = '';
+        budgetFilter.to = '';
+        openBudget();
         break;
     }
   });
@@ -1349,190 +1326,11 @@
   // ══════════════════════════════════════════════════════════════════════════════
   // § AUDIT JOURNAL
   // ══════════════════════════════════════════════════════════════════════════════
-  // The entries matching the filter show 25 per page (list-pager.js). Opening the
-  // page, Filter and Reset start again at page 1.
-  var AUDIT_PAGE_SIZE = 25;
-  var _audit = { page: 1, paint: null };
-
+  // Audit Jurnal is the Jurnal page (gl-view.js) with its date, account and
+  // search filters.
   function openAuditJournal() {
-    var journals = db().journals || [];
-    var accounts = db().accountsChart || [];
-    var accMap = {};
-    accounts.forEach(function (a) {
-      accMap[a.no || a.code || ''] = a.name;
-    });
-
-    // Build filter bar state
-    var fFrom = '',
-      fTo = '',
-      fAcc = '',
-      fQ = '';
-    _audit.page = 1;
-
-    function filterJournals(from, to, acc, q) {
-      var filtered = journals.filter(function (j) {
-        if (from && j.date < from) return false;
-        if (to && j.date > to) return false;
-        if (acc) {
-          var lines = j.lines || j.entries || [];
-          var hasAcc = lines.some(function (l) {
-            return (l.accountNo || l.account || l.accountCode) === acc;
-          });
-          if (!hasAcc) return false;
-        }
-        if (q) {
-          var ql = q.toLowerCase();
-          var src = typeof j.source === 'object' ? (j.source.docType || '') : (j.source || '');
-          var haystack =
-            (j.number || j.ref || j.id || '') + ' ' + (j.memo || j.description || '') + ' ' + (j.date || '') + ' ' + src;
-          if (haystack.toLowerCase().indexOf(ql) < 0) return false;
-        }
-        return true;
-      });
-
-      return filtered.slice().sort(function (a, b) {
-        return a.date > b.date ? -1 : a.date < b.date ? 1 : 0;
-      });
-    }
-
-    function renderTable(list) {
-      if (!list.length)
-        return '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Tidak ada jurnal ditemukan.</td></tr>';
-
-      return list
-        .map(function (j) {
-          var lines = j.lines || j.entries || [];
-          var debitTotal = j.totals ? j.totals.debit : lines.reduce(function (s, l) {
-            return s + (Number(l.debit) || l.debitAmount || 0);
-          }, 0);
-          var accList =
-            lines
-              .slice(0, 3)
-              .map(function (l) {
-                var code = l.accountNo || l.account || l.accountCode || '';
-                return esc(code + (accMap[code] ? ' ' + accMap[code].slice(0, 20) : ''));
-              })
-              .join(', ') + (lines.length > 3 ? '…' : '');
-          var src = typeof j.source === 'object' ? (j.source.docType || '—') : (j.source || '—');
-          return (
-            '<tr>' +
-            '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-            esc(j.date || '') +
-            '</td>' +
-            '<td class="td-p"><span class="doc-no">' +
-            esc(j.number || j.ref || j.id || '') +
-            '</span></td>' +
-            '<td class="td-p" style="font-size:.75rem">' +
-            esc(j.memo || j.description || '—') +
-            '</td>' +
-            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-            accList +
-            '</td>' +
-            '<td class="td-p t-num budget-sm">' +
-            money(debitTotal) +
-            '</td>' +
-            '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
-            esc(src) +
-            '</td>' +
-            '</tr>'
-          );
-        })
-        .join('');
-    }
-
-    // Rows of the current page and the pager under the table, for the filter.
-    function pageParts() {
-      var pg = window.NSAPager.page(filterJournals(fFrom, fTo, fAcc, fQ), _audit.page, AUDIT_PAGE_SIZE);
-      _audit.page = pg.page;
-      return {
-        rows: renderTable(pg.rows),
-        pager: window.NSAPager.html({ total: pg.total, page: pg.page, size: AUDIT_PAGE_SIZE, action: 'ajPage' }),
-      };
-    }
-
-    function paint() {
-      var tbody = document.getElementById('aj-tbody');
-      var pager = document.getElementById('aj-pager');
-      if (!tbody || !pager) return;
-      var parts = pageParts();
-      tbody.innerHTML = parts.rows;
-      pager.innerHTML = parts.pager;
-    }
-    _audit.paint = paint;
-    var first = pageParts();
-
-    var accOpts =
-      '<option value="">— Semua Akun —</option>' +
-      accounts
-        .map(function (a) {
-          return (
-            '<option value="' + esc(a.no || a.code || '') + '">' + esc(a.no || a.code || '') + ' ' + esc(a.name) + '</option>'
-          );
-        })
-        .join('');
-
-    injectView(
-      'finance',
-      '<div class="sec-hdr"><div><h1>Audit Jurnal</h1><p>' +
-        journals.length.toLocaleString('id-ID') +
-        ' jurnal, terbaru di atas</p></div></div>' +
-        '<div class="card" style="margin-bottom:12px">' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
-        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Dari</label>' +
-        '<input class="form-input" id="aj-from" type="date" style="width:140px"></div>' +
-        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Sampai</label>' +
-        '<input class="form-input" id="aj-to" type="date" style="width:140px"></div>' +
-        '<div><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Akun</label>' +
-        '<select class="form-select" id="aj-acc" style="width:260px">' +
-        accOpts +
-        '</select></div>' +
-        '<div style="flex:1;min-width:140px"><label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:3px">Cari</label>' +
-        '<input class="form-input" id="aj-q" placeholder="Ref, memo..."></div>' +
-        '<button class="btn" id="aj-filter">Filter</button>' +
-        '<button class="btn-ghost" id="aj-reset">Reset</button>' +
-        '</div></div>' +
-        '<div class="card">' +
-        '<div style="overflow-x:auto">' +
-        '<table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr>' +
-        '<th>Tanggal</th><th>Referensi</th>' +
-        '<th>Memo</th><th>Akun</th>' +
-        '<th class="t-num">Jumlah</th><th>Sumber</th>' +
-        '</tr></thead>' +
-        '<tbody id="aj-tbody">' +
-        first.rows +
-        '</tbody>' +
-        '</table></div>' +
-        '<div id="aj-pager">' +
-        first.pager +
-        '</div></div>'
-    );
-
-    setTimeout(function () {
-      var filterBtn = document.getElementById('aj-filter');
-      var resetBtn = document.getElementById('aj-reset');
-      function applyFilter() {
-        fFrom = document.getElementById('aj-from').value;
-        fTo = document.getElementById('aj-to').value;
-        fAcc = document.getElementById('aj-acc').value;
-        fQ = (document.getElementById('aj-q').value || '').trim();
-        _audit.page = 1;
-        paint();
-      }
-      if (filterBtn) filterBtn.addEventListener('click', applyFilter);
-      if (resetBtn)
-        resetBtn.addEventListener('click', function () {
-          ['aj-from', 'aj-to', 'aj-q'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) el.value = '';
-          });
-          var accEl = document.getElementById('aj-acc');
-          if (accEl) accEl.value = '';
-          fFrom = fTo = fAcc = fQ = '';
-          _audit.page = 1;
-          paint();
-        });
-    }, 60);
+    if (window.NSANav && window.NSANav.open('Jurnal')) return;
+    if (window._ledgerExtras) window._ledgerExtras.openTab('journals', 'all');
   }
 
   // ══════════════════════════════════════════════════════════════════════════════

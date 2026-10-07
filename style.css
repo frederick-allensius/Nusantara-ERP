@@ -3728,6 +3728,25 @@ tbody .ostrip-tag {
   padding: 3px 8px;
   font-size: var(--fs-xs);
 }
+/* Jurnal filters (gl-view.js journalFilterBar): label above each field */
+.fin-period.gl-jfilter {
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: var(--card-gap);
+}
+.gl-jfilter .form-select {
+  width: 240px;
+  max-width: 100%;
+  padding: 4px 8px;
+  font-size: var(--fs-xs);
+}
+.gl-jfilter-q {
+  flex: 1;
+  min-width: 160px;
+}
+.gl-jfilter-q .form-input {
+  width: 100%;
+}
 .fin-meta {
   margin-bottom: 20px;
   font-size: var(--fs-xs);

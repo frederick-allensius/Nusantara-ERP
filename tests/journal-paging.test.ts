@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Buku Besar → Jurnal (gl-view.js) lists 20 journals per page, newest first,
-// and the amounts stay on one line (they were cut off on phones).
+// Akuntansi → Jurnal (gl-view.js) lists 20 journals per page, newest first,
+// and the amounts stay on one line (they were cut off on phones). It also holds
+// the former Audit Jurnal filters: date range, account and a search.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
@@ -74,5 +75,64 @@ describe('Jurnal paging', () => {
     expect(amount.classList.contains('t-num')).toBe(true);
     const css = readFileSync(resolve(__dirname, '../style.css'), 'utf8');
     expect(css).toMatch(/\.t-num \{[^}]*white-space: nowrap;/);
+  });
+});
+
+describe('Jurnal filters (date, account, search)', () => {
+  const setVal = (id: string, v: string) => {
+    (document.getElementById(id) as HTMLInputElement).value = v;
+  };
+  beforeEach(() => {
+    // Journals J001…J045 on 1–45 Sep 2026 (wrapping into October); J010 and
+    // J020 also post to Kas.
+    w().DB.accountsChart = [
+      { no: '110101', name: 'Kas' },
+      { no: '110201', name: 'Piutang' },
+    ];
+    w().DB.journals.forEach((j: any, i: number) => {
+      const d = new Date(Date.UTC(2026, 8, i + 1));
+      j.date = d.toISOString().slice(0, 10);
+      if (j.number === 'J010' || j.number === 'J020') {
+        j.lines[0].accountNo = '110101';
+      }
+    });
+  });
+
+  it('filters by date range and by account, from page 1, and Reset clears them', () => {
+    w()._ledgerExtras.openTab('journals', 'all');
+    actions.glJournalPage(undefined, undefined, '2');
+    setVal('gl-f-from', '2026-09-05');
+    setVal('gl-f-to', '2026-09-30');
+    actions.glJournalQuery();
+    expect(view().querySelector('.gl-count')!.textContent).toContain('26 jurnal');
+    expect(view().querySelector('.list-pager')!.textContent).toContain('1–20 dari 26');
+
+    setVal('gl-f-from', '');
+    setVal('gl-f-to', '');
+    setVal('gl-f-acc', '110101');
+    actions.glJournalQuery();
+    expect(journalCards()).toHaveLength(2);
+    expect(view().textContent).toContain('J020');
+
+    actions.glJournalQueryReset();
+    expect(view().querySelector('.gl-count')!.textContent).toContain('45 jurnal');
+    expect((document.getElementById('gl-f-acc') as HTMLSelectElement).value).toBe('');
+  });
+
+  it('searches number, source document and Jurnal Umum, and says when nothing matches', () => {
+    w()._ledgerExtras.openTab('journals', 'all');
+    setVal('gl-f-q', 'SI-4');
+    actions.glJournalQuery();
+    // docId SI-4 and SI-40…SI-44 (journals with a document source only)
+    expect(view().querySelectorAll('.card > .gl-jv').length).toBeGreaterThan(0);
+    expect(view().textContent).not.toContain('J001 ');
+
+    setVal('gl-f-q', 'jurnal umum');
+    actions.glJournalQuery();
+    expect(view().querySelector('.gl-count')!.textContent).toContain('15 jurnal');
+
+    setVal('gl-f-q', 'tidak-ada');
+    actions.glJournalQuery();
+    expect(view().textContent).toContain('Tidak ada jurnal yang cocok dengan filter.');
   });
 });

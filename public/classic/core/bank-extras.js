@@ -1017,70 +1017,73 @@
   // ══════════════════════════════════════════════════════════════════════════
   // § 5  BANK STATEMENT
   // ══════════════════════════════════════════════════════════════════════════
-  function openBankStatement() {
-    var statements = ensureArr('bankStatements').slice().reverse();
-    var accounts = getBankAccounts();
-
-    var rows = statements.length
-      ? statements
-          .map(function (s) {
-            var acc = accounts.find(function (a) {
-              return a.id === s.accountId;
-            });
-            var entryCount = (s.entries || []).length;
-            var totalDebit = (s.entries || []).reduce(function (x, e) {
-              return x + (e.debit || 0);
-            }, 0);
-            var totalCredit = (s.entries || []).reduce(function (x, e) {
-              return x + (e.credit || 0);
-            }, 0);
-            return (
-              '<tr>' +
-              '<td class="td-p"><span class="doc-no">' +
-              esc(s.id) +
-              '</span></td>' +
-              '<td class="td-p">' +
-              esc(acc ? acc.name : s.accountId) +
-              '</td>' +
-              '<td class="td-p" style="font-size:.75rem">' +
-              esc(s.period) +
-              '</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              entryCount +
-              ' baris</td>' +
-              '<td class="td-p t-num">' +
-              money(totalDebit) +
-              '</td>' +
-              '<td class="td-p t-num">' +
-              money(totalCredit) +
-              '</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="viewBS" data-id="' +
-              esc(s.id) +
-              '">Detail</button> ' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="bxReconcileOpen" data-id="' +
-              esc(s.id) +
-              '">Rekonsiliasi</button> ' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delBS" data-id="' +
-              esc(s.id) +
-              '">Hapus</button>' +
-              '</td></tr>'
-            );
-          })
-          .join('')
-      : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Belum ada rekening koran diinput.</td></tr>';
-
-    injectView(
-      '<div class="sec-hdr"><div><h1>Rekening Koran</h1></div>' +
-        '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div>' +
-        '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr><th>ID</th><th>Rekening</th><th>Periode</th>' +
-        '<th style="text-align:center">Baris</th><th class="t-num">Total Debit</th>' +
-        '<th class="t-num">Total Kredit</th><th></th></tr></thead>' +
-        '<tbody>' +
-        rows +
-        '</tbody></table></div>'
+  // Rekening koran are entered and kept on the Rekonsiliasi Bank page: this is
+  // the list card under the reconciliation. The Rekening Koran menu label opens
+  // that page.
+  function statementsCardHTML(statements, accounts) {
+    var rows = statements
+      .slice()
+      .reverse()
+      .map(function (s) {
+        var acc = accounts.find(function (a) {
+          return a.id === s.accountId;
+        });
+        var entryCount = (s.entries || []).length;
+        var totalDebit = (s.entries || []).reduce(function (x, e) {
+          return x + (e.debit || 0);
+        }, 0);
+        var totalCredit = (s.entries || []).reduce(function (x, e) {
+          return x + (e.credit || 0);
+        }, 0);
+        return (
+          '<tr>' +
+          '<td class="td-p"><span class="doc-no">' +
+          esc(s.id) +
+          '</span></td>' +
+          '<td class="td-p">' +
+          esc(acc ? acc.name : s.accountId) +
+          '</td>' +
+          '<td class="td-p" style="font-size:.75rem">' +
+          esc(s.period) +
+          '</td>' +
+          '<td class="td-p" style="text-align:center">' +
+          entryCount +
+          ' baris</td>' +
+          '<td class="td-p t-num">' +
+          money(totalDebit) +
+          '</td>' +
+          '<td class="td-p t-num">' +
+          money(totalCredit) +
+          '</td>' +
+          '<td class="td-p" style="text-align:right;white-space:nowrap">' +
+          '<button class="btn-ghost btn-sm" data-action="viewBS" data-id="' +
+          esc(s.id) +
+          '">Detail</button> ' +
+          '<button class="btn-ghost btn-sm" data-action="bxReconcileOpen" data-id="' +
+          esc(s.id) +
+          '">Rekonsiliasi</button> ' +
+          '<button class="btn-danger-text btn-sm" data-action="delBS" data-id="' +
+          esc(s.id) +
+          '">Hapus</button>' +
+          '</td></tr>'
+        );
+      })
+      .join('');
+    return (
+      '<div class="card" style="overflow-x:auto">' +
+      '<div class="card-head"><div class="card-title">Rekening koran tersimpan</div></div>' +
+      '<table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr><th>ID</th><th>Rekening</th><th>Periode</th>' +
+      '<th style="text-align:center">Baris</th><th class="t-num">Total Debit</th>' +
+      '<th class="t-num">Total Kredit</th><th></th></tr></thead>' +
+      '<tbody>' +
+      rows +
+      '</tbody></table></div>'
     );
+  }
+
+  function openBankStatement() {
+    openBankReconcile();
   }
 
   function addBSModal() {
@@ -1146,11 +1149,11 @@
           closingBalance: closing,
           entries: entries,
         });
-        _reconcileId = null;
+        _reconcileId = num;
         save();
         closeM();
         toast('Rekening koran disimpan', 'success');
-        openBankStatement();
+        openBankReconcile();
       });
     }, 60);
   }
@@ -1733,11 +1736,12 @@
     if (!statements.length) {
       injectView(
         '<div class="sec-hdr"><div><h1>Rekonsiliasi Bank</h1></div>' +
-          '<div><button class="btn-ghost" data-action="bxChargeNew">Catat biaya bank</button></div></div>' +
+          '<div><button class="btn-ghost" data-action="bxChargeNew">Catat biaya bank</button>' +
+          '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
           '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
-          '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Input rekening koran terlebih dahulu melalui menu Rekening Koran</div>' +
-          '<button class="btn" data-action="goToBankStatement">Buka Rekening Koran</button></div>'
+          '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Input rekening koran bank untuk mencocokkannya dengan buku besar.</div>' +
+          '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div>'
       );
       return;
     }
@@ -1863,7 +1867,8 @@
           : '') +
         '<button class="btn-ghost" data-action="bxChargeNew" data-account="' +
         esc(latestBS.accountId) +
-        '">Catat biaya bank</button></div></div>' +
+        '">Catat biaya bank</button>' +
+        '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
         '<div><div class="bank-sub">Rekening</div><div>' +
@@ -1925,7 +1930,8 @@
         '<th style="text-align:center">Cocok ✓</th></tr></thead>' +
         '<tbody>' +
         bsRows +
-        '</tbody></table></div>'
+        '</tbody></table></div>' +
+        statementsCardHTML(statements, accounts)
     );
   }
 
@@ -2029,11 +2035,11 @@
         if (_reconcileId === id) _reconcileId = null;
         save();
         toast('Dihapus', 'success');
-        openBankStatement();
+        openBankReconcile();
         break;
       }
       case 'goToBankStatement':
-        openBankStatement();
+        openBankReconcile();
         break;
       case 'bxHistoryPage':
         showBankHistoryPage(Number(btn.dataset.val) || 1);

@@ -218,7 +218,15 @@
   // ══════════════════════════════════════════════════════════════════════════
   // § 2  SPT PPN / PPNBM
   // ══════════════════════════════════════════════════════════════════════════
+  // Rekap PPN is shown on Pajak & PPN (tax-extras.js renderTaxPage): this opens
+  // that page. The menu label Rekap PPN does the same.
   function openSPTPPN() {
+    if (window.NSANav && window.NSANav.open('Pajak & PPN')) return;
+    if (typeof window.navigate === 'function') window.navigate('tax');
+  }
+
+  // Tax periods with documents, newest first; the current month is always there.
+  function sptPeriods() {
     var curPeriod = today().slice(0, 7);
     var periods = {};
     periods[curPeriod] = true;
@@ -227,8 +235,7 @@
         if (o.date) periods[o.date.slice(0, 7)] = true;
       });
     });
-    var periodList = Object.keys(periods).sort().reverse();
-    renderSPT(curPeriod, periodList);
+    return Object.keys(periods).sort().reverse();
   }
 
   // PPN of one document: DPP and PPN from its lines and stored tax (handles
@@ -308,15 +315,9 @@
 
   var lastSPT = null; // rows of the period on screen, for the CSV export
 
-  function renderSPT(period, periodList) {
-    var pOpts = periodList
-      .map(function (p) {
-        return (
-          '<option value="' + p + '"' + (p === period ? ' selected' : '') + '>' + p + '</option>'
-        );
-      })
-      .join('');
-
+  // Figures and documents of one tax period, for Pajak & PPN. `lastTile` is the
+  // fourth figure ({ label, value, sub }); the period itself is chosen on the page.
+  function sptSectionHTML(period, lastTile) {
     var data = taxRows(period);
     lastSPT = { period: period, output: data.output, input: data.input };
     var sum = function (rows, key) {
@@ -394,52 +395,37 @@
       );
     }
 
-    injectView(
-      '<div class="sec-hdr"><div><h1>Rekap PPN</h1><p>Per masa pajak, dari dokumen yang sudah diposting. Faktur pajak dan SPT tetap lewat aplikasi DJP.</p></div>' +
-        '<div style="display:flex;gap:8px;align-items:center">' +
-        '<select class="form-select" id="spt-period" style="font-size:.8125rem">' +
-        pOpts +
-        '</select>' +
-        '<button class="btn" data-action="refreshSPT">Tampilkan</button>' +
-        '<button class="btn-ghost" data-action="exportSPT">Ekspor CSV</button>' +
-        '</div></div>' +
-        '<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">' +
-        '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val">' +
-        money(outputPPN) +
-        '</div><div class="stat-sub">DPP ' +
-        money(outputDPP) +
-        '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val">' +
-        money(inputPPN) +
-        '</div><div class="stat-sub">DPP ' +
-        money(inputDPP) +
-        '</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">' +
-        ppnStatus +
-        '</div><div class="stat-val" style="color:' +
-        ppnColor +
-        '">' +
-        money(Math.abs(ppnKurang)) +
-        '</div><div class="stat-sub">PPN neto</div></div>' +
-        '<div class="card stat-card"><div class="stat-label">Periode</div><div class="stat-val">' +
-        period +
-        '</div><div class="stat-sub">Masa Pajak</div></div>' +
-        '</div>' +
-        sideCard('PPN Keluaran — Penjualan', soInPeriod.length, 'Pelanggan', soRows, outputDPP, outputPPN) +
-        sideCard('PPN Masukan — Pembelian', poInPeriod.length, 'Supplier', poRows, inputDPP, inputPPN)
+    var tile4 = lastTile || { label: 'Periode', value: period, sub: 'Masa Pajak' };
+    return (
+      '<div class="stat-row" style="grid-template-columns:repeat(4,1fr)">' +
+      '<div class="card stat-card"><div class="stat-label">PPN Keluaran</div><div class="stat-val">' +
+      money(outputPPN) +
+      '</div><div class="stat-sub">DPP ' +
+      money(outputDPP) +
+      '</div></div>' +
+      '<div class="card stat-card"><div class="stat-label">PPN Masukan</div><div class="stat-val">' +
+      money(inputPPN) +
+      '</div><div class="stat-sub">DPP ' +
+      money(inputDPP) +
+      '</div></div>' +
+      '<div class="card stat-card"><div class="stat-label">' +
+      ppnStatus +
+      '</div><div class="stat-val" style="color:' +
+      ppnColor +
+      '">' +
+      money(Math.abs(ppnKurang)) +
+      '</div><div class="stat-sub">PPN neto</div></div>' +
+      '<div class="card stat-card"><div class="stat-label">' +
+      esc(tile4.label) +
+      '</div><div class="stat-val">' +
+      esc(tile4.value) +
+      '</div><div class="stat-sub">' +
+      esc(tile4.sub) +
+      '</div></div>' +
+      '</div>' +
+      sideCard('PPN Keluaran — Penjualan', soInPeriod.length, 'Pelanggan', soRows, outputDPP, outputPPN) +
+      sideCard('PPN Masukan — Pembelian', poInPeriod.length, 'Supplier', poRows, inputDPP, inputPPN)
     );
-
-    // Attach refresh handler
-    setTimeout(function () {
-      var btn = document.getElementById('spt-period');
-      if (!btn) return;
-      var refreshBtn = document.querySelector('[data-action="refreshSPT"]');
-      if (refreshBtn)
-        refreshBtn.addEventListener('click', function () {
-          var p = document.getElementById('spt-period').value;
-          renderSPT(p, periodList);
-        });
-    }, 60);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -822,7 +808,7 @@
         break;
       case 'exportSPT': {
         if (!lastSPT) {
-          toast('Buka Rekap PPN terlebih dahulu', 'warning');
+          toast('Buka Pajak & PPN terlebih dahulu', 'warning');
           break;
         }
         var csvCell = function (v) {
@@ -878,6 +864,8 @@
   window._reportExtras = {
     openReportList: openReportList,
     openSPTPPN: openSPTPPN,
+    sptPeriods: sptPeriods,
+    sptSectionHTML: sptSectionHTML,
     openAIAnalysis: openAIAnalysis,
   };
   console.log('[ReportExtras] Report extras ready');

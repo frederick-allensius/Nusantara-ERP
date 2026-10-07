@@ -268,108 +268,41 @@
   // ════════════════════════════════════════════════════════════════════════════
   // RECONCILIATION VIEW  (Rekonsiliasi Timbangan)
   // ════════════════════════════════════════════════════════════════════════════
+  // Rekonsiliasi Timbangan lives on the Penerimaan Barang list: these are the
+  // cells that list shows per receipt (sales-purchase-extras.openReceiveItem).
+  // The menu label Rekonsiliasi Timbangan opens that list.
+  function reconCells(r) {
+    var inv = receiptInvoice(r.id);
+    return {
+      status: r.reconciled
+        ? '<span class="badge badge-success">Direkonsiliasi</span>'
+        : '<span class="badge badge-warning">Belum</span>',
+      invoice: inv
+        ? '<span class="badge badge-info">' + esc(inv.number || inv.id) + '</span>'
+        : '<span class="t-muted">—</span>',
+      actions:
+        '<button class="action-primary" data-action="reconcileReceipt" data-id="' +
+        esc(r.id) +
+        '">' +
+        (inv ? 'Lihat' : 'Rekonsiliasi') +
+        '</button> ' +
+        (r.reconciled && !inv
+          ? '<button class="action-primary" data-action="invoiceReceipt" data-id="' +
+            esc(r.id) +
+            '">Buat Faktur</button>'
+          : ''),
+    };
+  }
+
+  function poNumberOf(r) {
+    var po = poOf(r);
+    return po ? po.number || po.id : r.poId;
+  }
+
   function openReconciliation() {
-    var receipts = ensureArr('goodsReceipts');
-
-    var rows = receipts
-      .slice()
-      .reverse()
-      .map(function (r) {
-        var po = poOf(r);
-        var inv = receiptInvoice(r.id);
-        var statusBadge = r.reconciled
-          ? '<span class="badge badge-success">Direkonsiliasi</span>'
-          : '<span class="badge badge-warning">Belum</span>';
-        var invCell = inv
-          ? '<span class="badge badge-info">' + esc(inv.number || inv.id) + '</span>'
-          : '<span class="t-muted">—</span>';
-        return (
-          '<tr>' +
-          '<td class="td-p t-strong">' +
-          esc(r.id) +
-          '</td>' +
-          '<td class="td-p">' +
-          esc(r.date) +
-          '</td>' +
-          '<td class="td-p" style="font-weight:600;color:var(--primary)">' +
-          esc(po ? po.number || po.id : r.poId) +
-          '</td>' +
-          '<td class="td-p">' +
-          esc(r.supplierName || (po && po.supplier) || '—') +
-          '</td>' +
-          '<td class="td-p">' +
-          (r.items || []).length +
-          ' item</td>' +
-          '<td class="td-p">' +
-          statusBadge +
-          '</td>' +
-          '<td class="td-p">' +
-          invCell +
-          '</td>' +
-          '<td class="td-p">' +
-          '<button class="action-primary" data-action="reconcileReceipt" data-id="' +
-          esc(r.id) +
-          '">' +
-          (inv ? 'Lihat' : 'Rekonsiliasi') +
-          '</button> ' +
-          (r.reconciled && !inv
-            ? '<button class="action-primary" data-action="invoiceReceipt" data-id="' +
-              esc(r.id) +
-              '">Buat Faktur</button>'
-            : '') +
-          '</td>' +
-          '</tr>'
-        );
-      })
-      .join('');
-
-    var reconciledCount = receipts.filter(function (r) {
-      return r.reconciled;
-    }).length;
-    var pendingCount = receipts.length - reconciledCount;
-
-    var header =
-      typeof window.secHdr === 'function'
-        ? window.secHdr(
-            'Rekonsiliasi Timbangan',
-            'Bandingkan qty pesanan, surat jalan, dan timbangan sebelum faktur',
-            '',
-            '',
-            { showSub: true }
-          )
-        : '<h1>Rekonsiliasi Timbangan</h1>';
-
-    var stats =
-      typeof window.statRow === 'function'
-        ? window.statRow([
-            { label: 'Total Penerimaan', value: String(receipts.length), sub: 'Dokumen' },
-            {
-              label: 'Direkonsiliasi',
-              value: String(reconciledCount),
-              sub: 'Siap difakturkan',
-              color: 'var(--success)',
-            },
-            {
-              label: 'Belum Direkonsiliasi',
-              value: String(pendingCount),
-              sub: 'Menunggu',
-              color: 'var(--warning)',
-            },
-          ])
-        : '';
-
-    var html =
-      header +
-      stats +
-      '<div class="card"><div class="table-wrap"><table style="width:100%">' +
-      '<thead><tr><th>ID</th><th>Tanggal</th><th>No. PO</th><th>Supplier</th><th>Item</th><th>Rekonsiliasi</th><th>Faktur</th><th>Aksi</th></tr></thead>' +
-      '<tbody>' +
-      (rows ||
-        '<tr><td colspan="8" class="td-empty">Belum ada penerimaan barang untuk direkonsiliasi.</td></tr>') +
-      '</tbody>' +
-      '</table></div></div>';
-
-    injectView('purchase', html);
+    if (window._salesPurchaseExtras && window._salesPurchaseExtras.openReceiveItem) {
+      window._salesPurchaseExtras.openReceiveItem();
+    }
   }
 
   function reconcileModal(receiptId) {
@@ -719,6 +652,8 @@
   // ════════════════════════════════════════════════════════════════════════════
   window._pipelineExtras = {
     openReconciliation: openReconciliation,
+    reconCells: reconCells,
+    poNumberOf: poNumberOf,
     reconcileModal: reconcileModal,
     invoiceFromReceipt: invoiceFromReceipt,
     updatePODeliveryInvoiceStatus: updatePODeliveryInvoiceStatus,
