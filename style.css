@@ -1698,13 +1698,6 @@ tbody .badge-purple {
   display: none !important;
 }
 
-/* One-line summary under a page header (instead of a row of stat tiles) */
-.list-summary {
-  margin: -8px 0 14px;
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
 /* Surat Jalan: armada & ekspedisi folded below the list */
 .log-fleet > summary {
   display: flex;

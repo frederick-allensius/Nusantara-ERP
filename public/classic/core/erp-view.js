@@ -1975,7 +1975,11 @@ function renderLogistics() {
 
   return `
   ${secHdr('Surat Jalan', '', 'Buat Surat Jalan', 'addDO')}
-  <div class="list-summary">${dos.length} surat jalan · ${thisMthDO.length} bulan ini · ${uniqueDrivers} driver aktif bulan ini</div>
+  ${statRow([
+    { label: 'Surat jalan', value: String(dos.length), sub: 'Pengiriman dari stok' },
+    { label: 'Bulan ini', value: String(thisMthDO.length), sub: 'Surat jalan dibuat' },
+    { label: 'Driver aktif', value: String(uniqueDrivers), sub: 'Bulan ini' },
+  ])}
   <div class="card">
     ${listTools(
       periodControl('logistics') + listFilterNote('logistics'),

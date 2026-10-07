@@ -417,25 +417,27 @@
       return x.oldest && (!o || x.oldest < o) ? x.oldest : o;
     }, '');
     var isCust = c === CFG.customer;
-    // One summary line; the table below carries the per-party figures.
-    var html = g.list.length
-      ? '<div class="list-summary">' +
-        esc(
-          g.list.length +
-            ' ' +
-            c.partyLabel.toLowerCase() +
-            ' · ' +
-            trips +
-            ' truk · ' +
-            qty(tons) +
-            ' ton · ' +
-            money(total) +
-            ' belum ' +
-            (isCust ? 'ditagih' : 'difakturkan') +
-            (oldest ? ' · tertua ' + fmtDate(oldest) + ' (' + sinceText(daysBetween(oldest, today)).toLowerCase() + ')' : '')
-        ) +
-        '</div>'
-      : '';
+    // The totals as figure tiles (statRow, like the other pages); the table
+    // below carries the per-party figures.
+    var tiles = [
+      {
+        label: isCust ? 'Belum ditagih' : 'Belum difakturkan supplier',
+        value: money(total),
+        sub: trips + ' truk · ' + qty(tons) + ' ton',
+      },
+      {
+        label: c.partyLabel,
+        value: String(g.list.length),
+        sub: isCust ? 'dengan pengambilan belum ditagih' : 'dengan pengambilan belum difakturkan',
+      },
+      {
+        label: 'Pengambilan tertua',
+        value: oldest ? fmtDate(oldest) : '—',
+        sub: oldest ? sinceText(daysBetween(oldest, today)) : '',
+      },
+    ];
+    var html =
+      g.list.length && typeof window.statRow === 'function' ? window.statRow(tiles) : '';
     if (g.orphan) {
       html +=
         '<div class="notice notice-info">' +
