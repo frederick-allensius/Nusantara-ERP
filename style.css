@@ -2147,6 +2147,236 @@ select option {
   color: var(--text);
 }
 
+/* Date and month fields: a calendar icon in place of the browser's (with a
+   mouse the themed calendar of ui/pickers.js opens instead of the browser's). */
+input[type='date'],
+input[type='month'] {
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371706b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-position: right 11px center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+@media (pointer: fine) {
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='month']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  /* Touch: the phone's own picker opens from the (invisible) indicator, which
+     covers the icon */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='month']::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+[data-theme='dark'] :is(input[type='date'], input[type='month']) {
+  color-scheme: dark;
+}
+.fin-period :is(input[type='date'], input[type='month']) {
+  padding-right: 28px;
+  background-position: right 8px center;
+}
+
+/* ── Themed pop-ups (ui/pickers.js): option list, calendar, month grid ───── */
+.pk-pop {
+  position: fixed;
+  z-index: 1100;
+  box-sizing: border-box;
+  padding: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  font: 400 .84375rem/1.4 var(--font-sans);
+  animation: pkIn 120ms var(--ease);
+}
+@keyframes pkIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+.pk-list {
+  display: flex;
+  flex-direction: column;
+  max-width: min(420px, calc(100vw - 16px));
+  max-height: min(340px, calc(100vh - 16px));
+}
+.pk-search {
+  padding: 2px 2px 6px;
+}
+.pk-search .pk-search-input {
+  height: 32px;
+  font-size: .8125rem;
+}
+.pk-options {
+  overflow-y: auto;
+  outline: none;
+  scrollbar-width: thin;
+}
+.pk-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.pk-opt-text {
+  flex: 1;
+  min-width: 0;
+}
+.pk-opt.is-active {
+  background: var(--surface-hover);
+}
+.pk-opt.is-selected {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+.pk-opt.is-disabled {
+  color: var(--muted-light);
+  cursor: default;
+}
+.pk-check {
+  flex-shrink: 0;
+}
+.pk-group {
+  padding: 8px 10px 4px;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pk-empty {
+  padding: 10px;
+  font-size: .8125rem;
+  color: var(--muted);
+}
+
+.pk-cal {
+  width: 284px;
+  padding: 10px;
+}
+.pk-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.pk-nav,
+.pk-title,
+.pk-day,
+.pk-month,
+.pk-link {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pk-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  color: var(--text-secondary);
+}
+.pk-title {
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+}
+.pk-nav:hover,
+.pk-title:hover,
+.pk-day:hover:not(:disabled):not(.is-sel),
+.pk-month:hover:not(:disabled):not(.is-sel) {
+  background: var(--surface-hover);
+}
+span.pk-title:hover {
+  background: none;
+}
+.pk-week,
+.pk-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.pk-week span {
+  padding: 4px 0;
+  text-align: center;
+  font-size: var(--fs-label);
+  color: var(--muted);
+}
+.pk-day {
+  height: 36px;
+  border-radius: var(--r-sm);
+  font-variant-numeric: tabular-nums;
+}
+.pk-day.is-out {
+  color: var(--muted-light);
+}
+.pk-day.is-today:not(.is-sel),
+.pk-month.is-today:not(.is-sel) {
+  box-shadow: inset 0 0 0 1px var(--accent-text);
+  color: var(--accent-text);
+}
+.pk-day.is-sel,
+.pk-month.is-sel {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}
+.pk-day:disabled,
+.pk-month:disabled {
+  color: var(--muted-light);
+  opacity: 0.45;
+  cursor: default;
+}
+.pk-day:focus-visible,
+.pk-month:focus-visible,
+.pk-nav:focus-visible,
+.pk-title:focus-visible,
+.pk-link:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 1px;
+}
+.pk-months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.pk-month {
+  height: 40px;
+  border-radius: var(--r-sm);
+}
+.pk-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-light);
+}
+.pk-link {
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+.pk-link:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.pk-link:disabled {
+  color: var(--muted-light);
+  cursor: default;
+}
+
 input[type='checkbox'],
 input[type='radio'] {
   accent-color: var(--primary-strong);

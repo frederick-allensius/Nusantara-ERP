@@ -329,3 +329,18 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   Validasi SJ Supplier vs Impor Rekap Timbangan (same idea for warehouse receipts) and its
   "Muat Contoh Demo" button — untouched.
 
+## Session 2026-10-07 — themed pickers; flow preview (pickers DONE, preview pending)
+
+- Pickers (ui/pickers.js, core bundle after doc-tabs.js): with a fine pointer, <select> opens a
+  themed option list (optgroups, disabled, search from 9 options, keys, type-ahead), date fields a
+  Monday-first calendar (min/max, Hari ini, Kosongkan, month grid via the title, typing still
+  works), month fields a month grid. The native control keeps the value; choosing fires input +
+  change. Touch keeps native pickers; opt out with data-native-picker. Escape closes only the
+  pop-up. Calendar icon replaces the browser indicator. tests/pickers.test.ts; sw v1.1.9.
+- Owner concern: submenus read as lists, "Perlu tindakan" like notes. Preview
+  (harness.local/mockups/pipeline-preview.js, pp-*.png): sidebar groups split into ALUR (steps on a
+  rail with pending counts) / LAINNYA / DATA; Perlu tindakan grouped per flow with one row format
+  (verb title · detail · count pill). Waiting for owner approval.
+- CV on surat jalan photos: not built; needs sample photos, supplier Excel and approval of the AI
+  service cost (docs/11 already marks it REQUIRES USER CONFIRMATION).
+

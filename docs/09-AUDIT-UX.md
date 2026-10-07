@@ -111,7 +111,7 @@ Target: **perangkat lunak bisnis yang tenang, rapi, dan mudah dibaca** — rasa 
 | Kartu | Banyak bayangan & gradien | Putih dan datar, padding 24/28 px (HP 18–20/16 px); angka ringkas (KPI, statistik) juga berupa kartu kecil |
 | Tombol | Beragam | Tombol utama biru dengan gradasi halus dan kilau tipis di tepi atas; tombol kedua putih bergaris tipis; ditekan sedikit mengecil. Hapus di dialog edit berupa teks merah di kiri, merah penuh hanya pada "Ya, hapus". Tinggi tetap besar: 36 px, 44 px di layar sentuh |
 | Tabel | Beragam | Header lengket, baris 40 px, angka rata kanan tabular, status berupa titik + teks, aksi selalu terlihat |
-| Form | Panjang tanpa kelompok | Label di atas, penanda wajib, bagian berjudul, validasi di tempat |
+| Form | Panjang tanpa kelompok | Label di atas, penanda wajib, bagian berjudul, validasi di tempat. Dengan mouse, daftar pilihan, kalender (Senin di depan, Hari ini, Kosongkan) dan pemilih bulan mengikuti tema; daftar panjang punya kolom cari. Di HP tetap pemilih bawaan HP yang lebih besar |
 | Status | Pil berwarna penuh | Badge lembut (latar transparan + teks berwarna) yang konsisten di semua modul |
 | Keadaan kosong/muat/error | Emoji & teks teknis | Pesan singkat berbahasa sehari-hari + satu tindakan yang jelas |
 | Animasi | Latar bergerak, transisi beragam | Transisi singkat (150–200 ms) hanya untuk perubahan keadaan; menghormati *reduced motion* |

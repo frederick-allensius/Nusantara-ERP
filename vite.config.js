@@ -122,6 +122,9 @@ const classicAll = [
   // Data Baru / one tab per open document). After nav.js (wraps its navigate)
   // and before rbac.js.
   'public/classic/ui/doc-tabs.js',
+  // pickers.js: themed pop-ups for <select>, date and month fields (the native
+  // control stays the value holder). Document-level listeners only.
+  'public/classic/ui/pickers.js',
   'public/classic/modules/settings.js',
   // rbac.js MUST load last: its saveDB wrap is the outermost guard (reverts an
   // unauthorized mutation before integrity.js/trash.js inner wraps run), and it
