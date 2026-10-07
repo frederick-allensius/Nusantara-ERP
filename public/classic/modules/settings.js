@@ -530,7 +530,6 @@ async function showTwoFactor() {
 // Backup Management
 function showBackupManager() {
   const status = window.erpBackup.getBackupStatus();
-  const backups = window.erpBackup.getBackupList();
 
   const statusHtml = status.lastBackup
     ? `<div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--surface-sunken);border-radius:8px;margin-bottom:16px">
@@ -547,27 +546,6 @@ function showBackupManager() {
       </div>`
     : `<div style="padding:12px;background:var(--warning-bg);border:1px solid transparent;border-radius:8px;margin-bottom:16px;font-size:.75rem;color:var(--warning)">
         Belum ada backup otomatis. Backup pertama akan dibuat dalam 24 jam.
-      </div>`;
-
-  const backupListHtml =
-    backups.length > 0
-      ? backups
-          .map(
-            b => `
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
-          <div style="flex:1">
-            <div style="font-size:.8125rem;font-weight:700">${b.date}</div>
-            <div style="font-size:.75rem;color:var(--muted)">${b.sizeFormatted}</div>
-          </div>
-          <button class="btn-ghost" data-action="restoreBackup" data-key="${b.key}" style="font-size:.75rem;padding:4px 12px">
-            Pulihkan
-          </button>
-        </div>
-      `
-          )
-          .join('')
-      : `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.75rem">
-        Belum ada backup tersimpan
       </div>`;
 
   openModal(
@@ -631,12 +609,51 @@ function showBackupManager() {
     <input type="file" id="backupFileInput" accept=".json" style="display:none">
 
     <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
-      Backup Otomatis (${backups.length})
+      Backup Otomatis <span id="backupListCount"></span>
     </div>
-    ${backupListHtml}
+    <div id="backupList">
+      <div style="text-align:center;padding:20px;color:var(--muted);font-size:.75rem">
+        Memuat daftar backup…
+      </div>
+    </div>
   `,
     `<button class="btn-ghost" data-action="closeModal">Tutup</button>`
   );
+
+  // getBackupList() reads the cloud asynchronously: the modal opens at once and
+  // the list is filled in when it arrives, unless the modal was closed or
+  // replaced in the meantime.
+  const listEl = document.getElementById('backupList');
+  const countEl = document.getElementById('backupListCount');
+  Promise.resolve()
+    .then(() => window.erpBackup.getBackupList())
+    .catch(() => [])
+    .then(backups => {
+      if (!listEl || !listEl.isConnected) {
+        return;
+      }
+      countEl.textContent = `(${backups.length})`;
+      listEl.innerHTML =
+        backups.length > 0
+          ? backups
+              .map(
+                b => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+          <div style="flex:1">
+            <div style="font-size:.8125rem;font-weight:700">${b.date}</div>
+            <div style="font-size:.75rem;color:var(--muted)">${b.sizeFormatted}</div>
+          </div>
+          <button class="btn-ghost" data-action="restoreBackup" data-id="${b.key}" style="font-size:.75rem;padding:4px 12px">
+            Pulihkan
+          </button>
+        </div>
+      `
+              )
+              .join('')
+          : `<div style="text-align:center;padding:20px;color:var(--muted);font-size:.75rem">
+        Belum ada backup tersimpan
+      </div>`;
+    });
 
   setTimeout(() => {
     // Export backup
@@ -754,26 +771,24 @@ function showBackupManager() {
         showToast(`Gagal membuat backup: ${error.message}`, 'danger');
       }
     });
-
-    // Restore backup
-    document.querySelectorAll('[data-action="restoreBackup"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.key;
-        if (!confirm('Pulihkan backup ini? Data saat ini akan ditimpa.')) {
-          return;
-        }
-
-        try {
-          window.erpBackup.restoreFromBackup(key);
-          closeModal();
-          showToast('Backup berhasil dipulihkan. Halaman akan dimuat ulang.', 'success');
-          setTimeout(() => window.location.reload(), 1500);
-        } catch (error) {
-          showToast(`Gagal memulihkan: ${error.message}`, 'danger');
-        }
-      });
-    });
   }, 50);
+}
+
+// "Pulihkan" rows are rendered after the backup list loads, so the click goes
+// through the action registry rather than a listener bound when the modal opens.
+function restoreBackupFromList(key) {
+  if (!confirm('Pulihkan backup ini? Data saat ini akan ditimpa.')) {
+    return;
+  }
+
+  try {
+    window.erpBackup.restoreFromBackup(key);
+    closeModal();
+    showToast('Backup berhasil dipulihkan. Halaman akan dimuat ulang.', 'success');
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (error) {
+    showToast(`Gagal memulihkan: ${error.message}`, 'danger');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1023,5 +1038,10 @@ ERP.registerAction('manage2FA', function () {
 
 ERP.registerAction('manageBackup', function () {
   showBackupManager();
+  return true;
+});
+
+ERP.registerAction('restoreBackup', function (key) {
+  restoreBackupFromList(key);
   return true;
 });
