@@ -201,13 +201,12 @@
     const segs = INV_STAGES.map(([key, label]) => {
       const on = stageOf[type] === key;
       const sum = sums[key];
-      const value =
-        (key === 'open' || key === 'overdue' ? 'sisa ' : '') + short(Math.round(sum.value));
+      const owed = key === 'open' || key === 'overdue';
       return `<button type="button" class="ostrip-seg${on ? ' is-active' : ''}${sum.count ? '' : ' is-empty'}"
         data-action="invStage" data-type="${type}" data-val="${on ? '' : key}" data-stage="${key}" aria-pressed="${on}">
         <span class="ostrip-label">${esc(label)}</span>
-        <span class="ostrip-count">${sum.count}</span>
-        <span class="ostrip-value">${esc(value)}</span>
+        <span class="ostrip-value">${esc(short(Math.round(sum.value)))}</span>
+        <span class="ostrip-sub"><span class="ostrip-count">${sum.count}</span> faktur${owed ? ' · sisa tagihan' : ''}</span>
       </button>`;
     }).join('');
     const month = today.slice(0, 7);
@@ -222,7 +221,7 @@
       : `<div class="ostrip-note">Bulan ini: ${thisMonth.length} faktur · ${money(
           thisMonth.reduce((s2, d) => s2 + (Number(d.amount) || 0), 0)
         )}</div>`;
-    return `<div class="ostrip" role="group" aria-label="Status ${esc(t.label.toLowerCase())}"><div class="ostrip-track" data-n="4">${segs}</div></div>${note}`;
+    return `<div class="ostrip" role="group" aria-label="Status ${esc(t.label.toLowerCase())}"><div class="ostrip-track" data-n="4">${segs}</div>${note}</div>`;
   }
 
   function statsHTML(type) {

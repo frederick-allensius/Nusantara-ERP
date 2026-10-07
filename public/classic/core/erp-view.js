@@ -475,8 +475,8 @@ function orderRows(view) {
 }
 
 // Status strip: the five stages of OrderPipeline.summary (within the page's
-// period) as one row of light tabs — label and count, the money below. A tab
-// filters the table to its stage; clicking it again clears the filter.
+// period) in one card, each stage like a KPI tile — status, money, number of
+// orders. A stage filters the table; clicking it again clears the filter.
 function orderStrip(view) {
   const P = window.OrderPipeline;
   if (!P) {
@@ -492,14 +492,13 @@ function orderStrip(view) {
       const on = active === s.key;
       const unpaid = s.key === 'unpaid';
       const money = unpaid ? s.outstanding : s.value;
-      const moneyText = (unpaid ? 'sisa ' : '') + short(money);
       const title = `${s.label}: ${s.count} ${noun} · ${unpaid ? 'sisa ' : ''}${idr(money)}`;
       return `<button type="button" class="ostrip-seg${on ? ' is-active' : ''}${s.count ? '' : ' is-empty'}"
         data-action="orderStage" data-type="${view}" data-stage="${s.key}" aria-pressed="${on}"
         title="${escapeHtml(title)}">
         <span class="ostrip-label">${escapeHtml(s.label)}</span>
-        <span class="ostrip-count">${s.count}</span>
-        <span class="ostrip-value">${escapeHtml(moneyText)}</span>
+        <span class="ostrip-value">${escapeHtml(short(money))}</span>
+        <span class="ostrip-sub"><span class="ostrip-count">${s.count}</span> pesanan${unpaid ? ' · sisa tagihan' : ''}</span>
       </button>`;
     })
     .join('');

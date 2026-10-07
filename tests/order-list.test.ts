@@ -259,8 +259,11 @@ function expectStripMatches(view: string, side: string, opts: any = {}) {
     const el = seg(view, st.key);
     expect(el.querySelector('.ostrip-label')!.textContent!.trim()).toBe(st.label);
     expect(el.querySelector('.ostrip-count')!.textContent!.trim()).toBe(String(st.count));
-    const money = st.key === 'unpaid' ? 'sisa ' + short(st.outstanding) : short(st.value);
+    const money = short(st.key === 'unpaid' ? st.outstanding : st.value);
     expect(el.querySelector('.ostrip-value')!.textContent!.trim()).toBe(money);
+    expect(el.querySelector('.ostrip-sub')!.textContent!.trim()).toBe(
+      `${st.count} pesanan${st.key === 'unpaid' ? ' · sisa tagihan' : ''}`
+    );
   });
   return sum;
 }
@@ -275,7 +278,8 @@ describe('status strip', () => {
     expect(byKey.unpaid.count).toBe(1);
     expect(byKey.unpaid.outstanding).toBe(25_000_000);
     const plain = (el: Element) => (el.textContent || '').replace(/\u00a0/g, ' ');
-    expect(plain(seg('sales', 'unpaid'))).toContain('sisa Rp 25 jt');
+    expect(plain(seg('sales', 'unpaid'))).toContain('Rp 25 jt');
+    expect(plain(seg('sales', 'unpaid'))).toContain('sisa tagihan');
     expect(plain(seg('sales', 'confirmed'))).toContain('Rp 101 jt');
     // No stat tiles on the order lists; the strip carries the figures.
     expect(viewEl('sales').querySelector('.stat-row')).toBeNull();
@@ -294,15 +298,15 @@ describe('status strip', () => {
     expect(sum.stages.find((s: any) => s.key === 'delivered').count).toBe(1); // SO-OLD left out
   });
 
-  it('is a row of tabs: label and count, the money below, no boxes or chevrons', () => {
+  it('is one card of stage tiles: status, money, number of orders', () => {
     const strip = viewEl('sales').querySelector('.ostrip')!;
     expect(strip.getAttribute('role')).toBe('group');
     const tab = seg('sales', 'confirmed');
     expect(tab.tagName).toBe('BUTTON');
     expect(Array.from(tab.children).map(c => c.className)).toEqual([
       'ostrip-label',
-      'ostrip-count',
       'ostrip-value',
+      'ostrip-sub',
     ]);
     // Keyboard: real buttons, pressed state on the chosen stage.
     expect(tab.getAttribute('aria-pressed')).toBe('false');
