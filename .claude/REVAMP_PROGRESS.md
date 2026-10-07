@@ -278,3 +278,26 @@ size default back to Normal ("big but not that big — forget it for now").
   node_modules/.vite/deps and restart the dev server if the app shows a blank screen (504 Outdated
   Optimize Dep).
 
+## Session 2026-10-07 — cards on a blue canvas, accent blue, new buttons, dark G1 (DONE)
+
+Owner: without boxes the blocks of one screen were hard to tell apart; chose option 1 (tinted canvas
++ white cards) with a bluish canvas, the blue #4169D7 (from the owner's swatch) as the one accent,
+the button style of the "Daily Log" design system (buttons only), and dark variant G1 (graphite,
+layered like light: canvas lighter, cards darker). Previews: harness.local/mockups/card-final.js,
+btn-*.png, inv-*.png.
+- Light: --bg #EEF2FC canvas/topbar, sidebar #F6F8FE, chrome lines #DCE3F5; .card = white,
+  radius 12, padding 24/28 (phone 20/20, ≤480px 18/16), gap 16 (phone 12), --card-shadow ring.
+  KPI tiles, stat rows and Entri Harian tasks are small cards; grids use gap var(--card-gap).
+- Accent tokens --accent/--accent-text/--accent-soft/--on-accent: filled buttons, .seg-tab.active
+  chip, .seg-tabs-sm and .doctab underline, open nav entry (--sb-active), .link-btn, :focus-visible.
+- Buttons: gradient accent fill + inset highlight, ghost = white tile (--btn-tile-*), radius 8,
+  press scale .98, accent focus halo; heights unchanged (--tap-min) for older users.
+  Dialog Hapus (8 edit dialogs, erp-crud.js) = .btn-danger-text.footer-start on the left; solid
+  red only on "Ya, hapus".
+- Dark G1: canvas/topbar #26282D, sidebar #1E2024, cards/dialogs #141518, inputs #0E0F11,
+  accent text #8EA6F0, neutrals cool graphite.
+- 39 inline background:var(--bg) panels in classic JS now use --surface-sunken (#F5F7FB / #101113),
+  since --bg is the canvas tint. theme-color/manifest #EEF2FC; sw v1.1.7.
+- Checks: vitest 47 files / 580 tests, tsc, eslint, build.
+- Seen, not touched: Pengaturan "Kelola Backup" subtitle reads "undefined backup otomatis
+  tersimpan"; the marketing landing page (public/styles/landing.css) keeps its own palette.

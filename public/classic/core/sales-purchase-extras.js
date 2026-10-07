@@ -885,7 +885,7 @@
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
       '<label style="font-size:.75rem;font-weight:700">Catatan<input id="ri-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
-      '<div id="ri-lines" style="background:var(--bg);border-radius:8px;padding:12px">' +
+      '<div id="ri-lines" style="background:var(--surface-sunken);border-radius:8px;padding:12px">' +
       '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Item dari PO</div>' +
       '<div style="font-size:.75rem;color:var(--muted)">Pilih PO untuk melihat daftar item</div>' +
       '</div>' +

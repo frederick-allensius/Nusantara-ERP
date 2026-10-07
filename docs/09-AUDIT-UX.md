@@ -103,19 +103,20 @@ Target: **perangkat lunak bisnis yang tenang, rapi, dan mudah dibaca** — rasa 
 
 | Aspek | Sebelum | Arah baru |
 |---|---|---|
-| Warna | Aksen emerald + warna per grup + gradien ungu | **Satu aksen emerald** yang sudah ada; warna lain hanya untuk status (hijau berhasil, kuning perhatian, merah bahaya, biru info) |
-| Latar & permukaan | Kaca buram, gradien animasi | Permukaan datar, garis tipis (hairline), kedalaman halus hanya untuk popover & modal |
-| Tipografi | Outfit + Instrument Serif + JetBrains Mono | Satu keluarga sans yang sangat terbaca (Inter, cadangan font sistem), angka **tabular**, mono hanya untuk nomor dokumen/kode akun; hierarki lewat ukuran & ketebalan, bukan judul raksasa |
+| Warna | Aksen emerald + warna per grup + gradien ungu | **Satu aksen biru (#4169D7)** untuk tombol utama, pilihan aktif (tab, periode, menu yang terbuka), tautan, dan fokus; warna lain hanya untuk status (hijau lunas/uang masuk, kuning perhatian, merah bahaya/lewat jatuh tempo) |
+| Latar & permukaan | Kaca buram, gradien animasi | Latar biru sangat muda; setiap bagian berupa **kartu putih** tanpa garis tepi (cincin tipis + bayangan lembut), jarak antarkartu 16 px; garis tipis hanya di dalam kartu |
+| Tipografi | Outfit + Instrument Serif + JetBrains Mono | Satu keluarga sans yang sangat terbaca (Geist, cadangan font sistem), angka **tabular**, Geist Mono hanya untuk nomor dokumen/kode akun; hierarki lewat ukuran & ketebalan, bukan judul raksasa |
 | Spasi | Tidak seragam | Kelipatan 4 px; kepadatan nyaman untuk data |
-| Radius | 6–24 px bercampur | 6 (kontrol kecil), 8 (input/tombol), 12 (kartu), 14 (modal) |
-| Kartu | Banyak bayangan & gradien | Datar, border halus, isi yang padat informasi |
+| Radius | 6–24 px bercampur | 6 (input & chip), 8 (tombol & menu), 10 (dialog), 12 (kartu) |
+| Kartu | Banyak bayangan & gradien | Putih dan datar, padding 24/28 px (HP 18–20/16 px); angka ringkas (KPI, statistik) juga berupa kartu kecil |
+| Tombol | Beragam | Tombol utama biru dengan gradasi halus dan kilau tipis di tepi atas; tombol kedua putih bergaris tipis; ditekan sedikit mengecil. Hapus di dialog edit berupa teks merah di kiri, merah penuh hanya pada "Ya, hapus". Tinggi tetap besar: 36 px, 44 px di layar sentuh |
 | Tabel | Beragam | Header lengket, baris 40 px, angka rata kanan tabular, status berupa titik + teks, aksi selalu terlihat |
 | Form | Panjang tanpa kelompok | Label di atas, penanda wajib, bagian berjudul, validasi di tempat |
 | Status | Pil berwarna penuh | Badge lembut (latar transparan + teks berwarna) yang konsisten di semua modul |
 | Keadaan kosong/muat/error | Emoji & teks teknis | Pesan singkat berbahasa sehari-hari + satu tindakan yang jelas |
 | Animasi | Latar bergerak, transisi beragam | Transisi singkat (150–200 ms) hanya untuk perubahan keadaan; menghormati *reduced motion* |
-| Tema gelap | Warna yang dibalik | Dirancang terpisah: permukaan bertingkat, border tipis terang, teks sekunder kontras cukup, grafik & tooltip mengikuti tema |
+| Tema gelap | Warna yang dibalik | Grafit, berlapis seperti tema terang: latar & topbar paling terang, sidebar di tengah, kartu & dialog paling gelap; aksen biru lebih muda untuk teks dan tautan; grafik & tooltip mengikuti tema |
 
-**Status penerapan:** token warna terang dan gelap di `style.css` dipakai di seluruh halaman termasuk modul tambahan; font Inter; ikon garis menggantikan emoji; badge lembut; grafik dashboard mengikuti tema. Masih tersisa: sebagian tabel dan kartu statistik di modul tambahan memakai gaya inline.
+**Status penerapan:** token warna terang dan gelap di `style.css` dipakai di seluruh halaman termasuk modul tambahan; font Geist; ikon garis menggantikan emoji; status berupa titik + teks; kartu putih di latar biru muda; grafik dashboard mengikuti tema. Masih tersisa: sebagian tabel dan kartu statistik di modul tambahan memakai gaya inline.
 
 **Tidak dilakukan:** mengganti identitas warna, menambah animasi dekoratif, menambah fitur "AI", membuat grafik tanpa arti.

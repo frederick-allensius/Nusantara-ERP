@@ -1103,7 +1103,7 @@
       '<label style="font-size:.75rem;font-weight:700">Periode<input id="pr-period" class="form-input" type="month" value="' +
       thisMonth() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<div style="background:var(--bg);border-radius:8px;padding:12px">' +
+      '<div style="background:var(--surface-sunken);border-radius:8px;padding:12px">' +
       '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Ringkasan</div>' +
       '<div style="font-size:.75rem">Jumlah karyawan: <strong>' +
       employees.length +
@@ -1166,7 +1166,7 @@
   function payPayrollModal(run) {
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<div style="background:var(--bg);border-radius:8px;padding:12px">' +
+      '<div style="background:var(--surface-sunken);border-radius:8px;padding:12px">' +
       '<div style="font-size:.75rem">Proses gaji: <strong>' + esc(run.id) + '</strong></div>' +
       '<div style="font-size:.75rem">Periode: <strong>' + esc(run.period) + '</strong></div>' +
       '<div style="font-size:.75rem">Total: <strong>' + money(run.totalAmount) + '</strong></div>' +

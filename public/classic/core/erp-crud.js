@@ -1117,7 +1117,7 @@ function lineItemsHTML() {
     </div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="background:var(--bg)">
+        <thead style="background:var(--surface-sunken)">
           <tr>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item / Deskripsi</th>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;width:70px;border-bottom:1px solid var(--border)">Qty</th>
@@ -1394,7 +1394,7 @@ function linesDetailHTML(lines, totalLabel, doc) {
     <div class="detail-label" style="margin-bottom:8px">Item Pesanan</div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="background:var(--bg)">
+        <thead style="background:var(--surface-sunken)">
           <tr>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:50px;border-bottom:1px solid var(--border)">Qty</th>
@@ -1638,8 +1638,8 @@ function editPO(id) {
     </div>
     ${lineItemsHTML()}
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deletePO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deletePO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updatePO">Simpan</button>`,
     true
   );
@@ -2073,7 +2073,7 @@ function showStockCard(id) {
     </div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:auto;max-height:60vh">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="background:var(--bg);position:sticky;top:0">
+        <thead style="background:var(--surface-sunken);position:sticky;top:0">
           <tr>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
@@ -2084,7 +2084,7 @@ function showStockCard(id) {
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+          <tr style="border-bottom:1px solid var(--border);background:var(--surface-sunken)">
             <td style="padding:6px 10px;font-size:.75rem;color:var(--muted)">—</td>
             <td style="padding:6px 10px;font-size:.75rem;font-style:italic;color:var(--muted)">Saldo Awal</td>
             <td style="padding:6px 10px"></td>
@@ -2098,7 +2098,7 @@ function showStockCard(id) {
           }
         </tbody>
         <tfoot>
-          <tr style="border-top:2px solid var(--border);background:var(--bg)">
+          <tr style="border-top:2px solid var(--border);background:var(--surface-sunken)">
             <td colspan="3" style="padding:7px 10px;font-size:.75rem;font-weight:800;text-align:right">Stok Saat Ini</td>
             <td colspan="2"></td>
             <td style="padding:7px 10px;font-size:.8125rem;font-weight:800;text-align:right;color:var(--primary)">${r3(current)}</td>
@@ -2165,8 +2165,8 @@ function editItem(id) {
       </div>
     </div>
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteItem" data-id="${escapeHtml(id)}" data-label="${escapeHtml(item.name || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteItem" data-id="${escapeHtml(id)}" data-label="${escapeHtml(item.name || '')}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateItem">Simpan</button>`
   );
   setTimeout(() => {
@@ -2452,8 +2452,8 @@ function editCustomer(id) {
       <div class="form-group"></div>
     </div>
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteCustomer" data-id="${escapeHtml(c.id)}" data-label="${escapeHtml(c.name || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteCustomer" data-id="${escapeHtml(c.id)}" data-label="${escapeHtml(c.name || '')}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateCustomer">Simpan</button>`
   );
   setTimeout(() => {
@@ -2738,7 +2738,7 @@ function showPartyStatement(kind, id) {
     </div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:auto;max-height:60vh">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="background:var(--bg);position:sticky;top:0">
+        <thead style="background:var(--surface-sunken);position:sticky;top:0">
           <tr>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Tanggal</th>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Keterangan</th>
@@ -2755,7 +2755,7 @@ function showPartyStatement(kind, id) {
           }
         </tbody>
         <tfoot>
-          <tr style="border-top:2px solid var(--border);background:var(--bg)">
+          <tr style="border-top:2px solid var(--border);background:var(--surface-sunken)">
             <td colspan="3" style="padding:7px 10px;font-size:.75rem;font-weight:800;text-align:right">${balLabel}</td>
             <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:700">${m(totalDebit)}</td>
             <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-weight:700">${m(totalCredit)}</td>
@@ -2810,8 +2810,8 @@ function editSupplier(id) {
       <div class="form-group"></div>
     </div>
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteSupplier" data-id="${escapeHtml(s.id)}" data-label="${escapeHtml(s.name || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteSupplier" data-id="${escapeHtml(s.id)}" data-label="${escapeHtml(s.name || '')}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateSupplier">Simpan</button>`
   );
   setTimeout(() => {
@@ -2890,7 +2890,7 @@ function showFinanceDetail(title, items) {
          .map(
            item => `
          <li style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                    background:var(--bg);border-radius:10px;font-size:.8125rem;font-weight:600">
+                    background:var(--surface-sunken);border-radius:10px;font-size:.8125rem;font-weight:600">
            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
              <polyline points="20 6 9 17 4 12"/>
            </svg>
@@ -2915,7 +2915,7 @@ function showSettingPanel(title, sub) {
        </div>
        <div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">${escapeHtml(title)}</div>
        <div style="font-size:.75rem;color:var(--muted);margin-bottom:20px">${escapeHtml(sub)}</div>
-       <div style="padding:14px;background:var(--bg);border-radius:10px;font-size:.75rem;color:var(--muted)">
+       <div style="padding:14px;background:var(--surface-sunken);border-radius:10px;font-size:.75rem;color:var(--muted)">
          Panel pengaturan ini akan tersedia di versi berikutnya.
        </div>
      </div>`,
@@ -4553,8 +4553,8 @@ function editFleet(id) {
       </div>
     </div>
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteFleet" data-id="${escapeHtml(id)}" data-label="${escapeHtml(v.plate || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteFleet" data-id="${escapeHtml(id)}" data-label="${escapeHtml(v.plate || '')}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateFleet">Simpan</button>`
   );
   setTimeout(() => {
@@ -4684,8 +4684,8 @@ function editExpedition(id) {
       <div class="form-group"></div>
     </div>
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteExpedition" data-id="${escapeHtml(id)}" data-label="${escapeHtml(e.name || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteExpedition" data-id="${escapeHtml(id)}" data-label="${escapeHtml(e.name || '')}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateExpedition">Simpan</button>`
   );
   setTimeout(() => {
@@ -5012,7 +5012,7 @@ function dpSummaryHTML(type, orderId, orderTotal) {
   const fmt = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 
   return `
-  <div style="margin:12px 0 4px;padding:10px 14px;background:var(--bg);border-radius:10px;
+  <div style="margin:12px 0 4px;padding:10px 14px;background:var(--surface-sunken);border-radius:10px;
               border:1px solid var(--border)">
     <div style="font-weight:700;font-size:.75rem;margin-bottom:6px;color:var(--muted)">Uang Muka</div>
     <div class="detail-grid" style="gap:2px 12px">
@@ -5042,7 +5042,7 @@ function viewSO(id) {
   const linkedDOs = (DB.deliveryOrders || []).filter(d => d.soId === id);
   const doLinksHtml =
     linkedDOs.length > 0
-      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
+      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--surface-sunken);border-radius:8px;
                   font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">DO Terkait:</span>
         ${linkedDOs
@@ -5059,7 +5059,7 @@ function viewSO(id) {
   const linkedSIs = (DB.salesInvoices || []).filter(s => s.sourceId === id);
   const siLinksHtml =
     linkedSIs.length > 0
-      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
+      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--surface-sunken);border-radius:8px;
                   font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">Faktur Terkait:</span>
         ${linkedSIs
@@ -5137,7 +5137,7 @@ function viewPO(id) {
   const linkedDOs = (DB.deliveryOrders || []).filter(d => d.poId === id);
   const doLinksHtml =
     linkedDOs.length > 0
-      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
+      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--surface-sunken);border-radius:8px;
                   font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">DO Terkait:</span>
         ${linkedDOs
@@ -5154,7 +5154,7 @@ function viewPO(id) {
   const linkedPIs = (DB.purchaseInvoices || []).filter(p => p.sourceId === id);
   const piLinksHtml =
     linkedPIs.length > 0
-      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--bg);border-radius:8px;
+      ? `<div style="margin:10px 0;padding:8px 12px;background:var(--surface-sunken);border-radius:8px;
                   font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-weight:700;color:var(--muted)">Faktur Terkait:</span>
         ${linkedPIs
@@ -5364,7 +5364,7 @@ function _doLinesTable(lines) {
     }
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <table style="width:100%;border-collapse:collapse">
-        <thead style="background:var(--bg)">
+        <thead style="background:var(--surface-sunken)">
           <tr>
             <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
             ${hasPartial ? `<th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:70px;border-bottom:1px solid var(--border);color:var(--muted)">Sudah Kirim</th>` : ''}
@@ -5725,8 +5725,8 @@ function editDO(id) {
   openModal(
     `Edit DO — ${escapeHtml(id)}`,
     _doFormBody(o),
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-     <button class="btn-danger" data-action="armDelete" data-do="deleteDO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id) || '')}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteDO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id) || '')}">Hapus</button>
+     <button class="btn-ghost" data-action="closeModal">Batal</button>
      <button class="btn" id="updateDO">Simpan</button>`
   );
 
@@ -5849,7 +5849,7 @@ function viewDO(id) {
         <div class="detail-label" style="margin-bottom:8px">Daftar Barang</div>
         <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <table style="width:100%;border-collapse:collapse">
-            <thead style="background:var(--bg)">
+            <thead style="background:var(--surface-sunken)">
               <tr>
                 <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:left;border-bottom:1px solid var(--border)">Item</th>
                 <th style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right;width:60px;border-bottom:1px solid var(--border)">Qty</th>
@@ -5937,7 +5937,7 @@ function showBulkSuratJalan(doId) {
   openModal(
     'Bulk Surat Jalan — Bagi per Truck',
     `
-    <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px;font-size:.75rem">
+    <div style="margin-bottom:14px;padding:10px 14px;background:var(--surface-sunken);border-radius:10px;font-size:.75rem">
       <div style="font-weight:700;margin-bottom:4px">Referensi: ${escapeHtml(docNum(o.number, o.id))} ${o.soId ? '→ ' + escapeHtml(o.soId) : ''} ${o.poId ? '→ ' + escapeHtml(o.poId) : ''}</div>
       <div>Pelanggan: <strong>${escapeHtml(o.customer)}</strong></div>
       <div>Barang: <strong>${escapeHtml(itemNames)}</strong></div>
@@ -5952,7 +5952,7 @@ function showBulkSuratJalan(doId) {
       <div class="form-group">
         <label class="form-label">Jumlah Trip</label>
         <input class="form-input" id="bulk-trip-count" type="number" readonly
-          style="background:var(--bg);font-weight:700;font-size:1rem" value="0">
+          style="background:var(--surface-sunken);font-weight:700;font-size:1rem" value="0">
       </div>
     </div>
     <div class="form-row">
@@ -6497,8 +6497,8 @@ function editSO(id) {
     </div>
     ${lineItemsHTML()}
   `,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-   <button class="btn-danger" data-action="armDelete" data-do="deleteSO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
+    `<button class="btn-danger-text footer-start" data-action="armDelete" data-do="deleteSO" data-id="${escapeHtml(id)}" data-label="${escapeHtml(docNum(o.number, o.id))}">Hapus</button>
+   <button class="btn-ghost" data-action="closeModal">Batal</button>
    <button class="btn" id="updateSO">Simpan</button>`,
     true
   );

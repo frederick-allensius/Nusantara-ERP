@@ -525,7 +525,7 @@
               '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
               esc(e.ts) +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;text-transform:uppercase;padding:2px 7px;background:var(--bg);border-radius:4px;white-space:nowrap">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;text-transform:uppercase;padding:2px 7px;background:var(--surface-sunken);border-radius:4px;white-space:nowrap">' +
               esc(e.type) +
               '</span></td>' +
               '<td class="td-p" style="font-weight:600;font-size:.75rem">' +
@@ -652,7 +652,7 @@
               '<td class="td-p" style="font-weight:700">' +
               esc(f.name) +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--surface-sunken);border-radius:4px">' +
               esc(f.type || '—') +
               '</span></td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +

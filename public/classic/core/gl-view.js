@@ -310,7 +310,7 @@
           <button type="button" class="btn-ghost" id="jv-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:var(--bg)">
+          <thead><tr style="background:var(--surface-sunken)">
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Akun</th>
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Debit</th>
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Kredit</th>

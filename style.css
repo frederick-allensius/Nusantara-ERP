@@ -1,11 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    NUSANTARA ERP — DESIGN SYSTEM
-   White canvas, ink type, hairlines. Sections sit on the page without boxes and
-   are separated by a hairline and space; only dialogs, menus and toasts float.
-   Colour is kept for meaning: green for paid/success, amber for "needs action",
-   red for overdue and negative amounts. Geist for text, Geist Mono for document
-   numbers and account codes, tabular figures for amounts. The light and dark
-   themes are separate palettes, not inversions.
+   A pale blue canvas with white section cards, ink type and hairlines. One
+   accent blue marks actions and chosen states (filled buttons, the chosen tab
+   or period, the open menu entry, links). Colour is otherwise kept for meaning:
+   green for paid/success, amber for "needs action", red for overdue and
+   negative amounts. Geist for text, Geist Mono for document numbers and account
+   codes, tabular figures for amounts. Dark mode keeps the same layering: the
+   canvas is the lighter layer and the cards sit darker on it.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. THEME TOKENS ─────────────────────────────────────────────────────────── */
@@ -34,7 +35,8 @@
   /* Minimum height of buttons and form controls; larger on touch screens. */
   --tap-min: 36px;
 
-  /* Radii — 4 tiny marks · 6 buttons, inputs & chips · 8 menus · 10 dialogs */
+  /* Radii — 4 tiny marks · 6 inputs & chips · 8 buttons & menus · 10 dialogs ·
+     12 section cards */
   --r-xs: 4px;
   --r-sm: 6px;
   --r: 8px;
@@ -51,10 +53,11 @@
   --sp-5: 20px;
   --sp-6: 24px;
   --sp-8: 32px;
-  /* Page sections: space after the hairline above a section, and below it;
-     the gap between side-by-side sections. Generous, so pages stay calm. */
-  --section-top: 32px;
-  --section-bottom: 40px;
+  /* Section cards: inner padding, and the gap between cards (stacked or side
+     by side). --section-gap is the wider gap inside a card between columns. */
+  --card-pad-y: 24px;
+  --card-pad-x: 28px;
+  --card-gap: 16px;
   --section-gap: 56px;
   /* Side margin of the topbar and the page */
   --page-pad-x: clamp(16px, 3.2vw, 48px);
@@ -71,8 +74,8 @@
   --dur: 160ms;
 
   /* ── Light palette ── */
-  /* Ink, greys and one hairline. --primary is the ink accent (links, focus,
-     chosen states); filled buttons are ink with --on-primary text. */
+  /* Ink, greys and one hairline. --primary is ink (text-like marks); the
+     accent blue is for actions and chosen states. */
   --primary: #111110;
   --primary-strong: #111110;
   --primary-hover: #2f2f2d;
@@ -83,11 +86,27 @@
   --brand-deep: #111110;
   --focus-ring: 0 0 0 3px rgba(17, 17, 16, 0.12);
 
-  --bg: #ffffff;
+  /* Accent — filled buttons, the chosen tab or period, the open menu entry,
+     links and focus. --accent-text is the shade used for text and lines. */
+  --accent: #4169d7;
+  --accent-text: #3358c2;
+  --accent-soft: #e4ebfb;
+  --on-accent: #ffffff;
+  /* Secondary buttons: a white tile with a faint top-to-bottom shade */
+  --btn-tile-top: #ffffff;
+  --btn-tile-bottom: #f6f8fc;
+  --btn-tile-border: #d9dfea;
+  --btn-tile-border-hover: #c3ccdc;
+  --btn-tile-shadow: 0 1px 2px rgba(15, 20, 28, 0.04);
+  /* Section cards on the canvas: a faint ring and a soft shadow, no outline */
+  --card-shadow: 0 0 0 1px rgba(36, 64, 140, 0.06), 0 1px 3px rgba(23, 35, 90, 0.05);
+
+  /* --bg is the canvas behind the cards; --surface / --card are the cards */
+  --bg: #eef2fc;
   --surface: #ffffff;
   --surface-solid: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f6f6f5;
+  --surface-sunken: #f5f7fb;
   --surface-hover: rgba(17, 17, 16, 0.035);
   --surface-active: rgba(17, 17, 16, 0.06);
   --card: #ffffff;
@@ -127,16 +146,16 @@
   --input-border-focus: #111110;
   --input-shadow: none;
 
-  --sb-bg: #fafaf9;
+  --sb-bg: #f6f8fe;
   --sb-surface: rgba(17, 17, 16, 0.03);
-  --sb-hover: rgba(17, 17, 16, 0.04);
-  --sb-active: #f0f0ee;
-  --sb-border: #ececea;
+  --sb-hover: rgba(36, 64, 140, 0.05);
+  --sb-active: var(--accent-soft);
+  --sb-border: #dce3f5;
   --sb-text: #71706b;
   --sb-text-active: #111110;
 
-  --topbar-bg: #ffffff;
-  --topbar-border: #ececea;
+  --topbar-bg: #eef2fc;
+  --topbar-border: #dce3f5;
 
   /* Former glass tokens — surfaces are flat now */
   --glass-bg: var(--surface);
@@ -168,7 +187,8 @@
 }
 
 /* ── Dark palette ─────────────────────────────────────────────────────────────── */
-/* Near-black canvas, a slightly lighter sidebar and dialogs, light ink. */
+/* Graphite, layered like the light theme: the canvas and topbar are the
+   lighter layer, the sidebar sits between, and cards and dialogs are darkest. */
 [data-theme='dark'] {
   --primary: #ededeb;
   --primary-strong: #ededeb;
@@ -180,25 +200,36 @@
   --brand-deep: #ededeb;
   --focus-ring: 0 0 0 3px rgba(237, 237, 235, 0.18);
 
-  --bg: #0e0e0d;
-  --surface: #0e0e0d;
-  --surface-solid: #0e0e0d;
-  --surface-raised: #181817;
-  --surface-sunken: #151514;
+  --accent: #4169d7;
+  --accent-text: #8ea6f0;
+  --accent-soft: rgba(110, 140, 235, 0.16);
+  --on-accent: #ffffff;
+  --btn-tile-top: #24262b;
+  --btn-tile-bottom: #1e2024;
+  --btn-tile-border: #33363c;
+  --btn-tile-border-hover: #43474e;
+  --btn-tile-shadow: none;
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  --bg: #26282d;
+  --surface: #141518;
+  --surface-solid: #141518;
+  --surface-raised: #141518;
+  --surface-sunken: #101113;
   --surface-hover: rgba(255, 255, 255, 0.04);
   --surface-active: rgba(255, 255, 255, 0.07);
-  --card: #0e0e0d;
+  --card: #141518;
   --scrim: rgba(0, 0, 0, 0.6);
 
-  --text: #ededeb;
-  --text-secondary: #b8b7b1;
-  --muted: #9c9b95;
-  --muted-light: #6b6a65;
-  --mid: #4a4945;
+  --text: #e8e9eb;
+  --text-secondary: #b5b7bc;
+  --muted: #9a9da4;
+  --muted-light: #6b6e75;
+  --mid: #4a4c52;
 
-  --border: #242422;
-  --border-strong: #34342f;
-  --border-light: #1c1c1a;
+  --border: #25272c;
+  --border-strong: #35383e;
+  --border-light: #1d1f23;
 
   --success: #56b086;
   --success-bg: rgba(86, 176, 134, 0.12);
@@ -211,23 +242,23 @@
   --info: #8fadd9;
   --info-bg: rgba(143, 173, 217, 0.12);
 
-  --input-bg: #121211;
-  --input-bg-hover: #121211;
-  --input-bg-focus: #121211;
-  --input-border: #34342f;
-  --input-border-hover: #46463f;
+  --input-bg: #0e0f11;
+  --input-bg-hover: #0e0f11;
+  --input-bg-focus: #0e0f11;
+  --input-border: #35383e;
+  --input-border-hover: #46494f;
   --input-border-focus: #ededeb;
 
-  --sb-bg: #121211;
+  --sb-bg: #1e2024;
   --sb-surface: rgba(255, 255, 255, 0.03);
   --sb-hover: rgba(255, 255, 255, 0.04);
-  --sb-active: #1e1e1c;
-  --sb-border: #242422;
-  --sb-text: #9c9b95;
+  --sb-active: var(--accent-soft);
+  --sb-border: #33363c;
+  --sb-text: #9a9da4;
   --sb-text-active: #ededeb;
 
-  --topbar-bg: #0e0e0d;
-  --topbar-border: #242422;
+  --topbar-bg: #26282d;
+  --topbar-border: #33363c;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
@@ -236,11 +267,11 @@
   --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.6);
 
   --chart-1: #ededeb;
-  --chart-2: #9c9b95;
-  --chart-3: #4a4945;
+  --chart-2: #9a9da4;
+  --chart-3: #4a4c52;
   --chart-4: #a596d8;
-  --chart-grid: #1e1e1c;
-  --chart-text: #9c9b95;
+  --chart-grid: #25272c;
+  --chart-text: #9a9da4;
 
   color-scheme: dark;
 }
@@ -325,7 +356,7 @@ kbd,
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 
@@ -496,7 +527,7 @@ body.nav-collapsed {
 }
 .nav-group-head.active {
   background: var(--sb-active);
-  color: var(--sb-text-active);
+  color: var(--accent-text);
   font-weight: 500;
 }
 
@@ -508,9 +539,11 @@ body.nav-collapsed {
   transition: color var(--dur) var(--ease);
 }
 .nav-group-head:hover .nav-icon,
-.nav-group-head.active .nav-icon,
 .nav-group-head.has-active .nav-icon {
   color: var(--muted);
+}
+.nav-group-head.active .nav-icon {
+  color: var(--accent-text);
 }
 
 .nav-label {
@@ -567,7 +600,7 @@ body.nav-collapsed {
 }
 .nav-item.active {
   background: var(--sb-active);
-  color: var(--sb-text-active);
+  color: var(--accent-text);
   font-weight: 500;
 }
 
@@ -633,7 +666,7 @@ body.nav-collapsed .nav-group-head.has-active {
   background: var(--sb-active);
 }
 body.nav-collapsed .nav-group-head:is(.has-active, .active) .nav-icon {
-  color: var(--sb-text-active);
+  color: var(--accent-text);
 }
 body.nav-collapsed .sidebar-collapse svg {
   transform: rotate(180deg);
@@ -1234,38 +1267,17 @@ body.nav-collapsed .sidebar-collapse svg {
 }
 
 /* ── 9. SECTIONS (.card) ─────────────────────────────────────────────────────── */
-/* A section sits on the canvas without a box: a hairline above it and space
-   around it set it apart. The first section under the page header, or under
-   the tabs and filters that belong to the page, opens without the line. */
+/* Each section is a white card on the tinted canvas: rounded, no outline, a
+   faint ring and a soft shadow, so the blocks of one screen are easy to tell
+   apart. Cards in a grid take their spacing from the grid gap. */
 .card {
-  margin: 0;
-  padding: var(--section-top) 0 var(--section-bottom);
-  background: transparent;
+  margin: 0 0 var(--card-gap);
+  padding: var(--card-pad-y) var(--card-pad-x);
+  background: var(--card);
   border: 0;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: var(--r-xl);
+  box-shadow: var(--card-shadow);
 }
-.card:first-child,
-:is(
-    .sec-hdr,
-    .seg-tabs,
-    .doctabs-bar,
-    .ostrip,
-    .ostrip-note,
-    .list-tools,
-    .list-hint,
-    .list-summary,
-    .gl-balance,
-    .fin-period,
-    .tbl-controls,
-    .bulk-mode,
-    .bulk-bar
-  )
-  + .card {
-  padding-top: 0;
-  border-top: 0;
-}
-/* Sections side by side each keep their own line, so a row reads as one band */
 :is(
     .dash-row,
     .summary-grid,
@@ -1278,11 +1290,10 @@ body.nav-collapsed .sidebar-collapse svg {
     .eh-grid
   )
   > .card {
-  padding-top: var(--section-top);
-  border-top: 1px solid var(--border);
+  margin: 0;
 }
 .card-flush {
-  padding-bottom: 0;
+  padding-bottom: 12px;
 }
 .card-head {
   display: flex;
@@ -1377,7 +1388,7 @@ body.nav-collapsed .sidebar-collapse svg {
 .chart-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .chart-wrap {
   position: relative;
@@ -1385,20 +1396,17 @@ body.nav-collapsed .sidebar-collapse svg {
 }
 
 /* ── Stat row (statRow() in src/core/helpers.js) ─────────────────────────────── */
-/* Some pages add an inline margin-bottom; the padding keeps the space below
-   the row the same either way. */
+/* Small figure cards in a row, like the KPI cards on Ringkasan */
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px 40px;
-  margin-bottom: 16px;
-  padding-bottom: 24px;
+  gap: var(--card-gap);
+  margin-bottom: var(--card-gap);
 }
 .stat-row > .card,
 .stat-row > .card:first-child {
   margin: 0;
-  padding: 0;
-  border: 0;
+  padding: 20px 24px;
   min-width: 0;
 }
 .stat-card {
@@ -1650,7 +1658,9 @@ tbody .badge-purple {
   margin: 0;
   padding: 0;
   border: none;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 /* Pager under a list (invoice-view.js; list-pager.js NSAPager) */
@@ -1896,6 +1906,10 @@ tbody .badge-purple {
 }
 
 /* ── 12. BUTTONS ─────────────────────────────────────────────────────────────── */
+/* Filled actions are the accent blue with a soft top-to-bottom shade and a thin
+   highlight along the top edge; secondary actions are a white tile on a
+   hairline. A press shrinks the button slightly. Heights stay at --tap-min so
+   the targets stay large. */
 .btn,
 .btn-primary,
 .btn-ghost,
@@ -1908,7 +1922,7 @@ tbody .badge-purple {
   height: var(--tap-min);
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
   font: 500 .8125rem/1 var(--font-sans);
   text-decoration: none;
   white-space: nowrap;
@@ -1917,42 +1931,65 @@ tbody .badge-purple {
   transition:
     background var(--dur) var(--ease),
     border-color var(--dur) var(--ease),
-    color var(--dur) var(--ease);
+    color var(--dur) var(--ease),
+    filter var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
 }
-/* `.btn` is the primary action (page headers, dialogs): solid ink, no shadow */
+:is(.btn, .btn-primary, .btn-ghost, .btn-danger, .btn-danger-text):active {
+  transform: scale(0.98);
+}
+:is(.btn, .btn-primary, .btn-ghost, .btn-danger, .btn-danger-text):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* `.btn` is the primary action (page headers, dialogs) */
 .btn,
 .btn-primary {
-  background: var(--primary-strong);
-  border-color: var(--primary-strong);
-  color: var(--on-primary);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 86%, #fff) 0%,
+    var(--accent) 100%
+  );
+  color: var(--on-accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.18);
 }
 .btn:hover,
 .btn-primary:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
+  filter: brightness(1.06);
+}
+.btn:active,
+.btn-primary:active {
+  filter: brightness(0.96);
 }
 .btn svg,
 .btn-primary svg {
   stroke: currentColor;
 }
-/* Secondary: ink text on a hairline */
+/* Secondary: a white tile on a hairline */
 .btn-ghost {
-  background: transparent;
-  border-color: var(--border-strong);
-  color: var(--text);
+  background: linear-gradient(180deg, var(--btn-tile-top), var(--btn-tile-bottom));
+  border-color: var(--btn-tile-border);
+  color: var(--text-secondary);
+  box-shadow: var(--btn-tile-shadow);
 }
 .btn-ghost:hover {
-  background: var(--surface-hover);
-  border-color: var(--input-border-hover);
+  border-color: var(--btn-tile-border-hover);
+  color: var(--text);
 }
+/* Solid red only where a delete is confirmed ("Ya, hapus") */
 .btn-danger {
   background: var(--danger-strong);
-  border-color: var(--danger-strong);
   color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.18);
 }
 .btn-danger:hover {
-  background: color-mix(in srgb, var(--danger-strong) 86%, #000);
+  filter: brightness(1.06);
 }
+/* Red text: the Hapus that only opens the confirmation */
 .btn-danger-text {
   background: transparent;
   color: var(--danger);
@@ -1970,22 +2007,22 @@ tbody .badge-purple {
 .btn-ghost:disabled,
 .btn-danger:disabled,
 .btn-danger-text:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-/* Links: ink with a faint underline that darkens on hover */
+/* Links: the accent with a faint underline that darkens on hover */
 .link-btn {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--primary);
+  color: var(--accent-text);
   font: inherit;
   font-weight: 500;
   text-align: left;
   text-decoration: underline;
-  text-decoration-color: var(--border-strong);
+  text-decoration-color: color-mix(in srgb, var(--accent-text) 35%, transparent);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -2225,7 +2262,7 @@ textarea:user-invalid {
 }
 
 /* ── Segmented tabs (in-page views: invoices, returns, ledger, reports) ─────── */
-/* No track: grey labels, the chosen one a small ink chip. */
+/* No track: grey labels, the chosen one a small accent chip. */
 .seg-tabs {
   display: inline-flex;
   align-items: center;
@@ -2258,11 +2295,12 @@ textarea:user-invalid {
   background: var(--surface-hover);
 }
 .seg-tab.active {
-  background: var(--primary-strong);
-  color: var(--on-primary);
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 500;
 }
-/* Small tabs in a section head: text only, the chosen one in ink and underlined */
+/* Small tabs in a section head: text only, the chosen one in the accent and
+   underlined */
 .seg-tabs-sm {
   gap: 16px;
   margin-bottom: 0;
@@ -2278,14 +2316,14 @@ textarea:user-invalid {
 }
 .seg-tabs-sm .seg-tab.active {
   background: none;
-  color: var(--text);
+  color: var(--accent-text);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 6px;
 }
 
 /* ── Document tabs (ui/doc-tabs.js) ──────────────────────────────────────────── */
-/* Text tabs on a hairline; the open one in ink with an ink underline. */
+/* Text tabs on a hairline; the open one in the accent, underlined. */
 .doctabs-bar {
   display: flex;
   align-items: flex-end;
@@ -2323,8 +2361,8 @@ textarea:user-invalid {
   color: var(--text);
 }
 .doctab.active {
-  border-bottom-color: var(--text);
-  color: var(--text);
+  border-bottom-color: var(--accent-text);
+  color: var(--accent-text);
   font-weight: 500;
 }
 .doctab-label {
@@ -2463,6 +2501,10 @@ textarea:user-invalid {
   flex-shrink: 0;
   padding: 14px 24px;
   border-top: 1px solid var(--border);
+}
+/* Hapus sits on the left, away from Simpan */
+.modal-footer > .footer-start {
+  margin-right: auto;
 }
 .close-btn,
 .modal-close {
@@ -3518,7 +3560,7 @@ tbody .ostrip-tag {
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 /* Clickable rows on a hairline */
 .settings-card {
@@ -4322,21 +4364,21 @@ tbody .ostrip-tag {
 .dash-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .dash-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .widget-card {
   position: relative;
-  padding: var(--section-top) 0 var(--section-bottom);
+  padding: var(--card-pad-y) var(--card-pad-x);
   overflow: hidden;
-  background: transparent;
+  background: var(--card);
   border: 0;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: var(--r-xl);
+  box-shadow: var(--card-shadow);
 }
 .widget-hide-btn {
   position: absolute;
@@ -5000,7 +5042,7 @@ html[data-theme] {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .summary-grid > .card {
   margin-bottom: 0;
@@ -5067,7 +5109,7 @@ html[data-theme] {
 .set-2col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .fin-2col > .card,
 .log-2col > .card,
@@ -5191,16 +5233,17 @@ html[data-theme] {
 }
 
 /* ── 35. RINGKASAN (modules/dashboard.js) ─────────────────────────────────────── */
-/* KPI row: four label / figure / note blocks, no boxes */
+/* KPI row: four label / figure / note cards */
 .dash-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 28px 40px;
-  margin-bottom: 48px;
+  gap: var(--card-gap);
+  margin-bottom: var(--card-gap);
 }
 .dash-kpis > .card.kpi-tile {
-  padding: 0;
-  border: 0;
+  margin: 0;
+  padding: 20px 24px;
+  background: var(--card);
 }
 .kpi-tile {
   display: flex;
@@ -5255,7 +5298,7 @@ html[data-theme] {
 }
 .dash-row {
   display: grid;
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
 }
 .dash-row > .card {
   min-width: 0;
@@ -5965,10 +6008,9 @@ button.dash-funnel-stage:hover .dash-funnel-name {
   }
 }
 @media (max-width: 560px) {
-  /* Two KPI blocks per row on phones: shorter page, figures still full */
-  .dash-kpis {
-    gap: 24px 16px;
-    margin-bottom: 32px;
+  /* Two KPI cards per row on phones: shorter page, figures still full */
+  .dash-kpis > .card.kpi-tile {
+    padding: 14px 16px;
   }
   .kpi-tile-value {
     font-size: 1rem;
@@ -5981,7 +6023,7 @@ button.dash-funnel-stage:hover .dash-funnel-name {
 .eh-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 var(--section-gap);
+  gap: var(--card-gap);
   margin-top: 4px;
 }
 @media (max-width: 700px) {
@@ -5989,7 +6031,7 @@ button.dash-funnel-stage:hover .dash-funnel-name {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* Task rows on a hairline; the icon keeps the colour of its task */
+/* Task cards; the icon keeps the colour of its task */
 .eh-task {
   --eh-fg: var(--primary);
   --eh-bg: var(--primary-light);
@@ -6004,11 +6046,12 @@ button.dash-funnel-stage:hover .dash-funnel-name {
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .eh-grid > .card.eh-task {
-  padding: 20px 0;
-  background: transparent;
+  padding: 20px 24px;
 }
 .eh-grid > .card.eh-task:hover {
-  background: var(--surface-hover);
+  box-shadow:
+    var(--card-shadow),
+    0 0 0 1px var(--btn-tile-border-hover);
 }
 .eh-tone-info {
   --eh-fg: var(--info);

@@ -2833,7 +2833,7 @@ document.addEventListener('click', async e => {
           <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
           <div style="font-size:.875rem;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
           <div style="font-size:.75rem;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
-          <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
+          <div style="background:var(--surface-sunken);border-radius:99px;height:6px;overflow:hidden">
             <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
         </div>`

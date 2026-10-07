@@ -486,7 +486,7 @@
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         FISCAL_REF.map(function (r) {
           return (
-            '<div style="flex:1;min-width:140px;padding:8px 12px;background:var(--bg);border-radius:8px">' +
+            '<div style="flex:1;min-width:140px;padding:8px 12px;background:var(--surface-sunken);border-radius:8px">' +
             '<div style="font-size:.75rem;font-weight:700">' +
             r.name +
             '</div><div style="font-size:.75rem;color:var(--muted)">' +

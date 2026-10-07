@@ -961,7 +961,7 @@
         '<div style="font-size:.75rem;color:var(--muted)">Koneksi API perbankan</div></div>' +
         '<span class="badge badge-warning" style="margin-left:auto">Belum Terhubung</span>' +
         '</div>' +
-        '<div style="padding:16px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);line-height:1.6">' +
+        '<div style="padding:16px;background:var(--surface-sunken);border-radius:8px;font-size:.75rem;color:var(--muted);line-height:1.6">' +
         '<strong>Untuk mengaktifkan SmartLink e-Banking:</strong><br>' +
         '1. Daftarkan perusahaan Anda ke program corporate banking bank terpilih<br>' +
         '2. Dapatkan API Key dan Webhook URL dari portal developer bank<br>' +

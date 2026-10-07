@@ -337,7 +337,7 @@
               '<td class="td-p" style="font-size:.75rem">' +
               esc(c.email || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--bg);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--surface-sunken);border-radius:4px">' +
               esc(c.type || '—') +
               '</span></td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +

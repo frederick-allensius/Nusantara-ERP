@@ -15,8 +15,9 @@
     --sp-6: 20px;
     --sp-5: 16px;
     --sp-4: 12px;
-    --section-top: 28px;
-    --section-bottom: 32px;
+    --card-pad-y: 20px;
+    --card-pad-x: 20px;
+    --card-gap: 12px;
     --section-gap: 32px;
     --fs-title: 1.25rem;
     --fs-figure: 1.25rem;
@@ -28,8 +29,8 @@
     --topbar-h: 52px;
     --sp-8: 20px;
     --sp-6: 16px;
-    --section-top: 24px;
-    --section-bottom: 28px;
+    --card-pad-y: 18px;
+    --card-pad-x: 16px;
   }
 }
 
@@ -1270,11 +1271,11 @@
 @media (max-width: 768px) and (min-width: 361px) {
   .stat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 20px 16px;
+    gap: var(--card-gap);
   }
   .stat-row > .stat-card,
   .stat-row > .card {
-    padding: 0;
+    padding: 14px 16px;
   }
   /* !important: some pages size their figures inline */
   .stat-row .stat-val,

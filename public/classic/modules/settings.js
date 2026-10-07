@@ -324,7 +324,7 @@ function showChangePassword() {
       <label class="form-label">Konfirmasi Password Baru</label>
       <input class="form-input" id="pwd-confirm" type="password" autocomplete="new-password">
     </div>
-    <div style="padding:12px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);margin-top:12px">
+    <div style="padding:12px;background:var(--surface-sunken);border-radius:8px;font-size:.75rem;color:var(--muted);margin-top:12px">
       <strong>Tips keamanan:</strong><br>
       • Gunakan minimal 8 karakter<br>
       • Kombinasikan huruf besar, kecil, angka, dan simbol<br>
@@ -375,7 +375,7 @@ function _groupSecret(s) {
 function _backupCodesHtml(codes) {
   return (
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:monospace;font-size:.875rem;' +
-    'padding:14px;background:var(--bg);border:1px dashed var(--border);border-radius:10px;margin:12px 0">' +
+    'padding:14px;background:var(--surface-sunken);border:1px dashed var(--border);border-radius:10px;margin:12px 0">' +
     codes
       .map(c => '<div style="text-align:center;letter-spacing:1px">' + escapeHtml(c) + '</div>')
       .join('') +
@@ -417,7 +417,7 @@ function showTwoFactorEnroll() {
       '</ol>' +
       '<label class="form-label">Kunci Setup (manual)</label>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
-      '<code id="tfa-secret" style="flex:1;padding:12px;background:var(--bg);border:1px solid var(--border);' +
+      '<code id="tfa-secret" style="flex:1;padding:12px;background:var(--surface-sunken);border:1px solid var(--border);' +
       'border-radius:10px;font-size:.9375rem;letter-spacing:2px;user-select:all">' +
       _groupSecret(secret) +
       '</code>' +
@@ -467,7 +467,7 @@ function showTwoFactorManage(status) {
   status = status || { backupCodesRemaining: 0 };
   openModal(
     'Verifikasi 2 Langkah',
-    '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:14px">' +
+    '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface-sunken);border-radius:10px;margin-bottom:14px">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>' +
       '<div><div style="font-size:.875rem;font-weight:700">2FA Aktif</div>' +
       '<div style="font-size:.75rem;color:var(--muted)">' +
@@ -533,7 +533,7 @@ function showBackupManager() {
   const backups = window.erpBackup.getBackupList();
 
   const statusHtml = status.lastBackup
-    ? `<div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--bg);border-radius:8px;margin-bottom:16px">
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--surface-sunken);border-radius:8px;margin-bottom:16px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
@@ -706,7 +706,7 @@ function showBackupManager() {
           <div class="empty-state-icon" style="margin:0 auto 12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
           <div style="font-size:.875rem;font-weight:600;margin-bottom:8px">Mengupload data ke Firebase...</div>
           <div style="font-size:.75rem;color:var(--muted);margin-bottom:16px" id="sync-fb-status">Memulai...</div>
-          <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden">
+          <div style="background:var(--surface-sunken);border-radius:99px;height:6px;overflow:hidden">
             <div id="sync-fb-bar" style="height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:99px"></div>
           </div>
         </div>`
@@ -802,7 +802,7 @@ function showInstallApp() {
     return list
       .map(
         (s, i) => `
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--surface-sunken);border-radius:8px;margin-bottom:6px">
         <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
         <div style="font-size:.78125rem;line-height:1.5">${s}</div>
       </div>`

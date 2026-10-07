@@ -60,7 +60,7 @@
                 })
                 .join('');
               return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg)">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-sunken)">
                 <div style="font-size:.75rem;font-weight:700">${esc(a.number || a.id)}
                   ${a.note ? `<span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(a.note)}</span>` : ''}</div>
                 <div style="display:flex;align-items:center;gap:10px">
@@ -190,7 +190,7 @@
           <button type="button" class="btn-ghost" id="adj-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:var(--bg)">
+          <thead><tr style="background:var(--surface-sunken)">
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Item</th>
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:110px">Tipe</th>
             <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kuantitas</th>

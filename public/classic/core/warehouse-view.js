@@ -453,7 +453,7 @@
         '<span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Item Transfer</span>' +
         '<button type="button" class="btn-ghost" id="it-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Item</button>' +
         '</div>' +
-        '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)">' +
+        '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface-sunken)">' +
         '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Item</th>' +
         '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:80px">Tersedia</th>' +
         '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Qty Transfer</th>' +
@@ -607,7 +607,7 @@
         '<div style="margin-top:12px"><div style="font-size:.75rem;font-weight:700;margin-bottom:6px">Item Ditransfer (' +
         doc.lines.length +
         ')</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr style="background:var(--bg)">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr style="background:var(--surface-sunken)">' +
         '<th style="padding:6px 8px;text-align:left">Item</th>' +
         '<th style="padding:6px 8px;text-align:right">Qty</th>' +
         '</tr></thead><tbody>';
