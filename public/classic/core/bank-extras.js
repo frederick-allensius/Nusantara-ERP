@@ -478,9 +478,9 @@
     return (
       '<div class="sec-hdr"><div><h1>' +
       esc(title) +
-      '</h1><p>' +
-      esc(desc) +
-      '</p></div>' +
+      '</h1>' +
+      (desc ? '<p>' + esc(desc) + '</p>' : '') +
+      '</div>' +
       '<div><select class="form-select" data-action="bxPeriod" data-kind="' +
       kind +
       '" aria-label="Periode" style="width:auto;min-width:11rem">' +
@@ -566,7 +566,7 @@
       recapPageTopHTML(
         'expense',
         'Pengeluaran Lain',
-        'Biaya kas/bank di luar pembelian barang; dijurnal ke akun beban, jadi ikut masuk Laba Rugi.',
+        '',
         'addOP',
         '+ Catat Pengeluaran'
       ) +
@@ -706,7 +706,7 @@
       recapPageTopHTML(
         'income',
         'Penerimaan Lain',
-        'Uang masuk di luar penjualan barang; dijurnal ke akun pendapatan, jadi ikut masuk Laba Rugi.',
+        '',
         'addOD',
         '+ Catat Penerimaan'
       ) +
@@ -1362,7 +1362,7 @@
     injectView(
       '<div class="sec-hdr"><div><h1>Riwayat Kas &amp; Bank</h1><p>' +
         entries.length.toLocaleString('id-ID') +
-        ' transaksi, terbaru di atas</p></div></div>' +
+        ' transaksi</p></div></div>' +
         '<div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">' +
         '<div class="card stat-card"><div class="stat-label">Total Masuk</div><div class="stat-val">' +
         money(totalIn) +

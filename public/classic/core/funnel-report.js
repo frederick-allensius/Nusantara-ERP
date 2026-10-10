@@ -536,7 +536,7 @@
       'padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:.8125rem;background:var(--surface);color:var(--text)';
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
+      '<div class="sec-hdr"><div><h1>Laporan per Periode</h1></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div class="cr-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
         '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Dari Tanggal' +

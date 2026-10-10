@@ -362,7 +362,7 @@ function _dashActions() {
     .concat([
       {
         label: 'Pesanan terkirim tanpa faktur',
-        hint: 'Barang sudah dikirim, faktur belum dibuat',
+        about: 'Barang sudah dikirim, faktur belum dibuat',
         count: so.filter(function (o) {
           return o.status === 'Delivered' && !invoiced('sales', o.id);
         }).length,
@@ -375,7 +375,7 @@ function _dashActions() {
       },
       {
         label: 'Pengiriman belum selesai',
-        hint: 'Surat jalan pending atau dalam perjalanan',
+        about: 'Surat jalan pending atau dalam perjalanan',
         count: (DB.deliveryOrders || []).filter(function (d) {
           return (d.status === 'Pending' || d.status === 'In Transit') && notPickup(d);
         }).length,
@@ -387,7 +387,7 @@ function _dashActions() {
       },
       {
         label: 'Pesanan penjualan belum dikirim',
-        hint: 'Dikonfirmasi atau lunas, barang belum keluar',
+        about: 'Dikonfirmasi atau lunas, barang belum keluar',
         count: so.filter(function (o) {
           return (o.status === 'Confirmed' || o.status === 'Paid') && notPickup(o);
         }).length,
@@ -399,7 +399,7 @@ function _dashActions() {
       },
       {
         label: 'Pesanan pembelian belum diterima',
-        hint: 'Dikonfirmasi atau lunas, barang belum masuk',
+        about: 'Dikonfirmasi atau lunas, barang belum masuk',
         count: po.filter(function (o) {
           return (o.status === 'Confirmed' || o.status === 'Paid') && notPickup(o);
         }).length,
@@ -411,7 +411,7 @@ function _dashActions() {
       },
       {
         label: 'Penawaran menunggu jawaban',
-        hint: 'Penawaran penjualan yang sudah dikirim',
+        about: 'Penawaran penjualan yang sudah dikirim',
         count: (DB.salesQuotations || []).filter(function (q) {
           return q.status === 'Sent';
         }).length,
@@ -423,7 +423,7 @@ function _dashActions() {
       },
       {
         label: 'Dokumen masih draft',
-        hint: 'Pesanan dan faktur yang belum diposting',
+        about: 'Pesanan dan faktur yang belum diposting',
         count: drafts,
         open: 'Pesanan Penjualan',
         rank: 10,
@@ -783,7 +783,7 @@ var _dashTrading = (function () {
           : 0;
       rows.push({
         label: 'Email rekap belum diperiksa',
-        hint: 'Rekap timbangan dan foto tiket dari supplier (simulasi)',
+        about: 'Rekap timbangan dan foto DO dari supplier (simulasi)',
         count: inbox,
         open: 'Kotak Masuk Rekap',
         rank: 1.5,
@@ -795,7 +795,7 @@ var _dashTrading = (function () {
       var diffs = S().supplierDiffs();
       rows.push({
         label: 'Perubahan timbangan belum ditindaklanjuti',
-        hint: 'Berat berubah setelah pengambilan ditagih',
+        about: 'Berat berubah setelah pengambilan ditagih',
         count: diffs.alerts.length,
         open: 'Perubahan Timbangan',
         rank: 2,
@@ -837,7 +837,7 @@ var _dashTrading = (function () {
       });
       rows.push({
         label: 'Tagihan supplier berbeda dari pengambilan',
-        hint: 'Jumlah atau harga di faktur supplier tidak sama dengan timbangan',
+        about: 'Jumlah atau harga di faktur supplier tidak sama dengan timbangan',
         count: diffs.invoices,
         open: 'Tagihan Supplier',
         rank: 4,
@@ -1381,7 +1381,7 @@ var _dashTrading = (function () {
       var any = six.keys.some(function (k) {
         return six.data[k].revenue || six.data[k].purchases;
       });
-      sub = 'Penjualan dan pembelian dari jurnal';
+      sub = '';
       legend = any
         ? '<div class="chart-legend"><span><i class="is-sales"></i>Penjualan</span><span><i class="is-purchases"></i>Pembelian</span></div>'
         : '';
@@ -1391,9 +1391,8 @@ var _dashTrading = (function () {
     }
     return (
       '<div class="card dash-trend"><div class="card-head"><div><div class="card-title">Tren 6 bulan</div>' +
-      '<div class="card-sub">' +
-      esc(sub) +
-      '</div></div>' +
+      (sub ? '<div class="card-sub">' + esc(sub) + '</div>' : '') +
+      '</div>' +
       switcher +
       '</div>' +
       legend +
@@ -2005,11 +2004,13 @@ function renderDashboard() {
       return (
         '<button type="button" class="dash-act-row" data-dash-open="' +
         escapeHtml(r.open) +
-        '"><span class="dash-act-main"><span class="dash-act-title">' +
+        '"' +
+        (r.about ? ' title="' + escapeHtml(r.about) + '"' : '') +
+        '><span class="dash-act-main"><span class="dash-act-title">' +
         escapeHtml(r.title || r.label) +
-        '</span><span class="dash-act-sub">' +
-        escapeHtml(r.hint) +
-        '</span></span><span class="dash-act-count' +
+        '</span>' +
+        (r.hint ? '<span class="dash-act-sub">' + escapeHtml(r.hint) + '</span>' : '') +
+        '</span><span class="dash-act-count' +
         (r.urgent ? ' is-urgent' : '') +
         '">' +
         r.count +
@@ -2033,7 +2034,7 @@ function renderDashboard() {
     });
     actions = _dashCard(
       'Perlu tindakan',
-      'Dokumen yang menunggu langkah berikutnya',
+      '',
       rows.length
         ? '<div class="dash-act-body">' + groups.join('') + '</div>'
         : _dashEmpty('Tidak ada dokumen yang menunggu tindakan.')

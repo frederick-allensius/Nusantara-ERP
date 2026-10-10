@@ -585,7 +585,7 @@
     } else {
       html += tableCard(
         'PO berjalan',
-        'Klik baris untuk melihat surat jalan',
+        '',
         ['PO', 'Supplier', 'Pelanggan', 'Barang', 'Diambil', '#Surat jalan', 'Batas', 'Status'],
         open.map(poRow),
         {
@@ -715,7 +715,7 @@
     });
     var html = tableCard(
       'PO siap dibuka',
-      'PO supplier berstatus Dikonfirmasi berisi satu barang. Saat dibuka, surat jalan untuk semua truk langsung dibuat.',
+      '',
       ['PO', 'Supplier', 'Barang', '#Jumlah', ''],
       rows,
       { empty: 'Tidak ada PO supplier yang siap dibuka.', cards: true }
@@ -1184,7 +1184,7 @@
     });
     html += tableCard(
       'Surat jalan',
-      'Satu surat jalan per truk. Faktur: atas = pelanggan, bawah = supplier.',
+      '',
       [
         'No SJ',
         'Status',
@@ -1543,7 +1543,7 @@
           );
         })
         .join('') +
-      '</select><div class="form-hint">Pilih nomor yang tertulis di surat jalan truk. Bawaan: nomor berikutnya.</div></div>';
+      '</select></div>';
 
     form +=
       '<div class="form-group"><label class="form-label" for="pv-rec-date">Tanggal ambil<span class="req">*</span></label>' +
@@ -1595,7 +1595,7 @@
     form +=
       field('pv-rec-dest', 'Tujuan', S.rec.dest, {
         attrs: ' autocomplete="off"',
-        hint: 'Terisi dari alamat pelanggan. Ubah hanya bila truk dikirim ke alamat lain — surat jalan akan ditandai "Tujuan diubah".',
+        hint: 'Ubah hanya bila truk dikirim ke alamat lain.',
       }) +
       field('pv-rec-ticket', 'No. DO / tiket timbang', S.rec.ticketNo, {
         attrs: ' autocomplete="off"',
@@ -1617,7 +1617,7 @@
           (S.rec.photoKB * 1024 > PHOTO_LIMIT
             ? '<div class="notice notice-warning"><div>Foto masih lebih dari 300 KB. Bila bisa, ambil ulang lebih dekat ke DO.</div></div>'
             : '')
-        : '<div class="form-hint">Opsional, sebagai bukti. Foto diperkecil otomatis sebelum disimpan.</div>') +
+        : '<div class="form-hint">Opsional</div>') +
       '</div>';
 
     form +=
@@ -1665,9 +1665,9 @@
   function netHint(c) {
     if (c.fromGross) {
       if (c.tare >= c.gross) return 'Tara harus lebih kecil dari bruto.';
-      return 'Netto = bruto − tara, dihitung otomatis. Kosongkan bruto bila DO hanya mencantumkan netto.';
+      return 'Netto = bruto − tara';
     }
-    return 'Isi bruto dan tara dari DO / tiket timbang, atau isi netto saja bila hanya itu yang tertera.';
+    return 'Isi bruto dan tara, atau netto saja';
   }
   function updateNet() {
     var netEl = document.getElementById('pv-rec-net');
@@ -2326,7 +2326,7 @@
     var events = weightEvents();
     html += tableCard(
       'Riwayat perubahan berat',
-      'Semua perubahan berat setelah pertama kali dicatat, terbaru di atas',
+      '',
       ['Waktu', 'Surat jalan', 'Berat', 'Sumber', 'Status', ''],
       events.map(function (e) {
         var a = alertForEvent(e);

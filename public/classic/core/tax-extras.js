@@ -385,7 +385,7 @@
 
     var header =
       '<div class="sec-hdr"><div><h1>Pajak &amp; PPN</h1>' +
-      '<p>Per masa pajak, dari dokumen yang sudah diposting. Faktur pajak dan SPT tetap lewat aplikasi DJP.</p></div>' +
+      '<p>Faktur pajak dan SPT tetap lewat aplikasi DJP.</p></div>' +
       '<div><select class="form-select" id="tax-period" aria-label="Masa pajak" style="width:auto">' +
       pOpts +
       '</select>' +
@@ -505,8 +505,7 @@
       .join('');
 
     injectView(
-      '<div class="sec-hdr"><div><h1>Ekspor Coretax</h1><p>File XML faktur pajak keluaran untuk ' +
-        'Coretax DJP (Faktur Keluaran → Impor)</p></div>' +
+      '<div class="sec-hdr"><div><h1>Ekspor Coretax</h1><p>Diimpor di Coretax: Faktur Keluaran → Impor</p></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<button class="btn-ghost" data-action="cfgEfaktur">Konfigurasi</button>' +
         '<button class="btn-ghost" data-action="exportCTAS" title="Format CSV aplikasi e-Faktur lama">CSV format lama</button>' +

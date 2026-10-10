@@ -2229,7 +2229,7 @@ function renderSettings() {
     <span class="avatar-sm">${escapeHtml(initials)}</span>
     <div class="account-card-text">
       <div class="card-title">Masuk sebagai ${escapeHtml(userName)}</div>
-      <div class="card-sub">${userRole ? `Peran ${escapeHtml(userRole)} · ` : ''}menu dan tombol mengikuti hak akses peran</div>
+      ${userRole ? `<div class="card-sub">${escapeHtml(userRole)}</div>` : ''}
     </div>
     <button class="btn-ghost" data-action="logout">Keluar</button>
   </div>
