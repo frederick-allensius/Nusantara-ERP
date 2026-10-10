@@ -1795,23 +1795,26 @@ tbody .badge-purple {
 /* Inline row action button (Post / Send / Convert / Reconcile / Invoice …).
    Rendered in generated HTML strings across the doc views; give it a proper
    readable, comfortably-tappable base so it inherits the senior-friendly scale. */
+/* Row step button (Rekonsiliasi, Kirim, Posting…): same look as
+   .btn-ghost.btn-sm, the design system's small secondary tile. */
 .action-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
-  min-height: 36px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text);
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--btn-tile-border);
+  border-radius: var(--r);
+  background: linear-gradient(180deg, var(--btn-tile-top), var(--btn-tile-bottom));
+  box-shadow: var(--btn-tile-shadow);
+  color: var(--text-secondary);
   font-family: var(--font-sans);
-  font-size: var(--fs-sm);
+  font-size: .78125rem;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
   touch-action: manipulation;
 }
 .action-primary:active {
@@ -1838,8 +1841,8 @@ tbody .badge-purple {
 
 /* Row actions */
 .action-primary:hover {
-  color: var(--primary) !important;
-  border-color: var(--primary) !important;
+  border-color: var(--btn-tile-border-hover);
+  color: var(--text);
 }
 .action-edit,
 .action-edit-btn {
@@ -5259,6 +5262,11 @@ html[data-theme] {
   border-top: 1px solid var(--border-strong);
   font-weight: 600;
   color: var(--text);
+}
+.balance-panel .balance-total:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 .balance-panel .balance-total strong {
   font-size: .9375rem;

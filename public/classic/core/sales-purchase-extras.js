@@ -244,8 +244,8 @@
         });
         var statusBadge =
           d.status === 'Applied'
-            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterapkan</span>'
-            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Diterima</span>';
+            ? '<span class="badge badge-success">Diterapkan</span>'
+            : '<span class="badge badge-warning">Diterima</span>';
         var orderTotal = so ? (so.amount || 0) : 0;
         var allDPForOrder = dps.filter(function (x) { return x.orderId === d.orderId; })
           .reduce(function (s, x) { return s + (x.amount || 0); }, 0);
@@ -439,8 +439,8 @@
         });
         var statusBadge =
           d.status === 'Applied'
-            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterapkan</span>'
-            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Dibayar</span>';
+            ? '<span class="badge badge-success">Diterapkan</span>'
+            : '<span class="badge badge-warning">Dibayar</span>';
         var orderTotal = po ? (po.amount || 0) : 0;
         var allDPForOrder = dps.filter(function (x) { return x.orderId === d.orderId; })
           .reduce(function (s, x) { return s + (x.amount || 0); }, 0);
@@ -794,8 +794,8 @@
           ' item</td>' +
           '<td class="td-p">' +
           (r.posted
-            ? '<span class="badge" style="background:var(--success-bg);color:var(--success)">Diterima</span>'
-            : '<span class="badge" style="background:var(--warning-bg);color:var(--warning)">Draft</span>') +
+            ? '<span class="badge badge-success">Diterima</span>'
+            : '<span class="badge badge-neutral">Draft</span>') +
           '</td>' +
           (rc ? '<td class="td-p">' + rc.status + '</td><td class="td-p">' + rc.invoice + '</td>' : '') +
           '<td class="td-p" style="white-space:nowrap">' +

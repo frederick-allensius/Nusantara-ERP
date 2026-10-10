@@ -278,7 +278,7 @@
         ? '<span class="badge badge-success">Direkonsiliasi</span>'
         : '<span class="badge badge-warning">Belum</span>',
       invoice: inv
-        ? '<span class="badge badge-info">' + esc(inv.number || inv.id) + '</span>'
+        ? '<span class="doc-no">' + esc(inv.number || inv.id) + '</span>'
         : '<span class="t-muted">—</span>',
       actions:
         '<button class="action-primary" data-action="reconcileReceipt" data-id="' +

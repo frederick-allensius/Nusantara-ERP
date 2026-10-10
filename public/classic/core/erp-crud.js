@@ -1409,7 +1409,7 @@ function linesDetailHTML(lines, totalLabel, doc) {
             <td style="padding:7px 10px;font-size:.75rem;color:var(--muted)">${escapeHtml(l.unit)}</td>
             <td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${idrFull(l.price)}</td>
             ${showDisc ? `<td style="padding:7px 10px;font-size:.75rem;text-align:right;color:var(--muted)">${(l.lineDiscount || 0) > 0 ? '−' + idrFull(l.lineDiscount) : '—'}</td>` : ''}
-            <td style="padding:7px 10px;font-size:.75rem;font-weight:700;text-align:right">${idrFull(l.subtotal)}</td>
+            <td style="padding:7px 10px;font-size:.75rem;text-align:right;font-variant-numeric:tabular-nums">${idrFull(l.subtotal)}</td>
           </tr>`
             )
             .join('')}
@@ -1419,7 +1419,7 @@ function linesDetailHTML(lines, totalLabel, doc) {
     <div style="text-align:right;margin-top:10px">
       ${taxRate ? `
       <div style="font-size:.75rem;color:var(--muted);margin-bottom:2px">DPP: ${idrFull(dppAmt)}</div>
-      <div style="font-size:.75rem;color:var(--info);font-weight:600;margin-bottom:4px">PPN (${Math.round(taxRate * 100)}%)${taxIncl ? ' — termasuk' : ''}: ${idrFull(taxAmt)}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">PPN ${Math.round(taxRate * 100)}%${taxIncl ? ' (termasuk)' : ''}: ${idrFull(taxAmt)}</div>
       ` : ''}
       <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
         <span style="font-size:.75rem;color:var(--muted)">${totalLabel || 'Total'}:</span>
