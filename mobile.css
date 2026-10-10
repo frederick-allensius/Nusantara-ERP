@@ -1738,3 +1738,15 @@
   }
 }
 
+
+/* Kotak Masuk Rekap on phones: figures and their small notes on one line */
+@media (max-width: 560px) {
+  .ri-table .ri-fig,
+  .ri-table .ri-photo-link {
+    display: inline;
+  }
+  .ri-table td[data-cell="meta"] .ri-fig-sub {
+    display: inline;
+    margin-left: 4px;
+  }
+}
