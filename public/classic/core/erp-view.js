@@ -1596,10 +1596,6 @@ function renderFinance() {
   });
   const netProfit = revenue - cogs - expense;
 
-  const B = window.Balances;
-  const ar = B ? B.summary('sales') : { total: 0, overdue: 0, count: 0, overdueCount: 0, dueSoon: 0 };
-  const ap = B ? B.summary('purchases') : { total: 0, overdue: 0, count: 0, overdueCount: 0, dueSoon: 0 };
-
   // Inventory: moving-average valuation vs. the ledger's inventory accounts.
   const costOf = item =>
     window.CostLedger ? window.CostLedger.costOf(item.id) : Number(item.cost) || 0;
@@ -1612,14 +1608,13 @@ function renderFinance() {
 
   const metric = (label, value, cls) =>
     `<div class="metric-row"><span>${escapeHtml(label)}</span><strong class="${cls || ''}">${value}</strong></div>`;
-  const taxCfg = (DB.settings && DB.settings.tax) || {};
   const integrityPanel =
     typeof window.Integrity !== 'undefined' && typeof window.Integrity.statusCardHTML === 'function'
       ? window.Integrity.statusCardHTML()
       : '';
 
   return `
-  ${secHdr('Ringkasan Keuangan', 'Kas, piutang, hutang, dan laba — dihitung dari buku besar')}
+  ${secHdr('Ringkasan Keuangan', 'Kas, laba, persediaan, piutang dan hutang — dihitung dari buku besar')}
   ${statRow(cashStats)}
   <div class="summary-grid">
     <div class="card">
@@ -1631,14 +1626,6 @@ function renderFinance() {
       <button class="btn-ghost btn-sm" data-action="openFinPL">Buka Laporan Laba Rugi</button>
     </div>
     <div class="card">
-      <div class="card-title">Piutang & hutang</div>
-      ${metric('Piutang belum dibayar', idr(ar.total))}
-      ${metric('Piutang lewat jatuh tempo', idr(ar.overdue), ar.overdue > 0 ? 't-danger' : '')}
-      ${metric('Hutang belum dibayar', idr(ap.total))}
-      ${metric('Hutang jatuh tempo 7 hari', idr(ap.dueSoon), ap.dueSoon > 0 ? 't-warning' : '')}
-      <button class="btn-ghost btn-sm" data-action="openFinBS">Buka Neraca</button>
-    </div>
-    <div class="card">
       <div class="card-title">Persediaan</div>
       ${metric('Nilai stok (harga pokok rata-rata)', idr(stockValue))}
       ${metric('Saldo akun persediaan', idr(inventoryGL))}
@@ -1647,13 +1634,6 @@ function renderFinance() {
           ? `<div class="notice notice-warning">Selisih ${idr(inventoryGap)}. Biasanya karena saldo awal persediaan belum dijurnal — catat lewat Import Excel (Opening Balances) atau Jurnal Umum.</div>`
           : '<div class="notice notice-success">Nilai stok sama dengan buku besar.</div>'
       }
-    </div>
-    <div class="card">
-      <div class="card-title">Pajak</div>
-      ${metric('Status', taxCfg.pkp ? 'PKP' : 'Non-PKP')}
-      ${metric('NPWP', escapeHtml(taxCfg.npwp || 'Belum diisi'))}
-      ${metric('Tarif PPN', `${Math.round((taxCfg.ppnRate || 0) * 100)}%`)}
-      <button class="btn-ghost btn-sm" data-action="editTaxSettings">Pengaturan Pajak</button>
     </div>
   </div>
   ${integrityPanel}
@@ -3487,7 +3467,9 @@ function _agingSection(side) {
     <div class="card-head">
       <div>
         <div class="card-title">${isSales ? 'Piutang pelanggan' : 'Hutang ke supplier'}</div>
-        <div class="card-sub">${s.count} dokumen belum lunas · ${s.overdueCount} lewat jatuh tempo</div>
+        <div class="card-sub">${s.count} dokumen belum lunas · ${s.overdueCount} lewat jatuh tempo${
+          !isSales && s.dueSoon > 0 ? ` · ${idr(s.dueSoon)} jatuh tempo 7 hari ke depan` : ''
+        }</div>
       </div>
       <div class="card-figure">${idr(s.total)}</div>
     </div>
