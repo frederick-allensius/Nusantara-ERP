@@ -214,14 +214,15 @@
               ? `${esc(j.source.docType)} ${esc(j.source.docId)}`
               : '—';
         const lines = (j.lines || [])
-          .map(
-            l => `<tr>
+          .map(l => {
+            const memo = shortMemo(l.memo, j.number || j.id, l.accountName);
+            return `<tr>
             <td class="jv-code acct-no">${esc(l.accountNo)}</td>
-            <td>${esc(l.accountName)}${l.memo ? `<span class="t-muted"> · ${esc(l.memo)}</span>` : ''}</td>
+            <td>${esc(l.accountName)}${memo ? `<span class="t-muted"> · ${esc(memo)}</span>` : ''}</td>
             <td class="jv-debit t-num">${l.debit ? money(l.debit) : ''}</td>
             <td class="jv-credit t-num">${l.credit ? money(l.credit) : ''}</td>
-          </tr>`
-          )
+          </tr>`;
+          })
           .join('');
         // One box per journal (style.css .gl-jv): number and source on top, the
         // lines in regular weight, only the Total row bold.
@@ -251,6 +252,19 @@
         })
       : '';
     return `${journalFilterBar()}<div class="card">${head}${cards}${pager}</div>`;
+  }
+
+  // A line memo without what the journal head already says: the document
+  // number at its end ("Pembelian PO…/06" → "Pembelian"), and nothing when the
+  // rest only repeats the account ("Hutang Usaha · Hutang").
+  function shortMemo(memo, label, accountName) {
+    let m = String(memo || '').trim();
+    const l = String(label || '').trim();
+    if (l && m.endsWith(l)) {
+      m = m.slice(0, -l.length).trim();
+    }
+    const acc = String(accountName || '').toLowerCase();
+    return m && acc.includes(m.toLowerCase()) ? '' : m;
   }
 
   // ── Chart of Accounts tab ───────────────────────────────────────────────────
