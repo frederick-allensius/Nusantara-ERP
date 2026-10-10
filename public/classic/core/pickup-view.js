@@ -2018,7 +2018,7 @@
     if (r.fill.length) {
       html += tableCard(
         'Baru dicatat',
-        'Surat jalan yang belum tercatat dan ada beratnya di rekap',
+        '',
         [
           '#Baris',
           'No SJ',
@@ -2057,7 +2057,7 @@
     if (r.changed.length) {
       html += tableCard(
         'Berubah',
-        'Berat di rekap berbeda dari yang sudah tercatat',
+        '',
         ['#Baris', 'No SJ', 'Tanggal', 'No. Polisi', 'Pelanggan', 'Berat', '#Selisih', 'Faktur'],
         r.changed.map(function (m) {
           var d = find('deliveryOrders', m.doId) || {};
@@ -2092,7 +2092,7 @@
     if (r.unmatched.length) {
       html += tableCard(
         'Tidak cocok',
-        'Tidak ada surat jalan yang cocok — periksa nomor SJ, tanggal, atau No. Polisi',
+        'Periksa No SJ, tanggal, atau No. Polisi',
         ['#Baris', 'No SJ', 'Tanggal', 'No. Polisi', '#Netto', 'Alasan'],
         r.unmatched.map(function (m) {
           return (
@@ -2110,7 +2110,7 @@
     if (split.problems.length) {
       html += tableCard(
         'Bermasalah',
-        'Surat jalan ditemukan tetapi baris ini tidak bisa dipakai',
+        '',
         ['#Baris', 'No SJ', 'Tanggal', 'No. Polisi', '#Netto', 'Alasan'],
         split.problems.map(function (m) {
           return (
@@ -2289,7 +2289,7 @@
     // any screen width.
     html +=
       '<div class="card"><div class="card-head"><div><div class="card-title">Perlu ditindaklanjuti</div>' +
-      '<div class="card-sub">Berat berubah setelah ditagih. Faktur lama tidak diubah; selisihnya ditagih dengan faktur susulan, atau tandai selesai dengan catatan.</div></div></div>' +
+      '<div class="card-sub">Berat berubah setelah ditagih. Faktur lama tidak diubah.</div></div></div>' +
       (alerts.length
         ? alerts
             .map(function (d) {
@@ -2437,9 +2437,7 @@
         ? '<div class="form-group"><label class="form-label" for="pv-adj-ref">No. faktur supplier<span class="req">*</span></label>' +
           '<input class="form-input" id="pv-adj-ref" autocomplete="off" placeholder="Nomor di tagihan selisih dari supplier"></div>'
         : '') +
-      '<div class="form-hint">Faktur lama tetap. Faktur susulan berisi satu baris untuk selisih ini' +
-      (sideKey === 'sales' ? ' dan bisa langsung dicetak dari Faktur Penjualan.' : '.') +
-      '</div>';
+      '<div class="form-hint">Faktur lama tidak diubah; faktur baru berisi selisihnya saja.</div>';
     openDialog(
       (sideKey === 'sales' ? 'Tagih selisih · ' : 'Tagihan selisih supplier · ') + (d.sjNo || d.number),
       body,
