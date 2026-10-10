@@ -531,20 +531,11 @@
         sub: 'dari ' + all.length + ' PO pengambilan',
       },
       { label: 'Surat jalan siap', value: String(slotsReady), sub: 'belum dipakai truk' },
-      {
-        label: 'Perubahan timbangan',
-        value: String(alerts.length),
-        sub: alerts.length ? 'belum ditindaklanjuti' : 'tidak ada yang terbuka',
-        color: alerts.length ? 'var(--danger)' : '',
-      },
     ]);
     if (alerts.length) {
       html +=
         '<div class="notice notice-warning"><div>' +
-        esc(
-          alerts.length +
-            ' surat jalan berubah beratnya setelah ditagih. Periksa dan tindak lanjuti di Perubahan Timbangan.'
-        ) +
+        esc(alerts.length + ' surat jalan berubah berat setelah ditagih.') +
         ' ' +
         button('Buka Perubahan Timbangan', 'pvGoChanges', null, 'btn-ghost btn-sm') +
         '</div></div>';
@@ -577,7 +568,7 @@
     if (S.ordersTab === 'done') {
       html += tableCard(
         'PO selesai',
-        'Ditutup karena kuota terpenuhi, lewat batas pengambilan, atau ditutup manual',
+        '',
         ['PO', 'Supplier', 'Pelanggan', 'Barang', 'Diambil', '#Surat jalan', 'Batas', 'Status'],
         done.map(poRow),
         { empty: 'Belum ada PO pengambilan yang selesai.', wrap: true, cards: true }
@@ -713,19 +704,17 @@
         '</tr>'
       );
     });
-    var html = tableCard(
-      'PO siap dibuka',
-      '',
-      ['PO', 'Supplier', 'Barang', '#Jumlah', ''],
-      rows,
-      { empty: 'Tidak ada PO supplier yang siap dibuka.', cards: true }
-    );
+    var html = rows.length
+      ? tableCard('PO siap dibuka', '', ['PO', 'Supplier', 'Barang', '#Jumlah', ''], rows, {
+          cards: true,
+        })
+      : '<p class="pv-quiet">Belum ada PO supplier yang siap dibuka.</p>';
     if (multi.length) {
       html +=
         '<div class="notice notice-info"><div>' +
         esc(
           multi.length +
-            ' PO berstatus Dikonfirmasi berisi lebih dari satu barang sehingga tidak bisa dibuka untuk pengambilan. Buat satu PO per barang.'
+            ' PO dikonfirmasi berisi lebih dari satu barang, jadi tidak bisa dibuka untuk pengambilan.'
         ) +
         '</div></div>';
     }
@@ -1095,13 +1084,7 @@
     html +=
       '<div class="card">' +
       '<div class="detail-grid">' +
-      detail('Supplier', esc(po.supplier || '—')) +
-      detail(
-        'Pelanggan',
-        esc(customerOf(po) || '—') +
-          (so ? ' <span class="doc-no t-muted">' + esc(so.number || so.id) + '</span>' : '')
-      ) +
-      detail('Barang', esc(l.itemName || '—')) +
+      detail('PO pelanggan', so ? '<span class="doc-no">' + esc(so.number || so.id) + '</span>' : '—') +
       detail('Kapasitas per truk', esc(qty(po.pickupFlow.capacity, u.unit))) +
       detail('Batas pengambilan', cutoffCell(po, u)) +
       detail('Status', poStatusBadge(po, u)) +
@@ -1124,8 +1107,6 @@
           ' siap' +
           (voided ? ' · ' + voided + ' batal' : '')
       ) +
-      '</div><div class="form-hint">' +
-      esc('Total ' + u.tripsMax + ' surat jalan untuk PO ini') +
       '</div></div>' +
       '</div>' +
       '</div>';
@@ -2995,6 +2976,7 @@
       '.pv-photo-prev{margin-top:10px}',
       '.pv-photo-prev img{display:block;max-width:100%;max-height:16rem;border:1px solid var(--border);border-radius:var(--r-sm)}',
       '.pv-photo-full{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:var(--r-sm)}',
+      '.pv-quiet{margin:0 0 var(--card-gap);color:var(--muted);font-size:.8125rem}',
       '.pv-submit{width:100%;height:3.25rem;font-size:1.125rem;font-weight:600}',
       '.pv-row-danger td{background:var(--danger-bg)}',
       '.pv-alert{margin-top:12px;padding:14px 16px;background:var(--danger-bg);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:var(--r-sm)}',

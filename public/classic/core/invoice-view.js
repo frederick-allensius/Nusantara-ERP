@@ -920,7 +920,7 @@
 
     const balanceHTML = bal
       ? `<div class="balance-panel">
-          <div><span>Total faktur</span><strong>${money(bal.total)}</strong></div>
+          ${bal.payments || bal.settlements || bal.returns ? `<div><span>Total faktur</span><strong>${money(bal.total)}</strong></div>` : ''}
           ${bal.payments ? `<div><span>Dibayar lewat ${esc(t.srcLabel)}</span><strong>− ${money(bal.payments)}</strong></div>` : ''}
           ${bal.settlements ? `<div><span>${type === 'SI' ? 'Penerimaan' : 'Pembayaran'}</span><strong>− ${money(bal.settlements)}</strong></div>` : ''}
           ${bal.returns ? `<div><span>Retur</span><strong>− ${money(bal.returns)}</strong></div>` : ''}
