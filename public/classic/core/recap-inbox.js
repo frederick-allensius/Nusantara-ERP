@@ -831,6 +831,7 @@
       label: 'Berat lama diubah',
       kind: 'danger',
       note: 'Rekap mengubah berat yang sudah tercatat; foto DO sama dengan catatan',
+      short: 'Foto DO sama dengan catatan',
     },
     unclear: {
       label: 'Foto kurang jelas',
@@ -1062,14 +1063,12 @@
       btn('Periksa email', 'riCheck', { cls: 'btn', icon: 'mail' });
     return (
       '<div id="ri-root">' +
-      '<div class="sec-hdr"><div><h1>Kotak Masuk Rekap</h1>' +
-      '<p>Rekap timbangan dan foto DO dari email supplier, diperiksa otomatis sebelum dicatat.</p></div>' +
+      '<div class="sec-hdr"><div><h1>Kotak Masuk Rekap</h1></div>' +
       '<div class="pv-hdr-actions">' +
       actions +
       '</div></div>' +
-      '<div class="notice notice-info ri-sim"><div><strong>Simulasi.</strong> Email dan pembacaan foto ' +
-      'disimulasikan dari data PO pengambilan di aplikasi; belum terhubung ke kotak email sungguhan. ' +
-      'Yang dicatat lewat halaman ini masuk ke data aplikasi seperti impor rekap biasa. ' +
+      '<div class="notice notice-info ri-sim"><div><strong>Simulasi</strong> — belum tersambung ke email; ' +
+      'yang dicatat masuk ke data aplikasi. ' +
       btn('Cara kerja', 'riHow', { cls: 'link-btn' }) +
       (S.emails.length ? ' · ' + btn('Ulang simulasi', 'riReset', { cls: 'link-btn' }) : '') +
       '</div></div>' +
@@ -1139,8 +1138,7 @@
       icon('mail', 28) +
       '</div><div class="ri-empty-title">' +
       (S.emails.length ? 'Pilih email untuk melihat hasil pemeriksaan' : 'Menunggu email rekap') +
-      '</div><div class="ri-empty-text">Setiap email berisi rekap Excel dan foto DO supplier. ' +
-      'Sistem membaca keduanya, mencocokkan dengan surat jalan di aplikasi, lalu menahan yang berbeda.</div></div>'
+      '</div><div class="ri-empty-text">Rekap Excel dan foto DO dicocokkan dengan surat jalan; yang berbeda ditahan.</div></div>'
     );
   }
 
@@ -1253,7 +1251,7 @@
             '">'
           : '');
     } else if (r.status === 'match' || r.status === 'update') {
-      decision = '<span class="t-muted">Otomatis dicatat</span>';
+      decision = '<span class="t-muted">Otomatis</span>';
     } else {
       decision = '<span class="t-muted">—</span>';
     }
@@ -1264,7 +1262,7 @@
       '<td data-cell="title"><span class="doc-no">' +
       esc(r.sjNo) +
       '</span><span class="ri-fig-sub">' +
-      esc([fmtDate(t.date), t.vehicle].filter(Boolean).join(' · ')) +
+      esc([typeof window.tgl === 'function' ? window.tgl(t.date) : fmtDate(t.date), t.vehicle].filter(Boolean).join(' · ')) +
       '</span></td>' +
       '<td class="t-num" data-cell="meta" data-cap="Tercatat">' +
       (r.recorded != null
@@ -1279,11 +1277,13 @@
       '</td>' +
       '<td data-cell="status"><span class="badge badge-' +
       st.kind +
+      '" title="' +
+      esc(st.note) +
       '">' +
       esc(st.label) +
-      '</span><span class="ri-fig-sub">' +
-      esc(st.note) +
-      '</span></td>' +
+      '</span>' +
+      (st.short ? '<span class="ri-fig-sub">' + esc(st.short) + '</span>' : '') +
+      '</td>' +
       '<td data-cell="action" class="ri-decide">' +
       decision +
       '</td></tr>'
@@ -1350,7 +1350,7 @@
 
     var check =
       '<div class="card ri-check"><div class="card-head"><div><div class="card-title">Pemeriksaan otomatis</div>' +
-      '<div class="card-sub">Rekap Excel, foto DO, dan catatan di aplikasi dibandingkan per surat jalan</div></div></div>' +
+      '</div></div>' +
       stepsHTML(email, rows, running ? step : STEPS.length) +
       '</div>';
     if (running) return head + check;
@@ -1376,7 +1376,7 @@
     var hasIssues = replyLines(rows).length > 0;
     var table =
       '<div class="card ri-result"><div class="card-head"><div><div class="card-title">Hasil per surat jalan</div>' +
-      '<div class="card-sub">Angka dalam ton. Klik angka foto untuk melihat foto dan bagian yang dibaca.</div></div></div>' +
+      '<div class="card-sub">Ton</div></div></div>' +
       '<div class="table-wrap"><table class="data-table list-cards ri-table"><thead><tr>' +
       '<th>Surat jalan</th><th class="t-num">Tercatat</th><th class="t-num">Rekap Excel</th>' +
       '<th class="t-num">Foto DO</th><th>Hasil</th><th>Keputusan</th></tr></thead><tbody>' +
