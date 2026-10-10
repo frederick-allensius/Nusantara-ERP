@@ -6896,6 +6896,12 @@ button.dash-funnel-stage:hover .dash-funnel-name {
   gap: 8px;
   padding-top: 16px;
 }
+.ri-foot-note {
+  margin-right: auto;
+  align-self: center;
+  color: var(--muted);
+  font-size: .8125rem;
+}
 .ri-events {
   display: flex;
   flex-direction: column;

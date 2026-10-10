@@ -1253,7 +1253,7 @@
             '">'
           : '');
     } else if (r.status === 'match' || r.status === 'update') {
-      decision = '<span class="t-muted">Dicatat saat diterapkan</span>';
+      decision = '<span class="t-muted">Otomatis dicatat</span>';
     } else {
       decision = '<span class="t-muted">—</span>';
     }
@@ -1387,16 +1387,15 @@
         .join('') +
       '</tbody></table></div>' +
       '<div class="ri-foot">' +
+      (s.ready || s.waiting
+        ? ''
+        : '<span class="ri-foot-note">' +
+          (s.held ? 'Yang lain sudah dicatat; sisanya ditahan.' : 'Semua sudah dicatat.') +
+          '</span>') +
       (hasIssues ? btn('Balas ke supplier', 'riReply', { id: email.id }) : '') +
-      btn(
-        s.ready ? 'Catat ' + s.ready + ' pengambilan' : 'Tidak ada yang perlu dicatat',
-        'saveRecapEmail',
-        {
-          cls: 'btn',
-          id: email.id,
-          disabled: !s.ready,
-        }
-      ) +
+      (s.ready
+        ? btn('Catat ' + s.ready + ' pengambilan', 'saveRecapEmail', { cls: 'btn', id: email.id })
+        : '') +
       '</div></div>';
 
     var log = '';
@@ -2014,6 +2013,7 @@
     // For tests.
     _compare: compare,
     _build: buildEmail,
+    _aoa: aoaOf,
     _state: S,
   };
 })();

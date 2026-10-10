@@ -67,6 +67,8 @@ Batas keyakinan 80% adalah pilihan awal — **REQUIRES USER CONFIRMATION**.
 
 ## 4. Skrip demo (±5 menit)
 
+Tangkapan layar setiap langkah, contoh foto DO, dan contoh rekap Excel ada di [pitch/kotak-masuk-rekap](pitch/kotak-masuk-rekap/README.md).
+
 Persiapan: data contoh, buka **Pengambilan → Kotak Masuk Rekap**. Bila sudah pernah dipakai, klik **Ulang simulasi**.
 
 1. **Email pertama (semua cocok).** Klik **Periksa email** → email dari bagian timbangan supplier masuk. Buka email: tunjukkan lampiran Excel dan foto DO, lalu empat langkah pemeriksaan. Semua baris **Cocok** → klik **Catat 3 pengambilan**.
