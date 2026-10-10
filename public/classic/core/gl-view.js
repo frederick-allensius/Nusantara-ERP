@@ -73,10 +73,10 @@
         : tb.rows
             .map(
               r => `<tr>
-          <td class="acct-no">${esc(r.no)}</td>
-          <td>${esc(r.name)}<span class="t-muted"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
-          <td class="t-num">${r.debit ? money(r.debit) : '—'}</td>
-          <td class="t-num">${r.credit ? money(r.credit) : '—'}</td>
+          <td class="acct-no" data-cell="name">${esc(r.no)}</td>
+          <td data-cell="title">${esc(r.name)}<span class="t-muted"> · ${esc(TYPE_LABEL[r.type] || r.type)}</span></td>
+          <td class="t-num${r.debit ? '' : ' is-nil'}" data-cell="amount" data-cap="Debit">${r.debit ? money(r.debit) : '—'}</td>
+          <td class="t-num${r.credit ? '' : ' is-nil'}" data-cell="amount" data-cap="Kredit">${r.credit ? money(r.credit) : '—'}</td>
         </tr>`
             )
             .join('');
@@ -88,7 +88,7 @@
     }</div>
     <div class="card">
       <div class="table-wrap">
-        <table class="gl-tb">
+        <table class="gl-tb list-cards">
           <thead><tr>
             <th class="gl-col-code">Kode</th>
             <th>Nama Akun</th>
@@ -98,8 +98,8 @@
           <tbody>${rows}</tbody>
           <tfoot><tr class="gl-total">
             <td colspan="2" class="gl-total-label">TOTAL</td>
-            <td class="t-num">${money(tb.totalDebit)}</td>
-            <td class="t-num">${money(tb.totalCredit)}</td>
+            <td class="t-num" data-cap="Debit">${money(tb.totalDebit)}</td>
+            <td class="t-num" data-cap="Kredit">${money(tb.totalCredit)}</td>
           </tr></tfoot>
         </table>
       </div>

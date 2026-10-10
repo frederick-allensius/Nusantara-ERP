@@ -342,21 +342,21 @@
         rows
           .map(function (r) {
             return (
-              '<tr><td class="td-p rep-sm">' +
+              '<tr><td class="td-p rep-sm" data-cell="meta">' +
               esc(r.date) +
               '</td>' +
-              '<td class="td-p rep-sm">' +
+              '<td class="td-p rep-sm" data-cell="title"><span>' +
               esc(r.number) +
-              '<div class="t-muted">' +
+              '</span><div class="t-muted">' +
               esc(r.kind) +
               '</div></td>' +
-              '<td class="td-p">' +
+              '<td class="td-p" data-cell="name">' +
               esc(r.party) +
               '</td>' +
-              '<td class="td-p t-num">' +
+              '<td class="td-p t-num" data-cell="meta" data-cap="DPP">' +
               money(r.dpp) +
               '</td>' +
-              '<td class="td-p t-num">' +
+              '<td class="td-p t-num" data-cell="amount" data-cap="PPN">' +
               money(r.ppn) +
               '</td>' +
               '</tr>'
@@ -377,7 +377,7 @@
         ' <span class="t-muted rep-count">(' +
         count +
         ' transaksi)</span></div></div>' +
-        '<div style="overflow-x:auto"><table>' +
+        '<div class="table-wrap"><table class="list-cards">' +
         '<thead><tr><th>Tanggal</th><th>Dokumen</th><th>' +
         partyLabel +
         '</th><th class="t-num">DPP</th><th class="t-num">PPN</th></tr></thead>' +
@@ -385,10 +385,10 @@
         rows +
         '</tbody>' +
         '<tfoot><tr class="rep-total"><td colspan="3" class="td-p">TOTAL</td>' +
-        '<td class="td-p t-num">' +
+        '<td class="td-p t-num" data-cap="DPP">' +
         money(dpp) +
         '</td>' +
-        '<td class="td-p t-num">' +
+        '<td class="td-p t-num" data-cap="PPN">' +
         money(ppn) +
         '</td></tr></tfoot>' +
         '</table></div></div>'

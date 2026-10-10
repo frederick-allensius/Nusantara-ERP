@@ -1480,11 +1480,6 @@
     padding-left: 6px;
     white-space: nowrap;
   }
-  /* Quiet "Edit" buttons: their text lines up with the card's edge (in the
-     row padding of an edge-to-edge list) */
-  .card > .table-wrap > .list-cards td[data-cell='menu']:has(> .row-edit) {
-    margin-right: -8px;
-  }
   /* The checkbox and the "⋯" icon (16px in its tap square) are centred on the
      first text line at their full tap size, without making it taller */
   .list-cards td[data-cell='check'],
@@ -1496,9 +1491,6 @@
   }
   .list-cards td[data-cell='menu']:has(> .row-menu-btn) {
     padding-left: 0;
-  }
-  .card > .table-wrap > .list-cards td[data-cell='menu']:has(> .row-menu-btn) {
-    margin-right: max(-12px, calc((16px - var(--tap-min)) / 2));
   }
 
   /* Line 2 (a 1px basis keeps the name off the line of the break before it) */
@@ -1619,6 +1611,18 @@
   .list-cards > tfoot td:empty {
     display: none;
   }
+  .list-cards > tfoot > tr {
+    flex-wrap: wrap;
+  }
+  .list-cards > tfoot td[data-cap]::before {
+    content: attr(data-cap) '\00a0';
+    color: var(--muted);
+    font-weight: 400;
+  }
+  /* An empty side of a figure pair (Neraca Saldo: debit or kredit) */
+  .list-cards > tbody > tr > td.is-nil {
+    display: none;
+  }
 
   /* "Pilih beberapa": the header keeps only "Pilih semua" */
   .list-cards.is-selecting > thead {
@@ -1645,3 +1649,92 @@
     display: inline;
   }
 }
+
+/* ── PLAIN TABLES ON PHONES (ui/table-cards.js) ─────────────────────────────── */
+/* Tables without list-card roles: each row a small card — the first cell as its
+   title, then one "Column  value" line per cell. */
+@media (max-width: 560px) {
+  .auto-cards,
+  .auto-cards > tbody,
+  .auto-cards > tfoot {
+    display: block;
+    width: 100%;
+  }
+  .auto-cards > thead {
+    display: none;
+  }
+  .auto-cards > tbody > tr,
+  .auto-cards > tfoot > tr {
+    display: block;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .auto-cards > tbody > tr:last-child {
+    border-bottom: 0;
+  }
+  .auto-cards > tfoot > tr {
+    border-top: 1px solid var(--border);
+    border-bottom: 0;
+  }
+  .auto-cards > tbody > tr > td,
+  .auto-cards > tfoot > tr > td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    width: auto !important;
+    min-width: 0;
+    padding: 2px 0 !important;
+    border: 0 !important;
+    text-align: right !important;
+    white-space: normal;
+  }
+  .auto-cards > tbody > tr > td[data-label]::before,
+  .auto-cards > tfoot > tr > td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-width: 45%;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    text-align: left;
+  }
+  /* A cell under an empty column title (row buttons): right-aligned, no caption */
+  .auto-cards > tbody > tr > td[data-label='']::before {
+    display: none;
+  }
+  .auto-cards > tbody > tr > td[data-label=''] {
+    justify-content: flex-end;
+    padding-top: 6px !important;
+  }
+  /* A cell of buttons: no caption, the buttons together on the right */
+  .auto-cards > tbody > tr > td:not(:first-child):has(> button) {
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px !important;
+  }
+  .auto-cards > tbody > tr > td:not(:first-child):has(> button)::before {
+    display: none;
+  }
+  /* The first cell is the card's title */
+  .auto-cards > tbody > tr > td:first-child {
+    display: block;
+    margin-bottom: 4px;
+    text-align: left !important;
+    font-weight: 500;
+  }
+  .auto-cards > tbody > tr > td:first-child::before {
+    display: none;
+  }
+  .auto-cards > tbody > tr > td:empty {
+    display: none;
+  }
+  /* "Belum ada …" rows span the card */
+  .auto-cards > tbody > tr > td[colspan] {
+    display: block;
+    padding: 16px 0 !important;
+    text-align: center !important;
+    font-weight: 400;
+  }
+}
+

@@ -125,6 +125,8 @@ const classicAll = [
   // pickers.js: themed pop-ups for <select>, date and month fields (the native
   // control stays the value holder). Document-level listeners only.
   'public/classic/ui/pickers.js',
+  // table-cards.js: plain tables in a page read as small cards on phones.
+  'public/classic/ui/table-cards.js',
   'public/classic/modules/settings.js',
   // rbac.js MUST load last: its saveDB wrap is the outermost guard (reverts an
   // unauthorized mutation before integrity.js/trash.js inner wraps run), and it
