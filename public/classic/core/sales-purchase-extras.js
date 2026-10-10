@@ -876,6 +876,9 @@
   function rowMenu(label, items) {
     if (typeof window.rowActionsMenu === 'function') return window.rowActionsMenu(label, items);
     return items
+      .filter(function (it) {
+        return it && it !== '-';
+      })
       .map(function (it) {
         return (
           '<button class="btn-danger-text btn-sm" data-action="' +
@@ -1224,16 +1227,15 @@
           '<td class="td-p" style="font-size:.75rem">' +
           esc(p.unit || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:.75rem">' +
-          esc(p.effectiveDate || '—') +
+          '<td class="td-p t-nowrap" style="font-size:.75rem">' +
+          esc(dt(p.effectiveDate)) +
           '</td>' +
-          '<td class="td-p">' +
-          '<button class="btn-ghost btn-sm" data-action="editSupPrice" data-id="' +
-          esc(p.id) +
-          '">Edit</button> ' +
-          '<button class="btn-danger-text btn-sm" data-action="delSupPrice" data-id="' +
-          esc(p.id) +
-          '">Hapus</button>' +
+          '<td class="td-p row-menu-cell">' +
+          rowMenu(p.itemName || p.id, [
+            { label: 'Edit', action: 'editSupPrice', id: p.id },
+            '-',
+            { label: 'Hapus', action: 'delSupPrice', id: p.id, danger: true },
+          ]) +
           '</td>' +
           '</tr>'
         );

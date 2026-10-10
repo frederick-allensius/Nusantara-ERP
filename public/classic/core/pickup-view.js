@@ -2231,7 +2231,8 @@
     if (!rc || !rc.result) return;
     var over = document.getElementById('pv-recap-over');
     var out = T().applyRecap(rc.result, {
-      source: 'Rekap ' + rc.fileName + ' ' + todayISO(),
+      // "Rekap <file> <date>", without doubling a file name that says Rekap already.
+      source: (/^rekap/i.test(rc.fileName) ? '' : 'Rekap ') + rc.fileName + ' ' + todayISO(),
       allowOverQuota: !!(over && over.checked),
     });
     save();
