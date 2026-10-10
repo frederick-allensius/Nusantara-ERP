@@ -2427,6 +2427,10 @@
       detail('Harga', esc(money(price) + ' / ' + unit)) +
       detail('Nilai faktur', '<strong>' + esc(money(total)) + '</strong>' + (rate > 0 ? ' <span class="t-muted">' + esc('termasuk PPN ' + money(tax)) + '</span>' : '')) +
       '</div>' +
+      '<div class="form-group"><label class="form-label" for="pv-adj-date">Tanggal faktur</label>' +
+      '<input class="form-input" type="date" id="pv-adj-date" value="' +
+      esc(todayISO()) +
+      '"></div>' +
       (sideKey === 'purchases'
         ? '<div class="form-group"><label class="form-label" for="pv-adj-ref">No. faktur supplier<span class="req">*</span></label>' +
           '<input class="form-input" id="pv-adj-ref" autocomplete="off" placeholder="Nomor di tagihan selisih dari supplier"></div>'
@@ -2449,6 +2453,7 @@
   }
   function submitAdjust(doId, sideKey) {
     var r = T().createAdjustment(sideKey, doId, {
+      date: val('pv-adj-date') || todayISO(),
       supplierRef: sideKey === 'purchases' ? val('pv-adj-ref').trim() : '',
     });
     if (r.error) {

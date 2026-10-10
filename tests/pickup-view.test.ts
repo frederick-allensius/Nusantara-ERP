@@ -470,9 +470,12 @@ describe('Perubahan Timbangan — tagih selisih', () => {
     act('createPickupAdjust', slot(1).id); // the customer button comes first
     expect(modal()).toContain('Tagih selisih');
     expect(modal()).toContain(si.number);
+    expect((document.getElementById('pv-adj-date') as HTMLInputElement).value).toBe(TODAY);
+    setVal('pv-adj-date', MONTH_START);
     act('savePickupAdjust', slot(1).id);
     const follow = w().DB.salesInvoices.find((x: any) => x.adjustmentOf);
     expect(follow.lines[0].qty).toBe(5);
+    expect(follow.date).toBe(MONTH_START);
     expect(modal()).toBe('');
     expect(card().textContent).toContain(follow.number);
 
