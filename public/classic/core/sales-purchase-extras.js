@@ -256,7 +256,7 @@
           esc(d.id) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
-          esc(d.date) +
+          esc(dt(d.date)) +
           '</td>' +
           '<td class="td-p" style="color:var(--primary)">' +
           esc((so && so.number) || d.orderId) +
@@ -451,7 +451,7 @@
           esc(d.id) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
-          esc(d.date) +
+          esc(dt(d.date)) +
           '</td>' +
           '<td class="td-p" style="color:var(--primary)">' +
           esc((po && po.number) || d.orderId) +
@@ -781,7 +781,7 @@
           esc(r.id) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
-          esc(r.date) +
+          esc(dt(r.date)) +
           '</td>' +
           '<td class="td-p" style="color:var(--primary)">' +
           esc(px ? px.poNumberOf(r) : r.poId) +
@@ -865,6 +865,11 @@
       '</table></div></div>';
 
     injectView('purchase', html);
+  }
+
+  // List dates as "11 Okt 2026" (helpers.js tgl); raw value when it is absent.
+  function dt(v) {
+    return typeof window.tgl === 'function' ? window.tgl(v) : v || '';
   }
 
   // Row "⋯" menu (erp-view.js rowActionsMenu); a plain button when it is absent.
@@ -1523,7 +1528,7 @@
               esc(r.supplierName) +
               '</strong></div>' +
               '<div>Tanggal: <strong>' +
-              esc(r.date) +
+              esc(dt(r.date)) +
               '</strong></div>' +
               '<div style="margin-top:8px;font-weight:600">Item Diterima:</div>' +
               itemList +

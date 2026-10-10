@@ -438,6 +438,11 @@
   }
   // Page top shared by Pengeluaran Lain and Penerimaan Lain: header with period
   // selector and export, totals, and the per-category recap of the period.
+  // List dates as "11 Okt 2026" (helpers.js tgl); raw value when it is absent.
+  function dt(v) {
+    return typeof window.tgl === 'function' ? window.tgl(v) : v || '';
+  }
+
   // Row "⋯" menu (erp-view.js rowActionsMenu); plain buttons when it is absent.
   function rowMenu(label, items) {
     if (typeof window.rowActionsMenu === 'function') return window.rowActionsMenu(label, items);
@@ -549,7 +554,7 @@
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-              esc(p.date) +
+              esc(dt(p.date)) +
               '</td>' +
               '<td class="td-p"><span class="doc-no">' +
               esc(p.number || p.id) +
@@ -687,7 +692,7 @@
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-              esc(d.date) +
+              esc(dt(d.date)) +
               '</td>' +
               '<td class="td-p"><span class="doc-no">' +
               esc(d.number || d.id) +
@@ -828,7 +833,7 @@
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-              esc(t.date) +
+              esc(dt(t.date)) +
               '</td>' +
               '<td class="td-p"><span class="doc-no">' +
               esc(t.number || t.id) +
@@ -1318,7 +1323,7 @@
           return (
             '<tr>' +
             '<td class="td-p" style="font-size:.75rem;white-space:nowrap">' +
-            esc(e.date) +
+            esc(dt(e.date)) +
             '</td>' +
             '<td class="td-p"><span class="cat">' +
             esc(e.type) +
@@ -1793,7 +1798,7 @@
             (isRec ? 'opacity:.55' : '') +
             '">' +
             '<td class="td-p" style="font-size:.75rem">' +
-            esc(e.date) +
+            esc(dt(e.date)) +
             '</td>' +
             '<td class="td-p" style="font-size:.75rem">' +
             esc(e.description) +
@@ -2030,7 +2035,7 @@
           .map(function (e) {
             return (
               '<tr><td class="td-p" style="font-size:.75rem">' +
-              esc(e.date) +
+              esc(dt(e.date)) +
               '</td><td class="td-p">' +
               esc(e.description) +
               '</td><td class="td-p t-num">' +

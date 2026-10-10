@@ -228,7 +228,7 @@
         return `<div class="gl-jv">
           <div class="gl-jv-head">
             <div><span class="doc-no">${esc(j.number || j.id)}</span><span class="t-muted"> · ${esc(src)}</span></div>
-            <div class="jv-date t-muted">${esc(j.date || '')}</div>
+            <div class="jv-date t-muted">${esc(typeof window.tgl === 'function' ? window.tgl(j.date) : j.date || '')}</div>
           </div>
           <div class="jv-scroll"><table class="jv-lines">
             <tbody>${lines}</tbody>

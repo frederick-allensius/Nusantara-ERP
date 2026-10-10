@@ -982,6 +982,11 @@ function orderRowMenu(view, o) {
 // lists, for any list. items: { label, action, id, attrs, danger } or '-' for a
 // separator; falsy items are skipped. Items run through the usual document
 // data-action listeners (the menu is cloned onto <body> when opened).
+// List dates as "11 Okt 2026" (helpers.js tgl); raw value when it is absent.
+function _tgl(v) {
+  return typeof window.tgl === 'function' ? window.tgl(v) : v || '—';
+}
+
 function rowActionsMenu(label, items) {
   const body = (items || [])
     .filter(Boolean)
@@ -1474,7 +1479,7 @@ function renderPurchase() {
                     o => `<tr data-action="viewPO" data-id="${escapeHtml(o.id)}">
               <td class="td-p list-no" data-cell="title">${escapeHtml(docNum(o.number, o.id))}${pickupTag(o)}</td>
               <td class="td-p" data-cell="name">${escapeHtml(o.supplier)}</td>
-              <td class="td-p t-muted" data-cell="meta">${escapeHtml(o.date)}</td>
+              <td class="td-p t-muted t-nowrap" data-cell="meta">${escapeHtml(_tgl(o.date))}</td>
               <td class="td-p t-nowrap" data-cell="amount">${idr(o.amount)}</td>
               <td class="td-p" data-cell="status">${orderStageBadge('purchases', o)}</td>
               <td class="td-p row-menu-cell" data-cell="menu">${orderRowMenu('purchase', o)}</td>
@@ -1813,7 +1818,7 @@ function renderAssets() {
             <div style="font-size:.75rem;font-weight:600">${escapeHtml(d.assetName || d.assetId)}</div>
             <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.method || '—')}</div>
           </div>
-          <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date || '—')}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(_tgl(d.date))}</div>
         </div>`
               )
               .join('')
@@ -2038,7 +2043,7 @@ function renderLogistics() {
                   ? ` <span class="badge badge-warning" title="${escapeHtml(d.destOriginal ? 'Tujuan diubah dari: ' + d.destOriginal : 'Tujuan diubah')}">Tujuan diubah</span>`
                   : ''
               }</td>
-              <td class="td-p t-muted" data-cell="meta">${escapeHtml(d.date)}</td>
+              <td class="td-p t-muted t-nowrap" data-cell="meta">${escapeHtml(_tgl(d.date))}</td>
               <td class="td-p" data-cell="meta">${escapeHtml(d.driver)}</td>
               <td class="td-p mono" data-cell="meta">${escapeHtml(d.vehicle)}</td>
               <td class="td-p" data-cell="status">${badge(d.status)}</td>
@@ -3379,7 +3384,7 @@ function renderSales() {
           ${check}
           <td class="td-p list-no" data-cell="title">${escapeHtml(num)}${pickupTag(o)}</td>
           <td class="td-p" data-cell="name">${escapeHtml(o.customer)}</td>
-          <td class="td-p t-muted" data-cell="meta">${escapeHtml(o.date)}</td>
+          <td class="td-p t-muted t-nowrap" data-cell="meta">${escapeHtml(_tgl(o.date))}</td>
           <td class="td-p t-nowrap" data-cell="amount">${idr(o.amount)}</td>
           <td class="td-p" data-cell="status">${orderStageBadge('sales', o)}</td>
           <td class="td-p row-menu-cell" data-cell="menu">${orderRowMenu('sales', o)}</td>

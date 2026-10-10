@@ -104,6 +104,18 @@ export function idrFull(v) {
   return `${neg ? '-' : ''}Rp\u00a0${Math.abs(v).toLocaleString('id-ID')}`;
 }
 
+// A date as lists show it: "11 Okt 2026". Stored values and date inputs stay
+// ISO (yyyy-mm-dd); anything that is not a date is shown as given.
+export function tgl(iso) {
+  if (!iso) {
+    return '—';
+  }
+  const d = new Date(String(iso).slice(0, 10) + 'T00:00:00');
+  return isNaN(d)
+    ? String(iso)
+    : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 export function today() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -254,6 +266,7 @@ window.idr = idr;
 window.idrFull = idrFull;
 window.idrShort = idrShort;
 window.today = today;
+window.tgl = tgl;
 window.badge = badge;
 window.secHdr = secHdr;
 window.statRow = statRow;
