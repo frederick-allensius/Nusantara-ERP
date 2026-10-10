@@ -154,6 +154,14 @@
     var el = document.getElementById(id);
     return el ? el.value : '';
   }
+  // Where a weight change came from: 'manual' = Koreksi berat; recaps carry
+  // their file name ("Rekap <file> <date>").
+  function sourceLabel(src) {
+    if (!src) return '—';
+    if (src === 'manual') return 'Koreksi manual';
+    if (src === 'rekap') return 'Rekap timbangan';
+    return String(src);
+  }
   function badge(kind, text) {
     return '<span class="badge badge-' + kind + '">' + esc(text) + '</span>';
   }
@@ -1129,6 +1137,8 @@
       if (d.status !== 'Cancelled')
         acts.push(button('Cetak SJ', 'pvPrintSlot', d.id, 'btn-ghost btn-sm'));
       if (d.ticketPhoto) acts.push(button('Foto tiket', 'pvPhoto', d.id, 'btn-ghost btn-sm'));
+      if (trip && d.status !== 'Cancelled')
+        acts.push(button('Koreksi berat', 'editPickupWeight', d.id, 'btn-ghost btn-sm'));
       var flags = slotFlags(d);
       return (
         '<tr>' +
@@ -2290,7 +2300,7 @@
                     ? '<span class="doc-no">' + esc(a.purchaseInvoice) + '</span>'
                     : '—'
                 ) +
-                detail('Sumber', esc(a.source || '—')) +
+                detail('Sumber', esc(sourceLabel(a.source))) +
                 detail('Dicatat', esc(fmtDateTime(a.at))) +
                 '</div>' +
                 '<div class="pv-actions pv-actions-start">' +
@@ -2327,7 +2337,7 @@
           '</div></td><td class="pv-change">' +
           esc(fmtT(e.prev) + ' → ' + qty(e.h.net, unitOfSlot(e.d))) +
           '</td><td class="pv-src">' +
-          esc(e.h.source || '—') +
+          esc(sourceLabel(e.h.source)) +
           (e.h.note ? '<div class="t-muted">' + esc(e.h.note) + '</div>' : '') +
           '</td><td>' +
           status +
@@ -2375,6 +2385,94 @@
     closeDialog();
     var d = find('deliveryOrders', doId);
     if (d && d.weightAlert && d.weightAlert.resolved) toast('Ditandai selesai.', 'success');
+    rerender();
+  }
+
+  // ── Koreksi berat ─────────────────────────────────────────────────────────
+  // A typing error in a recorded trip, corrected by hand (no weighbridge recap
+  // needed). Goes through Trading.updateWeight like a recap change: the old and
+  // new weight stay in the trip's history, and a trip already on an invoice
+  // shows up in Perubahan Timbangan instead of changing that invoice.
+  function askWeight(doId) {
+    var d = find('deliveryOrders', doId);
+    if (!d || !T().isTrip(d)) return;
+    var w = d.weighing || {};
+    var unit = unitOfSlot(d) || 't';
+    var inv = invoiceRefs(d);
+    var billed = [inv.si, inv.pi].filter(Boolean);
+    var field = function (id, label, v) {
+      return (
+        '<div class="form-group"><label class="form-label" for="' +
+        id +
+        '">' +
+        esc(label) +
+        ' (' +
+        esc(unit) +
+        ')</label><input class="form-input" id="' +
+        id +
+        '" inputmode="decimal" autocomplete="off" value="' +
+        (v != null && v !== '' ? esc(fmtInput(v)) : '') +
+        '"></div>'
+      );
+    };
+    openDialog(
+      'Koreksi berat · ' + (d.sjNo || d.number),
+      '<div class="detail-grid">' +
+        detail('Pelanggan', esc(d.customer || '—')) +
+        detail('Tanggal ambil', esc(fmtDate(d.date))) +
+        detail('No. Polisi', esc(d.vehicle || '—')) +
+        detail('Netto sekarang', esc(qty(T().netOf(d), unit))) +
+        '</div>' +
+        '<div class="pv-w3">' +
+        field('pv-fix-gross', 'Bruto', w.gross) +
+        field('pv-fix-tare', 'Tara', w.tare) +
+        field('pv-fix-net', 'Netto', T().netOf(d)) +
+        '</div>' +
+        '<div class="form-hint">Isi bruto dan tara (netto dihitung), atau netto saja.</div>' +
+        '<div class="form-group"><label class="form-label" for="pv-fix-note">Alasan<span class="req">*</span></label>' +
+        '<input class="form-input" id="pv-fix-note" autocomplete="off" placeholder="Contoh: salah ketik bruto, tiket menunjukkan 47,25"></div>' +
+        (billed.length
+          ? '<div class="notice notice-warning">Sudah ditagih (' +
+            esc(billed.join(', ')) +
+            '). Faktur tetap memakai berat lama; perubahan ini muncul di Perubahan Timbangan untuk ditindaklanjuti.</div>'
+          : ''),
+      '<button type="button" class="btn-ghost" data-action="closeModal">Batal</button>' +
+        button('Simpan koreksi', 'updatePickupWeight', d.id, 'btn')
+    );    // Netto follows bruto − tara as they are typed.
+    ['pv-fix-gross', 'pv-fix-tare'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        var g = parseNumInput(val('pv-fix-gross'));
+        var net = document.getElementById('pv-fix-net');
+        if (net && g > 0) net.value = fmtInput(r3(g - (parseNumInput(val('pv-fix-tare')) || 0)));
+      });
+    });
+  }
+  function submitWeight(doId) {
+    var note = val('pv-fix-note').trim();
+    if (!note) {
+      toast('Isi alasan koreksi.', 'warning');
+      return;
+    }
+    var g = parseNumInput(val('pv-fix-gross'));
+    var tr = parseNumInput(val('pv-fix-tare'));
+    var data = g > 0 ? { gross: g, tare: tr || 0 } : { net: parseNumInput(val('pv-fix-net')) };
+    var r = T().updateWeight(doId, data, { source: 'manual', note: note });
+    if (r.error) {
+      toast(r.error, 'warning');
+      return;
+    }
+    if (!r.changed) {
+      toast('Berat tidak berubah.', 'info');
+      return;
+    }
+    save();
+    closeDialog();
+    toast(
+      r.alert ? 'Berat dikoreksi. Tercatat di Perubahan Timbangan.' : 'Berat dikoreksi.',
+      'success'
+    );
     rerender();
   }
 
@@ -2674,6 +2772,8 @@
     savePickupRecap: applyRecap,
     editPickupAlert: askResolve,
     updatePickupAlert: submitResolve,
+    editPickupWeight: askWeight,
+    updatePickupWeight: submitWeight,
   };
 
   var REC_FIELDS = {

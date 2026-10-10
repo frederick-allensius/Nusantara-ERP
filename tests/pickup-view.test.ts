@@ -455,6 +455,52 @@ describe('Perubahan Timbangan', () => {
   });
 });
 
+describe('Koreksi berat', () => {
+  it('corrects a typing error on a trip from the PO detail, with a reason and history', () => {
+    openPO();
+    T().recordTrip(slot(1).id, { date: TODAY, gross: 47.5, tare: 12.25, vehicle: 'B 1' });
+    PV().openPO('PO-1');
+    act('editPickupWeight', slot(1).id);
+    expect(modal()).toContain('Koreksi berat');
+    expect((document.getElementById('pv-fix-gross') as HTMLInputElement).value).toBe('47,5');
+
+    setVal('pv-fix-gross', '47,25');
+    act('updatePickupWeight', slot(1).id); // no reason yet
+    expect(T().netOf(slot(1))).toBe(35.25);
+    expect(w().showToast).toHaveBeenLastCalledWith('Isi alasan koreksi.', 'warning');
+
+    setVal('pv-fix-note', 'Salah ketik bruto');
+    act('updatePickupWeight', slot(1).id);
+    expect(T().netOf(slot(1))).toBe(35);
+    expect(slot(1).weighHistory.at(-1)).toMatchObject({
+      source: 'manual',
+      prevNet: 35.25,
+      net: 35,
+      note: 'Salah ketik bruto',
+    });
+    expect(slot(1).weightAlert).toBeUndefined(); // not billed: nothing to follow up
+    expect(w().saveDB).toHaveBeenCalled();
+  });
+
+  it('on a billed trip keeps the invoice and raises a Perubahan Timbangan alert', () => {
+    openPO();
+    T().recordTrip(slot(1).id, { date: TODAY, net: 30, vehicle: 'B 1' });
+    const inv = T().createInvoice('sales', [slot(1).id], { date: TODAY }).invoice;
+    PV().openPO('PO-1');
+    act('editPickupWeight', slot(1).id);
+    expect(modal()).toContain('Sudah ditagih (' + inv.number + ')');
+    setVal('pv-fix-gross', '');
+    setVal('pv-fix-net', '32');
+    setVal('pv-fix-note', 'Tiket asli 32 ton');
+    act('updatePickupWeight', slot(1).id);
+    expect(T().openAlerts()).toHaveLength(1);
+    PV().openWeightChanges();
+    const alert = document.querySelector('#view-pickups .pv-alert')!;
+    expect(alert.textContent).toContain('30 → 32 Ton');
+    expect(alert.textContent).toContain('Koreksi manual');
+  });
+});
+
 describe('Rekap Pengambilan', () => {
   it('shows the period trips with totals and invoice status, exports and filters', () => {
     openPO();

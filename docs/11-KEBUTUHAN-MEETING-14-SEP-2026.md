@@ -109,7 +109,7 @@ Aplikasi sudah berjalan dengan pilihan bawaan di bawah ini. Bila kebiasaan perus
 | Topik | Pilihan bawaan saat ini |
 |---|---|
 | Rekap timbangan yang datang setelah cut-off | PO harus dibuka kembali (Buka kembali) untuk mengimpor pengambilan bertanggal sebelum cut-off; PO tertutup lagi otomatis |
-| Koreksi berat tanpa rekap timbangan | Belum ada; berat yang salah ketik dikoreksi lewat Impor Rekap Timbangan |
+| Koreksi berat tanpa rekap timbangan | **Koreksi berat** di detail PO Pengambilan (per surat jalan): bruto/tara atau netto baru dengan alasan wajib; berat lama tersimpan di riwayat. Bila surat jalan sudah ditagih, faktur tidak diubah dan perubahan muncul di Perubahan Timbangan (sumber "Koreksi manual") |
 | Membedakan PO pengambilan dan PO stok | Semua PO supplier Dikonfirmasi berisi satu barang muncul di "PO siap dibuka" |
 | Truk terakhir | Mengambil sisa kuota; melebihi kuota harus dikonfirmasi |
 | Perusahaan menyimpan stok? | Data contoh: batu dan slag hanya diperdagangkan; pasir dan batu belah lewat gudang |
