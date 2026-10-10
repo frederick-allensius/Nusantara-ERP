@@ -331,6 +331,69 @@ describe('ledger', () => {
     expect(T().openAlerts()).toHaveLength(1); // the supplier invoice still needs correcting
   });
 
+  it('bills a weight that went up after invoicing with follow-up invoices on both sides', () => {
+    const si = T().createInvoice('sales', [slot(1).id, slot(2).id], { date: '2026-09-09' }).invoice;
+    T().createInvoice('purchases', [slot(1).id, slot(2).id], { date: '2026-09-10' });
+    T().updateWeight(slot(1).id, { net: 40 }, { source: 'recap' }); // 35 → 40 after billing
+    expect(T().billingGap('sales', slot(1).id)).toMatchObject({
+      invoiced: true,
+      billed: 35,
+      net: 40,
+      diff: 5,
+    });
+
+    const s = T().createAdjustment('sales', slot(1).id, { date: '2026-09-12' });
+    expect(s.error).toBeUndefined();
+    expect(s.invoice).toMatchObject({
+      doIds: [slot(1).id],
+      customerId: 'C1',
+      adjustmentOf: { invoiceId: si.id, from: 35, to: 40 },
+    });
+    expect(s.invoice.lines[0]).toMatchObject({ qty: 5, price: 150000, subtotal: 750000 });
+    expect(s.invoice.amount).toBe(Math.round(750000 * 1.11));
+    expect(T().openAlerts()).toHaveLength(1); // the supplier side still misses 5 t
+
+    expect(T().createAdjustment('purchases', slot(1).id, {}).error).toMatch(/No. faktur supplier/);
+    const p = T().createAdjustment('purchases', slot(1).id, {
+      supplierRef: 'INV-S-77',
+      date: '2026-09-12',
+    });
+    expect(p.invoice).toMatchObject({ supplierId: 'S1', supplierRef: 'INV-S-77' });
+    expect(p.invoice.lines[0]).toMatchObject({ qty: 5, price: 100000 });
+    expect(T().openAlerts()).toHaveLength(0);
+    expect(slot(1).weightAlert.note).toContain(s.invoice.number);
+    expect(slot(1).weightAlert.note).toContain(p.invoice.number);
+
+    // Sales and cost of the 40 + 30 t, once each; inventory still nets to zero.
+    const { tb, bal } = balanceOf('110401');
+    expect(bal).toBe(0);
+    expect(tb.balanced).toBe(true);
+    const row = (no: string) => tb.rows.find((x: any) => x.no === no) || { debit: 0, credit: 0 };
+    expect(row('400001').credit - row('400001').debit).toBe(70 * 150000);
+    expect(row('510101').debit - row('510101').credit).toBe(70 * 100000);
+    expect(T().createAdjustment('sales', slot(1).id, {}).error).toMatch(/Tidak ada selisih/);
+  });
+
+  it('bills no difference for a trip not invoiced yet, nor for a weight that went down', () => {
+    T().updateWeight(slot(1).id, { net: 40 }, {});
+    expect(T().createAdjustment('sales', slot(1).id, {}).error).toMatch(/belum ditagih/);
+    T().createInvoice('sales', [slot(1).id], { date: '2026-09-09' });
+    T().updateWeight(slot(1).id, { net: 38 }, {});
+    expect(T().createAdjustment('sales', slot(1).id, {}).error).toMatch(/Berat turun/);
+  });
+
+  it('opens the alert again when the follow-up invoice is cancelled', () => {
+    T().createInvoice('sales', [slot(1).id], { date: '2026-09-09' });
+    T().updateWeight(slot(1).id, { net: 40 }, {});
+    const s = T().createAdjustment('sales', slot(1).id, {});
+    expect(T().openAlerts()).toHaveLength(0); // no supplier invoice yet: nothing else to bill
+    s.invoice.status = 'Cancelled';
+    T().releaseAdjustment(s.invoice);
+    expect(T().openAlerts()).toHaveLength(1);
+    expect(T().billingGap('sales', slot(1).id).diff).toBe(5);
+    expect(slot(1).status).toBe('Invoiced'); // still on the first invoice
+  });
+
   it('lists uninvoiced trips as open receivables and payables', () => {
     const ar = w().Balances.summary('sales', { asOf: '2026-09-10' });
     expect(ar.items.filter((i: any) => i.unbilled)).toHaveLength(2);

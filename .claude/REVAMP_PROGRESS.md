@@ -388,3 +388,12 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   D defaults to confirm, E users, F infra/commercial).
 - Text size: default stays Normal (owner-approved revamp choice); D10 asks the owner.
 - sw v1.1.20. Checks: 55 files / 614+ tests, tsc clean, build ok; lint errors are pre-existing (48).
+- Faktur selisih (follow-up invoice) for a weight that went up after invoicing — the meeting's
+  "invoice tambahan untuk selisihnya": Trading.billingGap / createAdjustment / releaseAdjustment;
+  Perubahan Timbangan cards show the gap per side with "Tagih selisih ke pelanggan" and "Catat
+  tagihan selisih supplier" (supplier invoice no. required); the alert closes itself once every
+  invoiced side matches. The invoice carries the trip (doIds) so it books no COGS; gl.js
+  tripInvoicedCost now sums every covering purchase invoice (inventory stays zero). Cancelling the
+  first invoice is blocked while its follow-up is active; cancelling a follow-up reopens the alert.
+  Before this, the advised manual invoice would have booked COGS twice. Docs 03 §V3, 04 §4.5, 11.
+  sw v1.1.21. 619 tests.

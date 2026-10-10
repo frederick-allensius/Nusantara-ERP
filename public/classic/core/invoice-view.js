@@ -768,9 +768,23 @@
       toast(`${docNo(inv)} memiliki retur — faktur tidak bisa dibatalkan`, 'warning');
       return;
     }
+    // A follow-up invoice for a weight difference rests on this one: cancel it
+    // first, or the trip would be billed twice for the difference.
+    const followUps = (db()[t.coll] || []).filter(
+      x => B().isActiveInvoice(x) && x.adjustmentOf && same(x.adjustmentOf.invoiceId, inv.id)
+    );
+    if (followUps.length) {
+      toast(
+        `Batalkan dulu faktur selisih ${followUps.map(x => docNo(x)).join(', ')} untuk ${docNo(inv)}`,
+        'warning'
+      );
+      return;
+    }
     const src = B().sourceOrder(t.side, inv);
     const trips = Array.isArray(inv.doIds) ? inv.doIds.length : 0;
-    const effect = trips
+    const effect = inv.adjustmentOf
+      ? `Selisih timbangan ${inv.adjustmentOf.from} → ${inv.adjustmentOf.to} kembali belum ditagih dan muncul lagi di Perubahan Timbangan.`
+      : trips
       ? type === 'SI'
         ? `${trips} pengambilan kembali menjadi belum ditagih; piutang dan penjualan dicatat lagi dari pengambilan.`
         : `${trips} pengambilan kembali menjadi belum difakturkan supplier; hutang dicatat lagi dari pengambilan.`
@@ -787,9 +801,13 @@
     inv.status = 'Cancelled';
     inv.cancelledAt = new Date().toISOString();
     inv.cancelledBy = currentUser();
-    // An invoice made from trips frees them for the next invoice.
+    // An invoice made from trips frees them for the next invoice; a follow-up
+    // invoice for a weight difference opens its weight alert again.
     if (window.Trading && typeof window.Trading.releaseInvoice === 'function') {
       window.Trading.releaseInvoice(type === 'SI' ? 'sales' : 'purchases', inv);
+    }
+    if (window.Trading && typeof window.Trading.releaseAdjustment === 'function') {
+      window.Trading.releaseAdjustment(inv);
     }
     // A per-receipt purchase invoice (Rekonsiliasi Timbangan): the PO's
     // delivery orders follow how many of its receipts are still invoiced.

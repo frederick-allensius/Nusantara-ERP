@@ -641,30 +641,38 @@
     );
   }
 
-  // What a covering purchase invoice booked into inventory for this trip (its
-  // lines carrying the trip's doId) — the trip's cost once a supplier invoice
-  // exists, so a later weight change can't leave inventory off zero. null when
-  // no active purchase invoice has a line for the trip.
+  // What the covering purchase invoices booked into inventory for this trip
+  // (their lines carrying the trip's doId) — the trip's cost once a supplier
+  // invoice exists, so a later weight change can't leave inventory off zero.
+  // A follow-up invoice for a weight difference (Trading.createAdjustment)
+  // covers the same trip, so every covering invoice counts. null when no active
+  // purchase invoice has a line for the trip.
   function tripInvoicedCost(doId) {
-    const inv = (db().purchaseInvoices || []).find(
+    const invs = (db().purchaseInvoices || []).filter(
       i =>
         isActiveInvoice(i) &&
         Array.isArray(i.doIds) &&
         i.doIds.some(x => String(x) === String(doId))
     );
-    const lines = inv ? (inv.lines || []).filter(l => String(l.doId) === String(doId)) : [];
-    if (!lines.length) {
-      return null;
-    }
-    let cost = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
-    if (inv.taxInclusive) {
-      const gross = (inv.lines || []).reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
-      const ppn = docPPN(inv, gross);
-      if (ppn > 0 && gross > 0) {
-        cost = (cost * (gross - ppn)) / gross;
+    let found = false;
+    let total = 0;
+    invs.forEach(inv => {
+      const lines = (inv.lines || []).filter(l => String(l.doId) === String(doId));
+      if (!lines.length) {
+        return;
       }
-    }
-    return round(cost);
+      found = true;
+      let cost = lines.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+      if (inv.taxInclusive) {
+        const gross = (inv.lines || []).reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+        const ppn = docPPN(inv, gross);
+        if (ppn > 0 && gross > 0) {
+          cost = (cost * (gross - ppn)) / gross;
+        }
+      }
+      total += cost;
+    });
+    return found ? round(total) : null;
   }
 
   function buildPickupJournals(d) {

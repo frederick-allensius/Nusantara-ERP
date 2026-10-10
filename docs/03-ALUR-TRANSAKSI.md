@@ -402,7 +402,14 @@ Barang dibeli dari supplier dan diambil truk pelanggan langsung di lokasi suppli
 | Rekap kumulatif | Rekap boleh berisi semua pengambilan sejak awal: baris yang sama dilewati, berat yang berubah ditandai |
 | Dari email (simulasi) | **Pengambilan → Kotak Masuk Rekap**: rekap Excel dan foto DO dari email supplier dibaca bersama; per surat jalan, angka rekap dibandingkan dengan foto DO dan yang tercatat. Yang cocok dicatat sekali klik lewat jalur yang sama dengan impor ini; yang beda (rekap ≠ foto, berat lama diubah, foto kurang jelas, tanpa foto) menunggu keputusan. Lihat [13](13-SIMULASI-EMAIL-DAN-CV.md) |
 
-**Perubahan Timbangan:** bila berat berubah pada truk yang **sudah masuk faktur** (pelanggan atau supplier), faktur **tidak diubah otomatis**. Muncul peringatan di Pengambilan → Perubahan Timbangan, PO Pengambilan, Ringkasan, dan notifikasi sampai ditandai **selesai** dengan catatan tindak lanjut (mis. "selisih ditagihkan susulan di faktur berikutnya"). Faktur berikutnya memakai berat baru. Halaman yang sama memuat riwayat semua perubahan berat (waktu, pengguna, sumber, berat lama → baru).
+**Perubahan Timbangan:** bila berat berubah pada truk yang **sudah masuk faktur** (pelanggan atau supplier), faktur **tidak diubah otomatis**. Muncul peringatan di Pengambilan → Perubahan Timbangan, PO Pengambilan, Ringkasan, dan notifikasi. Kartu peringatan menunjukkan selisih per sisi:
+
+- **Selisih ke pelanggan** / **Selisih dari supplier**: berapa yang belum ditagih, sudah sesuai, atau "belum difakturkan" (faktur berikutnya otomatis memakai berat baru).
+- **Tagih selisih ke pelanggan**: membuat Faktur Penjualan susulan satu baris untuk selisihnya ([04 §4.5](04-AKUNTANSI.md#45-pengambilan-trading)).
+- **Catat tagihan selisih supplier**: membuat Faktur Pembelian untuk selisih yang ditagih supplier (no. faktur supplier wajib).
+- Peringatan selesai sendiri bila semua sisi yang sudah difakturkan sudah sesuai; atau ditandai **selesai** dengan catatan (mis. berat lama yang benar, atau berat turun dan diselesaikan di luar aplikasi).
+
+Halaman yang sama memuat riwayat semua perubahan berat (waktu, pengguna, sumber, berat lama → baru).
 
 ### V4. Kuota, batas pengambilan, dan penutupan PO
 

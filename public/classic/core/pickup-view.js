@@ -2277,7 +2277,7 @@
     // any screen width.
     html +=
       '<div class="card"><div class="card-head"><div><div class="card-title">Perlu ditindaklanjuti</div>' +
-      '<div class="card-sub">Berat berubah setelah ditagih. Faktur tidak diubah otomatis — tagih susulan atau koreksi, lalu tandai selesai.</div></div></div>' +
+      '<div class="card-sub">Berat berubah setelah ditagih. Faktur lama tidak diubah; selisihnya ditagih dengan faktur susulan, atau tandai selesai dengan catatan.</div></div></div>' +
       (alerts.length
         ? alerts
             .map(function (d) {
@@ -2308,9 +2308,13 @@
                 ) +
                 detail('Sumber', esc(sourceLabel(a.source))) +
                 detail('Dicatat', esc(fmtDateTime(a.at))) +
+                gapDetail(d, 'sales') +
+                gapDetail(d, 'purchases') +
                 '</div>' +
                 '<div class="pv-actions pv-actions-start">' +
-                button('Tandai selesai', 'editPickupAlert', d.id, 'btn') +
+                gapAction(d, 'sales') +
+                gapAction(d, 'purchases') +
+                button('Tandai selesai', 'editPickupAlert', d.id, 'btn-ghost') +
                 (d.ticketPhoto ? button('Foto DO', 'pvPhoto', d.id, 'btn-ghost') : '') +
                 '</div></div>'
               );
@@ -2357,6 +2361,102 @@
     return html;
   }
 
+  // The weight difference per side of an alert: not invoiced yet (the next
+  // invoice takes the new weight), still to bill, billed too much, or billed.
+  function gapDetail(d, sideKey) {
+    var g = T().billingGap(sideKey, d.id);
+    var label = sideKey === 'sales' ? 'Selisih ke pelanggan' : 'Selisih dari supplier';
+    var unit = unitOfSlot(d);
+    var a = d.weightAlert || {};
+    var done = a.adjustments && a.adjustments[sideKey];
+    var text;
+    if (!g.invoiced) text = '<span class="t-muted">Belum difakturkan; fakturnya nanti memakai berat baru</span>';
+    else if (g.diff > 0.0005)
+      text = '<span class="pv-danger">' + esc('+' + qty(g.diff, unit) + ' belum ditagih') + '</span>';
+    else if (g.diff < -0.0005)
+      text = esc('Ditagih lebih ' + qty(-g.diff, unit));
+    else text = done ? 'Ditagih susulan <span class="doc-no">' + esc(done) + '</span>' : 'Sudah sesuai';
+    return detail(label, text);
+  }
+  function gapAction(d, sideKey) {
+    var g = T().billingGap(sideKey, d.id);
+    if (!g.invoiced || g.diff <= 0.0005) return '';
+    return sideKey === 'sales'
+      ? button('Tagih selisih ke pelanggan', 'createPickupAdjust', d.id, 'btn', ' data-side="sales"')
+      : button('Catat tagihan selisih supplier', 'createPickupAdjust', d.id, 'btn', ' data-side="purchases"');
+  }
+
+  // Faktur susulan for a weight difference (Trading.createAdjustment): the
+  // customer side straight after a check, the supplier side with the number of
+  // the supplier's invoice.
+  function askAdjust(doId, sideKey) {
+    var d = find('deliveryOrders', doId);
+    if (!d) return;
+    var g = T().billingGap(sideKey, doId);
+    if (!g.invoiced || g.diff <= 0.0005) return;
+    var am = T().amounts(d);
+    var price = sideKey === 'sales' ? am.salePrice : am.purchasePrice;
+    var unit = unitOfSlot(d);
+    var first = g.invoices[0];
+    var money = typeof window.idrFull === 'function' ? window.idrFull : String;
+    // The same rule as the invoice: PPN at the order's rate, on top unless the
+    // order's prices include it.
+    var order = find(sideKey === 'sales' ? 'salesOrders' : 'purchaseOrders', sideKey === 'sales' ? d.soId : d.poId);
+    var rate = num(order && order.taxRate);
+    var dppGross = Math.round(g.diff * price);
+    var incl = !!(order && order.taxInclusive) && rate > 0;
+    var tax = incl ? Math.round((dppGross * rate) / (1 + rate)) : Math.round(dppGross * rate);
+    var total = incl ? dppGross : dppGross + tax;
+    var body =
+      '<div class="detail-grid">' +
+      detail('Surat jalan', '<span class="doc-no">' + esc(d.sjNo || d.number) + '</span>') +
+      detail(sideKey === 'sales' ? 'Pelanggan' : 'Supplier', esc((sideKey === 'sales' ? d.customer : d.supplier) || '—')) +
+      detail('Sudah ditagih', esc(qty(g.billed, unit) + ' · ' + (first.number || first.id))) +
+      detail('Berat sekarang', esc(qty(g.net, unit))) +
+      detail('Selisih', '<strong>' + esc(qty(g.diff, unit)) + '</strong>') +
+      detail('Harga', esc(money(price) + ' / ' + unit)) +
+      detail('Nilai faktur', '<strong>' + esc(money(total)) + '</strong>' + (rate > 0 ? ' <span class="t-muted">' + esc('termasuk PPN ' + money(tax)) + '</span>' : '')) +
+      '</div>' +
+      (sideKey === 'purchases'
+        ? '<div class="form-group"><label class="form-label" for="pv-adj-ref">No. faktur supplier<span class="req">*</span></label>' +
+          '<input class="form-input" id="pv-adj-ref" autocomplete="off" placeholder="Nomor di tagihan selisih dari supplier"></div>'
+        : '') +
+      '<div class="form-hint">Faktur lama tetap. Faktur susulan berisi satu baris untuk selisih ini' +
+      (sideKey === 'sales' ? ' dan bisa langsung dicetak dari Faktur Penjualan.' : '.') +
+      '</div>';
+    openDialog(
+      (sideKey === 'sales' ? 'Tagih selisih · ' : 'Tagihan selisih supplier · ') + (d.sjNo || d.number),
+      body,
+      '<button type="button" class="btn-ghost" data-action="closeModal">Batal</button>' +
+        button(
+          sideKey === 'sales' ? 'Buat faktur selisih' : 'Simpan faktur selisih',
+          'savePickupAdjust',
+          d.id,
+          'btn',
+          ' data-side="' + sideKey + '"'
+        )
+    );
+  }
+  function submitAdjust(doId, sideKey) {
+    var r = T().createAdjustment(sideKey, doId, {
+      supplierRef: sideKey === 'purchases' ? val('pv-adj-ref').trim() : '',
+    });
+    if (r.error) {
+      toast(r.error, 'warning');
+      return;
+    }
+    save();
+    closeDialog();
+    toast(
+      (r.invoice.number || r.invoice.id) +
+        ' dibuat untuk selisih ' +
+        fmtT(r.invoice.lines[0].qty) +
+        (sideKey === 'sales' ? ' — cetak dari Faktur Penjualan.' : '.'),
+      'success'
+    );
+    rerender();
+  }
+
   function askResolve(doId) {
     var d = find('deliveryOrders', doId);
     if (!d || !d.weightAlert) return;
@@ -2370,7 +2470,7 @@
         detail('Faktur supplier', esc(a.purchaseInvoice || '—')) +
         '</div>' +
         '<div class="form-group"><label class="form-label" for="pv-resolve-note">Tindak lanjut<span class="req">*</span></label>' +
-        '<textarea class="form-input" id="pv-resolve-note" rows="3" placeholder="Contoh: selisih ditagihkan susulan di faktur berikutnya"></textarea>' +
+        '<textarea class="form-input" id="pv-resolve-note" rows="3" placeholder="Contoh: dikonfirmasi ke supplier, berat lama yang benar"></textarea>' +
         '<div class="form-hint">Faktur tidak diubah otomatis. Catat apa yang sudah dilakukan.</div></div>',
       '<button type="button" class="btn-ghost" data-action="closeModal">Batal</button>' +
         button('Tandai selesai', 'updatePickupAlert', d.id, 'btn')
@@ -2778,6 +2878,12 @@
     savePickupRecap: applyRecap,
     editPickupAlert: askResolve,
     updatePickupAlert: submitResolve,
+    createPickupAdjust: function (id, el) {
+      askAdjust(id, el.getAttribute('data-side') === 'purchases' ? 'purchases' : 'sales');
+    },
+    savePickupAdjust: function (id, el) {
+      submitAdjust(id, el.getAttribute('data-side') === 'purchases' ? 'purchases' : 'sales');
+    },
     editPickupWeight: askWeight,
     updatePickupWeight: submitWeight,
   };

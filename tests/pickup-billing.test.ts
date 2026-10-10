@@ -427,6 +427,29 @@ describe('invoices made from trips (invoice-view.js, print)', () => {
     expect(bal('110401')).toBe(0);
   });
 
+  it('keeps the first invoice while its follow-up for a weight difference is active', async () => {
+    const { invoice } = T().createInvoice('sales', [slot(1).id], { date: '2026-09-09' });
+    T().updateWeight(slot(1).id, { net: 40 }, { source: 'rekap' });
+    const follow = T().createAdjustment('sales', slot(1).id, { date: '2026-09-12' }).invoice;
+
+    await actions.get('invCancel')!(invoice.id, 'SI');
+    expect(invoice.status).toBe('Outstanding'); // blocked: cancel the follow-up first
+    expect(w().showToast).toHaveBeenLastCalledWith(
+      expect.stringContaining(`Batalkan dulu faktur selisih ${follow.number}`),
+      'warning'
+    );
+
+    await actions.get('invCancel')!(follow.id, 'SI');
+    expect(follow.status).toBe('Cancelled');
+    expect(w().confirmAsk).toHaveBeenLastCalledWith(
+      expect.stringContaining('Selisih timbangan 35 → 40 kembali belum ditagih')
+    );
+    expect(slot(1).status).toBe('Invoiced'); // still on the first invoice
+    expect(T().openAlerts()).toHaveLength(1); // the difference waits again
+    const { tb } = ledger();
+    expect(tb.balanced).toBe(true);
+  });
+
   it('shows the trucks and the supplier invoice number in the invoice detail', () => {
     const { invoice } = T().createInvoice('purchases', [slot(1).id, slot(2).id], {
       date: '2026-09-10',

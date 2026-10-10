@@ -455,6 +455,42 @@ describe('Perubahan Timbangan', () => {
   });
 });
 
+describe('Perubahan Timbangan — tagih selisih', () => {
+  it('bills the difference to the customer and to the supplier from the alert', () => {
+    openPO();
+    T().recordTrip(slot(1).id, { date: TODAY, net: 30, vehicle: 'B 1' });
+    const si = T().createInvoice('sales', [slot(1).id], { date: TODAY }).invoice;
+    T().createInvoice('purchases', [slot(1).id], { date: TODAY, supplierRef: 'S-1' });
+    T().updateWeight(slot(1).id, { net: 35 }, { source: 'rekap' });
+
+    PV().openWeightChanges();
+    const card = () => document.querySelector('#view-pickups .pv-alert')!;
+    expect(card().textContent).toContain('Selisih ke pelanggan');
+    expect(card().textContent).toContain('+5 Ton belum ditagih');
+    act('createPickupAdjust', slot(1).id); // the customer button comes first
+    expect(modal()).toContain('Tagih selisih');
+    expect(modal()).toContain(si.number);
+    act('savePickupAdjust', slot(1).id);
+    const follow = w().DB.salesInvoices.find((x: any) => x.adjustmentOf);
+    expect(follow.lines[0].qty).toBe(5);
+    expect(modal()).toBe('');
+    expect(card().textContent).toContain(follow.number);
+
+    // Supplier side: the supplier's invoice number is required.
+    const sup = document.querySelector('[data-action="createPickupAdjust"][data-side="purchases"]') as HTMLElement;
+    sup.click();
+    expect(modal()).toContain('No. faktur supplier');
+    act('savePickupAdjust', slot(1).id);
+    expect(w().DB.purchaseInvoices.filter((x: any) => x.adjustmentOf)).toHaveLength(0);
+    setVal('pv-adj-ref', 'S-2');
+    act('savePickupAdjust', slot(1).id);
+    expect(w().DB.purchaseInvoices.filter((x: any) => x.adjustmentOf)).toHaveLength(1);
+    expect(T().openAlerts()).toHaveLength(0);
+    expect(view()).toContain('Tidak ada perubahan berat yang perlu ditindaklanjuti');
+    expect(view()).toContain('Selisih ditagih susulan');
+  });
+});
+
 describe('Koreksi berat', () => {
   it('corrects a typing error on a trip from the PO detail, with a reason and history', () => {
     openPO();

@@ -438,6 +438,174 @@
     });
   }
 
+  // ── Weight changed after invoicing: the difference ─────────────────────────
+  // What the active invoices of one side billed for a trip (their lines that
+  // carry its doId), against the trip's current weight.
+  function billingGap(sideKey, doId) {
+    var d = find('deliveryOrders', doId);
+    var invs = (db()[SIDE[sideKey].coll] || []).filter(function (inv) {
+      return (
+        activeInvoice(inv) &&
+        Array.isArray(inv.doIds) &&
+        inv.doIds.some(function (x) {
+          return same(x, doId);
+        })
+      );
+    });
+    var billed = 0;
+    invs.forEach(function (inv) {
+      (inv.lines || []).forEach(function (l) {
+        if (same(l.doId, doId)) billed += num(l.qty);
+      });
+    });
+    billed = r3(billed);
+    var net = d ? netOf(d) : 0;
+    return {
+      invoiced: invs.length > 0,
+      invoices: invs,
+      billed: billed,
+      net: net,
+      diff: invs.length ? r3(net - billed) : 0,
+    };
+  }
+
+  // A follow-up invoice for a weight that went up after the trip was invoiced:
+  // one line for the difference at the trip's price, carrying the trip (doIds)
+  // so the ledger books only the sale (or purchase) of the difference — the
+  // trip already carries its cost at the new weight. When no invoiced side is
+  // left with a difference, the weight alert is resolved with the invoice
+  // numbers. opts: { date, supplierRef (purchases), note }.
+  function createAdjustment(sideKey, doId, opts) {
+    opts = opts || {};
+    var d = find('deliveryOrders', doId);
+    if (!isTrip(d)) return { error: 'Pengambilan tidak ditemukan.' };
+    var gap = billingGap(sideKey, doId);
+    if (!gap.invoiced) {
+      return {
+        error:
+          sideKey === 'sales'
+            ? 'Pengambilan ini belum ditagih; berat baru ikut di faktur berikutnya.'
+            : 'Pengambilan ini belum ada di faktur supplier; berat baru ikut di faktur berikutnya.',
+      };
+    }
+    if (gap.diff < -0.0005) {
+      return {
+        error:
+          'Berat turun ' + r3(-gap.diff) + ': yang sudah ditagih lebih besar dari berat sekarang.',
+      };
+    }
+    if (gap.diff <= 0.0005) return { error: 'Tidak ada selisih yang belum ditagih.' };
+    if (sideKey === 'purchases' && !String(opts.supplierRef || '').trim()) {
+      return { error: 'No. faktur supplier wajib diisi.' };
+    }
+    var side = SIDE[sideKey];
+    var a = amounts(d);
+    var price = sideKey === 'sales' ? a.salePrice : a.purchasePrice;
+    var l = (d.lines && d.lines[0]) || {};
+    var first = gap.invoices[0];
+    var firstNo = first.number || first.id;
+    var orderColl = sideKey === 'sales' ? 'salesOrders' : 'purchaseOrders';
+    var order = find(orderColl, d[sideKey === 'sales' ? 'soId' : 'poId']);
+    var subtotal = Math.round(gap.diff * price);
+    var rate = num(order && order.taxRate);
+    var incl = !!(order && order.taxInclusive) && rate > 0;
+    var tax = incl ? Math.round((subtotal * rate) / (1 + rate)) : Math.round(subtotal * rate);
+    var date = opts.date || todayISO();
+    var what =
+      'Selisih timbangan ' + (d.sjNo || d.number || d.id) + ': ' + gap.billed + ' → ' + gap.net;
+    var inv = {
+      date: date,
+      dueDate: addDays(date, partyTerm(sideKey, d[side.partyId])),
+      status: 'Outstanding',
+      sourceType: 'DO',
+      sourceId: order ? order.id : '',
+      sourceNumber: order ? order.number || order.id : '',
+      doIds: [d.id],
+      periodFrom: d.date,
+      periodTo: d.date,
+      lines: [
+        {
+          itemId: l.itemId,
+          itemName: l.itemName,
+          unit: l.unit,
+          qty: gap.diff,
+          price: price,
+          lineDiscount: 0,
+          subtotal: subtotal,
+          doId: d.id,
+          note: what + ' (' + firstNo + ')',
+        },
+      ],
+      taxRate: rate,
+      taxInclusive: incl,
+      tax: tax,
+      amount: incl ? subtotal : subtotal + tax,
+      note: opts.note || what + ', susulan ' + firstNo,
+      adjustmentOf: {
+        doId: d.id,
+        invoiceId: first.id,
+        invoice: firstNo,
+        from: gap.billed,
+        to: gap.net,
+      },
+      createdBy: currentUser(),
+    };
+    inv[side.party] = d[side.party] || (order && order[side.party]) || '';
+    inv[side.partyId] = d[side.partyId] || (order && order[side.partyId]) || '';
+    if (sideKey === 'purchases') inv.supplierRef = String(opts.supplierRef).trim();
+    var number =
+      window.DocEngine && typeof window.DocEngine.nextNumber === 'function'
+        ? window.DocEngine.nextNumber(side.docType, date, {
+            sequences: db().numberSequences,
+            commit: true,
+          })
+        : side.docType + '-' + Date.now();
+    inv.id = number;
+    inv.number = number;
+    arr(side.coll).push(inv);
+    // Close the alert once no invoiced side still misses the difference.
+    var alert = d.weightAlert;
+    if (alert && !alert.resolved) {
+      alert.adjustments = alert.adjustments || {};
+      alert.adjustments[sideKey] = number;
+      var open = ['sales', 'purchases'].some(function (k) {
+        var g = billingGap(k, d.id);
+        return g.invoiced && g.diff > 0.0005;
+      });
+      if (!open) {
+        var done = ['sales', 'purchases']
+          .map(function (k) {
+            return alert.adjustments[k];
+          })
+          .filter(Boolean);
+        resolveAlert(d.id, 'Selisih ditagih susulan: ' + done.join(', '));
+        alert.resolvedByAdjustment = true;
+      }
+    }
+    return { invoice: inv };
+  }
+
+  // A cancelled follow-up invoice: its difference is unbilled again, so a weight
+  // alert it had closed opens again.
+  function releaseAdjustment(inv) {
+    if (!inv || !inv.adjustmentOf) return;
+    var d = find('deliveryOrders', inv.adjustmentOf.doId);
+    var a = d && d.weightAlert;
+    if (!a) return;
+    if (a.adjustments) {
+      Object.keys(a.adjustments).forEach(function (k) {
+        if (a.adjustments[k] === (inv.number || inv.id)) delete a.adjustments[k];
+      });
+    }
+    if (a.resolved && a.resolvedByAdjustment) {
+      a.resolved = false;
+      a.resolvedByAdjustment = false;
+      a.note = '';
+      delete a.resolvedAt;
+      delete a.resolvedBy;
+    }
+  }
+
   // ── Opening a pickup PO ────────────────────────────────────────────────────
   // opts: { soId, capacity, cutoff, date }. Returns { slots } or { error }.
   function openPickupPO(poId, opts) {
@@ -1184,6 +1352,9 @@
     buildInvoice: buildInvoice,
     createInvoice: createInvoice,
     releaseInvoice: releaseInvoice,
+    billingGap: billingGap,
+    createAdjustment: createAdjustment,
+    releaseAdjustment: releaseAdjustment,
     openPickupPO: openPickupPO,
     recordTrip: recordTrip,
     updateWeight: updateWeight,
