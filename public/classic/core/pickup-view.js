@@ -1957,9 +1957,15 @@
     var rc = S.recap;
     var html = header('Impor Rekap Timbangan', '', button('PO Pengambilan', 'pvGoOrders'));
 
+    // The file picker first; what the reader expects folds open on demand.
     html +=
-      '<div class="card"><div class="card-title">Format file</div>' +
-      '<p class="pv-p">Kolom yang dibaca (judul kolom di baris pertama tabel):</p>' +
+      '<div class="card">' +
+      '<div class="pv-file"><label class="btn" for="pv-recap-file">Pilih file rekap</label>' +
+      '<input type="file" id="pv-recap-file" accept=".xlsx,.xls,.csv" hidden>' +
+      '<span class="t-muted">' +
+      esc(rc ? rc.fileName : '.xlsx, .xls, atau .csv') +
+      '</span></div>' +
+      '<details class="pv-help"><summary>Kolom yang dibaca</summary>' +
       '<div class="pv-cols">' +
       ['No SJ', 'Tanggal', 'No Polisi', 'Sopir', 'Bruto', 'Tara', 'Netto']
         .map(function (c) {
@@ -1968,15 +1974,10 @@
         .join('') +
       '</div>' +
       '<ul class="pv-list">' +
-      '<li>Paling tepat memakai file dari tombol <strong>Ekspor Excel untuk timbangan</strong> di PO Pengambilan: bagian timbangan cukup mengisi Tanggal, No Polisi, Sopir, Bruto, Tara, dan Netto lalu mengirimnya kembali.</li>' +
-      '<li>Baris tanpa No SJ dicocokkan dengan Tanggal + No Polisi.</li>' +
-      '<li>Rekap boleh berisi semua pengambilan sejak awal (kumulatif): baris yang sama dilewati, berat yang berubah ditandai dan dicatat riwayatnya.</li>' +
-      '<li>File .xlsx, .xls, atau .csv. Tanggal ditulis hari/bulan/tahun atau tahun-bulan-hari.</li>' +
-      '</ul>' +
-      '<div class="pv-file"><label class="btn" for="pv-recap-file">Pilih file rekap</label>' +
-      '<input type="file" id="pv-recap-file" accept=".xlsx,.xls,.csv" hidden>' +
-      (rc ? '<span class="t-muted">' + esc(rc.fileName) + '</span>' : '') +
-      '</div></div>';
+      '<li>Paling tepat: file dari <strong>Ekspor Excel untuk timbangan</strong> di PO Pengambilan, diisi bagian timbangan.</li>' +
+      '<li>Tanpa No SJ: dicocokkan lewat Tanggal + No Polisi.</li>' +
+      '<li>Rekap kumulatif boleh: baris yang sama dilewati, berat yang berubah ditandai.</li>' +
+      '</ul></details></div>';
 
     if (!rc) return html;
     if (rc.applied) return html + renderRecapApplied(rc);
@@ -2009,7 +2010,7 @@
         '<div class="notice notice-warning"><div>' +
         esc(
           invoicedChanged +
-            ' surat jalan berubah beratnya padahal sudah ditagih. Faktur tidak diubah otomatis; setelah diterapkan, perubahan muncul di Perubahan Timbangan untuk ditindaklanjuti.'
+            ' surat jalan yang sudah ditagih berubah beratnya. Fakturnya tidak diubah; setelah diterapkan, muncul di Perubahan Timbangan.'
         ) +
         '</div></div>';
     }
@@ -3013,6 +3014,9 @@
       '.pv-photo-prev img{display:block;max-width:100%;max-height:16rem;border:1px solid var(--border);border-radius:var(--r-sm)}',
       '.pv-photo-full{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:var(--r-sm)}',
       '.pv-quiet{margin:0 0 var(--card-gap);color:var(--muted);font-size:.8125rem}',
+      '.pv-help{margin-top:14px;font-size:.8125rem}',
+      '.pv-help summary{cursor:pointer;color:var(--accent-text);width:max-content}',
+      '.pv-help .pv-cols{margin:10px 0 6px}',
       '.pv-submit{width:100%;height:3.25rem;font-size:1.125rem;font-weight:600}',
       '.pv-row-danger td{background:var(--danger-bg)}',
       '.pv-alert{margin-top:12px;padding:14px 16px;background:var(--danger-bg);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:var(--r-sm)}',
