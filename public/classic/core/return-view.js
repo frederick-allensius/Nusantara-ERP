@@ -197,7 +197,7 @@
           <td class="t-actions">${
             d.status === 'Draft'
               ? `<button class="action-primary" data-action="rtPost" data-id="${esc(d.id)}" data-type="${type}">Posting</button>`
-              : `<button class="action-ghost" data-action="rtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`
+              : `<button class="btn-ghost btn-sm" data-action="rtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`
           }</td>
         </tr>`
       )

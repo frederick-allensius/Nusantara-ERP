@@ -360,14 +360,14 @@
       </div>
       <div style="margin-top:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Baris Jurnal</span>
+          <span class="form-label" style="margin:0;font-size:.8125rem">Baris Jurnal</span>
           <button type="button" class="btn-ghost" id="jv-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:var(--surface-sunken)">
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Akun</th>
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Debit</th>
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:130px">Kredit</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left">Akun</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left;width:130px">Debit</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left;width:130px">Kredit</th>
             <th style="width:30px"></th>
           </tr></thead>
           <tbody id="jv-body">${jvRowHTML()}${jvRowHTML()}</tbody>
@@ -375,7 +375,7 @@
         <div style="display:flex;justify-content:flex-end;gap:18px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:.75rem">
           <span>Debit: <strong id="jv-td">Rp 0</strong></span>
           <span>Kredit: <strong id="jv-tc">Rp 0</strong></span>
-          <span id="jv-bal" style="font-weight:800"></span>
+          <span id="jv-bal" ></span>
         </div>
       </div>`,
       `<button class="btn-ghost" data-action="closeModal">Batal</button>

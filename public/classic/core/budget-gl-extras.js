@@ -138,12 +138,12 @@
         pct +
         '%</span></div></td>' +
         '<td class="td-p" style="white-space:nowrap">' +
-        '<button class="action-ghost" data-action="editBudget" data-id="' +
+        '<button class="btn-ghost btn-sm" data-action="editBudget" data-id="' +
         esc(b.id) +
         '">Edit</button> ' +
-        '<button class="action-ghost" data-action="delBudget" data-id="' +
+        '<button class="btn-danger-text btn-sm" data-action="delBudget" data-id="' +
         esc(b.id) +
-        '" style="color:var(--danger)">Hapus</button>' +
+        '">Hapus</button>' +
         '</td>' +
         '</tr>',
     };
@@ -297,16 +297,16 @@
     var b = existing || {};
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:.75rem;font-weight:700">Akun<select id="bg-account" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Akun<select id="bg-account" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Periode (YYYY-MM)<input id="bg-period" class="form-input" type="month" value="' +
+      '<label style="font-size:.75rem;font-weight:500">Periode (YYYY-MM)<input id="bg-period" class="form-input" type="month" value="' +
       esc(b.period || thisMonth()) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Jumlah Anggaran<input id="bg-amount" class="form-input" type="number" min="0" value="' +
+      '<label style="font-size:.75rem;font-weight:500">Jumlah Anggaran<input id="bg-amount" class="form-input" type="number" min="0" value="' +
       (b.amount || 0) +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="bg-notes" class="form-input" value="' +
+      '<label style="font-size:.75rem;font-weight:500">Catatan<input id="bg-notes" class="form-input" value="' +
       esc(b.notes || '') +
       '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
@@ -435,14 +435,14 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:.75rem;font-weight:700">Dari Budget<select id="bt-from" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Dari Budget<select id="bt-from" class="form-select" style="width:100%;margin-top:4px">' +
       opts +
       '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Ke Budget<select id="bt-to" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Ke Budget<select id="bt-to" class="form-select" style="width:100%;margin-top:4px">' +
       opts +
       '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Jumlah<input id="bt-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Catatan<input id="bt-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:500">Jumlah<input id="bt-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:500">Catatan<input id="bt-notes" class="form-input" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(
@@ -680,9 +680,9 @@
               '">Posting</button> '
             : '') +
           (a.status === 'Draft'
-            ? '<button class="action-ghost" data-action="delAccrual" data-id="' +
+            ? '<button class="btn-danger-text btn-sm" data-action="delAccrual" data-id="' +
               esc(a.id) +
-              '" style="color:var(--danger)">Hapus</button>'
+              '">Hapus</button>'
             : '<span style="font-size:.75rem;color:var(--muted)">' +
               esc(a.journalNumber || 'Sudah dijurnal') +
               '</span>') +
@@ -717,15 +717,15 @@
   function addAccrualModal() {
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:.75rem;font-weight:700">Tanggal<input id="ac-date" class="form-input" type="date" value="' +
+      '<label style="font-size:.75rem;font-weight:500">Tanggal<input id="ac-date" class="form-input" type="date" value="' +
       today() +
       '" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Akun Biaya<select id="ac-account" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Akun Biaya<select id="ac-account" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Keterangan<input id="ac-desc" class="form-input" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Jumlah<input id="ac-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Akun Hutang (kredit)<select id="ac-credit" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Keterangan<input id="ac-desc" class="form-input" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:500">Jumlah<input id="ac-amount" class="form-input" type="number" min="0" value="0" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:500">Akun Hutang (kredit)<select id="ac-credit" class="form-select" style="width:100%;margin-top:4px">' +
       accountOptions() +
       '</select></label>' +
       '</div>';
@@ -838,12 +838,12 @@
           money(gross) +
           '</td>' +
           '<td class="td-p">' +
-          '<button class="action-ghost" data-action="editEmployee" data-id="' +
+          '<button class="btn-ghost btn-sm" data-action="editEmployee" data-id="' +
           esc(e.id) +
           '">Edit</button> ' +
-          '<button class="action-ghost" data-action="delEmployee" data-id="' +
+          '<button class="btn-danger-text btn-sm" data-action="delEmployee" data-id="' +
           esc(e.id) +
-          '" style="color:var(--danger)">Hapus</button>' +
+          '">Hapus</button>' +
           '</td>' +
           '</tr>'
         );
@@ -865,10 +865,10 @@
         }
         var actions = '';
         if (!r.posted) {
-          actions += '<button class="action-ghost" data-action="postPayroll" data-id="' + esc(r.id) + '">Posting ke Jurnal</button> ';
+          actions += '<button class="btn-ghost btn-sm" data-action="postPayroll" data-id="' + esc(r.id) + '">Posting ke Jurnal</button> ';
         }
         if (r.posted && !r.paid) {
-          actions += '<button class="action-ghost" data-action="payPayroll" data-id="' + esc(r.id) + '">Bayar</button> ';
+          actions += '<button class="btn-ghost btn-sm" data-action="payPayroll" data-id="' + esc(r.id) + '">Bayar</button> ';
         }
         return (
           '<tr>' +
@@ -966,11 +966,11 @@
 
     var body =
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<label style="font-size:.75rem;font-weight:700">Periode<input id="pr-period" class="form-input" type="month" value="' +
+      '<label style="font-size:.75rem;font-weight:500">Periode<input id="pr-period" class="form-input" type="month" value="' +
       thisMonth() +
       '" style="width:100%;margin-top:4px"></label>' +
       '<div style="background:var(--surface-sunken);border-radius:8px;padding:12px">' +
-      '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Ringkasan</div>' +
+      '<div style="font-size:.75rem;font-weight:600;margin-bottom:8px">Ringkasan</div>' +
       '<div style="font-size:.75rem">Jumlah karyawan: <strong>' +
       employees.length +
       '</strong></div>' +
@@ -1037,12 +1037,12 @@
       '<div style="font-size:.75rem">Periode: <strong>' + esc(run.period) + '</strong></div>' +
       '<div style="font-size:.75rem">Total: <strong>' + money(run.totalAmount) + '</strong></div>' +
       '</div>' +
-      '<label style="font-size:.75rem;font-weight:700">Metode Pembayaran<select id="pp-method" class="form-select" style="width:100%;margin-top:4px">' +
+      '<label style="font-size:.75rem;font-weight:500">Metode Pembayaran<select id="pp-method" class="form-select" style="width:100%;margin-top:4px">' +
       '<option value="Tunai">Tunai — Kas</option>' +
       '<option value="Transfer BCA">Transfer BCA</option>' +
       '<option value="Transfer Mandiri">Transfer Mandiri</option>' +
       '</select></label>' +
-      '<label style="font-size:.75rem;font-weight:700">Tanggal Bayar<input id="pp-date" class="form-input" type="date" value="' + today() + '" style="width:100%;margin-top:4px"></label>' +
+      '<label style="font-size:.75rem;font-weight:500">Tanggal Bayar<input id="pp-date" class="form-input" type="date" value="' + today() + '" style="width:100%;margin-top:4px"></label>' +
       '</div>';
 
     modal(

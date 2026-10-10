@@ -72,10 +72,10 @@
 
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700;font-family:monospace;color:var(--primary)">' +
+          '<td class="td-p" style="font-size:.75rem;font-family:monospace;color:var(--primary)">' +
           esc(w.id) +
           '</td>' +
-          '<td class="td-p" style="font-size:.8125rem;font-weight:700">' +
+          '<td class="td-p" style="font-size:.8125rem">' +
           esc(w.name) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -84,7 +84,7 @@
           '<td class="td-p" style="font-size:.75rem;text-align:right">' +
           itemCount +
           ' item</td>' +
-          '<td class="td-p" style="font-size:.75rem;text-align:right;font-weight:700">' +
+          '<td class="td-p" style="font-size:.75rem;text-align:right">' +
           totalQty +
           '</td>' +
           '<td class="td-p">' +
@@ -92,7 +92,7 @@
           '</td>' +
           '<td class="td-p">' +
           (w.id !== wh.DEFAULT_WH_ID
-            ? '<button class="action-ghost" data-action="whEdit" data-id="' +
+            ? '<button class="btn-ghost btn-sm" data-action="whEdit" data-id="' +
               esc(w.id) +
               '">Edit</button>'
             : '<span style="font-size:.75rem;color:var(--muted)">Default</span>') +
@@ -105,20 +105,20 @@
     return (
       '<div class="card">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div style="font-size:.875rem;font-weight:700">Daftar Gudang (' +
+      '<div style="font-size:.875rem;font-weight:600">Daftar Gudang (' +
       warehouses.length +
       ')</div>' +
       '<button class="btn" data-action="whAdd" style="font-size:.75rem">+ Tambah Gudang</button>' +
       '</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">ID</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Nama</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Lokasi</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Jenis Item</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Total Qty</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Aksi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">ID</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Nama</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Lokasi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:right">Jenis Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:right">Total Qty</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Status</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Aksi</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -142,7 +142,7 @@
     var whCols = warehouses
       .map(function (w) {
         return (
-          '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right;min-width:90px">' +
+          '<th style="padding:8px 10px;font-size:.75rem;text-align:right;min-width:90px">' +
           esc(w.name) +
           '</th>'
         );
@@ -170,7 +170,7 @@
 
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:.8125rem;font-weight:700">' +
+          '<td class="td-p" style="font-size:.8125rem">' +
           esc(item.name) +
           '</td>' +
           '<td class="td-p"><span class="cat">' +
@@ -195,15 +195,15 @@
 
     return (
       '<div class="card">' +
-      '<div style="font-size:.875rem;font-weight:700;margin-bottom:12px">Stok per Gudang</div>' +
+      '<div style="font-size:.875rem;font-weight:600;margin-bottom:12px">Stok per Gudang</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Item</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Kategori</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Satuan</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Kategori</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Satuan</th>' +
       whCols +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Total</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Min</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:right">Total</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:right">Min</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -229,7 +229,7 @@
         var wh = WH();
         return (
           '<tr style="border-bottom:1px solid var(--border)">' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:700;color:var(--primary)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--primary)">' +
           esc(t.number || t.id) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
@@ -248,7 +248,7 @@
           '<td class="td-p">' +
           statusBadge(t.status) +
           '</td>' +
-          '<td class="td-p"><button class="action-ghost" data-action="whViewIT" data-id="' +
+          '<td class="td-p"><button class="btn-ghost btn-sm" data-action="whViewIT" data-id="' +
           esc(t.id) +
           '">Lihat</button></td>' +
           '</tr>'
@@ -258,19 +258,19 @@
 
     return (
       '<div class="card">' +
-      '<div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Transfer Item (' +
+      '<div style="font-size:.875rem;font-weight:600;margin-bottom:10px">Transfer Item (' +
       transfers.length +
       ')</div>' +
       '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">No.</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Tanggal</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Dari</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left"></th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Ke</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:right">Item</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Status</th>' +
-      '<th style="padding:8px 10px;font-size:.75rem;font-weight:700;text-align:left">Aksi</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">No.</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Tanggal</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Dari</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left"></th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Ke</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:right">Item</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Status</th>' +
+      '<th style="padding:8px 10px;font-size:.75rem;text-align:left">Aksi</th>' +
       '</tr></thead>' +
       '<tbody>' +
       rows +
@@ -450,13 +450,13 @@
         '</div>' +
         '<div style="margin-top:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Item Transfer</span>' +
+        '<span class="form-label" style="margin:0;font-size:.8125rem">Item Transfer</span>' +
         '<button type="button" class="btn-ghost" id="it-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Item</button>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface-sunken)">' +
-        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Item</th>' +
-        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:80px">Tersedia</th>' +
-        '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Qty Transfer</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;text-align:left">Item</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;text-align:left;width:80px">Tersedia</th>' +
+        '<th style="padding:6px 8px;font-size:.75rem;text-align:left;width:90px">Qty Transfer</th>' +
         '<th style="width:30px"></th>' +
         '</tr></thead><tbody id="it-lines">' +
         lineRow() +
@@ -604,7 +604,7 @@
     var linesHtml = '';
     if (doc.lines && doc.lines.length > 0) {
       linesHtml =
-        '<div style="margin-top:12px"><div style="font-size:.75rem;font-weight:700;margin-bottom:6px">Item Ditransfer (' +
+        '<div style="margin-top:12px"><div style="font-size:.75rem;font-weight:600;margin-bottom:6px">Item Ditransfer (' +
         doc.lines.length +
         ')</div>' +
         '<table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr style="background:var(--surface-sunken)">' +
@@ -617,7 +617,7 @@
           '<td style="padding:5px 8px">' +
           esc(l.itemName || l.itemId) +
           '</td>' +
-          '<td style="padding:5px 8px;text-align:right;font-weight:700">' +
+          '<td style="padding:5px 8px;text-align:right">' +
           (l.qty || 0) +
           '</td></tr>';
       });

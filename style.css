@@ -1868,27 +1868,6 @@ tbody .badge-purple {
   height: 16px;
   flex-shrink: 0;
 }
-.action-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font: 500 .75rem var(--font-sans);
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background var(--dur) var(--ease),
-    color var(--dur) var(--ease);
-}
-.action-ghost:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
 
 /* ── 11. BADGES / STATUS ─────────────────────────────────────────────────────── */
 /* Status: a coloured dot and coloured text, no pill. */

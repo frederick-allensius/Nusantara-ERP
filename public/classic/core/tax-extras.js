@@ -618,7 +618,7 @@
             money(inv.ppn) +
             '</td>' +
             '<td class="td-p" style="text-align:center">' +
-            '<button class="btn" style="font-size:.75rem;padding:4px 10px" data-action="sendTaxEmail" data-id="' +
+            '<button class="btn btn-sm" data-action="sendTaxEmail" data-id="' +
             esc(inv.key) +
             '" data-invid="' +
             esc(inv.id) +

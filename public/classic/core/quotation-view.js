@@ -112,7 +112,7 @@
       .map(d => {
         const order = convertedOrder(type, d);
         const expired = d.validUntil && d.validUntil < today && (d.status === 'Draft' || d.status === 'Sent');
-        let action = `<button class="action-ghost" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`;
+        let action = `<button class="btn-ghost btn-sm" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`;
         if (d.status === 'Draft') {
           action = `<button class="action-primary" data-action="qtSend" data-id="${esc(d.id)}" data-type="${type}">Tandai Dikirim</button>`;
         } else if (d.status === 'Accepted' && !order) {
@@ -214,7 +214,7 @@
       <div class="detail-section">
         <div class="detail-section-head">
           <div class="detail-section-title">Barang</div>
-          <button type="button" class="action-ghost" id="qt-add-line">+ Tambah baris</button>
+          <button type="button" class="btn-ghost btn-sm" id="qt-add-line">+ Tambah baris</button>
         </div>
         <table class="data-table compact">
           <thead><tr><th>Barang</th><th class="t-num">Qty</th><th class="t-num">Harga</th><th class="t-num">Subtotal</th><th></th></tr></thead>

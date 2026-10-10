@@ -549,7 +549,7 @@
               esc(p.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delOP" data-id="' +
+              '<button class="btn-danger-text btn-sm" data-action="delOP" data-id="' +
               esc(p.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -689,7 +689,7 @@
               esc(d.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delOD" data-id="' +
+              '<button class="btn-danger-text btn-sm" data-action="delOD" data-id="' +
               esc(d.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -831,7 +831,7 @@
               esc(t.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delBT" data-id="' +
+              '<button class="btn-danger-text btn-sm" data-action="delBT" data-id="' +
               esc(t.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -1102,7 +1102,7 @@
         '<div class="form-group"><label class="form-label" for="bs-closing">Saldo Akhir (Rp)</label><input class="form-input" id="bs-closing" type="number" step="any" placeholder="Opsional"></div>' +
         '</div>' +
         '<div class="form-hint">Saldo akhir dibandingkan dengan saldo buku besar di Rekonsiliasi Bank.</div>' +
-        '<div style="font-size:.75rem;font-weight:700;margin:12px 0 8px;color:var(--muted)">Entri Transaksi</div>' +
+        '<div style="font-size:.75rem;font-weight:600;margin:12px 0 8px;color:var(--muted)">Entri Transaksi</div>' +
         '<div id="bs-lines-wrap">' +
         _bsLineHTML() +
         '</div>' +
@@ -1739,7 +1739,7 @@
           '<div><button class="btn-ghost" data-action="bxChargeNew">Catat biaya bank</button>' +
           '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada rekening koran</div>' +
+          '<div style="font-size:.9375rem;font-weight:600;margin-bottom:6px">Belum ada rekening koran</div>' +
           '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Input rekening koran bank untuk mencocokkannya dengan buku besar.</div>' +
           '<button class="btn" data-action="addBS">+ Input Rekening Koran</button></div>'
       );

@@ -1628,7 +1628,7 @@ function renderFinance() {
       ${metric('Harga pokok penjualan', idr(cogs))}
       ${metric('Beban', idr(expense))}
       ${metric('Laba bersih', idr(netProfit), netProfit < 0 ? 't-danger' : 't-success')}
-      <button class="action-ghost" data-action="openFinPL">Buka Laporan Laba Rugi</button>
+      <button class="btn-ghost btn-sm" data-action="openFinPL">Buka Laporan Laba Rugi</button>
     </div>
     <div class="card">
       <div class="card-title">Piutang & hutang</div>
@@ -1636,7 +1636,7 @@ function renderFinance() {
       ${metric('Piutang lewat jatuh tempo', idr(ar.overdue), ar.overdue > 0 ? 't-danger' : '')}
       ${metric('Hutang belum dibayar', idr(ap.total))}
       ${metric('Hutang jatuh tempo 7 hari', idr(ap.dueSoon), ap.dueSoon > 0 ? 't-warning' : '')}
-      <button class="action-ghost" data-action="openFinBS">Buka Neraca</button>
+      <button class="btn-ghost btn-sm" data-action="openFinBS">Buka Neraca</button>
     </div>
     <div class="card">
       <div class="card-title">Persediaan</div>
@@ -1653,7 +1653,7 @@ function renderFinance() {
       ${metric('Status', taxCfg.pkp ? 'PKP' : 'Non-PKP')}
       ${metric('NPWP', escapeHtml(taxCfg.npwp || 'Belum diisi'))}
       ${metric('Tarif PPN', `${Math.round((taxCfg.ppnRate || 0) * 100)}%`)}
-      <button class="action-ghost" data-action="editTaxSettings">Pengaturan Pajak</button>
+      <button class="btn-ghost btn-sm" data-action="editTaxSettings">Pengaturan Pajak</button>
     </div>
   </div>
   ${integrityPanel}
@@ -1704,7 +1704,7 @@ function renderAssets() {
   <div class="fin-2col">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Kategori Aset</div>
+        <div style="font-size:.8125rem;font-weight:600">Kategori Aset</div>
         <button class="btn-ghost" data-action="addAssetCategory" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
@@ -1717,7 +1717,7 @@ function renderAssets() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Kategori Fiskal</div>
+        <div style="font-size:.8125rem;font-weight:600">Kategori Fiskal</div>
         <button class="btn-ghost" data-action="addAssetFiscalCategory" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
@@ -1731,7 +1731,7 @@ function renderAssets() {
   </div>
   <div class="card" style="margin-top:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:.875rem;font-weight:700">Daftar Aset</div>
+      <div style="font-size:.875rem;font-weight:600">Daftar Aset</div>
       <div style="font-size:.75rem;color:var(--muted)">Berdasarkan data aset yang tersimpan</div>
     </div>
     <div class="table-wrap">
@@ -1753,12 +1753,12 @@ function renderAssets() {
               : listAssets
                   .map(
                     a => `<tr data-action="viewAsset" data-id="${escapeHtml(a.id)}" style="cursor:pointer">
-              <td class="td-p" style="font-size:.75rem;font-weight:700">${escapeHtml(a.id)}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:700">${escapeHtml(a.name)}</td>
+              <td class="td-p" style="font-size:.75rem">${escapeHtml(a.id)}</td>
+              <td class="td-p" style="font-size:.75rem">${escapeHtml(a.name)}</td>
               <td class="td-p"><span class="cat">${escapeHtml(a.category || '—')}</span></td>
               <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(a.location || '—')}</td>
               <td class="td-p" style="font-size:.75rem;color:var(--muted)">${escapeHtml(a.acquired || '—')}</td>
-              <td class="td-p" style="font-size:.75rem;font-weight:700">${idrFull(a.cost || 0)}</td>
+              <td class="td-p" style="font-size:.75rem">${idrFull(a.cost || 0)}</td>
               <td class="td-p">${badge(a.status || 'OK')}</td>
               <td class="td-p">${actionBtns('Asset', a.id)}</td>
             </tr>`
@@ -1772,7 +1772,7 @@ function renderAssets() {
   <div class="fin-2col" style="margin-top:16px">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Mutasi Aset</div>
+        <div style="font-size:.8125rem;font-weight:600">Mutasi Aset</div>
         <button class="btn-ghost" data-action="addAssetTransfer" style="font-size:.75rem;padding:4px 10px">+ Catat</button>
       </div>
       ${
@@ -1782,7 +1782,7 @@ function renderAssets() {
               .map(
                 t => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:.75rem;font-weight:700">${escapeHtml(t.assetName || t.assetId)}</div>
+            <div style="font-size:.75rem;font-weight:600">${escapeHtml(t.assetName || t.assetId)}</div>
             <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(t.from || '—')} → ${escapeHtml(t.to || '—')}</div>
           </div>
           <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(t.date || '—')}</div>
@@ -1793,7 +1793,7 @@ function renderAssets() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Disposisi Aset</div>
+        <div style="font-size:.8125rem;font-weight:600">Disposisi Aset</div>
         <button class="btn-ghost" data-action="addAssetDisposal" style="font-size:.75rem;padding:4px 10px">+ Catat</button>
       </div>
       ${
@@ -1803,7 +1803,7 @@ function renderAssets() {
               .map(
                 d => `<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:.75rem;font-weight:700">${escapeHtml(d.assetName || d.assetId)}</div>
+            <div style="font-size:.75rem;font-weight:600">${escapeHtml(d.assetName || d.assetId)}</div>
             <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.method || '—')}</div>
           </div>
           <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(d.date || '—')}</div>
@@ -1815,7 +1815,7 @@ function renderAssets() {
   </div>
   <div class="card" style="margin-top:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:.8125rem;font-weight:700">Aset per Lokasi</div>
+      <div style="font-size:.8125rem;font-weight:600">Aset per Lokasi</div>
       <div style="font-size:.75rem;color:var(--muted)">Berdasarkan lokasi pada aset</div>
     </div>
     ${
@@ -1827,7 +1827,7 @@ function renderAssets() {
                 loc,
                 count,
               ]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:.75rem;font-weight:700">${escapeHtml(loc)}</div>
+        <div style="font-size:.75rem;font-weight:600">${escapeHtml(loc)}</div>
         <div style="font-size:.75rem;color:var(--muted)">${count} aset</div>
       </div>`
             )
@@ -1934,10 +1934,10 @@ function renderReports() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div style="flex:1">
-          <div style="font-size:.8125rem;font-weight:700">${escapeHtml(r.title)}</div>
+          <div style="font-size:.8125rem;font-weight:600">${escapeHtml(r.title)}</div>
           <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${escapeHtml(r.sub)}</div>
         </div>
-        <div style="font-size:.8125rem;font-weight:800;color:var(--primary)">${escapeHtml(r.value)}</div>
+        <div style="font-size:.8125rem;font-weight:600;color:var(--primary)">${escapeHtml(r.value)}</div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`
       )
@@ -2050,7 +2050,7 @@ function renderLogistics() {
   <div class="log-2col">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Armada Kendaraan</div>
+        <div style="font-size:.8125rem;font-weight:600">Armada Kendaraan</div>
         <button class="btn-ghost" data-action="addFleet" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
@@ -2060,11 +2060,11 @@ function renderLogistics() {
               .map(
                 v => `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1">
-            <div style="font-size:.75rem;font-weight:700;font-family:monospace">${escapeHtml(v.plate)}</div>
+            <div style="font-size:.75rem;font-weight:600;font-family:monospace">${escapeHtml(v.plate)}</div>
             <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(v.type)} · ${escapeHtml(v.driver)}</div>
           </div>
           ${badge(v.status === 'OK' ? 'OK' : 'In Transit')}
-          <button class="action-ghost" data-action="editFleet" data-id="${escapeHtml(v.id)}" style="font-size:.75rem">Edit</button>
+          <button class="btn-ghost btn-sm" data-action="editFleet" data-id="${escapeHtml(v.id)}" style="font-size:.75rem">Edit</button>
         </div>`
               )
               .join('')
@@ -2072,7 +2072,7 @@ function renderLogistics() {
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:.8125rem;font-weight:700">Ekspedisi Rekanan</div>
+        <div style="font-size:.8125rem;font-weight:600">Ekspedisi Rekanan</div>
         <button class="btn-ghost" data-action="addExpedition" style="font-size:.75rem;padding:4px 10px">+ Tambah</button>
       </div>
       ${
@@ -2082,10 +2082,10 @@ function renderLogistics() {
               .map(
                 e => `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1">
-            <div style="font-size:.75rem;font-weight:700">${escapeHtml(e.name)}</div>
+            <div style="font-size:.75rem;font-weight:600">${escapeHtml(e.name)}</div>
             <div style="font-size:.75rem;color:var(--muted)">${escapeHtml(e.area)} · ${escapeHtml(e.rate)}</div>
           </div>
-          <button class="action-ghost" data-action="editExpedition" data-id="${escapeHtml(e.id)}" style="font-size:.75rem">Edit</button>
+          <button class="btn-ghost btn-sm" data-action="editExpedition" data-id="${escapeHtml(e.id)}" style="font-size:.75rem">Edit</button>
         </div>`
               )
               .join('')
@@ -2143,7 +2143,7 @@ function renderMasterData() {
 
   <div class="card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:.875rem;font-weight:700">Pelanggan</div>
+      <div style="font-size:.875rem;font-weight:600">Pelanggan</div>
       <button class="btn" data-action="addCustomer" style="font-size:.75rem">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Tambah Pelanggan
@@ -2166,7 +2166,7 @@ function renderMasterData() {
 
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:.875rem;font-weight:700">Supplier</div>
+      <div style="font-size:.875rem;font-weight:600">Supplier</div>
       <button class="btn" data-action="addSupplier" style="font-size:.75rem">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Tambah Supplier
@@ -2263,7 +2263,7 @@ function renderSettings() {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
         </div>
         <div style="flex:1">
-          <div style="font-size:.8125rem;font-weight:700">${escapeHtml(s.title)}</div>
+          <div style="font-size:.8125rem;font-weight:600">${escapeHtml(s.title)}</div>
           <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${escapeHtml(s.sub)}</div>
         </div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -2275,7 +2275,7 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:.8125rem;font-weight:700">Ekspor Backup JSON</div>
+        <div style="font-size:.8125rem;font-weight:600">Ekspor Backup JSON</div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Unduh seluruh data ERP sebagai file JSON</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -2285,7 +2285,7 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:.8125rem;font-weight:700">Impor Backup JSON</div>
+        <div style="font-size:.8125rem;font-weight:600">Impor Backup JSON</div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Pulihkan data dari file backup sebelumnya</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -2296,17 +2296,17 @@ function renderSettings() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:.8125rem;font-weight:700;color:var(--info)">Sinkronisasi ke Firebase</div>
+        <div style="font-size:.8125rem;font-weight:600;color:var(--info)">Sinkronisasi ke Firebase</div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Upload data lokal ke cloud (Firestore)</div>
       </div>
-      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'var(--success-bg)' : 'var(--warning-bg)'};color:${window.__nsaDataMode === 'firestore' ? 'var(--success)' : 'var(--warning)'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
+      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:${window.__nsaDataMode === 'firestore' ? 'var(--success-bg)' : 'var(--warning-bg)'};color:${window.__nsaDataMode === 'firestore' ? 'var(--success)' : 'var(--warning)'}">${window.__nsaDataMode === 'firestore' ? 'Cloud' : 'Lokal'}</span>
     </div>
     <div class="card set-row" data-action="resetDB" style="border-color:var(--danger-light)">
       <div class="set-ico" style="background:var(--danger-light)">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.44"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:.8125rem;font-weight:700;color:var(--danger)">Reset Data</div>
+        <div style="font-size:.8125rem;font-weight:600;color:var(--danger)">Reset Data</div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:2px">Kembalikan semua data ke kondisi awal</div>
       </div>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>

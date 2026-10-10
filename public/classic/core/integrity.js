@@ -361,7 +361,7 @@
     const log = db().auditLog || [];
     const last = log.length > 0 ? log[log.length - 1] : null;
     const lockBadge = lock
-      ? `<span style="color:var(--success);font-weight:700">Terkunci s/d ${esc(lock)}</span>`
+      ? `<span style="color:var(--success)">Terkunci s/d ${esc(lock)}</span>`
       : '<span style="color:var(--muted)">Tidak aktif</span>';
     const lastLine = last
       ? `${esc(last.ts.slice(0, 16).replace('T', ' '))} — ${esc(last.user)} ${esc(last.action)} ${esc(last.collection)} ${esc(last.id)}`
@@ -370,7 +370,7 @@
     return `
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-      <div style="font-size:.8125rem;font-weight:700">Integritas Data</div>
+      <div style="font-size:.8125rem;font-weight:600">Integritas Data</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-ghost" data-action="igPeriodLock" style="font-size:.75rem;padding:4px 10px">Kunci Periode</button>
         <button class="btn-ghost" data-action="igAuditLog" style="font-size:.75rem;padding:4px 10px">Audit Log (${log.length})</button>
@@ -391,7 +391,7 @@
         Transaksi bertanggal pada atau sebelum tanggal kunci tidak bisa ditambah,
         diubah, atau dihapus. Perubahan yang melanggar otomatis dibatalkan.
       </p>
-      <label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:6px">Kunci sampai dengan tanggal</label>
+      <label style="font-size:.75rem;font-weight:500;display:block;margin-bottom:6px">Kunci sampai dengan tanggal</label>
       <input type="date" id="igLockDate" value="${esc(lock)}" style="width:100%">`,
       `${lock ? '<button class="btn-ghost" id="igLockClear">Buka Kunci</button>' : ''}
        <button class="btn-ghost" data-action="closeModal">Batal</button>
@@ -479,7 +479,7 @@
       .join('');
     window.openModal(
       'Cek Buku Besar',
-      `<div style="font-size:.8125rem;font-weight:700;color:${r.ok ? 'var(--success)' : 'var(--danger)'};margin-bottom:8px">
+      `<div style="font-size:.8125rem;font-weight:600;color:${r.ok ? 'var(--success)' : 'var(--danger)'};margin-bottom:8px">
         ${r.ok ? '✓ Semua jurnal seimbang' : '✗ Ditemukan masalah'}
       </div>
       <div style="font-size:.75rem;padding:6px 0">Total jurnal diperiksa: ${r.journalCount}</div>

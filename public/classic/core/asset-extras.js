@@ -30,8 +30,8 @@
     return new Date().toISOString().slice(0, 10);
   }
 
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+  // Table headers take the app's own th style; only the alignment is set here.
+  var TH = 'text-align:left';
 
   function injectView(html) {
     window.invalidateView && window.invalidateView('assets');
@@ -79,7 +79,7 @@
       injectView(
         '<div class="sec-hdr"><div><h1>Aset per Lokasi</h1><p>Daftar aset dikelompokkan berdasarkan lokasi</p></div></div>' +
           '<div class="card" style="text-align:center;padding:40px">' +
-          '<div style="font-size:.9375rem;font-weight:700;margin-bottom:6px">Belum ada data aset</div>' +
+          '<div style="font-size:.9375rem;font-weight:600;margin-bottom:6px">Belum ada data aset</div>' +
           '<div style="font-size:.8125rem;color:var(--muted);margin-bottom:16px">Tambahkan aset melalui menu Fixed Assets atau tandai item inventory sebagai aset</div>' +
           '<button class="btn-ghost" data-action="navAssets">Buka Daftar Aset</button></div>'
       );
@@ -120,10 +120,10 @@
               '<td class="td-p" style="text-align:right">' +
               money(val) +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700">' +
+              '<td class="td-p" style="text-align:right">' +
               money(nbv) +
               '</td>' +
-              '<td class="td-p" style="text-align:center">' +
+              '<td class="td-p">' +
               '<span style="font-size:.75rem;font-weight:700;color:' +
               statusColor +
               '">' +
@@ -140,7 +140,7 @@
           '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">' +
           '<div style="width:36px;height:36px;border-radius:8px;background:var(--info-bg);display:flex;align-items:center;justify-content:center;flex:none;color:var(--info)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>' +
           '<div style="flex:1">' +
-          '<div style="font-size:.875rem;font-weight:700">' +
+          '<div style="font-size:.875rem;font-weight:600">' +
           esc(loc) +
           '</div>' +
           '<div style="font-size:.75rem;color:var(--muted)">' +
@@ -150,7 +150,7 @@
           '</div>' +
           '</div>' +
           '<div style="text-align:right">' +
-          '<div style="font-size:.8125rem;font-weight:700">' +
+          '<div style="font-size:.8125rem;font-weight:600">' +
           money(locValue) +
           '</div>' +
           '<div style="font-size:.75rem;color:var(--muted)">' +
@@ -221,7 +221,7 @@
           '<div style="font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;margin:0 auto">' +
           esc(loc.slice(0, 10)) +
           '</div>' +
-          '<div style="font-size:.75rem;font-weight:700">' +
+          '<div style="font-size:.75rem;font-weight:600">' +
           pct +
           '%</div>' +
           '</div>'
@@ -246,7 +246,7 @@
         '</div><div class="stat-sub">Setelah depresiasi</div></div>' +
         '</div>' +
         (locations.length > 1
-          ? '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Distribusi per Lokasi</div>' +
+          ? '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Distribusi per Lokasi</div>' +
             '<div style="display:flex;gap:8px;align-items:flex-end">' +
             chartBars +
             '</div></div>'
@@ -432,10 +432,10 @@
           : '';
         return (
           '<tr>' +
-          '<td class="td-p" style="font-weight:600;font-size:.75rem">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(name) +
           '</td>' +
-          '<td class="td-p" style="text-align:center">' +
+          '<td class="td-p">' +
           catAssets.length +
           '</td>' +
           '<td class="td-p" style="text-align:right">' +
@@ -443,13 +443,13 @@
           '</td>' +
           fiscalCells +
           '<td class="td-p" style="text-align:right;white-space:nowrap">' +
-          '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem" data-action="axRenCat" data-type="' +
+          '<button class="btn-ghost btn-sm" data-action="axRenCat" data-type="' +
           cfg.type +
           '" data-cat="' +
           esc(name) +
           '">Ubah</button> ' +
           (catAssets.length === 0
-            ? '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem;color:var(--danger)" data-action="axDelCat" data-type="' +
+            ? '<button class="btn-danger-text btn-sm" data-action="axDelCat" data-type="' +
               cfg.type +
               '" data-cat="' +
               esc(name) +
@@ -482,12 +482,12 @@
     var refCard = '';
     if (isFiscal) {
       refCard =
-        '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Referensi Golongan Fiskal (Garis Lurus, UU PPh Pasal 11)</div>' +
+        '<div class="card" style="margin-bottom:14px"><div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Referensi Golongan Fiskal (Garis Lurus, UU PPh Pasal 11)</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         FISCAL_REF.map(function (r) {
           return (
             '<div style="flex:1;min-width:140px;padding:8px 12px;background:var(--surface-sunken);border-radius:8px">' +
-            '<div style="font-size:.75rem;font-weight:700">' +
+            '<div style="font-size:.75rem;font-weight:600">' +
             r.name +
             '</div><div style="font-size:.75rem;color:var(--muted)">' +
             r.life +
@@ -661,7 +661,7 @@
           '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
           esc(l.date || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(l.assetId + ' — ' + (l.assetName || '')) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
@@ -670,7 +670,7 @@
           '<td class="td-p" style="font-size:.75rem;color:var(--danger)">' +
           esc(l.from === '' ? '—' : l.from) +
           '</td>' +
-          '<td class="td-p" style="font-size:.75rem;color:var(--success);font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--success)">' +
           esc(l.to === '' ? '—' : l.to) +
           '</td>' +
           '</tr>'
@@ -820,7 +820,7 @@
         var gain = (a.disposalProceeds || 0) - (a.cost || 0);
         return (
           '<tr>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(a.id + ' — ' + (a.name || '')) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
@@ -842,7 +842,7 @@
           money(Math.abs(gain)) +
           '</td>' +
           '<td class="td-p" style="text-align:right">' +
-          '<button class="btn-ghost" style="padding:4px 10px;font-size:.75rem" data-action="axUndoDisp" data-id="' +
+          '<button class="btn-ghost btn-sm" data-action="axUndoDisp" data-id="' +
           esc(a.id) +
           '">Batalkan</button>' +
           '</td>' +
@@ -976,13 +976,13 @@
           '<td class="td-p" style="font-size:.75rem;color:var(--muted);white-space:nowrap">' +
           esc(t.date || '') +
           '</td>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:600">' +
+          '<td class="td-p" style="font-size:.75rem">' +
           esc(t.assetId + ' — ' + (t.assetName || '')) +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem">' +
           esc(t.from || '—') +
           '</td>' +
-          '<td class="td-p" style="font-size:.75rem;font-weight:600;color:var(--success)">' +
+          '<td class="td-p" style="font-size:.75rem;color:var(--success)">' +
           esc(t.to || '—') +
           '</td>' +
           '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +

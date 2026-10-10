@@ -54,18 +54,18 @@
                   const sign = l.type === 'out' ? '−' : '+';
                   const color = l.type === 'out' ? 'var(--danger)' : 'var(--success)';
                   return `<tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:6px 10px;font-size:.75rem;font-weight:600">${esc(l.itemName)}</td>
-                  <td style="padding:6px 10px;font-size:.75rem;text-align:right;color:${color};font-weight:700">${sign}${esc(l.qty)} ${esc(l.unit || '')}</td>
+                  <td style="padding:6px 10px;font-size:.75rem">${esc(l.itemName)}</td>
+                  <td style="padding:6px 10px;font-size:.75rem;text-align:right;color:${color}">${sign}${esc(l.qty)} ${esc(l.unit || '')}</td>
                 </tr>`;
                 })
                 .join('');
               return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-sunken)">
-                <div style="font-size:.75rem;font-weight:700">${esc(a.number || a.id)}
+                <div style="font-size:.75rem;font-weight:600">${esc(a.number || a.id)}
                   ${a.note ? `<span style="font-size:.75rem;color:var(--muted);font-weight:400"> · ${esc(a.note)}</span>` : ''}</div>
                 <div style="display:flex;align-items:center;gap:10px">
                   <span style="font-size:.75rem;color:var(--muted)">${esc(a.date || '')}</span>
-                  <button class="action-ghost" data-action="adjDelete" data-id="${esc(a.id)}"
+                  <button class="btn-ghost btn-sm" data-action="adjDelete" data-id="${esc(a.id)}"
                     style="font-size:.75rem;color:var(--danger)">Hapus</button>
                 </div>
               </div>
@@ -75,7 +75,7 @@
             .join('');
 
     return `${header}<div class="card">
-      <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">Daftar Penyesuaian (${adjustments.length})</div>
+      <div style="font-size:.875rem;font-weight:600;margin-bottom:10px">Daftar Penyesuaian (${adjustments.length})</div>
       ${body}
     </div>`;
   }
@@ -186,15 +186,15 @@
       </div>
       <div style="margin-top:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="form-label" style="margin:0;font-size:.8125rem;font-weight:700">Baris Penyesuaian</span>
+          <span class="form-label" style="margin:0;font-size:.8125rem">Baris Penyesuaian</span>
           <button type="button" class="btn-ghost" id="adj-add" style="font-size:.75rem;padding:4px 10px">+ Tambah Baris</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:var(--surface-sunken)">
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left">Item</th>
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:110px">Tipe</th>
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:90px">Kuantitas</th>
-            <th style="padding:6px 8px;font-size:.75rem;font-weight:700;text-align:left;width:50px">Sat.</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left">Item</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left;width:110px">Tipe</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left;width:90px">Kuantitas</th>
+            <th style="padding:6px 8px;font-size:.75rem;text-align:left;width:50px">Sat.</th>
             <th style="width:30px"></th>
           </tr></thead>
           <tbody id="adj-body">${rowHTML()}</tbody>

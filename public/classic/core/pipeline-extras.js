@@ -357,7 +357,7 @@
           '" placeholder="0" title="Isi langsung bila tanpa Bruto" style="min-width:4.5rem;font-weight:600"' +
           lock +
           '></td>' +
-          '<td class="t-num rec-var" style="font-weight:600"></td>' +
+          '<td class="t-num rec-var" ></td>' +
           '<td><input class="form-input t-num rec-final" type="number" min="0" step="any" value="' +
           basis +
           '" data-ordered="' +

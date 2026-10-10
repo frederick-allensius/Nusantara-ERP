@@ -52,8 +52,8 @@
     }, 0);
   }
 
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)';
+  // Table headers take the app's own th style; only the alignment is set here.
+  var TH = 'text-align:left';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  ITEM UNIT  (DB.settings.units — string array)
@@ -65,16 +65,16 @@
       .map(function (u, i) {
         return (
           '<tr>' +
-          '<td class="td-p" style="font-weight:700">' +
+          '<td class="td-p" >' +
           esc(u) +
           '</td>' +
-          '<td class="td-p" style="text-align:center">' +
+          '<td class="td-p">' +
           (db().inventoryItems || []).filter(function (it) {
             return it.unit === u;
           }).length +
           ' item</td>' +
-          '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delUnit" data-idx="' +
+          '<td class="td-p">' +
+          '<button class="btn-danger-text btn-sm" data-action="delUnit" data-idx="' +
           i +
           '">Hapus</button>' +
           '</td></tr>'
@@ -154,14 +154,14 @@
         }).length;
         return (
           '<tr>' +
-          '<td class="td-p" style="font-weight:700">' +
+          '<td class="td-p" >' +
           esc(c) +
           '</td>' +
-          '<td class="td-p" style="text-align:center">' +
+          '<td class="td-p">' +
           count +
           ' item</td>' +
-          '<td class="td-p" style="text-align:center">' +
-          '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delItemCat" data-idx="' +
+          '<td class="td-p">' +
+          '<button class="btn-danger-text btn-sm" data-action="delItemCat" data-idx="' +
           i +
           '">Hapus</button>' +
           '</td></tr>'
@@ -232,14 +232,14 @@
             }).length;
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700">' +
+              '<td class="td-p" >' +
               esc(b) +
               '</td>' +
-              '<td class="td-p" style="text-align:center">' +
+              '<td class="td-p">' +
               count +
               ' item</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delItemBrand" data-idx="' +
+              '<td class="td-p">' +
+              '<button class="btn-danger-text btn-sm" data-action="delItemBrand" data-idx="' +
               i +
               '">Hapus</button>' +
               '</td></tr>'
@@ -318,30 +318,30 @@
             var actions = '';
             if (r.status === 'Draft' || r.status === 'Pending') {
               actions +=
-                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="approveIR" data-id="' +
+                '<button class="btn-ghost btn-sm" data-action="approveIR" data-id="' +
                 esc(r.id) +
                 '">Setujui</button> ' +
-                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="rejectIR" data-id="' +
+                '<button class="btn-danger-text btn-sm" data-action="rejectIR" data-id="' +
                 esc(r.id) +
                 '">Tolak</button> ';
             } else if (r.status === 'Approved') {
               actions +=
-                '<button class="btn" style="font-size:.75rem;padding:3px 10px;background:var(--primary)" data-action="createPOFromIR" data-id="' +
+                '<button class="btn btn-sm" data-action="createPOFromIR" data-id="' +
                 esc(r.id) +
                 '">Buat PO</button> ';
             } else if (r.status === 'PO Dibuat' && r.poId) {
               actions +=
-                '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--primary)" data-action="viewPOFromIR" data-id="' +
+                '<button class="btn-ghost btn-sm" data-action="viewPOFromIR" data-id="' +
                 esc(r.poId) +
                 '">Lihat PO</button> ';
             }
             actions +=
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delIR" data-id="' +
+              '<button class="btn-danger-text btn-sm" data-action="delIR" data-id="' +
               esc(r.id) +
               '">Hapus</button>';
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(r.id) +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem">' +
@@ -428,7 +428,7 @@
         '<datalist id="ir-po-supp-list">' + suppOpts + '</datalist></div>' +
         '<div class="form-group"><label class="form-label">Tanggal PO</label>' +
         '<input class="form-input" id="ir-po-date" type="date" value="' + today() + '"></div></div>' +
-        '<div style="font-size:.75rem;font-weight:700;margin:10px 0 6px">Item dari IR <span style="color:var(--muted);font-weight:400">(isi harga satuan)</span></div>' +
+        '<div style="font-size:.75rem;font-weight:600;margin:10px 0 6px">Item dari IR <span style="color:var(--muted);font-weight:400">(isi harga satuan)</span></div>' +
         '<table style="width:100%;border-collapse:collapse;margin-bottom:4px">' +
         '<thead><tr>' +
         '<th style="' + TH + '">Item</th>' +
@@ -594,10 +594,10 @@
             }, 0);
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700;font-size:.75rem">' +
+              '<td class="td-p" style="font-size:.75rem">' +
               esc(j.id) +
               '</td>' +
-              '<td class="td-p" style="font-weight:600">' +
+              '<td class="td-p" >' +
               esc(j.name) +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem">' +
@@ -609,17 +609,17 @@
               '<td class="td-p" style="font-size:.75rem">' +
               esc(j.endDate || '—') +
               '</td>' +
-              '<td class="td-p" style="text-align:right;font-weight:700">' +
+              '<td class="td-p" style="text-align:right">' +
               money(totalCost) +
               '</td>' +
               '<td class="td-p">' +
               window.badge(j.status || 'Open') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="viewJC" data-id="' +
+              '<button class="btn-ghost btn-sm" data-action="viewJC" data-id="' +
               esc(j.id) +
               '">Detail</button>' +
-              ' <button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delJC" data-id="' +
+              ' <button class="btn-danger-text btn-sm" data-action="delJC" data-id="' +
               esc(j.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -743,11 +743,11 @@
             '<td class="td-p">' +
             esc(c.description) +
             '</td>' +
-            '<td class="td-p" style="text-align:right;font-weight:700">' +
+            '<td class="td-p" style="text-align:right">' +
             money(c.amount) +
             '</td>' +
-            '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:.75rem;padding:2px 6px;color:var(--danger)" data-action="delJCCost" data-jcid="' +
+            '<td class="td-p">' +
+            '<button class="btn-danger-text btn-sm" data-action="delJCCost" data-jcid="' +
             esc(id) +
             '" data-idx="' +
             i +
@@ -775,7 +775,7 @@
         '<div><span style="color:var(--muted)">Total:</span> <strong>' +
         money(totalCost) +
         '</strong></div></div>' +
-        '<div style="font-size:.75rem;font-weight:700;margin-bottom:8px">Tambah Biaya</div>' +
+        '<div style="font-size:.75rem;font-weight:600;margin-bottom:8px">Tambah Biaya</div>' +
         '<div class="form-row" style="margin-bottom:12px">' +
         '<div class="form-group"><label class="form-label">Tanggal</label><input class="form-input" id="jcc-date" type="date" value="' +
         today() +

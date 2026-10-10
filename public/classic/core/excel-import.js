@@ -293,10 +293,10 @@
       totalErr += errRows;
       html += `<div class="card" style="margin-bottom:14px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-weight:800;font-size:.875rem">${esc(name)}</div>
+          <div style="font-weight:600;font-size:.875rem">${esc(name)}</div>
           <div style="font-size:.75rem;color:var(--muted)">${p.rows.length} baris${
             errRows
-              ? ` · <span style="color:var(--danger);font-weight:700">${errRows} bermasalah</span>`
+              ? ` · <span style="color:var(--danger)">${errRows} bermasalah</span>`
               : ''
           }</div>
         </div>`;
@@ -677,7 +677,7 @@
     const host = document.getElementById('excel-preview');
     if (!host) return;
     host.innerHTML = `<div class="card" style="padding:18px">
-      <div style="font-weight:800;font-size:.9375rem;margin-bottom:10px">Ringkasan Import</div>
+      <div style="font-weight:600;font-size:.9375rem;margin-bottom:10px">Ringkasan Import</div>
       <ul style="font-size:.8125rem;line-height:1.9;margin:0;padding-left:18px">
         <li>Dokumen/entri dibuat: <strong>${result.created}</strong></li>
         <li>Customer baru: <strong>${created.customers}</strong></li>
@@ -751,7 +751,7 @@
     }
     const body = `
       <div style="font-size:.75rem;color:var(--muted);margin-bottom:10px">
-        ${rows.length} baris terbaca${errRows ? ` · <span style="color:var(--danger);font-weight:700">${errRows} bermasalah (dilewati)</span>` : ''}.
+        ${rows.length} baris terbaca${errRows ? ` · <span style="color:var(--danger)">${errRows} bermasalah (dilewati)</span>` : ''}.
         Duplikat (data &amp; tanggal sama) otomatis dilewati${
           view === 'logistics' ? ', dan Nomor DO yang bentrok ditolak' : ''
         }.
@@ -832,7 +832,7 @@
       <div id="excel-dropzone" data-xls="pick"
         style="cursor:pointer;border:2px dashed var(--border);border-radius:var(--r);padding:34px 18px;text-align:center;transition:border-color .15s">
         <div style="margin-bottom:8px;color:var(--muted)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <div style="font-weight:700;font-size:.875rem;margin-bottom:4px">Tarik &amp; lepas file .xlsx di sini</div>
+        <div style="font-weight:600;font-size:.875rem;margin-bottom:4px">Tarik &amp; lepas file .xlsx di sini</div>
         <div style="font-size:.75rem;color:var(--muted)">atau klik untuk memilih file</div>
         <input id="excel-file" type="file" accept=".xlsx,.xls" style="display:none">
       </div>

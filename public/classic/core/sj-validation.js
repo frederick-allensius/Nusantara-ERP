@@ -610,8 +610,8 @@
         };
         return (
           '<tr style="' + rowBg + '">' +
-          '<td class="td-p" style="font-size:.875rem;font-weight:700">' + esc(f.itemName || f.itemCode || f.itemId) + '</td>' +
-          '<td class="td-p" style="font-size:.8125rem;color:var(--primary);font-weight:600">' + esc(f.poId || f.doId || '—') + '</td>' +
+          '<td class="td-p" style="font-size:.875rem">' + esc(f.itemName || f.itemCode || f.itemId) + '</td>' +
+          '<td class="td-p" style="font-size:.8125rem;color:var(--primary)">' + esc(f.poId || f.doId || '—') + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem">' + f.tonnage + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem">' + (r ? r.tonnage : '—') + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem;' + varColor(row.tonnageMismatch) + '">' + tv + '</td>' +
@@ -630,7 +630,7 @@
       .map(function (r) {
         return (
           '<tr style="background:var(--warning-bg)">' +
-          '<td class="td-p" style="font-size:.875rem;font-weight:700">' + esc(r.itemName || r.itemCode) + '</td>' +
+          '<td class="td-p" style="font-size:.875rem">' + esc(r.itemName || r.itemCode) + '</td>' +
           '<td class="td-p" style="font-size:.8125rem">' + esc(r.poId || r.doId || '—') + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem">' + r.tonnage + '</td>' +
           '<td class="td-p" style="text-align:right;font-size:.875rem">' + money(r.unitPrice) + '</td>' +
@@ -669,7 +669,7 @@
         ? '<div class="notice notice-info">Belum ada penerimaan yang direkonsiliasi untuk dicocokkan dengan rekap ini.</div>'
         : problems.length > 0
           ? '<div class="notice" style="display:block;background:var(--danger-bg);border-color:transparent;color:var(--text)">' +
-            '<div style="font-size:.9375rem;font-weight:700;color:var(--danger)">' + problems.join(' dan ') + ' — jangan terbitkan faktur sebelum diperiksa</div>' +
+            '<div style="font-size:.9375rem;font-weight:600;color:var(--danger)">' + problems.join(' dan ') + ' — jangan terbitkan faktur sebelum diperiksa</div>' +
             '<div style="margin-top:4px">Rekap supplier berbeda dari data timbangan lapangan (tonase/harga) atau memuat baris yang tidak ada di lapangan. Ini mencegah kurang tagih atau lebih bayar.</div>' +
             '</div>'
           : '<div class="notice notice-success"><strong>Semua baris cocok dalam toleransi — aman untuk difakturkan</strong></div>';
@@ -728,7 +728,7 @@
     var controls =
       '<div class="card" style="margin-bottom:14px">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">' +
-      '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;font-weight:700;color:var(--text-secondary)">Sumber Rekap Supplier' +
+      '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;font-weight:500;color:var(--text-secondary)">Sumber Rekap Supplier' +
       '<select id="sjv-source" style="padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--surface);color:var(--text)">' +
       sourceOpts +
       '</select></label>' +

@@ -71,16 +71,16 @@ function editIdentity() {
   openModal(
     'Identitas Pengguna & Perusahaan',
     `
-  <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+  <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
     Pengguna
   </div>
   <div class="form-group">
     <label class="form-label">Foto Profil</label>
     <div style="display:flex;align-items:center;gap:12px">
-      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--primary);color:#fff;font-size:.875rem;font-weight:700;display:flex;align-items:center;justify-content:center"></div>
+      <div id="id-photo-preview" style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--primary);color:#fff;font-size:.875rem;font-weight:600;display:flex;align-items:center;justify-content:center"></div>
       <input type="file" id="id-photo-file" accept="image/*" style="display:none">
       <button class="btn-ghost" type="button" id="id-photo-upload">Upload Foto</button>
-      <button class="btn-ghost" type="button" id="id-photo-remove" style="color:var(--danger)">Hapus</button>
+      <button class="btn-danger-text" type="button" id="id-photo-remove">Hapus</button>
     </div>
   </div>
   <div class="form-row">
@@ -99,7 +99,7 @@ function editIdentity() {
     <div style="font-size:.75rem;color:var(--muted);margin-top:4px">Peran ditetapkan oleh Admin via Pengaturan → Manajemen Pengguna.</div>
   </div>
 
-  <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px">
+  <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px">
     Perusahaan
   </div>
   <div class="form-row">
@@ -469,7 +469,7 @@ function showTwoFactorManage(status) {
     'Verifikasi 2 Langkah',
     '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface-sunken);border-radius:10px;margin-bottom:14px">' +
       '<div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>' +
-      '<div><div style="font-size:.875rem;font-weight:700">2FA Aktif</div>' +
+      '<div><div style="font-size:.875rem;font-weight:600">2FA Aktif</div>' +
       '<div style="font-size:.75rem;color:var(--muted)">' +
       status.backupCodesRemaining +
       ' kode cadangan tersisa</div></div></div>' +
@@ -479,7 +479,7 @@ function showTwoFactorManage(status) {
       '<input class="form-input" id="tfa-confirm-val" type="password" autocomplete="current-password"></div>',
     '<button class="btn-ghost" data-action="closeModal">Tutup</button>' +
       '<button class="btn-ghost" id="tfa-regen">Buat Ulang Kode</button>' +
-      '<button class="btn" id="tfa-disable" style="background:var(--danger);border-color:var(--danger)">Nonaktifkan</button>'
+      '<button class="btn-danger" id="tfa-disable">Nonaktifkan</button>'
   );
   setTimeout(() => {
     document.getElementById('tfa-regen')?.addEventListener('click', async () => {
@@ -537,7 +537,7 @@ function showBackupManager() {
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         <div style="flex:1">
-          <div style="font-size:.8125rem;font-weight:700">Backup Otomatis Aktif</div>
+          <div style="font-size:.8125rem;font-weight:600">Backup Otomatis Aktif</div>
           <div style="font-size:.75rem;color:var(--muted)">
             Terakhir: ${status.lastBackupDate} • 
             Backup berikutnya dalam ${status.hoursUntilNext} jam
@@ -580,7 +580,7 @@ function showBackupManager() {
 
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
       <div style="flex:1;min-width:0">
-        <div style="font-size:.8125rem;font-weight:700">Arsip Excel</div>
+        <div style="font-size:.8125rem;font-weight:600">Arsip Excel</div>
         <div style="font-size:.75rem;color:var(--muted)">Data utama per tahun dalam satu file Excel, untuk disimpan di hard disk atau dibaca akuntan. Untuk pemulihan tetap pakai Export ke File.</div>
       </div>
       <select class="form-select" id="archiveYear" aria-label="Tahun arsip" style="width:auto">
@@ -594,7 +594,7 @@ function showBackupManager() {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
-      <span style="font-size:.75rem;font-weight:600">Import dari Excel</span>
+      <span style="font-size:.75rem">Import dari Excel</span>
     </button>
 
     <button class="btn" id="syncFirebase" style="width:100%;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
@@ -602,13 +602,13 @@ function showBackupManager() {
         <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
         <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
       </svg>
-      <span style="font-size:.75rem;font-weight:600;color:#fff">Sinkronisasi ke Firebase</span>
-      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;font-weight:600;background:${window.__nsaDataMode === 'firestore' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.2)'};color:#fff">${window.__nsaDataMode === 'firestore' ? '● Cloud' : '● Lokal'}</span>
+      <span style="font-size:.75rem;color:#fff">Sinkronisasi ke Firebase</span>
+      <span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:${window.__nsaDataMode === 'firestore' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.2)'};color:#fff">${window.__nsaDataMode === 'firestore' ? '● Cloud' : '● Lokal'}</span>
     </button>
 
     <input type="file" id="backupFileInput" accept=".json" style="display:none">
 
-    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
       Backup Otomatis <span id="backupListCount"></span>
     </div>
     <div id="backupList">
@@ -640,7 +640,7 @@ function showBackupManager() {
                 b => `
         <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
           <div style="flex:1">
-            <div style="font-size:.8125rem;font-weight:700">${b.date}</div>
+            <div style="font-size:.8125rem;font-weight:600">${b.date}</div>
             <div style="font-size:.75rem;color:var(--muted)">${b.sizeFormatted}</div>
           </div>
           <button class="btn-ghost" data-action="restoreBackup" data-id="${b.key}" style="font-size:.75rem;padding:4px 12px">
@@ -818,7 +818,7 @@ function showInstallApp() {
       .map(
         (s, i) => `
       <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--surface-sunken);border-radius:8px;margin-bottom:6px">
-        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
         <div style="font-size:.78125rem;line-height:1.5">${s}</div>
       </div>`
       )
@@ -851,7 +851,7 @@ function showInstallApp() {
     </div>`;
   } else if (isIOS) {
     body += `
-    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">iPhone / iPad</div>
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">iPhone / iPad</div>
     ${steps([
       'Buka aplikasi ini di <strong>Safari</strong> (Chrome iOS juga bisa)',
       `Ketuk tombol <strong>Bagikan</strong> ${shareIcon} di bagian bawah layar`,
@@ -860,7 +860,7 @@ function showInstallApp() {
     ])}`;
   } else if (isSafariDesktop) {
     body += `
-    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Safari (Mac)</div>
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Safari (Mac)</div>
     ${steps([
       'Buka menu <strong>File</strong> di bar menu Safari',
       'Pilih <strong>"Tambahkan ke Dock"</strong> <em>(Add to Dock)</em> — perlu Safari 17 / macOS Sonoma ke atas',
@@ -874,7 +874,7 @@ function showInstallApp() {
     </div>`;
   } else if (isAndroid) {
     body += `
-    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Android (Chrome)</div>
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Android (Chrome)</div>
     ${steps([
       'Ketuk menu <strong>⋮</strong> di kanan atas Chrome',
       'Pilih <strong>"Tambahkan ke Layar utama"</strong> atau <strong>"Instal aplikasi"</strong>',
@@ -882,7 +882,7 @@ function showInstallApp() {
     ])}`;
   } else {
     body += `
-    <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Chrome / Edge (Desktop)</div>
+    <div style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Chrome / Edge (Desktop)</div>
     ${steps([
       'Cari ikon <strong>install</strong> (layar dengan panah ke bawah) di ujung kanan <strong>address bar</strong>, lalu klik <strong>"Instal"</strong>',
       'Atau: menu <strong>⋮</strong> → <strong>"Simpan dan bagikan"</strong> → <strong>"Instal Nusantara ERP…"</strong>',

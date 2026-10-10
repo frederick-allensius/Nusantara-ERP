@@ -182,12 +182,12 @@
       (isCur ? 'rgba(0,122,255,.08)' : 'var(--card)') +
       ';border-radius:10px;padding:10px 12px">' +
       '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
-      '<span style="font-size:.75rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)">' +
+      '<span style="font-size:.75rem;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)">' +
       esc(m.label) +
       '</span>' +
       badge(o.status || '') +
       '</div>' +
-      '<div style="font-weight:800;font-size:.8125rem;margin-top:2px">' +
+      '<div style="font-weight:600;font-size:.8125rem;margin-top:2px">' +
       esc(dn(o)) +
       (isCur ? ' <span style="font-size:.75rem;color:var(--primary)">• dibuka</span>' : '') +
       '</div>' +
@@ -195,9 +195,9 @@
       esc(party) +
       (o.date ? ' · ' + esc(o.date) : '') +
       '</div>' +
-      (amt ? '<div style="font-size:.75rem;font-weight:700;margin-top:3px">' + amt + '</div>' : '') +
+      (amt ? '<div style="font-size:.75rem;font-weight:600;margin-top:3px">' + amt + '</div>' : '') +
       (qty != null
-        ? '<div style="font-size:.75rem;font-weight:700;margin-top:3px">' +
+        ? '<div style="font-size:.75rem;font-weight:600;margin-top:3px">' +
           qty.toLocaleString('id-ID') +
           ' qty</div>'
         : '') +

@@ -339,7 +339,7 @@
           color +
           ';border-radius:6px"></div>' +
           '</div>' +
-          '<div class="t-num" style="flex:0 0 3rem;font-size:.8125rem;font-weight:700;color:var(--text)">' +
+          '<div class="t-num" style="flex:0 0 3rem;font-size:.8125rem;font-weight:600;color:var(--text)">' +
           s.count +
           '</div>' +
           '</div>'
@@ -402,7 +402,7 @@
   }
 
   var TH =
-    'text-align:left;padding:12px 14px;font-size:.8125rem;color:var(--text-secondary);font-weight:700;border-bottom:1px solid var(--border)';
+    'text-align:left;padding:12px 14px;font-size:.8125rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)';
   var TD = 'padding:11px 14px;font-size:.875rem;border-bottom:1px solid var(--border)';
 
   function _rowsHtml(rows) {
@@ -415,7 +415,7 @@
       .map(function (r) {
         var k = KIND[r.kind] || KIND.sales;
         var tag =
-          '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600">' +
+          '<span style="display:inline-flex;align-items:center;gap:6px">' +
           '<i style="width:8px;height:8px;border-radius:50%;background:' +
           k.color +
           '"></i>' +
@@ -539,28 +539,28 @@
       '<div class="sec-hdr"><div><h1>Laporan per Periode</h1><p>Saring PO, SO, dan pengambilan per tanggal, bulan, pelanggan, supplier, atau nomor dokumen</p></div></div>' +
         '<div class="card" style="margin-bottom:16px">' +
         '<div class="cr-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Dari Tanggal' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Dari Tanggal' +
         '<input type="date" id="cr-from" value="' + esc(_state.from) + '" style="' + inputCss + '"></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Sampai Tanggal' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Sampai Tanggal' +
         '<input type="date" id="cr-to" value="' + esc(_state.to) + '" style="' + inputCss + '"></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Bulan' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Bulan' +
         '<input type="month" id="cr-month" value="' + esc(_state.month) + '" style="' + inputCss + '"></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Jenis' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Jenis' +
         '<select id="cr-kind" style="' + inputCss + '">' +
         '<option value=""' + (_state.kind === '' ? ' selected' : '') + '>Semua</option>' +
         '<option value="purchase"' + (_state.kind === 'purchase' ? ' selected' : '') + '>Pembelian</option>' +
         '<option value="sales"' + (_state.kind === 'sales' ? ' selected' : '') + '>Penjualan</option>' +
         '<option value="trip"' + (_state.kind === 'trip' ? ' selected' : '') + '>Pengambilan</option>' +
         '</select></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Pelanggan' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Pelanggan' +
         '<select id="cr-customer" style="' + inputCss + '">' +
         _optionList(_customerOptions(db), _state.customer, 'Semua Pelanggan') +
         '</select></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Supplier' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Supplier' +
         '<select id="cr-supplier" style="' + inputCss + '">' +
         _optionList(_supplierOptions(db), _state.supplier, 'Semua Supplier') +
         '</select></label>' +
-        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:700">Nomor PO / Dokumen' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--text-secondary);font-weight:500">Nomor PO / Dokumen' +
         '<input type="text" id="cr-po" value="' + esc(_state.po) + '" placeholder="mis. PO.2026.06" style="' + inputCss + '"></label>' +
         '<div class="cr-actions" style="display:flex;gap:8px">' +
         '<button class="btn-primary" data-action="crApply" style="flex:1">Terapkan</button>' +

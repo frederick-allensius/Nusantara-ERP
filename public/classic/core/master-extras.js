@@ -51,8 +51,8 @@
     }, 0);
   }
 
-  var TH =
-    'text-align:left;padding:10px 14px;font-size:.75rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)';
+  // Table headers take the app's own th style; only the alignment is set here.
+  var TH = 'text-align:left';
 
   // ══════════════════════════════════════════════════════════════════════════
   // § 1  EMPLOYEE
@@ -380,7 +380,7 @@
           .map(function (c) {
             return (
               '<tr>' +
-              '<td class="td-p" style="font-weight:700">' +
+              '<td class="td-p" >' +
               esc(c.name) +
               '</td>' +
               '<td class="td-p" style="font-size:.75rem">' +
@@ -395,17 +395,17 @@
               '<td class="td-p" style="font-size:.75rem">' +
               esc(c.email || '—') +
               '</td>' +
-              '<td class="td-p"><span style="font-size:.75rem;font-weight:700;padding:2px 7px;background:var(--surface-sunken);border-radius:4px">' +
+              '<td class="td-p"><span style="font-size:.75rem;padding:2px 7px;background:var(--surface-sunken);border-radius:4px">' +
               esc(c.type || '—') +
               '</span></td>' +
               '<td class="td-p" style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
               esc(c.notes || '') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px" data-action="editContact" data-id="' +
+              '<button class="btn-ghost btn-sm" data-action="editContact" data-id="' +
               esc(c.id) +
               '">Edit</button> ' +
-              '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delContact" data-id="' +
+              '<button class="btn-danger-text btn-sm" data-action="delContact" data-id="' +
               esc(c.id) +
               '">Hapus</button>' +
               '</td></tr>'
@@ -556,14 +556,14 @@
           }).length;
           return (
             '<tr>' +
-            '<td class="td-p" style="font-weight:700">' +
+            '<td class="td-p" >' +
             esc(c) +
             '</td>' +
-            '<td class="td-p" style="text-align:center">' +
+            '<td class="td-p">' +
             count +
             ' pelanggan</td>' +
-            '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delCustCat" data-idx="' +
+            '<td class="td-p">' +
+            '<button class="btn-danger-text btn-sm" data-action="delCustCat" data-idx="' +
             i +
             '">Hapus</button>' +
             '</td></tr>'
@@ -583,7 +583,7 @@
             }).length;
             return (
               '<div class="card" style="flex:0 0 auto;padding:14px 20px;text-align:center;min-width:120px">' +
-              '<div style="font-size:1.375rem;font-weight:800">' +
+              '<div style="font-size:1.375rem;font-weight:600">' +
               count +
               '</div>' +
               '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +
@@ -660,14 +660,14 @@
           }).length;
           return (
             '<tr>' +
-            '<td class="td-p" style="font-weight:700">' +
+            '<td class="td-p" >' +
             esc(c) +
             '</td>' +
-            '<td class="td-p" style="text-align:center">' +
+            '<td class="td-p">' +
             count +
             ' supplier</td>' +
-            '<td class="td-p" style="text-align:center">' +
-            '<button class="btn-ghost" style="font-size:.75rem;padding:3px 8px;color:var(--danger)" data-action="delSuppCat" data-idx="' +
+            '<td class="td-p">' +
+            '<button class="btn-danger-text btn-sm" data-action="delSuppCat" data-idx="' +
             i +
             '">Hapus</button>' +
             '</td></tr>'
@@ -687,7 +687,7 @@
             }).length;
             return (
               '<div class="card" style="flex:0 0 auto;padding:14px 20px;text-align:center;min-width:120px">' +
-              '<div style="font-size:1.375rem;font-weight:800">' +
+              '<div style="font-size:1.375rem;font-weight:600">' +
               count +
               '</div>' +
               '<div style="font-size:.75rem;color:var(--muted);margin-top:2px">' +

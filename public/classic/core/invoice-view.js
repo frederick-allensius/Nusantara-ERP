@@ -320,7 +320,7 @@
             <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
             <td class="t-num" data-cell="meta" data-cap="Sisa">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
             <td data-cell="status">${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
-            <td class="t-actions" data-cell="menu"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
+            <td class="t-actions" data-cell="menu"><button class="btn-ghost btn-sm" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
           </tr>`;
         })
         .join('');
@@ -338,7 +338,7 @@
             <td class="t-muted" data-cell="meta">${esc(d.paymentMethod || '—')}</td>
             <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
             <td data-cell="status">${badge(d.status)}</td>
-            <td class="t-actions" data-cell="menu"><button class="action-ghost" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
+            <td class="t-actions" data-cell="menu"><button class="btn-ghost btn-sm" data-action="invView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button></td>
           </tr>`;
         })
         .join('');
