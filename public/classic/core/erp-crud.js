@@ -4635,9 +4635,22 @@ function showAddPayment(type, orderId) {
       ? window.Balances.orderBalance(type === 'SO' ? 'sales' : 'purchases', ord)
       : null;
   const suggested = ordBalance && ordBalance.outstanding > 0 ? Math.round(ordBalance.outstanding) : '';
+  // What is already recorded against this order (payment log here and, once
+  // invoiced, receipts/payments on the invoice): the same money must not be
+  // entered twice. The balance already combines both.
+  const recorded =
+    ordBalance && ordBalance.paid > 0
+      ? `<div class="inline-summary">
+      <div><span class="t-muted">Total pesanan</span><strong>${idrFull(ordBalance.total)}</strong></div>
+      ${ordBalance.payments ? `<div><span class="t-muted">Dibayar lewat pesanan</span><strong>${idrFull(ordBalance.payments)}</strong></div>` : ''}
+      ${ordBalance.settlements ? `<div><span class="t-muted">${type === 'SO' ? 'Penerimaan' : 'Pembayaran'} di faktur</span><strong>${idrFull(ordBalance.settlements)}</strong></div>` : ''}
+      <div><span class="t-muted">Sisa tagihan</span><strong>${idrFull(ordBalance.outstanding)}</strong></div>
+    </div>`
+      : '';
   openModal(
     'Catat Pembayaran',
     `
+    ${recorded}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Tanggal Pembayaran</label>
@@ -4669,7 +4682,7 @@ function showAddPayment(type, orderId) {
   );
 
   setTimeout(() => {
-    document.getElementById('savePayment')?.addEventListener('click', () => {
+    document.getElementById('savePayment')?.addEventListener('click', async () => {
       const date = sanitizeInput(document.getElementById('pay-date').value, 'date');
       const amount = sanitizeInput(document.getElementById('pay-amount').value, 'number');
       const method = document.getElementById('pay-method').value;
@@ -4680,6 +4693,17 @@ function showAddPayment(type, orderId) {
       }
       if (!amount || amount <= 0) {
         showToast('Jumlah harus diisi', 'warning');
+        return;
+      }
+      if (
+        ordBalance &&
+        amount > ordBalance.outstanding + 0.5 &&
+        !(await window.confirmAsk(
+          `Jumlah ${idrFull(amount)} melebihi sisa tagihan ${idrFull(ordBalance.outstanding)}.
+
+Pastikan pembayaran ini belum dicatat di faktur. Tetap simpan?`
+        ))
+      ) {
         return;
       }
       if (!DB.paymentLogs) {

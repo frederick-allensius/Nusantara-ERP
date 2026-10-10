@@ -192,7 +192,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | 9–12 | Ubah/batal | Tidak bisa diubah atau dihapus. **Batalkan**: saldo kas/bank dan piutang dikembalikan, status faktur dihitung ulang |
 | 13 | Menemukan | Tab Penerimaan, Kartu Piutang, Riwayat Akun Kas |
 
-⚠ Kedua cara tidak saling mengenali: mencatat pembayaran yang sama di SO **dan** di faktur akan menggandakan kas (T-06). Pembayaran sebagian didukung di kedua cara.
+⚠ Kedua cara tidak saling mengenali: mencatat pembayaran yang sama di SO **dan** di faktur akan menggandakan kas (T-06). Sebagai pengaman, dialog Catat Pembayaran (SO/PO) dan Catat Penerimaan/Pembayaran (faktur) menampilkan pembayaran yang sudah tercatat di jalur lain dan sisa tagihan gabungan, lalu meminta konfirmasi bila jumlah melebihi sisa. Pembayaran sebagian didukung di kedua cara.
 
 ❓ Bagaimana pelanggan membayar (tunai/transfer/giro), apakah sering dicicil, rekening bank apa yang dipakai? — **REQUIRES USER CONFIRMATION**
 

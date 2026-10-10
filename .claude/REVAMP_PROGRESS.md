@@ -347,3 +347,18 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
 - CV on surat jalan photos: not built; needs sample photos, supplier Excel and approval of the AI
   service cost (docs/11 already marks it REQUIRES USER CONFIRMATION).
 
+
+## Session 2026-10-10 — A list (A1–A5) + T-06 safeguard (DONE)
+
+- A1 (a642912): ask()/confirmAsk() in src/core/modal.js replace every browser confirm/prompt/alert
+  (45 sites); themed, opens above the open dialog, destructive questions start on Batal.
+- A2 (a97dec7): inline button styles → btn-sm / btn-danger-text; bold kept only for totals.
+- A3 (ec31e84): trial balance and PPN rows as list-cards; ui/table-cards.js turns other page
+  tables into cards on phones (≤560px); 0 tables overflow at 390px.
+- A4 (084b591): Ringkasan Keuangan drops the duplicate Piutang & hutang / Pajak cards; hutang
+  aging shows "jatuh tempo 7 hari ke depan".
+- A5 (843147f): Koreksi berat on a pickup (Trading.updateWeight source 'manual' + note).
+- T-06 interim safeguard: SO/PO Catat Pembayaran shows total, paid via order, paid on invoice and
+  combined Sisa tagihan, and asks before saving above it (invoice dialog already did). Standard
+  payment path still REQUIRES USER CONFIRMATION. tests/payment-double-entry.test.ts; sw v1.1.19.
+- Remaining items all wait on owner decisions (see docs 08 T-06/T-44, docs 11, MEETING_KIT).
