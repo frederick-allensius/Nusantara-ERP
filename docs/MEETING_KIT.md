@@ -280,6 +280,8 @@ Bila ditanya tentang penjualan dari stok gudang: Penjualan → Pesanan Penjualan
 
 Kasus yang sudah tersedia di data demo bila muncul pertanyaan: PO pengambilan yang ditutup karena kuota terpenuhi dan karena cut-off (dilanjutkan PO baru bulan berikutnya), dua pelanggan mengambil barang yang sama di hari yang sama, satu truk dengan tujuan diubah, harga supplier yang naik di tengah bulan, truk minggu berjalan yang belum ditagih, faktur penjualan dan hutang ke supplier yang lewat jatuh tempo, barang di bawah stok minimum, pesanan yang masih draft, dikonfirmasi, dalam perjalanan, atau dibatalkan, penawaran yang diterima lalu menjadi pesanan, retur sebagian, uang muka, setoran tunai ke bank, bunga bank, dan penggajian bulanan.
 
+Untuk menjelaskan satu PO dari awal sampai tutup bulan dengan angka lengkap, pakai [15 Contoh Alur 500 Ton](15-CONTOH-ALUR-500-TON.md) beserta gambarnya.
+
 Setelah demo, tanyakan: *"Dari yang barusan, bagian mana yang paling mirip dengan cara kerja sekarang, dan bagian mana yang berbeda?"*
 
 ---

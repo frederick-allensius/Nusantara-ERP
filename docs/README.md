@@ -28,6 +28,7 @@ Semua dokumen ditulis dalam bahasa Indonesia dan menggambarkan **perilaku aplika
 | 12 | [Keamanan dan Infrastruktur](12-KEAMANAN-DAN-INFRASTRUKTUR.md) | Tempat menyimpan data, akses data, cadangan & arsip, perkiraan biaya server, spesifikasi perangkat |
 | 13 | [Kotak Masuk Rekap — Simulasi Email dan Baca Foto](13-SIMULASI-EMAIL-DAN-CV.md) | Simulasi rekap timbangan dan foto DO dari email: yang diperagakan, yang nyata, skrip demo, rancangan sistem nyata |
 | 14 | [Pertanyaan untuk Pemilik](14-PERTANYAAN-UNTUK-PEMILIK.md) | Keputusan dan bahan yang masih ditunggu dari pemilik, dengan pilihan bawaan aplikasi saat ini |
+| 15 | [Contoh Alur 500 Ton](15-CONTOH-ALUR-500-TON.md) | Satu PO 500 ton dari pesanan pelanggan sampai tutup bulan: truk, rekap timbangan, faktur mingguan, selisih berat, harga naik, tagihan supplier, cut-off, dan laporan akhir |
 
 ## Dokumen teknis
 
@@ -42,6 +43,8 @@ Semua dokumen ditulis dalam bahasa Indonesia dan menggambarkan **perilaku aplika
 ## Materi presentasi
 
 Folder [`pitch/`](pitch/) berisi contoh dokumen cetak, contoh laporan, naskah demo, dan materi penawaran. Materi ini **belum diperbarui** mengikuti dokumentasi di atas; beberapa pernyataan di dalamnya (misalnya hak akses, verifikasi 2 langkah, dan cetak PDF disebut sebagai rencana) sudah tidak sesuai dengan aplikasi saat ini. Gunakan dokumen 01–12 sebagai acuan.
+
+Pengecualian, sudah mengikuti aplikasi saat ini: [`pitch/kotak-masuk-rekap/`](pitch/kotak-masuk-rekap/) (gambar dokumen 13) dan [`pitch/contoh-alur-500-ton/`](pitch/contoh-alur-500-ton/) (gambar dokumen 15).
 
 Panduan demo per fitur: [SJ_VALIDATION_DEMO.md](SJ_VALIDATION_DEMO.md) (Validasi SJ Supplier). Urutan demo alur pengambilan ada di [MEETING_KIT.md §7](MEETING_KIT.md).
 
