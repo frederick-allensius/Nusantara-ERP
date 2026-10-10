@@ -397,3 +397,33 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   first invoice is blocked while its follow-up is active; cancelling a follow-up reopens the alert.
   Before this, the advised manual invoice would have booked COGS twice. Docs 03 §V3, 04 §4.5, 11.
   sw v1.1.21. 619 tests.
+
+## Session 2026-10-11 (pagi) — UI density review + contoh alur 500 ton
+
+- Owner feedback: UI still feels full, too much text. Design review (gstack design-review) over 31
+  pages; report + screenshots OUTSIDE the repo: ~/.gstack/projects/draxmit-Nusantara-ERP/designs/
+  design-audit-20261011/. 15 findings fixed, one commit each (aae811c … 98f0fa5):
+  001 instruction subtitles/hints · 002 repeated figures (notice = tiles, card repeating the title,
+  Total faktur twice) · 003 row actions behind ⋯ (rowActionsMenu), rows open their document,
+  chevron instead of "Lihat" · 004 one date format (tgl(), "11 Okt 2026") · 005 status colours /
+  .action-primary · 006 journal memo without the document number · 007 Kotak Masuk Rekap copy ·
+  008 dialog button order, "Jurnal: …" hints · 009 surat jalan rows as cards on phones · 010 order
+  dialogs: Jejak/Duplikat/Batalkan behind ⋯, pickup orders hide Buat Surat Jalan/Faktur · 011
+  recap import opens on the file picker · 012 Harga Supplier rows · 013 aging tables show 10 +
+  "Tampilkan semua" · 014 Jurnal folds to one line per journal (number, source, date, total;
+  "Buka semua"; opens on account/text search) · 015 recap/weight-change copy.
+  Measured over the same 31 pages: explanatory text 2,046 → 1,276 words (−38%), all words
+  8,792 → 6,619 (−25%), visible buttons 329 → 274, page height −22%; Faktur 22 → 7 buttons,
+  Penerimaan 18 → 3; Jurnal 1,654 → 303 words; Ringkasan Keuangan 1,021 → 475 words.
+- Bug found while replaying: the FINDING-012 regex had a literal backspace byte (Python patch
+  string), so recap sources still read "Rekap Rekap …" — fixed (bdd2e06) with tests. Scanned the
+  repo for other control characters: none. Lesson: write JS edits with the Edit tool or raw strings.
+- Contoh alur 500 ton (docs/15, screenshots docs/pitch/contoh-alur-500-ton/): the meeting story from
+  customer PO to month-end cut-off — 15 SJ, three cumulative recaps (SJ /04 30 → 35 t after
+  invoicing → faktur selisih), weekly invoices, supplier price 120k → 125k from 14 Sep, payment,
+  supplier bill 460 t vs 451,2 t, cut-off. Sales 69.936.000, HPP 54.666.000, laba kotor 15.270.000,
+  ledger balanced, inventory 0. Every figure asserted in tests/round-trip-500t.test.ts.
+- Deferred (owner decision): low-value summary tiles (Driver aktif, Total penerimaan · Dokumen,
+  Harga Supplier counts) — the tiles were asked for earlier; Tagihan pelanggan block on Ringkasan
+  stays off by default.
+- sw v1.1.22. 622 tests.
