@@ -2842,6 +2842,8 @@
       rerender();
     },
     pvOpenPO: function (id) {
+      // Also from an order's dialog (erp-crud viewSO): the dialog closes first.
+      if (document.querySelector('#modalOverlay.active')) closeDialog();
       openPO(id);
     },
     pvGoOrders: function () {

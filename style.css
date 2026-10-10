@@ -3691,6 +3691,23 @@ tbody .ostrip-tag {
 tr.row-link:hover .row-chev {
   color: var(--text-secondary);
 }
+.order-pickup-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 10px 0;
+  color: var(--text-secondary);
+  font-size: .8125rem;
+}
+.footer-more .row-menu-btn {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 1px solid var(--btn-tile-border);
+  border-radius: var(--r);
+  background: linear-gradient(180deg, var(--btn-tile-top), var(--btn-tile-bottom));
+  box-shadow: var(--btn-tile-shadow);
+}
 .row-menu-cell {
   width: 1%;
   text-align: right;
@@ -3729,6 +3746,14 @@ tr.row-link:hover .row-chev {
   top: 0;
   left: 0;
   z-index: 600;
+}
+/* An open pop-up sits above dialogs too (only ask() confirmations, 1300, are
+   higher) — a dialog footer can carry a ⋯ menu. */
+#nsa-pop-menu {
+  z-index: 1250;
+}
+.row-menu,
+.tool-menu {
   display: flex;
   flex-direction: column;
   min-width: 184px;

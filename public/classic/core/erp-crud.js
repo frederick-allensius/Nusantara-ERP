@@ -4647,7 +4647,7 @@ function paymentLogHTML(type, orderId, order) {
 
   const summaryHtml = bal
     ? `<div class="balance-panel">
-        <div><span>Total pesanan</span><strong>${idrFull(bal.total)}</strong></div>
+        ${bal.paid || bal.returns ? `<div><span>Total pesanan</span><strong>${idrFull(bal.total)}</strong></div>` : ''}
         ${bal.paid ? `<div><span>Sudah dibayar</span><strong>− ${idrFull(bal.paid)}</strong></div>` : ''}
         ${bal.returns ? `<div><span>Retur</span><strong>− ${idrFull(bal.returns)}</strong></div>` : ''}
         <div class="balance-total${settled ? ' is-settled' : ''}"><span>${settled ? 'Lunas' : 'Sisa tagihan'}</span><strong>${idrFull(remaining)}</strong></div>
@@ -4926,6 +4926,31 @@ function dpSummaryHTML(type, orderId, orderTotal) {
 // § 4  OVERRIDE: viewSO  — payment log + Duplikat button + DO links
 // ════════════════════════════════════════════════════════════════════════════════
 
+// Order dialog footer: the rarely used actions (document trail, duplicate,
+// cancel) behind one "⋯"; plain buttons when the menu helper is absent.
+function _orderMoreMenu(type, id, label, canCancel) {
+  const items = [
+    window.DocFlow ? { label: 'Jejak dokumen', action: 'docFlow', id, attrs: `data-type="${type}"` } : null,
+    { label: 'Duplikat', action: `duplicate${type}`, id },
+    canCancel ? '-' : null,
+    canCancel ? { label: 'Batalkan pesanan', action: `cancel${type}`, id, danger: true } : null,
+  ];
+  if (typeof window.rowActionsMenu === 'function') {
+    return `<span class="footer-more">${window.rowActionsMenu(label, items)}</span>`;
+  }
+  return [
+    window.DocFlow ? window.DocFlow.button(type, id) : '',
+    `<button class="btn-ghost" data-action="duplicate${type}" data-id="${escapeHtml(id)}">Duplikat</button>`,
+    canCancel
+      ? `<button class="btn-ghost btn-danger-text" data-action="cancel${type}" data-id="${escapeHtml(id)}">Batalkan</button>`
+      : '',
+  ].join('');
+}
+// Dates in order dialogs as "11 Okt 2026" (helpers.js tgl).
+function _tglOrder(v) {
+  return typeof window.tgl === 'function' ? window.tgl(v) : v || '—';
+}
+
 function viewSO(id) {
   const o = DB.salesOrders.find(o => o.id === id);
   if (!o) {
@@ -4933,10 +4958,23 @@ function viewSO(id) {
     return;
   }
 
-  // Show any DOs that reference this SO
+  // Show any DOs that reference this SO. A pickup order's surat jalan are its
+  // trucks: one line with the count and the way to its PO pengambilan.
   const linkedDOs = (DB.deliveryOrders || []).filter(d => d.soId === id);
+  const pickupSlots = linkedDOs.filter(d => d.pickup === true && d.status !== 'Cancelled');
+  const pickupPOIds = (o.pickupFlow && o.pickupFlow.poIds) || [];
   const doLinksHtml =
-    linkedDOs.length > 0
+    o.pickupFlow && window.Trading
+      ? `<div class="order-pickup-line">
+        <span>${pickupSlots.filter(d => window.Trading.isTrip(d)).length} truk diambil · ${pickupSlots.filter(d => d.status === 'Pending').length} surat jalan siap</span>
+        ${pickupPOIds
+          .map(poId => {
+            const po = (DB.purchaseOrders || []).find(p => p.id === poId);
+            return `<button class="link-btn" data-action="pvOpenPO" data-id="${escapeHtml(poId)}">${escapeHtml(po ? docNum(po.number, po.id) : poId)}</button>`;
+          })
+          .join(' ')}
+       </div>`
+      : linkedDOs.length > 0
       ? `<div style="margin:10px 0;padding:8px 12px;background:var(--surface-sunken);border-radius:8px;
                   font-size:.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="color:var(--muted)">DO Terkait:</span>
@@ -4985,8 +5023,8 @@ function viewSO(id) {
       ${detailRow('Status', badge(o.status))}
       <div class="detail-divider"></div>
       ${detailRow('Pelanggan', escapeHtml(o.customer || '—'))}
-      ${detailRow('Tanggal', escapeHtml(o.date || '—'))}
-      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${soOverdue ? 't-danger' : ''}">${escapeHtml(o.dueDate)}${soOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
+      ${detailRow('Tanggal', escapeHtml(_tglOrder(o.date)))}
+      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${soOverdue ? 't-danger' : ''}">${escapeHtml(_tglOrder(o.dueDate))}${soOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
       ${o.warehouseId && window.Warehouse ? detailRow('Gudang', escapeHtml(window.Warehouse.warehouseName(o.warehouseId))) : ''}
       ${o.sourceQuotation ? detailRow('Dari Penawaran', escapeHtml(o.sourceQuotation)) : ''}
       ${soCancelled && o.cancelledAt ? detailRow('Dibatalkan', escapeHtml(String(o.cancelledAt).slice(0, 10)) + (o.cancelledBy ? ' · ' + escapeHtml(o.cancelledBy) : '')) : ''}
@@ -5000,16 +5038,12 @@ function viewSO(id) {
   `,
     [
       '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
-      window.DocFlow ? window.DocFlow.button('SO', id) : '',
+      _orderMoreMenu('SO', id, docNum(o.number, o.id), soCanCancel),
       `<button class="btn-ghost" data-action="printSO" data-id="${escapeHtml(id)}">Cetak</button>`,
-      `<button class="btn-ghost" data-action="duplicateSO" data-id="${escapeHtml(id)}">Duplikat</button>`,
-      soCanCancel
-        ? `<button class="btn-ghost btn-danger-text" data-action="cancelSO" data-id="${escapeHtml(id)}">Batalkan</button>`
-        : '',
-      soCancelled
+      soCancelled || o.pickupFlow
         ? ''
         : `<button class="btn-ghost" data-action="createDOFromSO" data-id="${escapeHtml(id)}">Buat Surat Jalan</button>`,
-      !soCancelled && !soInvoice && o.status !== 'Draft'
+      !soCancelled && !o.pickupFlow && !soInvoice && o.status !== 'Draft'
         ? `<button class="btn-ghost" data-action="createSIFromSO" data-id="${escapeHtml(id)}">Buat Faktur</button>`
         : '',
       `<button class="btn" data-action="editSO" data-id="${escapeHtml(id)}">Ubah</button>`,
@@ -5080,8 +5114,8 @@ function viewPO(id) {
       ${detailRow('Status', badge(o.status))}
       <div class="detail-divider"></div>
       ${detailRow('Supplier', escapeHtml(o.supplier || '—'))}
-      ${detailRow('Tanggal', escapeHtml(o.date || '—'))}
-      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${poOverdue ? 't-danger' : ''}">${escapeHtml(o.dueDate)}${poOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
+      ${detailRow('Tanggal', escapeHtml(_tglOrder(o.date)))}
+      ${o.dueDate ? detailRow('Jatuh Tempo', `<span class="${poOverdue ? 't-danger' : ''}">${escapeHtml(_tglOrder(o.dueDate))}${poOverdue ? ' · lewat tempo' : ''}</span>`) : ''}
       ${o.warehouseId && window.Warehouse ? detailRow('Gudang', escapeHtml(window.Warehouse.warehouseName(o.warehouseId))) : ''}
       ${o.sourceQuotation ? detailRow('Dari Penawaran', escapeHtml(o.sourceQuotation)) : ''}
       ${poCancelled && o.cancelledAt ? detailRow('Dibatalkan', escapeHtml(String(o.cancelledAt).slice(0, 10)) + (o.cancelledBy ? ' · ' + escapeHtml(o.cancelledBy) : '')) : ''}
@@ -5095,16 +5129,12 @@ function viewPO(id) {
   `,
     [
       '<button class="btn-ghost" data-action="closeModal">Tutup</button>',
-      window.DocFlow ? window.DocFlow.button('PO', id) : '',
+      _orderMoreMenu('PO', id, docNum(o.number, o.id), poCanCancel),
       `<button class="btn-ghost" data-action="printPO" data-id="${escapeHtml(id)}">Cetak</button>`,
-      `<button class="btn-ghost" data-action="duplicatePO" data-id="${escapeHtml(id)}">Duplikat</button>`,
-      poCanCancel
-        ? `<button class="btn-ghost btn-danger-text" data-action="cancelPO" data-id="${escapeHtml(id)}">Batalkan</button>`
-        : '',
-      poCancelled
+      poCancelled || o.pickupFlow
         ? ''
         : `<button class="btn-ghost" data-action="createDOFromPO" data-id="${escapeHtml(id)}">Buat Surat Jalan</button>`,
-      !poCancelled && !poInvoice && o.status !== 'Draft'
+      !poCancelled && !o.pickupFlow && !poInvoice && o.status !== 'Draft'
         ? `<button class="btn-ghost" data-action="createPIFromPO" data-id="${escapeHtml(id)}">Buat Faktur</button>`
         : '',
       `<button class="btn" data-action="editPO" data-id="${escapeHtml(id)}">Ubah</button>`,
