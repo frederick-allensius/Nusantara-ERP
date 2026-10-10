@@ -1391,7 +1391,7 @@
   // ══════════════════════════════════════════════════════════════════════════════
   // EVENT DELEGATION
   // ══════════════════════════════════════════════════════════════════════════════
-  document.addEventListener('click', function (e) {
+  document.addEventListener('click', async function (e) {
     var btn = e.target.closest('[data-action]');
     if (!btn) return;
     var action = btn.dataset.action;
@@ -1411,9 +1411,7 @@
       }
       case 'delSalesDP': {
         if (
-          !confirm(
-            'Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'
-          )
+          !(await window.confirmAsk('Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'))
         )
           return;
         removeDownPayment('salesDownPayments', 'SO', 'sales', id);
@@ -1434,9 +1432,7 @@
       }
       case 'delPurchaseDP': {
         if (
-          !confirm(
-            'Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'
-          )
+          !(await window.confirmAsk('Hapus uang muka ini?\n\nJurnal uang muka dan pembayaran yang berasal dari uang muka ini ikut dihapus.'))
         )
           return;
         removeDownPayment('purchaseDownPayments', 'PO', 'purchases', id);
@@ -1456,15 +1452,17 @@
         break;
       }
       case 'delTarget': {
-        if (!confirm('Hapus target ini?')) return;
-        var arr3 = ensureArr('salesTargets');
-        var idx3 = arr3.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus target ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var arr3 = ensureArr('salesTargets');
+          var idx3 = arr3.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (idx3 >= 0) arr3.splice(idx3, 1);
+          save();
+          toast('Target dihapus', 'success');
+          openSalesTarget();
         });
-        if (idx3 >= 0) arr3.splice(idx3, 1);
-        save();
-        toast('Target dihapus', 'success');
-        openSalesTarget();
         break;
       }
       // Receive Item
@@ -1557,15 +1555,25 @@
             toast('Barang dari penerimaan ini sudah terpakai, sehingga tidak bisa dihapus.', 'warning');
             break;
           }
-          if (!confirm('Hapus penerimaan barang ini?\n\nStok yang sudah ditambahkan akan dikurangi kembali.')) return;
-          if (typeof window.moveStockLines === 'function') window.moveStockLines(grLines, 'out', grWh);
-        } else if (!confirm('Hapus draft penerimaan barang ini?')) {
-          return;
         }
-        arr4.splice(idx4, 1);
-        save();
-        toast('Penerimaan barang dihapus', 'success');
-        openReceiveItem();
+        var posted = gr.posted;
+        window
+          .ask(
+            posted ? 'Hapus penerimaan barang ini?' : 'Hapus draft penerimaan barang ini?',
+            posted ? 'Stok yang sudah ditambahkan akan dikurangi kembali.' : '',
+            { ok: 'Hapus', danger: true }
+          )
+          .then(function (ok) {
+            if (!ok) return;
+            if (posted && typeof window.moveStockLines === 'function') {
+              window.moveStockLines(grLines, 'out', grWh);
+            }
+            var at = arr4.indexOf(gr);
+            if (at >= 0) arr4.splice(at, 1);
+            save();
+            toast('Penerimaan barang dihapus', 'success');
+            openReceiveItem();
+          });
         break;
       }
       // Supplier Price
@@ -1580,15 +1588,17 @@
         break;
       }
       case 'delSupPrice': {
-        if (!confirm('Hapus harga supplier ini?')) return;
-        var arr5 = ensureArr('supplierPrices');
-        var idx5 = arr5.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus harga supplier ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var arr5 = ensureArr('supplierPrices');
+          var idx5 = arr5.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (idx5 >= 0) arr5.splice(idx5, 1);
+          save();
+          toast('Harga dihapus', 'success');
+          openSupplierPrice();
         });
-        if (idx5 >= 0) arr5.splice(idx5, 1);
-        save();
-        toast('Harga dihapus', 'success');
-        openSupplierPrice();
         break;
       }
     }

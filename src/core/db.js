@@ -1479,7 +1479,7 @@ function _deriveOrderStatuses() {
  */
 export async function resetDB() {
   if (
-    !confirm('Apakah Anda yakin ingin mereset semua data? Tindakan ini tidak dapat dibatalkan.')
+    !(await window.confirmAsk('Apakah Anda yakin ingin mereset semua data? Tindakan ini tidak dapat dibatalkan.'))
   ) {
     return;
   }

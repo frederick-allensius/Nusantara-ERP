@@ -288,10 +288,10 @@
     });
   }
 
-  function confirmD(title, msg, fn) {
+  async function confirmD(title, msg, fn) {
     if (window.confirmDialog) {
       window.confirmDialog(title, msg, fn);
-    } else if (window.confirm(msg)) {
+    } else if ((await window.confirmAsk(msg))) {
       fn();
     }
   }

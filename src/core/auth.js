@@ -770,7 +770,10 @@ export async function logout(message) {
   }
   _activeMode = null;
   if (message) {
-    alert(message);
+    // The app's own notice (one button) before the page reloads to the login.
+    if (typeof window.ask === 'function') {
+      await window.ask(message, '', { ok: 'Mengerti', cancel: 'Tutup' });
+    }
   }
   window.location.reload();
 }

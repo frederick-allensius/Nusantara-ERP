@@ -992,7 +992,7 @@ function orderLockReason(type, o) {
 
 // Cancel a SO/PO. The document stays (status Dibatalkan); reservations and
 // delivered/received stock are reversed and its journals stop being derived.
-function cancelOrder(type, id) {
+async function cancelOrder(type, id) {
   const isSO = type === 'SO';
   const o = (isSO ? DB.salesOrders : DB.purchaseOrders).find(x => String(x.id) === String(id));
   if (!o || o.status === 'Cancelled') {
@@ -1032,9 +1032,7 @@ function cancelOrder(type, id) {
     effects.push(`• ${dos.length} surat jalan terkait tidak ikut dibatalkan.`);
   }
   if (
-    !confirm(
-      `Batalkan ${label}?\n\n${effects.length ? effects.join('\n') + '\n' : ''}Dokumen tetap tersimpan dengan status Dibatalkan.`
-    )
+    !(await window.confirmAsk(`Batalkan ${label}?\n\n${effects.length ? effects.join('\n') + '\n' : ''}Dokumen tetap tersimpan dengan status Dibatalkan.`))
   ) {
     return;
   }
@@ -1054,7 +1052,7 @@ function cancelOrder(type, id) {
 }
 
 // Remove a payment logged on a SO/PO (corrects a wrongly recorded payment).
-function deletePaymentLog(type, logId) {
+async function deletePaymentLog(type, logId) {
   const logs = DB.paymentLogs || [];
   const idx = logs.findIndex(p => p.type === type && String(p.id) === String(logId));
   if (idx === -1) {
@@ -1066,9 +1064,7 @@ function deletePaymentLog(type, logId) {
     return;
   }
   if (
-    !confirm(
-      `Hapus pembayaran ${idrFull(p.amount || 0)} tanggal ${p.date}?\n\nJurnal kas/bank untuk pembayaran ini ikut dihapus.`
-    )
+    !(await window.confirmAsk(`Hapus pembayaran ${idrFull(p.amount || 0)} tanggal ${p.date}?\n\nJurnal kas/bank untuk pembayaran ini ikut dihapus.`))
   ) {
     return;
   }
@@ -3434,7 +3430,10 @@ function showUserManagement() {
     el.querySelectorAll('.um-reset').forEach(btn =>
       btn.addEventListener('click', async () => {
         const uid = btn.dataset.uid;
-        const pw = prompt(`Password baru untuk "${uid}" (minimal 6 karakter):`);
+        const pw = await window.ask(`Password baru untuk "${uid}"`, 'Minimal 6 karakter.', {
+          ok: 'Simpan',
+          input: { type: 'password', label: 'Password baru', minLength: 6 },
+        });
         if (pw == null) return;
         try {
           await window.erpUsers.resetPassword(uid, pw);
@@ -3448,7 +3447,7 @@ function showUserManagement() {
     el.querySelectorAll('.um-del').forEach(btn =>
       btn.addEventListener('click', async () => {
         const uid = btn.dataset.uid;
-        if (!confirm(`Hapus user "${uid}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+        if (!(await window.confirmAsk(`Hapus user "${uid}"? Tindakan ini tidak dapat dibatalkan.`))) return;
         try {
           await window.erpUsers.remove(uid);
           showToast('User dihapus', 'success');
@@ -3609,8 +3608,8 @@ function showLoginLog() {
   );
   setTimeout(() => {
     document.getElementById('ll-back')?.addEventListener('click', showUserManagement);
-    document.getElementById('ll-clear')?.addEventListener('click', () => {
-      if (!confirm('Bersihkan seluruh log aktivitas login?')) return;
+    document.getElementById('ll-clear')?.addEventListener('click', async () => {
+      if (!(await window.confirmAsk('Bersihkan seluruh log aktivitas login?'))) return;
       if (window.erpUsers && typeof window.erpUsers.clearLoginLog === 'function') {
         window.erpUsers.clearLoginLog();
       }
@@ -6539,15 +6538,13 @@ window.updateBulkBar = function updateBulkBar() {
   }
 };
 
-function bulkSOStatus(newStatus) {
+async function bulkSOStatus(newStatus) {
   if (soSelection.size === 0) {
     return;
   }
   if (
     newStatus === 'Cancelled' &&
-    !confirm(
-      `Batalkan ${soSelection.size} Sales Order terpilih?\n\nPesanan yang sudah difakturkan, memiliki pembayaran, uang muka atau retur dilewati. Stok dan reservasi dari pesanan yang dibatalkan dikembalikan.`
-    )
+    !(await window.confirmAsk(`Batalkan ${soSelection.size} Sales Order terpilih?\n\nPesanan yang sudah difakturkan, memiliki pembayaran, uang muka atau retur dilewati. Stok dan reservasi dari pesanan yang dibatalkan dikembalikan.`))
   ) {
     return;
   }
@@ -6621,7 +6618,7 @@ function bulkSOStatus(newStatus) {
             `${p.id}: ${p.problems.map(pr => `${pr.itemName} (tersedia ${pr.available})`).join(', ')}`
         )
         .join('\n');
-      if (!confirm(`Peringatan: stok tidak cukup.\n\n${msg}\n\nLanjutkan konfirmasi?`)) {
+      if (!(await window.confirmAsk(`Peringatan: stok tidak cukup.\n\n${msg}\n\nLanjutkan konfirmasi?`))) {
         return;
       }
     }

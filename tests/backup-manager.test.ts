@@ -174,14 +174,15 @@ describe('Kelola Backup modal', () => {
   it('"Pulihkan" on a late-rendered row restores that backup', async () => {
     w().erpBackup.getBackupList = async () => [BACKUP];
     w().erpBackup.restoreFromBackup = vi.fn();
-    w().confirm = vi.fn(() => true);
+    w().confirmAsk = vi.fn(async () => true);
 
     w().showBackupManager();
     await tick();
     vi.useFakeTimers(); // keeps the post-restore page reload from firing
     modal().querySelector<HTMLElement>('[data-action="restoreBackup"]')!.click();
+    await vi.advanceTimersByTimeAsync(0);
 
-    expect(w().confirm).toHaveBeenCalledTimes(1);
+    expect(w().confirmAsk).toHaveBeenCalledTimes(1);
     expect(w().erpBackup.restoreFromBackup).toHaveBeenCalledWith(BACKUP.key);
   });
 });

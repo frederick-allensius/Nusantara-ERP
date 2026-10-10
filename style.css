@@ -5502,6 +5502,58 @@ html[data-theme] {
 }
 
 /* Confirm dialog (src/core/modal.js) */
+/* ask() (src/core/modal.js): the app's confirmation, above any open dialog */
+.ask-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: var(--scrim);
+  animation: backdropIn 160ms var(--ease);
+}
+.ask {
+  width: 100%;
+  max-width: 420px;
+  padding: 22px 24px 18px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+  animation: modalIn 180ms var(--ease);
+}
+.ask-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.ask-msg {
+  margin-top: 8px;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+.ask-input {
+  margin-top: 14px;
+}
+.ask-error {
+  margin-top: 6px;
+  font-size: var(--fs-xs);
+  color: var(--danger);
+}
+.ask-error[hidden] {
+  display: none;
+}
+.ask-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
 .confirm-body {
   display: flex;
   align-items: flex-start;

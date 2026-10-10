@@ -687,7 +687,7 @@ function showBackupManager() {
         return;
       }
 
-      if (!confirm('Import backup akan menimpa semua data saat ini. Lanjutkan?')) {
+      if (!(await window.confirmAsk('Import backup akan menimpa semua data saat ini. Lanjutkan?'))) {
         return;
       }
 
@@ -715,7 +715,7 @@ function showBackupManager() {
         showToast('Fungsi migrasi belum tersedia', 'danger');
         return;
       }
-      if (!confirm('Upload semua data lokal ke Firebase Firestore?\n\nProses ini akan menimpa data cloud yang ada.')) return;
+      if (!(await window.confirmAsk('Upload semua data lokal ke Firebase Firestore?\n\nProses ini akan menimpa data cloud yang ada.'))) return;
 
       openModal(
         'Sinkronisasi ke Firebase',
@@ -776,8 +776,8 @@ function showBackupManager() {
 
 // "Pulihkan" rows are rendered after the backup list loads, so the click goes
 // through the action registry rather than a listener bound when the modal opens.
-function restoreBackupFromList(key) {
-  if (!confirm('Pulihkan backup ini? Data saat ini akan ditimpa.')) {
+async function restoreBackupFromList(key) {
+  if (!(await window.confirmAsk('Pulihkan backup ini? Data saat ini akan ditimpa.'))) {
     return;
   }
 

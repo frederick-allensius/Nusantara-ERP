@@ -379,14 +379,14 @@
     toast(`${docNo(q)} ${labels[next] || next}`, 'success');
   }
 
-  function deleteDraft(type, id) {
+  async function deleteDraft(type, id) {
     const list = db()[TYPES[type].coll] || [];
     const idx = list.findIndex(d => same(d.id, id));
     if (idx === -1 || list[idx].status !== 'Draft') {
       toast('Hanya penawaran Draft yang bisa dihapus', 'info');
       return;
     }
-    if (!window.confirm(`Hapus ${docNo(list[idx])}?`)) {
+    if (!(await window.confirmAsk(`Hapus ${docNo(list[idx])}?`))) {
       return;
     }
     const removed = list.splice(idx, 1)[0];

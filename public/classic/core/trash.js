@@ -307,7 +307,7 @@
   }
 
   // Delegated clicks (self-contained, same pattern as integrity.js).
-  document.addEventListener('click', e => {
+  document.addEventListener('click', async e => {
     const el = e.target && e.target.closest ? e.target.closest('[data-action]') : null;
     if (!el) {
       return;
@@ -318,7 +318,7 @@
     } else if (action === 'trashPurge') {
       purge(el.getAttribute('data-id'));
     } else if (action === 'trashPurgeAll') {
-      if (window.confirm('Kosongkan recycle bin? Semua entri dihapus permanen.')) {
+      if ((await window.confirmAsk('Kosongkan recycle bin? Semua entri dihapus permanen.'))) {
         purgeAll();
       }
     }

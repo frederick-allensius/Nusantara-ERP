@@ -1949,37 +1949,43 @@
         addOPModal();
         break;
       case 'delOP': {
-        if (!confirm('Hapus pengeluaran ini?\n\nJurnal kas/bank dan beban untuk transaksi ini ikut dihapus.')) return;
-        var removedOP = removeById(ensureArr('otherPayments'), id);
-        if (!removedOP) break;
-        unlinkStatementLine(removedOP);
-        save();
-        toast('Dihapus', 'success');
-        openOtherPayment();
+        window.ask('Hapus pengeluaran ini?', 'Jurnal kas/bank dan beban untuk transaksi ini ikut dihapus.', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var removedOP = removeById(ensureArr('otherPayments'), id);
+          if (!removedOP) return;
+          unlinkStatementLine(removedOP);
+          save();
+          toast('Dihapus', 'success');
+          openOtherPayment();
+        });
         break;
       }
       case 'addOD':
         addODModal();
         break;
       case 'delOD': {
-        if (!confirm('Hapus penerimaan ini?\n\nJurnal kas/bank dan pendapatan untuk transaksi ini ikut dihapus.')) return;
-        var removedOD = removeById(ensureArr('otherDeposits'), id);
-        if (!removedOD) break;
-        unlinkStatementLine(removedOD);
-        save();
-        toast('Dihapus', 'success');
-        openOtherDeposit();
+        window.ask('Hapus penerimaan ini?', 'Jurnal kas/bank dan pendapatan untuk transaksi ini ikut dihapus.', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var removedOD = removeById(ensureArr('otherDeposits'), id);
+          if (!removedOD) return;
+          unlinkStatementLine(removedOD);
+          save();
+          toast('Dihapus', 'success');
+          openOtherDeposit();
+        });
         break;
       }
       case 'addBT':
         addBTModal();
         break;
       case 'delBT': {
-        if (!confirm('Hapus transfer ini?\n\nJurnal transfer antar rekening ikut dihapus.')) return;
-        if (!removeById(ensureArr('bankTransfers'), id)) break;
-        save();
-        toast('Dihapus', 'success');
-        openBankTransfer();
+        window.ask('Hapus transfer ini?', 'Jurnal transfer antar rekening ikut dihapus.', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          if (!removeById(ensureArr('bankTransfers'), id)) return;
+          save();
+          toast('Dihapus', 'success');
+          openBankTransfer();
+        });
         break;
       }
       case 'addBS':
@@ -2030,12 +2036,14 @@
         break;
       }
       case 'delBS': {
-        if (!confirm('Hapus rekening koran ini?')) return;
-        if (!removeById(ensureArr('bankStatements'), id)) break;
-        if (_reconcileId === id) _reconcileId = null;
-        save();
-        toast('Dihapus', 'success');
-        openBankReconcile();
+        window.ask('Hapus rekening koran ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          if (!removeById(ensureArr('bankStatements'), id)) return;
+          if (_reconcileId === id) _reconcileId = null;
+          save();
+          toast('Dihapus', 'success');
+          openBankReconcile();
+        });
         break;
       }
       case 'goToBankStatement':

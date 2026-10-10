@@ -14,6 +14,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 const w = () => window as any;
+const flush = () => new Promise(r => setTimeout(r, 0));
 const actions = new Map<string, (id?: string, type?: string, val?: string) => unknown>();
 
 beforeAll(async () => {
@@ -142,7 +143,8 @@ beforeEach(() => {
   w().invalidateView = vi.fn();
   w().openModal = vi.fn();
   w().closeModal = vi.fn();
-  w().confirm = vi.fn(() => true);
+  // The app's own confirmation (src/core/modal.js confirmAsk) answers yes.
+  w().confirmAsk = vi.fn(async () => true);
   T().openPickupPO('PO-1', { soId: 'SO-1', capacity: 35 });
   trip(1, '2026-09-03', 35);
   trip(2, '2026-09-08', 30);
@@ -314,7 +316,7 @@ describe('Tagihan Supplier', () => {
     expect(text()).not.toContain('belum memakai Harga Supplier');
   });
 
-  it('corrects the price of the selected trips, then saves the purchase invoice with the supplier number', () => {
+  it('corrects the price of the selected trips, then saves the purchase invoice with the supplier number', async () => {
     openS1();
     setField('pb-ref', 'INV/BA/0912', 'input');
     setField('pb-date', '2026-09-12', 'input');
@@ -324,6 +326,7 @@ describe('Tagihan Supplier', () => {
     expect((document.getElementById('pb-new-price') as HTMLInputElement).value).toBe('104000');
     setField('pb-new-note', 'Kabar harga baru 1 Sep', 'input');
     click('[data-action="pbApplyPrice"]');
+    await flush();
     for (const n of [1, 2]) {
       expect(slot(n).purchasePrice).toBe(104000);
       expect(slot(n).purchasePriceSource).toBe('manual');
@@ -365,7 +368,7 @@ describe('Tagihan Supplier', () => {
     expect(bal('510101')).toBe(65 * 104000 + 20 * 100000); // cost at the corrected prices
   });
 
-  it('requires a reason and a confirmation to save with a tonnage difference', () => {
+  it('requires a reason and a confirmation to save with a tonnage difference', async () => {
     openS1();
     setField('pb-ref', 'TAG-77', 'input');
     setField('pb-qty', '70', 'input');
@@ -374,13 +377,15 @@ describe('Tagihan Supplier', () => {
     expect(w().showToast).toHaveBeenLastCalledWith(expect.stringContaining('alasan'), 'warning');
 
     setField('pb-reason', 'Truk 08/09 ditimbang ulang supplier', 'input');
-    w().confirm.mockReturnValueOnce(false);
+    w().confirmAsk.mockResolvedValueOnce(false);
     click('[data-action="pbIssue"]');
+    await flush();
     expect(w().DB.purchaseInvoices).toHaveLength(0);
 
     click('[data-action="pbIssue"]');
+    await flush();
     const pi = w().DB.purchaseInvoices[0];
-    expect(w().confirm).toHaveBeenLastCalledWith(expect.stringContaining('selisih +5 ton'));
+    expect(w().confirmAsk).toHaveBeenLastCalledWith(expect.stringContaining('selisih +5 ton'));
     expect(pi.supplierRef).toBe('TAG-77');
     expect(pi.supplierBill).toMatchObject({ qty: 70, ourQty: 65, qtyDiff: 5 });
     expect(pi.note).toContain('Alasan: Truk 08/09 ditimbang ulang supplier');
@@ -389,17 +394,17 @@ describe('Tagihan Supplier', () => {
 });
 
 describe('invoices made from trips (invoice-view.js, print)', () => {
-  it('cancelling a sales invoice frees its trips and hands the sale back to them', () => {
+  it('cancelling a sales invoice frees its trips and hands the sale back to them', async () => {
     const { invoice } = T().createInvoice('sales', [slot(1).id, slot(2).id], {
       date: '2026-09-09',
     });
     expect(T().unbilled('sales')).toHaveLength(0);
-    actions.get('invCancel')!(invoice.id, 'SI');
+    await actions.get('invCancel')!(invoice.id, 'SI');
     expect(invoice.status).toBe('Cancelled');
     expect(slot(1).status).toBe('Delivered');
     expect(slot(2).status).toBe('Delivered');
     expect(T().unbilled('sales')).toHaveLength(2);
-    expect(w().confirm).toHaveBeenCalledWith(
+    expect(w().confirmAsk).toHaveBeenCalledWith(
       expect.stringContaining('2 pengambilan kembali menjadi belum ditagih')
     );
     const { tb, bal } = ledger();
@@ -409,12 +414,12 @@ describe('invoices made from trips (invoice-view.js, print)', () => {
     expect(T().createInvoice('sales', [slot(1).id], { date: '2026-09-10' }).error).toBeUndefined();
   });
 
-  it('cancelling a purchase invoice puts its trips back on the supplier side', () => {
+  it('cancelling a purchase invoice puts its trips back on the supplier side', async () => {
     const { invoice } = T().createInvoice('purchases', [slot(1).id, slot(2).id], {
       date: '2026-09-10',
       supplierRef: 'X-1',
     });
-    actions.get('invCancel')!(invoice.id, 'PI');
+    await actions.get('invCancel')!(invoice.id, 'PI');
     expect(invoice.status).toBe('Cancelled');
     expect(T().unbilled('purchases')).toHaveLength(2);
     const { tb, bal } = ledger();

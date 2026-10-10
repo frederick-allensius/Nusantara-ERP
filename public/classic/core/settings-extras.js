@@ -711,15 +711,17 @@
         break;
       }
       case 'delCurrency': {
-        if (!confirm('Hapus currency ' + id + '?')) return;
-        var ca = ensureSettings('currencies', []);
-        var ci = ca.findIndex(function (x) {
-          return x.code === id;
+        window.ask('Hapus mata uang ' + id + '?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var ca = ensureSettings('currencies', []);
+          var ci = ca.findIndex(function (x) {
+            return x.code === id;
+          });
+          if (ci >= 0) ca.splice(ci, 1);
+          save();
+          toast('Currency dihapus', 'success');
+          openCurrency();
         });
-        if (ci >= 0) ca.splice(ci, 1);
-        save();
-        toast('Currency dihapus', 'success');
-        openCurrency();
         break;
       }
       // Payment Term
@@ -734,15 +736,17 @@
         break;
       }
       case 'delPT': {
-        if (!confirm('Hapus payment term ini?')) return;
-        var pa = ensureSettings('paymentTerms', []);
-        var pi = pa.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus termin pembayaran ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var pa = ensureSettings('paymentTerms', []);
+          var pi = pa.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (pi >= 0) pa.splice(pi, 1);
+          save();
+          toast('Payment term dihapus', 'success');
+          openPaymentTerm();
         });
-        if (pi >= 0) pa.splice(pi, 1);
-        save();
-        toast('Payment term dihapus', 'success');
-        openPaymentTerm();
         break;
       }
       // Shipment
@@ -757,15 +761,17 @@
         break;
       }
       case 'delShip': {
-        if (!confirm('Hapus metode pengiriman ini?')) return;
-        var sa = ensureSettings('shipmentMethods', []);
-        var si = sa.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus metode pengiriman ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var sa = ensureSettings('shipmentMethods', []);
+          var si = sa.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (si >= 0) sa.splice(si, 1);
+          save();
+          toast('Metode pengiriman dihapus', 'success');
+          openShipment();
         });
-        if (si >= 0) sa.splice(si, 1);
-        save();
-        toast('Metode pengiriman dihapus', 'success');
-        openShipment();
         break;
       }
       // Calendar
@@ -800,15 +806,17 @@
       }
       // Favorite Transaction
       case 'delFav': {
-        if (!confirm('Hapus favorit ini?')) return;
-        if (!window.DB.favoriteTransactions) return;
-        var fi = window.DB.favoriteTransactions.findIndex(function (f) {
-          return f.id === id;
+        window.ask('Hapus favorit ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          if (!window.DB.favoriteTransactions) return;
+          var fi = window.DB.favoriteTransactions.findIndex(function (f) {
+            return f.id === id;
+          });
+          if (fi >= 0) window.DB.favoriteTransactions.splice(fi, 1);
+          save();
+          toast('Favorit dihapus', 'success');
+          openFavTransaction();
         });
-        if (fi >= 0) window.DB.favoriteTransactions.splice(fi, 1);
-        save();
-        toast('Favorit dihapus', 'success');
-        openFavTransaction();
         break;
       }
     }

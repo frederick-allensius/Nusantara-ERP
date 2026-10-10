@@ -301,7 +301,7 @@
     window.showToast?.(`${number} berhasil disimpan`, 'success');
   }
 
-  function deleteAdjustment(id) {
+  async function deleteAdjustment(id) {
     const data = db();
     const idx = (data.itemAdjustments || []).findIndex(a => a.id === id);
     if (idx === -1) {
@@ -323,9 +323,7 @@
       return;
     }
     if (
-      !window.confirm(
-        `Hapus ${adj.number || adj.id}?\n\nStok dikembalikan seperti sebelum penyesuaian dan jurnalnya ikut dihapus.`
-      )
+      !(await window.confirmAsk(`Hapus ${adj.number || adj.id}?\n\nStok dikembalikan seperti sebelum penyesuaian dan jurnalnya ikut dihapus.`))
     ) {
       return;
     }

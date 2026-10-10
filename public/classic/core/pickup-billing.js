@@ -1210,7 +1210,7 @@
     render();
   }
 
-  function issuePurchase() {
+  async function issuePurchase() {
     var c = CFG.supplier;
     var s = S.supplier;
     var sel = selectedOf(s, periodTrips(c, s));
@@ -1286,7 +1286,7 @@
           priceOff +
           ' truk memakai harga beli yang berbeda dari harga di tagihan; faktur dicatat dengan harga kita.';
       }
-      if (!window.confirm(msg)) return;
+      if (!(await window.confirmAsk(msg))) return;
     }
     var r = T().createInvoice(
       'purchases',
@@ -1379,7 +1379,7 @@
     renderMain();
   }
 
-  function applyPrice() {
+  async function applyPrice() {
     var s = S.supplier;
     var raw = String(s.newPrice).trim() !== '' ? s.newPrice : s.price;
     var price = num(raw);
@@ -1394,13 +1394,11 @@
       return;
     }
     if (
-      !window.confirm(
-        'Ubah harga beli ' +
+      !(await window.confirmAsk('Ubah harga beli ' +
           trips.length +
           ' truk menjadi ' +
           money(price) +
-          ' per ton?\nHarga lama disimpan di riwayat tiap pengambilan.'
-      )
+          ' per ton?\nHarga lama disimpan di riwayat tiap pengambilan.'))
     ) {
       return;
     }

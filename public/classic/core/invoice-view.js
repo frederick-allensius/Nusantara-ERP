@@ -679,7 +679,7 @@
         renderPreview();
       }
 
-      document.getElementById('st-save')?.addEventListener('click', () => {
+      document.getElementById('st-save')?.addEventListener('click', async () => {
         const inv = currentInv();
         if (!inv) {
           toast('Pilih faktur terlebih dahulu', 'warning');
@@ -693,9 +693,7 @@
         const bal = B().invoiceBalance(it.side, inv);
         if (
           amount > bal.outstanding + B().EPS &&
-          !window.confirm(
-            `Jumlah ${money(amount)} melebihi sisa tagihan ${money(bal.outstanding)}. Tetap simpan?`
-          )
+          !(await window.confirmAsk(`Jumlah ${money(amount)} melebihi sisa tagihan ${money(bal.outstanding)}. Tetap simpan?`))
         ) {
           return;
         }
@@ -746,7 +744,7 @@
   }
 
   // ── Cancel ──────────────────────────────────────────────────────────────────
-  function cancelInvoice(type, id) {
+  async function cancelInvoice(type, id) {
     const t = TYPES[type];
     const inv = findDoc(type, id);
     if (!inv || !B() || !B().isActiveInvoice(inv)) {
@@ -782,9 +780,7 @@
           : `Persediaan dan hutang kembali dicatat dari penerimaan ${docNo(src)}.`
         : 'Jurnal faktur ini tidak lagi dibentuk.';
     if (
-      !window.confirm(
-        `Batalkan ${docNo(inv)}?\n\n${effect}\nDokumen tetap tersimpan dengan status Dibatalkan.`
-      )
+      !(await window.confirmAsk(`Batalkan ${docNo(inv)}?\n\n${effect}\nDokumen tetap tersimpan dengan status Dibatalkan.`))
     ) {
       return;
     }
@@ -809,7 +805,7 @@
     toast(`${docNo(inv)} dibatalkan`, 'success');
   }
 
-  function cancelSettlement(type, id) {
+  async function cancelSettlement(type, id) {
     const t = TYPES[type];
     const it = TYPES[t.invType];
     const doc = findDoc(type, id);
@@ -817,9 +813,7 @@
       return;
     }
     if (
-      !window.confirm(
-        `Batalkan ${docNo(doc)} sebesar ${money(doc.amount || 0)}?\n\nSaldo kas/bank dan ${type === 'SR' ? 'piutang' : 'hutang'} dikembalikan, lalu status faktur dihitung ulang.`
-      )
+      !(await window.confirmAsk(`Batalkan ${docNo(doc)} sebesar ${money(doc.amount || 0)}?\n\nSaldo kas/bank dan ${type === 'SR' ? 'piutang' : 'hutang'} dikembalikan, lalu status faktur dihitung ulang.`))
     ) {
       return;
     }

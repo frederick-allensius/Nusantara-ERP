@@ -950,17 +950,19 @@
         break;
       }
       case 'delIR': {
-        if (!confirm('Hapus permintaan barang ini?')) return;
-        var ia = ensureArr('itemRequisitions');
-        var ii = ia.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus permintaan barang ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var ia = ensureArr('itemRequisitions');
+          var ii = ia.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (ii >= 0) {
+            ia.splice(ii, 1);
+            save();
+            toast('Permintaan dihapus', 'success');
+            openItemRequisition();
+          }
         });
-        if (ii >= 0) {
-          ia.splice(ii, 1);
-          save();
-          toast('Permintaan dihapus', 'success');
-          openItemRequisition();
-        }
         break;
       }
       // Job Costing
@@ -971,17 +973,19 @@
         viewJCModal(id);
         break;
       case 'delJC': {
-        if (!confirm('Hapus job costing ini?')) return;
-        var ja = ensureArr('jobCostings');
-        var ji = ja.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus job costing ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var ja = ensureArr('jobCostings');
+          var ji = ja.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (ji >= 0) {
+            ja.splice(ji, 1);
+            save();
+            toast('Job costing dihapus', 'success');
+            openJobCosting();
+          }
         });
-        if (ji >= 0) {
-          ja.splice(ji, 1);
-          save();
-          toast('Job costing dihapus', 'success');
-          openJobCosting();
-        }
         break;
       }
       case 'delJCCost': {

@@ -764,17 +764,19 @@
         break;
       }
       case 'delEmpM': {
-        if (!confirm('Hapus karyawan ' + id + '? Data payroll terkait tidak terhapus.')) return;
-        var ea = ensureArr('employees');
-        var ei = ea.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus karyawan ' + id + '?', 'Data penggajian yang sudah diproses tidak ikut terhapus.', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var ea = ensureArr('employees');
+          var ei = ea.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (ei >= 0) {
+            ea.splice(ei, 1);
+            save();
+            toast('Karyawan dihapus', 'success');
+            openEmployee();
+          }
         });
-        if (ei >= 0) {
-          ea.splice(ei, 1);
-          save();
-          toast('Karyawan dihapus', 'success');
-          openEmployee();
-        }
         break;
       }
       // Contact
@@ -789,17 +791,19 @@
         break;
       }
       case 'delContact': {
-        if (!confirm('Hapus kontak ini?')) return;
-        var ca = ensureArr('contacts');
-        var ci = ca.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus kontak ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var ca = ensureArr('contacts');
+          var ci = ca.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (ci >= 0) {
+            ca.splice(ci, 1);
+            save();
+            toast('Kontak dihapus', 'success');
+            openContact();
+          }
         });
-        if (ci >= 0) {
-          ca.splice(ci, 1);
-          save();
-          toast('Kontak dihapus', 'success');
-          openContact();
-        }
         break;
       }
       // Customer Category

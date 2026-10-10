@@ -167,31 +167,147 @@ export function showUndoToast(msg, onUndo, duration) {
 }
 
 /**
- * Confirm dialog
+ * Ask — the app's own confirmation, in place of the browser's confirm() and
+ * prompt(). It opens above any open dialog (so a form stays open behind it)
+ * and resolves to true / false, or for `input` to the text entered / null.
+ *
+ *   ask('Hapus pengeluaran?', 'Jurnal kas/bank ikut dihapus.', { ok: 'Hapus', danger: true })
+ *   ask('Password baru', 'Minimal 6 karakter.', { input: { type: 'password', minLength: 6 } })
+ *
+ * Escape and Batal cancel; Enter confirms from the field. A destructive
+ * question starts on Batal so a stray Enter does not delete.
+ */
+export function ask(title, message, opts) {
+  const o = opts || {};
+  return new Promise(resolve => {
+    const prev = document.activeElement;
+    const wrap = document.createElement('div');
+    wrap.className = 'ask-overlay';
+    const field = o.input
+      ? `<input class="form-input ask-input" type="${o.input.type === 'password' ? 'password' : 'text'}"` +
+        ` autocomplete="${o.input.type === 'password' ? 'new-password' : 'off'}"` +
+        ` aria-label="${escapeHtml(o.input.label || title)}" value="${escapeHtml(o.input.value || '')}">` +
+        '<div class="ask-error" role="alert" hidden></div>'
+      : '';
+    wrap.innerHTML =
+      `<div class="ask" role="alertdialog" aria-modal="true" aria-labelledby="ask-title" aria-describedby="ask-msg">` +
+      `<div class="ask-title" id="ask-title">${escapeHtml(title)}</div>` +
+      (message ? `<div class="ask-msg" id="ask-msg">${escapeHtml(message)}</div>` : '') +
+      field +
+      '<div class="ask-foot">' +
+      `<button type="button" class="btn-ghost" data-ask="no">${escapeHtml(o.cancel || 'Batal')}</button>` +
+      `<button type="button" class="${o.danger ? 'btn-danger' : 'btn'}" data-ask="yes">${escapeHtml(o.ok || 'Ya')}</button>` +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    const input = wrap.querySelector('.ask-input');
+    const error = wrap.querySelector('.ask-error');
+
+    function done(value) {
+      document.removeEventListener('keydown', onKey, true);
+      wrap.remove();
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        prev.focus();
+      }
+      resolve(value);
+    }
+    function yes() {
+      if (!input) {
+        done(true);
+        return;
+      }
+      const v = input.value;
+      const min = o.input.minLength || 0;
+      if (v.trim().length < min) {
+        error.textContent = `Minimal ${min} karakter.`;
+        error.hidden = false;
+        input.focus();
+        return;
+      }
+      done(v);
+    }
+    function no() {
+      done(input ? null : false);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        no();
+      } else if (e.key === 'Enter' && e.target === input) {
+        e.preventDefault();
+        yes();
+      } else if (e.key === 'Tab') {
+        // Keep focus inside the question.
+        const items = Array.from(wrap.querySelectorAll('input, button'));
+        const i = items.indexOf(document.activeElement);
+        const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : (i + 1) % items.length;
+        e.preventDefault();
+        items[next].focus();
+      }
+    }
+    document.addEventListener('keydown', onKey, true);
+    wrap.addEventListener('click', e => {
+      const b = e.target.closest('[data-ask]');
+      if (b) {
+        if (b.dataset.ask === 'yes') {
+          yes();
+        } else {
+          no();
+        }
+      } else if (e.target === wrap) {
+        no();
+      }
+    });
+    (input || wrap.querySelector(`[data-ask="${o.danger ? 'no' : 'yes'}"]`)).focus();
+  });
+}
+
+// Verbs that start a question and become its button; the destructive ones
+// make the button red and start the focus on Batal.
+const ASK_VERBS = {
+  Hapus: true,
+  Batalkan: true,
+  Kosongkan: true,
+  Bersihkan: true,
+  Pulihkan: true,
+  Impor: true,
+  Keluar: false,
+  Upload: false,
+  Posting: false,
+  Terapkan: false,
+  Simpan: false,
+  Lanjutkan: false,
+};
+
+/**
+ * confirmAsk(text) — ask() for a question written as one text, as the
+ * browser's confirm() took it: the first paragraph is the title, the rest the
+ * message. The first word names the button when it is a known verb.
+ */
+export function confirmAsk(text, opts) {
+  const s = String(text == null ? '' : text);
+  const cut = s.indexOf('\n\n');
+  const title = (cut >= 0 ? s.slice(0, cut) : s).trim();
+  const message = cut >= 0 ? s.slice(cut + 2).trim() : '';
+  const verb = title.split(/\s+/)[0].replace(/[^A-Za-z]/g, '');
+  const known = Object.prototype.hasOwnProperty.call(ASK_VERBS, verb);
+  return ask(title, message, {
+    ok: known ? verb : 'Lanjutkan',
+    danger: known ? ASK_VERBS[verb] : false,
+    ...(opts || {}),
+  });
+}
+
+/**
+ * Confirm dialog (older call sites): the same question as ask(), with a
+ * callback. It no longer replaces an open dialog.
  */
 export function confirmDialog(title, msg, onConfirm) {
-  openModal(
-    title,
-    `<div class="confirm-body">
-      <div class="confirm-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-      </div>
-      <p>${escapeHtml(msg)}</p>
-    </div>`,
-    `<button class="btn-ghost" data-action="closeModal">Batal</button>
-     <button class="btn-danger" id="confirmBtn">Hapus</button>`
-  );
-  setTimeout(() => {
-    const btn = document.getElementById('confirmBtn');
-    if (btn) {
-      btn.addEventListener('click', () => {
-        onConfirm();
-        closeModal();
-      });
+  ask(title, msg, { ok: 'Hapus', danger: true }).then(ok => {
+    if (ok) {
+      onConfirm();
     }
-  }, 50);
+  });
 }
 
 // Make functions globally available
@@ -200,3 +316,5 @@ window.closeModal = closeModal;
 window.showToast = showToast;
 window.showUndoToast = showUndoToast;
 window.confirmDialog = confirmDialog;
+window.ask = ask;
+window.confirmAsk = confirmAsk;

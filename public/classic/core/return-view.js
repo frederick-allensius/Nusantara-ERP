@@ -435,7 +435,7 @@
   }
 
   // ── Post / cancel ───────────────────────────────────────────────────────────
-  function postReturn(type, id) {
+  async function postReturn(type, id) {
     const t = TYPES[type];
     const doc = findReturn(type, id);
     if (!doc || doc.status !== 'Draft') {
@@ -453,9 +453,7 @@
       }
     }
     if (
-      !window.confirm(
-        `Posting ${docNo(doc)}?\n\nStok ${type === 'SRN' ? 'bertambah' : 'berkurang'} dan jurnal retur dibentuk. Retur yang sudah diposting tidak bisa dibatalkan.`
-      )
+      !(await window.confirmAsk(`Posting ${docNo(doc)}?\n\nStok ${type === 'SRN' ? 'bertambah' : 'berkurang'} dan jurnal retur dibentuk. Retur yang sudah diposting tidak bisa dibatalkan.`))
     ) {
       return;
     }
@@ -483,12 +481,12 @@
     toast(`${docNo(doc)} diposting`, 'success');
   }
 
-  function cancelDraft(type, id) {
+  async function cancelDraft(type, id) {
     const doc = findReturn(type, id);
     if (!doc || doc.status !== 'Draft') {
       return;
     }
-    if (!window.confirm(`Batalkan draft ${docNo(doc)}?`)) {
+    if (!(await window.confirmAsk(`Batalkan draft ${docNo(doc)}?`))) {
       return;
     }
     doc.status = 'Cancelled';

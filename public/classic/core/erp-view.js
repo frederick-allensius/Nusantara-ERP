@@ -2764,9 +2764,7 @@ document.addEventListener('click', async e => {
         break;
       }
       if (
-        !confirm(
-          'Upload semua data lokal ke Firebase Firestore?\n\nProses ini akan menimpa data cloud yang ada.'
-        )
+        !(await window.confirmAsk('Upload semua data lokal ke Firebase Firestore?\n\nProses ini akan menimpa data cloud yang ada.'))
       )
         break;
       openModal(
@@ -2844,7 +2842,7 @@ document.addEventListener('click', async e => {
 
     // ── Security & Authentication ─────────────────────────────────────────────
     case 'logout':
-      if (confirm('Keluar dari sistem?')) {
+      if ((await window.confirmAsk('Keluar dari sistem?'))) {
         window.erpAuth.logout();
       }
       break;
@@ -3248,7 +3246,7 @@ function handleSearch(query) {
   }
 
   // ── Change events: backup import, row checkboxes ────────────────────────────
-  document.addEventListener('change', e => {
+  document.addEventListener('change', async e => {
     const inp = e.target;
     const el = e.target;
 
@@ -3264,7 +3262,7 @@ function handleSearch(query) {
         showToast('Impor backup belum siap. Coba lagi setelah halaman selesai dimuat.', 'warning');
         return;
       }
-      if (!confirm('Impor backup akan menggantikan seluruh data yang ada. Lanjutkan?')) {
+      if (!(await window.confirmAsk('Impor backup akan menggantikan seluruh data yang ada. Lanjutkan?'))) {
         return;
       }
       window.erpBackup

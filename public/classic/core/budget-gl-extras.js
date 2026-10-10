@@ -1107,15 +1107,17 @@
         break;
       }
       case 'delBudget': {
-        if (!confirm('Hapus budget ini?')) return;
-        var arr = ensureArr('budgets');
-        var idx = arr.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus budget ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var arr = ensureArr('budgets');
+          var idx = arr.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (idx >= 0) arr.splice(idx, 1);
+          save();
+          toast('Budget dihapus', 'success');
+          openBudget();
         });
-        if (idx >= 0) arr.splice(idx, 1);
-        save();
-        toast('Budget dihapus', 'success');
-        openBudget();
         break;
       }
       // Budget Transfer
@@ -1144,15 +1146,17 @@
           );
           return;
         }
-        if (!confirm('Hapus draft akrual ini?')) return;
-        var arr2 = ensureArr('expenseAccruals');
-        var idx2 = arr2.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus draft akrual ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var arr2 = ensureArr('expenseAccruals');
+          var idx2 = arr2.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (idx2 >= 0) arr2.splice(idx2, 1);
+          save();
+          toast('Akrual dihapus', 'success');
+          openExpenseAccrual();
         });
-        if (idx2 >= 0) arr2.splice(idx2, 1);
-        save();
-        toast('Akrual dihapus', 'success');
-        openExpenseAccrual();
         break;
       }
       // Payroll
@@ -1167,15 +1171,17 @@
         break;
       }
       case 'delEmployee': {
-        if (!confirm('Hapus data karyawan ini?')) return;
-        var arr3 = ensureArr('employees');
-        var idx3 = arr3.findIndex(function (x) {
-          return x.id === id;
+        window.ask('Hapus data karyawan ini?', '', { ok: 'Hapus', danger: true }).then(function (ok) {
+          if (!ok) return;
+          var arr3 = ensureArr('employees');
+          var idx3 = arr3.findIndex(function (x) {
+            return x.id === id;
+          });
+          if (idx3 >= 0) arr3.splice(idx3, 1);
+          save();
+          toast('Karyawan dihapus', 'success');
+          openPayroll();
         });
-        if (idx3 >= 0) arr3.splice(idx3, 1);
-        save();
-        toast('Karyawan dihapus', 'success');
-        openPayroll();
         break;
       }
       case 'runPayroll':
