@@ -1537,7 +1537,7 @@
     > tbody
     > tr
     > td:is([data-cell='meta'], :not([data-cell])):has(
-      ~ td:is([data-cell='meta'], :not([data-cell])):not(:empty)
+      ~ td:is([data-cell='meta'], :not([data-cell])):not(:empty):not(.is-nil)
     ) {
     padding-right: 13px;
     background: radial-gradient(circle, var(--muted) 0 1px, transparent 1.5px) no-repeat right 4px

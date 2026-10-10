@@ -1143,9 +1143,10 @@
         );
       }
       var flags = slotFlags(d);
+      // data-cell roles: on phones each slot is a short card (mobile.css).
       return (
         '<tr>' +
-        '<td><div class="doc-no">' +
+        '<td data-cell="title"><div class="doc-no">' +
         esc(d.sjNo || d.number) +
         '</div>' +
         (flags ? '<div class="pv-flags">' + flags + '</div>' : '') +
@@ -1153,27 +1154,39 @@
           ? '<div class="t-muted">' + esc(d.voidReason) + '</div>'
           : '') +
         '</td>' +
-        '<td>' +
+        '<td data-cell="status">' +
         slotBadge(d) +
         '</td>' +
-        '<td>' +
+        '<td data-cell="meta"' +
+        (d.date ? '' : ' class="is-nil"') +
+        '>' +
         esc(d.date ? fmtDate(d.date) : '—') +
         '</td>' +
-        '<td>' +
+        '<td data-cell="meta"' +
+        (d.vehicle ? '' : ' class="is-nil"') +
+        '>' +
         esc(d.vehicle || '—') +
         '</td>' +
-        '<td>' +
+        '<td data-cell="name"' +
+        (d.driver ? '' : ' class="is-nil"') +
+        '>' +
         esc(d.driver || '—') +
         '</td>' +
-        '<td class="t-num">' +
+        '<td class="t-num' +
+        (trip ? '' : ' is-nil') +
+        '" data-cell="amount" data-unit="' +
+        esc(u.unit || 't') +
+        '">' +
         (trip ? esc(fmtT(t.netOf(d))) : '—') +
         '</td>' +
-        '<td>' +
+        '<td data-cell="meta" data-cap="Faktur"' +
+        (inv.si || inv.pi ? '' : ' class="is-nil"') +
+        '>' +
         (inv.si ? '<div class="doc-no">' + esc(inv.si) + '</div>' : '') +
         (inv.pi ? '<div class="doc-no t-muted">' + esc(inv.pi) + '</div>' : '') +
         (!inv.si && !inv.pi ? '<span class="t-muted">—</span>' : '') +
         '</td>' +
-        '<td><div class="pv-actions">' +
+        '<td data-cell="menu"><div class="pv-actions">' +
         acts.join('') +
         '</div></td>' +
         '</tr>'
@@ -1193,7 +1206,7 @@
         '',
       ],
       rows,
-      { empty: 'PO ini belum punya surat jalan.' }
+      { empty: 'PO ini belum punya surat jalan.', cards: true }
     );
     return html;
   }
