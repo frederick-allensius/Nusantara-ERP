@@ -438,6 +438,29 @@
   }
   // Page top shared by Pengeluaran Lain and Penerimaan Lain: header with period
   // selector and export, totals, and the per-category recap of the period.
+  // Row "⋯" menu (erp-view.js rowActionsMenu); plain buttons when it is absent.
+  function rowMenu(label, items) {
+    if (typeof window.rowActionsMenu === 'function') return window.rowActionsMenu(label, items);
+    return items
+      .filter(function (it) {
+        return it && it !== '-';
+      })
+      .map(function (it) {
+        return (
+          '<button class="' +
+          (it.danger ? 'btn-danger-text' : 'btn-ghost') +
+          ' btn-sm" data-action="' +
+          it.action +
+          '" data-id="' +
+          esc(it.id) +
+          '">' +
+          esc(it.label) +
+          '</button>'
+        );
+      })
+      .join(' ');
+  }
+
   function recapPageTopHTML(kind, title, desc, addAction, addLabel) {
     var k = KINDS[kind];
     var all = ensureArr(k.collection);
@@ -548,10 +571,8 @@
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(p.notes || '') +
               '</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-danger-text btn-sm" data-action="delOP" data-id="' +
-              esc(p.id) +
-              '">Hapus</button>' +
+              '<td class="td-p row-menu-cell">' +
+              rowMenu(p.number || p.id, [{ label: 'Hapus', action: 'delOP', id: p.id, danger: true }]) +
               '</td></tr>'
             );
           })
@@ -688,10 +709,8 @@
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(d.notes || '') +
               '</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-danger-text btn-sm" data-action="delOD" data-id="' +
-              esc(d.id) +
-              '">Hapus</button>' +
+              '<td class="td-p row-menu-cell">' +
+              rowMenu(d.number || d.id, [{ label: 'Hapus', action: 'delOD', id: d.id, danger: true }]) +
               '</td></tr>'
             );
           })
@@ -830,10 +849,8 @@
               '<td class="td-p" style="font-size:.75rem;color:var(--muted)">' +
               esc(t.notes || '') +
               '</td>' +
-              '<td class="td-p" style="text-align:center">' +
-              '<button class="btn-danger-text btn-sm" data-action="delBT" data-id="' +
-              esc(t.id) +
-              '">Hapus</button>' +
+              '<td class="td-p row-menu-cell">' +
+              rowMenu(t.number || t.id, [{ label: 'Hapus', action: 'delBT', id: t.id, danger: true }]) +
               '</td></tr>'
             );
           })
@@ -1056,15 +1073,14 @@
           money(totalCredit) +
           '</td>' +
           '<td class="td-p" style="text-align:right;white-space:nowrap">' +
-          '<button class="btn-ghost btn-sm" data-action="viewBS" data-id="' +
-          esc(s.id) +
-          '">Detail</button> ' +
           '<button class="btn-ghost btn-sm" data-action="bxReconcileOpen" data-id="' +
           esc(s.id) +
-          '">Rekonsiliasi</button> ' +
-          '<button class="btn-danger-text btn-sm" data-action="delBS" data-id="' +
-          esc(s.id) +
-          '">Hapus</button>' +
+          '">Rekonsiliasi</button>' +
+          rowMenu(s.id, [
+            { label: 'Detail', action: 'viewBS', id: s.id },
+            '-',
+            { label: 'Hapus', action: 'delBS', id: s.id, danger: true },
+          ]) +
           '</td></tr>'
         );
       })

@@ -392,7 +392,9 @@ describe('lists render as cards on phones', () => {
       expectRoles(rows, [...LINE_1_2, 'menu']);
       expect(textOf(rows[0], 'title')).toBe(`${type}-1`);
       expect(textOf(rows[0], 'name')).toBe(party);
-      expect(cellsOf(rows[0], 'menu')[0].querySelector('[data-action="invView"]')).toBeTruthy();
+      // The whole row opens the document; the last cell is only a chevron.
+      expect(rows[0].getAttribute('data-action')).toBe('invView');
+      expect(cellsOf(rows[0], 'menu')[0].querySelector('.row-chev')).toBeTruthy();
     }
   });
 

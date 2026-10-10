@@ -806,11 +806,7 @@
             : rc
               ? rc.actions
               : '') +
-          '<button class="action-edit" data-action="delReceipt" data-id="' +
-          esc(r.id) +
-          '" title="Hapus" style="color:var(--danger);border-color:var(--danger)">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>' +
-          '</button>' +
+          rowMenu(r.id, [{ label: 'Hapus', action: 'delReceipt', id: r.id, danger: true }]) +
           '</td>' +
           '</tr>'
         );
@@ -869,6 +865,24 @@
       '</table></div></div>';
 
     injectView('purchase', html);
+  }
+
+  // Row "⋯" menu (erp-view.js rowActionsMenu); a plain button when it is absent.
+  function rowMenu(label, items) {
+    if (typeof window.rowActionsMenu === 'function') return window.rowActionsMenu(label, items);
+    return items
+      .map(function (it) {
+        return (
+          '<button class="btn-danger-text btn-sm" data-action="' +
+          it.action +
+          '" data-id="' +
+          esc(it.id) +
+          '">' +
+          esc(it.label) +
+          '</button>'
+        );
+      })
+      .join('');
   }
 
   function addReceiptModal() {

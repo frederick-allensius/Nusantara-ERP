@@ -1114,18 +1114,34 @@
     var rows = slots.map(function (d) {
       var inv = invoiceRefs(d);
       var trip = t.isTrip(d);
+      // The next step of a ready slot stays visible; the rest is behind "⋯".
       var acts = [];
       if (d.status === 'Pending' && open) {
         acts.push(
           button('Catat', 'addPickupTrip', d.id, 'btn btn-sm', ' data-po="' + esc(po.id) + '"')
         );
-        acts.push(button('Batalkan', 'voidPickupSlot', d.id, 'btn-danger-text btn-sm'));
       }
-      if (d.status !== 'Cancelled')
-        acts.push(button('Cetak SJ', 'pvPrintSlot', d.id, 'btn-ghost btn-sm'));
-      if (d.ticketPhoto) acts.push(button('Foto DO', 'pvPhoto', d.id, 'btn-ghost btn-sm'));
-      if (trip && d.status !== 'Cancelled')
-        acts.push(button('Koreksi berat', 'editPickupWeight', d.id, 'btn-ghost btn-sm'));
+      var more = [
+        d.ticketPhoto ? { label: 'Foto DO', action: 'pvPhoto', id: d.id } : null,
+        d.status !== 'Cancelled' ? { label: 'Cetak SJ', action: 'pvPrintSlot', id: d.id } : null,
+        trip && d.status !== 'Cancelled'
+          ? { label: 'Koreksi berat', action: 'editPickupWeight', id: d.id }
+          : null,
+        d.status === 'Pending' && open
+          ? { label: 'Batalkan surat jalan', action: 'voidPickupSlot', id: d.id, danger: true }
+          : null,
+      ].filter(Boolean);
+      if (more.length) {
+        acts.push(
+          typeof window.rowActionsMenu === 'function'
+            ? window.rowActionsMenu(d.sjNo || d.number, more)
+            : more
+                .map(function (m) {
+                  return button(m.label, m.action, m.id, m.danger ? 'btn-danger-text btn-sm' : 'btn-ghost btn-sm');
+                })
+                .join('')
+        );
+      }
       var flags = slotFlags(d);
       return (
         '<tr>' +

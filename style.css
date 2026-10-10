@@ -3680,6 +3680,14 @@ tbody .ostrip-tag {
 }
 
 /* Row "⋯" button */
+.row-chev {
+  display: block;
+  margin-left: auto;
+  color: var(--muted-light);
+}
+tr.row-link:hover .row-chev {
+  color: var(--text-secondary);
+}
 .row-menu-cell {
   width: 1%;
   text-align: right;

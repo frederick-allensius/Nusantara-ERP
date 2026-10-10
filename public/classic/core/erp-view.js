@@ -978,6 +978,33 @@ function orderRowMenu(view, o) {
     </div>`;
 }
 
+// A list row's secondary actions behind "⋯" — the same pop-up as the order
+// lists, for any list. items: { label, action, id, attrs, danger } or '-' for a
+// separator; falsy items are skipped. Items run through the usual document
+// data-action listeners (the menu is cloned onto <body> when opened).
+function rowActionsMenu(label, items) {
+  const body = (items || [])
+    .filter(Boolean)
+    .map(it =>
+      it === '-'
+        ? '<div class="row-menu-sep" role="separator"></div>'
+        : _menuItem(
+            it.label,
+            `data-action="${escapeHtml(it.action)}"${it.id != null ? ` data-id="${escapeHtml(it.id)}"` : ''}${it.attrs ? ' ' + it.attrs : ''}`,
+            it.danger ? 'is-danger' : ''
+          )
+    )
+    .join('');
+  const name = escapeHtml(label || '');
+  return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+      aria-label="Aksi ${name}" title="Aksi">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button><div class="row-menu" role="menu" aria-label="Aksi ${name}" hidden>
+      <div class="row-menu-panel" data-panel="main">${body}</div>
+    </div>`;
+}
+window.rowActionsMenu = rowActionsMenu;
+
 // ── Toolbar "⋯" menu ──────────────────────────────────────────────────────────
 // Import/export options of a list (keys in display order): csv → Export CSV,
 // excel → Export Excel (xlsx), summary → Ringkasan PDF (order-summary.js),
