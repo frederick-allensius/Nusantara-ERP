@@ -64,6 +64,22 @@ describe('Jurnal paging', () => {
     expect(journalCards()).toHaveLength(15);
   });
 
+  it('folds each journal to one line with its total, and "Buka semua" opens them', () => {
+    w()._ledgerExtras.openTab('journals', 'all');
+    const first = journalCards()[0] as HTMLDetailsElement;
+    expect(first.tagName).toBe('DETAILS');
+    expect(first.open).toBe(false);
+    const j = w().DB.journals[w().DB.journals.length - 1];
+    expect(first.querySelector('summary')!.textContent).toContain(j.number);
+    expect(first.querySelector('summary')!.textContent).toContain(w().idrFull(j.totals.debit));
+
+    actions.glJournalExpand();
+    expect(Array.from(journalCards()).every(d => (d as HTMLDetailsElement).open)).toBe(true);
+    expect(view().querySelector('[data-action="glJournalExpand"]')!.textContent).toBe('Tutup semua');
+    actions.glJournalExpand();
+    expect((journalCards()[0] as HTMLDetailsElement).open).toBe(false);
+  });
+
   it('keeps amounts on one line inside a scrollable table', () => {
     w()._ledgerExtras.openTab('journals');
     const card = journalCards()[0];
@@ -113,6 +129,8 @@ describe('Jurnal filters (date, account, search)', () => {
     actions.glJournalQuery();
     expect(journalCards()).toHaveLength(2);
     expect(view().textContent).toContain('J020');
+    // Looking for an account's lines: the journals open.
+    expect(Array.from(journalCards()).every(d => (d as HTMLDetailsElement).open)).toBe(true);
 
     actions.glJournalQueryReset();
     expect(view().querySelector('.gl-count')!.textContent).toContain('45 jurnal');

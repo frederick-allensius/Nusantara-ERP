@@ -18,6 +18,9 @@
   // Journals list one page at a time (hundreds of journals otherwise render at once).
   const JOURNAL_PAGE_SIZE = 20;
   let journalPage = 1;
+  // Each journal shows as one line (number, source, date, total) and opens to its
+  // debit/credit lines; "Buka semua" opens every journal on the page.
+  let journalsOpen = false;
   // Tab → its sidebar entry (ui/nav.js), kept highlighted when switching tabs.
   const TAB_ENTRY = { trial: 'Neraca Saldo', journals: 'Jurnal', chart: 'Bagan Akun' };
 
@@ -188,8 +191,15 @@
           `<button class="seg-tab${journalFilter === id ? ' active' : ''}" role="tab" aria-selected="${journalFilter === id}" data-action="glJournalFilter" data-val="${id}">${label}</button>`
       )
       .join('');
+    // Searching by account or text is looking for lines: show them.
+    const lineSearch = !!(journalQuery.acc || journalQuery.q);
+    const open = journalsOpen || lineSearch;
+    const toggle =
+      journals.length && !lineSearch
+        ? ` · <button type="button" class="link-btn" data-action="glJournalExpand">${journalsOpen ? 'Tutup semua' : 'Buka semua'}</button>`
+        : '';
     const head = `<div class="card-head">
-        <div class="gl-count t-muted">${journals.length} jurnal</div>
+        <div class="gl-count t-muted">${journals.length} jurnal${toggle}</div>
         <div class="seg-tabs seg-tabs-sm" role="tablist" aria-label="Sumber jurnal">${filters}</div>
       </div>`;
     const query = journalQuery.from || journalQuery.to || journalQuery.acc || journalQuery.q;
@@ -224,13 +234,13 @@
           </tr>`;
           })
           .join('');
-        // One box per journal (style.css .gl-jv): number and source on top, the
-        // lines in regular weight, only the Total row bold.
-        return `<div class="gl-jv">
-          <div class="gl-jv-head">
+        // One fold per journal (style.css .gl-jv): number, source, date and total
+        // on the line; opened, the lines in regular weight, only Total bold.
+        return `<details class="gl-jv"${open ? ' open' : ''}>
+          <summary class="gl-jv-head">
             <div><span class="doc-no">${esc(j.number || j.id)}</span><span class="t-muted"> · ${esc(src)}</span></div>
-            <div class="jv-date t-muted">${esc(typeof window.tgl === 'function' ? window.tgl(j.date) : j.date || '')}</div>
-          </div>
+            <div class="gl-jv-meta"><span class="jv-date t-muted">${esc(typeof window.tgl === 'function' ? window.tgl(j.date) : j.date || '')}</span><span class="t-num">${money(j.totals ? j.totals.debit : 0)}</span></div>
+          </summary>
           <div class="jv-scroll"><table class="jv-lines">
             <tbody>${lines}</tbody>
             <tfoot><tr class="gl-total">
@@ -240,7 +250,7 @@
               <td class="jv-credit t-num">${money(j.totals ? j.totals.credit : 0)}</td>
             </tr></tfoot>
           </table></div>
-        </div>`;
+        </details>`;
       })
       .join('');
     const pager = window.NSAPager
@@ -507,6 +517,11 @@
       };
       journalQuery = { from: val('gl-f-from'), to: val('gl-f-to'), acc: val('gl-f-acc'), q: val('gl-f-q') };
       journalPage = 1;
+      refresh();
+      return true;
+    });
+    window.ERP.registerAction('glJournalExpand', function () {
+      journalsOpen = !journalsOpen;
       refresh();
       return true;
     });

@@ -2521,6 +2521,15 @@ document.addEventListener('click', async e => {
     case 'closeModal':
       closeModal();
       break;
+    // Ringkasan Keuangan aging tables: show or fold the rows past the first 10.
+    case 'agingAll': {
+      const card = btn.closest('.aging-card');
+      if (card) {
+        const all = card.classList.toggle('is-all');
+        btn.textContent = all ? 'Tampilkan 10 teratas' : `Tampilkan semua (${btn.dataset.n})`;
+      }
+      break;
+    }
 
     // ── Navigation ────────────────────────────────────────────────────────────
     case 'navSales':
@@ -3478,14 +3487,16 @@ function _agingSection(side) {
   const sorted = s.items
     .slice()
     .sort((a, b) => b.daysOverdue - a.daysOverdue || String(a.dueDate).localeCompare(String(b.dueDate)));
+  // The most overdue first; the rest fold behind "Tampilkan semua".
+  const SHOWN = 10;
   const rowsHtml = sorted
-    .map(it => {
+    .map((it, i) => {
       // Unbilled pickup trips are listed as their surat jalan (docType 'DO').
       const open =
         it.docType === 'SI' || it.docType === 'PI'
           ? `data-action="invView" data-type="${it.docType}"`
           : `data-action="${it.docType === 'SO' ? 'viewSO' : it.docType === 'DO' ? 'viewDO' : 'viewPO'}"`;
-      return `<tr class="row-link" ${open} data-id="${escapeHtml(it.id)}">
+      return `<tr class="row-link${i >= SHOWN ? ' aging-extra' : ''}" ${open} data-id="${escapeHtml(it.id)}">
         <td class="doc-no">${escapeHtml(docNum(it.number, it.id))}</td>
         <td class="t-strong">${escapeHtml(it.party || '—')}</td>
         <td class="t-muted t-nowrap">${escapeHtml(_tgl(it.date))}</td>
@@ -3495,7 +3506,11 @@ function _agingSection(side) {
       </tr>`;
     })
     .join('');
-  return `<div class="card">
+  const more =
+    sorted.length > SHOWN
+      ? `<button type="button" class="btn-ghost btn-sm aging-all" data-action="agingAll" data-n="${sorted.length}">Tampilkan semua (${sorted.length})</button>`
+      : '';
+  return `<div class="card aging-card">
     <div class="card-head">
       <div>
         <div class="card-title">${isSales ? 'Piutang pelanggan' : 'Hutang ke supplier'}</div>
@@ -3511,7 +3526,7 @@ function _agingSection(side) {
         ? `<div class="table-wrap"><table class="data-table">
             <thead><tr><th>Dokumen</th><th>${isSales ? 'Pelanggan' : 'Supplier'}</th><th>Tanggal</th><th>Jatuh tempo</th><th class="t-num">Sisa</th><th>Terlambat</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
-          </table></div>`
+          </table></div>${more}`
         : `<div class="empty-inline">Tidak ada ${isSales ? 'piutang' : 'hutang'} yang belum lunas.</div>`
     }
   </div>`;

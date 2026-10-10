@@ -1328,6 +1328,23 @@
   .jv-date {
     white-space: nowrap;
   }
+  /* Folded journal line: number and source on the first row, date and total
+     under it. */
+  .gl-jv-head {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .gl-jv-head > div:first-child {
+    flex: 1 1 100%;
+  }
+  .gl-jv-meta {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    padding-left: 18px;
+  }
+  .gl-jv-meta .t-num {
+    min-width: 0;
+  }
 }
 
 /* ── LIST CARDS ON PHONES ────────────────────────────────────────────────────── */

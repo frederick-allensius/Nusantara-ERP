@@ -4006,20 +4006,54 @@ tr.row-link:hover .row-chev {
 /* Buku Besar → Jurnal: one block per journal, separated by hairlines */
 .gl-jv {
   margin-bottom: 0;
-  padding-bottom: 12px;
   overflow: hidden;
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
+}
+.gl-jv[open] {
+  padding-bottom: 12px;
 }
 .gl-jv-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 0 6px;
+  padding: 12px 0;
   background: transparent;
   font-size: var(--fs-xs);
+  cursor: pointer;
+  list-style: none;
+}
+.gl-jv-head::-webkit-details-marker {
+  display: none;
+}
+/* A small chevron before the number: right when folded, down when open. */
+.gl-jv-head > div:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 10px 2px 2px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.gl-jv[open] > .gl-jv-head > div:first-child::before {
+  transform: rotate(45deg);
+}
+.gl-jv[open] > .gl-jv-head {
+  padding-bottom: 6px;
+}
+.gl-jv-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.gl-jv-meta .t-num {
+  min-width: 110px;
+  text-align: right;
 }
 .jv-lines td {
   padding: 4px 10px;
@@ -5452,6 +5486,13 @@ html[data-theme] {
 .aging-count {
   font-size: .75rem;
   color: var(--muted);
+}
+/* Aging tables show the 10 most overdue until "Tampilkan semua". */
+.aging-card:not(.is-all) .aging-extra {
+  display: none;
+}
+.aging-all {
+  margin-top: 12px;
 }
 .aging-value {
   margin: 2px 0 1px;
