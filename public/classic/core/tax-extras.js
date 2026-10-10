@@ -918,7 +918,7 @@
         '<table class="data-table" style="width:100%"><tbody>' +
         (itemRows || '<tr><td class="td-empty">Belum ada barang.</td></tr>') +
         '</tbody></table>',
-      '<button class="btn" id="saveEfakturCfg">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveEfakturCfg">Simpan</button>',
       true
     );
     setTimeout(function () {
@@ -990,7 +990,7 @@
         esc(defEmail) +
         '" type="email" placeholder="email@domain.com"></div>' +
         '<div class="form-group"><label class="form-label">Catatan (opsional)</label><input class="form-input" id="tax-note" placeholder="Terlampir faktur pajak ..."></div>',
-      '<button class="btn" id="doSendTaxEmail">Kirim</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="doSendTaxEmail">Kirim</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('doSendTaxEmail');
@@ -1079,7 +1079,7 @@
             '<input class="form-input" id="efno-input" value="' +
             esc(doc.efakturNo || '') +
             '" placeholder="Nomor faktur pajak" maxlength="30"></div>',
-          '<button class="btn" id="saveEFNo">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+          '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveEFNo">Simpan</button>'
         );
         setTimeout(function () {
           var sb = document.getElementById('saveEFNo');

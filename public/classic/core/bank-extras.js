@@ -625,7 +625,7 @@
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group"><label class="form-label">Penerima / Payee</label><input class="form-input" id="op-payee" placeholder="Nama vendor, pihak penerima...">' +
-        '<div class="form-hint">Reimbursement: isi nama orang yang diganti uangnya.</div></div>' +
+        '<div class="form-hint">Reimbursement: nama yang diganti uangnya</div></div>' +
         '<div class="form-group"><label class="form-label">Kategori</label><select class="form-select" id="op-cat">' +
         catOpts +
         '</select></div>' +
@@ -638,10 +638,10 @@
         '</div>' +
         '<div class="form-group"><label class="form-label">Akun Beban</label><select class="form-select" id="op-account">' +
         accountOptionsHTML('expense', defaultAccountFor('expense', PAY_CATS[0])) +
-        '</select><div class="form-hint">Jurnal: akun ini di debit, kas/bank di kredit.</div></div>' +
+        '</select></div>' +
         '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="op-ref" placeholder="No. kwitansi, bukti transfer (opsional)"></div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="op-notes" placeholder="Uraian pengeluaran"></div>',
-      '<button class="btn" id="saveOP">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveOP">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveOP');
@@ -775,9 +775,9 @@
         '</div>' +
         '<div class="form-group"><label class="form-label">Akun Pendapatan</label><select class="form-select" id="od-account">' +
         accountOptionsHTML('income', defaultAccountFor('income', DEP_CATS[0])) +
-        '</select><div class="form-hint">Jurnal: kas/bank di debit, akun ini di kredit.</div></div>' +
+        '</select></div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="od-notes" placeholder="Uraian penerimaan"></div>',
-      '<button class="btn" id="saveOD">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveOD">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveOD');
@@ -904,7 +904,7 @@
         '<div class="form-group"><label class="form-label">Biaya Transfer (Rp)</label><input class="form-input" id="bt-fee" type="number" min="0" value="0"></div>' +
         '</div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="bt-notes" placeholder="Opsional"></div>',
-      '<button class="btn" id="saveBT">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveBT">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveBT');
@@ -1128,7 +1128,7 @@
         _bsLineHTML() +
         '</div>' +
         '<button type="button" class="btn-ghost" data-action="addBSLine" style="font-size:.75rem;margin-top:6px">+ Tambah Baris</button>',
-      '<button class="btn" id="saveBS">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveBS">Simpan</button>',
       true
     );
     setTimeout(function () {
@@ -1707,7 +1707,7 @@
         esc(line ? line.description : '') +
         '"></div>' +
         '<div class="form-hint" id="bc-hint"></div>',
-      '<button class="btn" id="saveBC">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveBC">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveBC');

@@ -133,7 +133,7 @@
         '<input class="form-input" id="cur-rate" type="number" min="0" step="0.01" value="' +
         (existing.rate || '') +
         '"></div>',
-      '<button class="btn" id="saveCurrency">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveCurrency">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveCurrency');
@@ -225,7 +225,7 @@
         '<input class="form-input" id="pt-days" type="number" min="0" value="' +
         (existing.days != null ? existing.days : '') +
         '"></div>',
-      '<button class="btn" id="savePT">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="savePT">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('savePT');
@@ -326,7 +326,7 @@
         '<input class="form-input" id="sh-notes" value="' +
         esc(existing.notes || '') +
         '" placeholder="FOB, DDP, dll."></div>',
-      '<button class="btn" id="saveShip">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveShip">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveShip');
@@ -459,7 +459,7 @@
         '<input class="form-input" id="hol-date" type="date"></div>' +
         '<div class="form-group"><label class="form-label">Nama Hari Libur</label>' +
         '<input class="form-input" id="hol-name" placeholder="Idul Fitri, Natal, Hari Kemerdekaan..."></div>',
-      '<button class="btn" id="saveHoliday">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveHoliday">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveHoliday');
@@ -612,7 +612,7 @@
       'Tambah Sales Category',
       '<div class="form-group"><label class="form-label">Nama Kategori</label>' +
         '<input class="form-input" id="sc-name" placeholder="Retail, Proyek, Export..."></div>',
-      '<button class="btn" id="saveSaleCat">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveSaleCat">Simpan</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveSaleCat');

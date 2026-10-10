@@ -495,7 +495,7 @@
         '<input class="form-input" id="ct-notes" value="' +
         esc(existing.notes || '') +
         '" placeholder="Referral dari, interest, dll."></div>',
-      '<button class="btn" id="saveContact">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveContact">Simpan</button>'
     );
 
     setTimeout(function () {
@@ -613,7 +613,7 @@
       'Tambah Kategori Pelanggan',
       '<div class="form-group"><label class="form-label">Nama Kategori</label>' +
         '<input class="form-input" id="ccat-name" placeholder="Distributor, Kontraktor, Retail..."></div>',
-      '<button class="btn" id="saveCustCat">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveCustCat">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveCustCat');
@@ -717,7 +717,7 @@
       'Tambah Kategori Supplier',
       '<div class="form-group"><label class="form-label">Nama Kategori</label>' +
         '<input class="form-input" id="scat-name" placeholder="Produsen, Distributor, Agen..."></div>',
-      '<button class="btn" id="saveSuppCat">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveSuppCat">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveSuppCat');

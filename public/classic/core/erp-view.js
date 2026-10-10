@@ -3488,8 +3488,8 @@ function _agingSection(side) {
       return `<tr class="row-link" ${open} data-id="${escapeHtml(it.id)}">
         <td class="doc-no">${escapeHtml(docNum(it.number, it.id))}</td>
         <td class="t-strong">${escapeHtml(it.party || '—')}</td>
-        <td class="t-muted">${escapeHtml(it.date)}</td>
-        <td class="${it.overdue ? 't-danger' : 't-muted'}">${escapeHtml(it.dueDate || (it.unbilled ? 'Belum ditagih' : '—'))}</td>
+        <td class="t-muted t-nowrap">${escapeHtml(_tgl(it.date))}</td>
+        <td class="${it.overdue ? 't-danger' : 't-muted'} t-nowrap">${escapeHtml(it.dueDate ? _tgl(it.dueDate) : it.unbilled ? 'Belum ditagih' : '—')}</td>
         <td class="t-num">${idr(it.outstanding)}</td>
         <td>${it.overdue ? `<span class="chip chip-danger">${it.daysOverdue} hari</span>` : '<span class="t-muted">—</span>'}</td>
       </tr>`;

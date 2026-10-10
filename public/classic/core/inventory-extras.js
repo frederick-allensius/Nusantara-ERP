@@ -106,7 +106,7 @@
       'Tambah Satuan',
       '<div class="form-group"><label class="form-label">Nama Satuan</label>' +
         '<input class="form-input" id="unit-name" placeholder="Ton, Pcs, m², Liter, Set..."></div>',
-      '<button class="btn" id="saveUnit">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveUnit">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveUnit');
@@ -193,7 +193,7 @@
       'Tambah Kategori',
       '<div class="form-group"><label class="form-label">Nama Kategori</label>' +
         '<input class="form-input" id="icat-name" placeholder="Contoh: Bahan Baku"></div>',
-      '<button class="btn" id="saveItemCat">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveItemCat">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveItemCat');
@@ -272,7 +272,7 @@
       'Tambah Brand',
       '<div class="form-group"><label class="form-label">Nama Brand / Merek</label>' +
         '<input class="form-input" id="brand-name" placeholder="Quarry, Stone Master, dll."></div>',
-      '<button class="btn" id="saveItemBrand">Tambah</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveItemBrand">Tambah</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveItemBrand');
@@ -531,7 +531,7 @@
         '</div></div></div>' +
         '<div class="form-group"><label class="form-label">Catatan</label>' +
         '<input class="form-input" id="ir-notes" placeholder="Keperluan / keterangan (opsional)"></div>',
-      '<button class="btn" id="saveIR">Simpan</button><button class="btn-ghost" data-action="closeModal">Batal</button>',
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveIR">Simpan</button>',
       true
     );
     setTimeout(function () {
@@ -689,7 +689,7 @@
         '<input class="form-input" id="jc-end" type="date"></div></div>' +
         '<div class="form-group"><label class="form-label">Keterangan</label>' +
         '<input class="form-input" id="jc-notes" placeholder="Opsional"></div>',
-      '<button class="btn" id="saveJC">Buat</button><button class="btn-ghost" data-action="closeModal">Batal</button>'
+      '<button class="btn-ghost" data-action="closeModal">Batal</button><button class="btn" id="saveJC">Buat</button>'
     );
     setTimeout(function () {
       var btn = document.getElementById('saveJC');
