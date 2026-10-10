@@ -436,6 +436,10 @@
       setTimeout(b.afterRender, 0);
       return b.html();
     }
+    var ib = window._recapInbox;
+    if (ib && typeof ib.isActive === 'function' && ib.isActive()) {
+      return ib.html();
+    }
     var p = PAGES[S.page] || PAGES.orders;
     return p.render();
   }
@@ -443,6 +447,8 @@
   function show(page) {
     var b = window._pickupBilling;
     if (b && typeof b.leave === 'function') b.leave();
+    var ib = window._recapInbox;
+    if (ib && typeof ib.leave === 'function') ib.leave();
     S.page = PAGES[page] ? page : 'orders';
     if (typeof window.invalidateView === 'function') window.invalidateView('pickups');
     if (typeof window.navigate === 'function') window.navigate('pickups');
@@ -1136,7 +1142,7 @@
       }
       if (d.status !== 'Cancelled')
         acts.push(button('Cetak SJ', 'pvPrintSlot', d.id, 'btn-ghost btn-sm'));
-      if (d.ticketPhoto) acts.push(button('Foto tiket', 'pvPhoto', d.id, 'btn-ghost btn-sm'));
+      if (d.ticketPhoto) acts.push(button('Foto DO', 'pvPhoto', d.id, 'btn-ghost btn-sm'));
       if (trip && d.status !== 'Cancelled')
         acts.push(button('Koreksi berat', 'editPickupWeight', d.id, 'btn-ghost btn-sm'));
       var flags = slotFlags(d);
@@ -1231,15 +1237,15 @@
     var d = find('deliveryOrders', doId);
     if (!d || !d.ticketPhoto) return;
     openDialog(
-      'Foto tiket · ' + (d.sjNo || d.number),
+      'Foto DO · ' + (d.sjNo || d.number),
       '<img class="pv-photo-full" src="' +
         esc(d.ticketPhoto) +
-        '" alt="Foto tiket timbangan ' +
+        '" alt="Foto DO ' +
         esc(d.sjNo || '') +
         '">' +
         '<div class="form-hint">' +
         esc(
-          [d.date ? fmtDate(d.date) : '', d.vehicle, d.ticketNo ? 'Tiket ' + d.ticketNo : '']
+          [d.date ? fmtDate(d.date) : '', d.vehicle, d.ticketNo ? 'DO ' + d.ticketNo : '']
             .filter(Boolean)
             .join(' · ')
         ) +
@@ -1591,12 +1597,12 @@
         attrs: ' autocomplete="off"',
         hint: 'Terisi dari alamat pelanggan. Ubah hanya bila truk dikirim ke alamat lain — surat jalan akan ditandai "Tujuan diubah".',
       }) +
-      field('pv-rec-ticket', 'No. tiket timbangan', S.rec.ticketNo, {
+      field('pv-rec-ticket', 'No. DO / tiket timbang', S.rec.ticketNo, {
         attrs: ' autocomplete="off"',
       });
 
     form +=
-      '<div class="form-group"><span class="form-label">Foto tiket timbangan</span>' +
+      '<div class="form-group"><span class="form-label">Foto DO / tiket timbang</span>' +
       '<div class="pv-file"><label class="btn-ghost" for="pv-rec-photo">' +
       (S.rec.photo ? 'Ganti foto' : 'Ambil / pilih foto') +
       '</label><input type="file" id="pv-rec-photo" accept="image/*" capture="environment" hidden>' +
@@ -1605,11 +1611,11 @@
       (S.rec.photo
         ? '<div class="pv-photo-prev"><img src="' +
           esc(S.rec.photo) +
-          '" alt="Foto tiket timbangan"></div><div class="form-hint">' +
+          '" alt="Foto DO"></div><div class="form-hint">' +
           esc('Ukuran ' + S.rec.photoKB + ' KB') +
           '</div>' +
           (S.rec.photoKB * 1024 > PHOTO_LIMIT
-            ? '<div class="notice notice-warning"><div>Foto masih lebih dari 300 KB. Bila bisa, ambil ulang lebih dekat ke tiket.</div></div>'
+            ? '<div class="notice notice-warning"><div>Foto masih lebih dari 300 KB. Bila bisa, ambil ulang lebih dekat ke DO.</div></div>'
             : '')
         : '<div class="form-hint">Opsional, sebagai bukti. Foto diperkecil otomatis sebelum disimpan.</div>') +
       '</div>';
@@ -1659,9 +1665,9 @@
   function netHint(c) {
     if (c.fromGross) {
       if (c.tare >= c.gross) return 'Tara harus lebih kecil dari bruto.';
-      return 'Netto = bruto − tara, dihitung otomatis. Kosongkan bruto bila tiket hanya mencantumkan netto.';
+      return 'Netto = bruto − tara, dihitung otomatis. Kosongkan bruto bila DO hanya mencantumkan netto.';
     }
-    return 'Isi bruto dan tara dari tiket timbangan, atau isi netto saja bila hanya itu yang tertera.';
+    return 'Isi bruto dan tara dari DO / tiket timbang, atau isi netto saja bila hanya itu yang tertera.';
   }
   function updateNet() {
     var netEl = document.getElementById('pv-rec-net');
@@ -2305,7 +2311,7 @@
                 '</div>' +
                 '<div class="pv-actions pv-actions-start">' +
                 button('Tandai selesai', 'editPickupAlert', d.id, 'btn') +
-                (d.ticketPhoto ? button('Foto tiket', 'pvPhoto', d.id, 'btn-ghost') : '') +
+                (d.ticketPhoto ? button('Foto DO', 'pvPhoto', d.id, 'btn-ghost') : '') +
                 '</div></div>'
               );
             })
@@ -2342,7 +2348,7 @@
           '</td><td>' +
           status +
           '</td><td>' +
-          (e.d.ticketPhoto ? button('Foto tiket', 'pvPhoto', e.d.id, 'btn-ghost btn-sm') : '') +
+          (e.d.ticketPhoto ? button('Foto DO', 'pvPhoto', e.d.id, 'btn-ghost btn-sm') : '') +
           '</td></tr>'
         );
       }),
@@ -2430,7 +2436,7 @@
         '</div>' +
         '<div class="form-hint">Isi bruto dan tara (netto dihitung), atau netto saja.</div>' +
         '<div class="form-group"><label class="form-label" for="pv-fix-note">Alasan<span class="req">*</span></label>' +
-        '<input class="form-input" id="pv-fix-note" autocomplete="off" placeholder="Contoh: salah ketik bruto, tiket menunjukkan 47,25"></div>' +
+        '<input class="form-input" id="pv-fix-note" autocomplete="off" placeholder="Contoh: salah ketik bruto, DO menunjukkan 47,25"></div>' +
         (billed.length
           ? '<div class="notice notice-warning">Sudah ditagih (' +
             esc(billed.join(', ')) +

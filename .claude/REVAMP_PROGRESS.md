@@ -362,3 +362,29 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   combined Sisa tagihan, and asks before saving above it (invoice dialog already did). Standard
   payment path still REQUIRES USER CONFIRMATION. tests/payment-double-entry.test.ts; sw v1.1.19.
 - Remaining items all wait on owner decisions (see docs 08 T-06/T-44, docs 11, MEETING_KIT).
+
+## Session 2026-10-11 (night) — meeting re-check, Kotak Masuk Rekap simulation, owner questions
+
+- Meeting recording re-transcribed (Whisper small, GPU); notes + redacted transcript written OUTSIDE
+  the repo: ../meeting-14092026/NOTULEN-14092026.md and TRANSKRIP-14092026.txt (business part
+  0:22–1:29 only, personal names redacted). 42 requirements mapped to the app with status.
+- Corrections from the recording: DO photos + Excel come by EMAIL with a fixed subject format (not
+  WhatsApp — "WA aja" was about sending samples to us); the supplier's printed DO is the evidence;
+  "keuntungan hanya level selanjutnya". Doc 11 fixed; wording "foto tiket" → "foto DO" in the
+  pickup pages and docs.
+- Kotak Masuk Rekap (public/classic/core/recap-inbox.js, menu step after PO Pengambilan): simulated
+  supplier e-mail with a real .xlsx (read through Trading.recapRowsFromAoa) and canvas-drawn DO
+  photos with a simulated reading (boxes + confidence). Per SJ: photo vs Excel vs recorded →
+  Cocok / Perlu diperbarui / Rekap ≠ foto / Berat lama diubah (30→35 case, default keep) / Foto
+  kurang jelas (<80%) / Tanpa foto / Tidak ada di rekap / SJ tidak dikenal. "Catat" goes through
+  Trading.matchRecap/applyRecap (+ photo attached); draft reply to supplier (simulated send).
+  Inbox kept in localStorage only. Dashboard Perlu tindakan row + nav count. Docs 13 (simulation,
+  demo script, real architecture, decisions), 02, 03. tests/recap-inbox.test.ts.
+- Ringkasan KPI tiles follow module access (Kas & bank: gl; Piutang: sales; Hutang: purchases;
+  Laba kotor: reports+gl) — profit no longer shown to a user limited to Pengambilan/Penjualan.
+- Same-name customers/suppliers (one company, two sites): saving a second record under a used name
+  asks first; order-form datalists show the address; billing lists add the address to twin names.
+- docs/14-PERTANYAAN-UNTUK-PEMILIK.md: owner question list (A decisions, B email/CV, C materials,
+  D defaults to confirm, E users, F infra/commercial).
+- Text size: default stays Normal (owner-approved revamp choice); D10 asks the owner.
+- sw v1.1.20. Checks: 55 files / 614+ tests, tsc clean, build ok; lint errors are pre-existing (48).

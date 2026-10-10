@@ -91,6 +91,7 @@
       items: [
         { heading: 'Alur' },
         { label: 'PO Pengambilan', view: 'pickups', home: true, step: true },
+        { label: 'Kotak Masuk Rekap', view: 'pickups', step: true },
         { label: 'Catat Pengambilan', view: 'pickups', hidden: true, under: 'PO Pengambilan' },
         {
           label: 'Impor Rekap Timbangan',
@@ -1273,6 +1274,9 @@
       }
     },
     toggleCollapsed,
+    // Recount the waiting work beside the flow steps (after a change that does
+    // not go through saveDB, e.g. Kotak Masuk Rekap).
+    refreshCounts: _scheduleCounts,
   };
 
   if (typeof window.ERP !== 'undefined' && window.ERP.registerAction) {

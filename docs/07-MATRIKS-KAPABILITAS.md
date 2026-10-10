@@ -101,7 +101,7 @@
 | Kunci periode | Ya | Ya | ✅ | |
 | Recycle bin | 90 hari | Bervariasi | ✅ | |
 | Jurnal balik eksplisit | — (jurnal dihitung ulang dari status) | Umum | ⬜ | **REQUIRES USER CONFIRMATION** apakah akuntan membutuhkannya |
-| Lampiran dokumen (scan/foto) | Foto tiket timbangan per truk pengambilan | Umum tersedia | 🟡 | Dokumen lain belum bisa diberi lampiran |
+| Lampiran dokumen (scan/foto) | Foto DO supplier per truk pengambilan | Umum tersedia | 🟡 | Dokumen lain belum bisa diberi lampiran |
 
 ### A8. Integrasi, otomasi, skalabilitas, kemudahan pemakaian
 
@@ -129,7 +129,7 @@
 |---|---|---|---|---|
 | Pesanan beli dipasangkan dengan pesanan jual | PO supplier dibuka untuk satu PO pelanggan (barang yang sama) | Drop-ship / back-to-back order | ✅ | Satu barang per PO supplier |
 | Dokumen per muatan | Surat jalan per truk dibuat sekaligus (⌈jumlah ÷ kapasitas⌉), bernomor PO; ekspor Excel untuk timbangan; cetak | Pengiriman per muatan | ✅ | |
-| Timbangan | Bruto/tara/netto per truk, foto tiket, impor rekap timbangan Excel (kumulatif), riwayat & peringatan perubahan berat | Jarang tersedia bawaan | ✅ | Format rekap asli supplier **REQUIRES USER CONFIRMATION** |
+| Timbangan | Bruto/tara/netto per truk, foto DO, impor rekap timbangan Excel (kumulatif), riwayat & peringatan perubahan berat; simulasi rekap dan foto DO dari email (Kotak Masuk Rekap) | Jarang tersedia bawaan | ✅ | Format rekap asli supplier **REQUIRES USER CONFIRMATION** |
 | Kuota & batas waktu | Kuota tonase per PO, batas pengambilan (akhir bulan), penutupan otomatis, buka kembali | Bervariasi | ✅ | Perilaku PO pelanggan saat cut-off **REQUIRES USER CONFIRMATION** |
 | Penagihan per periode | Faktur pelanggan dan faktur supplier dari truk dalam satu periode; truk tidak bisa ditagih dua kali | Faktur gabungan | ✅ | |
 | Pencocokan tagihan supplier | Tonase & harga tagihan vs truk kita; harga beli per tanggal berlaku | Pencocokan faktur | ✅ | |

@@ -1504,7 +1504,7 @@ function deleteSO(id) {
 // Only showAddPO, editPO, and deletePO remain here.
 
 function showAddPO() {
-  const suppOpts = DB.suppliers.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
+  const suppOpts = (DB.suppliers || []).map(partyOption).join('');
   openModal(
     'Buat Purchase Order Baru',
     `
@@ -1608,7 +1608,7 @@ function editPO(id) {
     );
     return;
   }
-  const suppOpts = DB.suppliers.map(s => `<option value="${escapeHtml(s.name)}">`).join('');
+  const suppOpts = (DB.suppliers || []).map(partyOption).join('');
   openModal(
     `Ubah Purchase Order — ${escapeHtml(docNum(o.number, o.id))}`,
     `
@@ -2320,6 +2320,41 @@ function deleteDO(id) {
 // CUSTOMERS (Master Data)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// One company at two sites is two customers (or suppliers) with the same name.
+// Order and invoice forms pick the party by its name, so two records under one
+// name can be mixed up; ask before saving a second record under a name in use.
+function samePartyName(list, name, exceptId) {
+  const key = String(name || '')
+    .trim()
+    .toLowerCase();
+  return (
+    (list || []).find(
+      p =>
+        p &&
+        String(p.name || '')
+          .trim()
+          .toLowerCase() === key &&
+        String(p.id) !== String(exceptId)
+    ) || null
+  );
+}
+// Datalist option for a party: the name, with its address beside it so two
+// parties of the same name can be told apart when picking.
+function partyOption(p) {
+  return `<option value="${escapeHtml(p.name)}"${p.address ? ` label="${escapeHtml(p.address)}"` : ''}>`;
+}
+function confirmPartyName(kind, list, name, exceptId) {
+  const other = samePartyName(list, name, exceptId);
+  if (!other || typeof window.ask !== 'function') {
+    return Promise.resolve(true);
+  }
+  return window.ask(
+    `Nama "${name}" sudah dipakai ${kind} lain`,
+    `${other.address ? `Alamat ${kind} itu: ${other.address}. ` : ''}Pesanan, surat jalan, dan faktur memilih ${kind} dari namanya, jadi dua ${kind} bernama sama bisa tertukar. Sebaiknya beri keterangan lokasi pada nama, mis. "${name} (Cikarang)".`,
+    { ok: 'Tetap simpan' }
+  );
+}
+
 function showAddCustomer() {
   openModal(
     'Tambah Pelanggan Baru',
@@ -2356,7 +2391,7 @@ function showAddCustomer() {
    <button class="btn" id="saveCustomer">Simpan</button>`
   );
   setTimeout(() => {
-    document.getElementById('saveCustomer')?.addEventListener('click', () => {
+    document.getElementById('saveCustomer')?.addEventListener('click', async () => {
       const name = sanitizeInput(document.getElementById('cust-name').value);
       const phone = sanitizeInput(document.getElementById('cust-phone').value);
       const address = sanitizeInput(document.getElementById('cust-address').value);
@@ -2364,6 +2399,9 @@ function showAddCustomer() {
       const npwp = sanitizeInput(document.getElementById('cust-npwp').value);
       if (!name) {
         showToast('Nama pelanggan harus diisi', 'warning');
+        return;
+      }
+      if (!(await confirmPartyName('pelanggan', DB.customers, name, null))) {
         return;
       }
       // FIX: Prevent ID collision after deletion
@@ -2453,10 +2491,13 @@ function editCustomer(id) {
    <button class="btn" id="updateCustomer">Simpan</button>`
   );
   setTimeout(() => {
-    document.getElementById('updateCustomer')?.addEventListener('click', () => {
+    document.getElementById('updateCustomer')?.addEventListener('click', async () => {
       const name = sanitizeInput(document.getElementById('cust-name').value);
       if (!name) {
         showToast('Nama harus diisi', 'warning');
+        return;
+      }
+      if (!(await confirmPartyName('pelanggan', DB.customers, name, c.id))) {
         return;
       }
       // FIX: Cascade name change to related Sales Orders
@@ -2574,7 +2615,7 @@ function showAddSupplier() {
    <button class="btn" id="saveSupplier">Simpan</button>`
   );
   setTimeout(() => {
-    document.getElementById('saveSupplier')?.addEventListener('click', () => {
+    document.getElementById('saveSupplier')?.addEventListener('click', async () => {
       const name = sanitizeInput(document.getElementById('supp-name').value);
       const contact = sanitizeInput(document.getElementById('supp-contact').value);
       const phone = sanitizeInput(document.getElementById('supp-phone').value);
@@ -2582,6 +2623,9 @@ function showAddSupplier() {
       const npwp = sanitizeInput(document.getElementById('supp-npwp').value);
       if (!name) {
         showToast('Nama supplier harus diisi', 'warning');
+        return;
+      }
+      if (!(await confirmPartyName('supplier', DB.suppliers, name, null))) {
         return;
       }
       // FIX: Prevent ID collision after deletion
@@ -2811,10 +2855,13 @@ function editSupplier(id) {
    <button class="btn" id="updateSupplier">Simpan</button>`
   );
   setTimeout(() => {
-    document.getElementById('updateSupplier')?.addEventListener('click', () => {
+    document.getElementById('updateSupplier')?.addEventListener('click', async () => {
       const name = sanitizeInput(document.getElementById('supp-name').value);
       if (!name) {
         showToast('Nama harus diisi', 'warning');
+        return;
+      }
+      if (!(await confirmPartyName('supplier', DB.suppliers, name, s.id))) {
         return;
       }
       // FIX: Cascade name change to related Purchase Orders
@@ -5253,7 +5300,7 @@ function _doFormBody(o, opts) {
   // o = existing DO object for edit, null for add
   // opts.preselect = { soId, poId } for pre-selecting a reference
   const pre = (opts && opts.preselect) || {};
-  const custOpts = (DB.customers || []).map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+  const custOpts = (DB.customers || []).map(partyOption).join('');
   const soOpts = _soRefOptions(o ? o.soId : null, o ? o.id : null);
   const poOpts = _poRefOptions(o ? o.poId : null, o ? o.id : null);
   const cur = o || {};
@@ -6176,7 +6223,7 @@ function showBulkSuratJalan(doId) {
 // ════════════════════════════════════════════════════════════════════════════════
 
 function showAddSO() {
-  const custOpts = (DB.customers || []).map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+  const custOpts = (DB.customers || []).map(partyOption).join('');
   openModal(
     'Buat Sales Order Baru',
     `
@@ -6222,8 +6269,11 @@ function showAddSO() {
           custHint.innerHTML = '';
           return;
         }
-        const match = (DB.customers || []).find(c => c.name === name);
-        custHint.innerHTML = match
+        const matches = (DB.customers || []).filter(c => c.name === name);
+        const match = matches[0];
+        custHint.innerHTML = matches.length > 1
+          ? `<span style="color:var(--warning)">Ada ${matches.length} pelanggan bernama ini — pesanan akan memakai yang pertama. Beri keterangan lokasi pada nama di <strong>Pelanggan</strong> agar tidak tertukar</span>`
+          : match
           ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
           : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
       });
@@ -6315,7 +6365,7 @@ function editSO(id) {
     );
     return;
   }
-  const custOpts = (DB.customers || []).map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+  const custOpts = (DB.customers || []).map(partyOption).join('');
   openModal(
     `Ubah Sales Order — ${escapeHtml(docNum(o.number, o.id))}`,
     `
@@ -6362,8 +6412,11 @@ function editSO(id) {
           custHint.innerHTML = '';
           return;
         }
-        const match = (DB.customers || []).find(c => c.name === name);
-        custHint.innerHTML = match
+        const matches = (DB.customers || []).filter(c => c.name === name);
+        const match = matches[0];
+        custHint.innerHTML = matches.length > 1
+          ? `<span style="color:var(--warning)">Ada ${matches.length} pelanggan bernama ini — pesanan akan memakai yang pertama. Beri keterangan lokasi pada nama di <strong>Pelanggan</strong> agar tidak tertukar</span>`
+          : match
           ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
           : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
       });

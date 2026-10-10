@@ -154,6 +154,7 @@ Prinsip: urutan mengikuti pekerjaan harian, bahasa Indonesia, satu tempat untuk 
 | **Ringkasan** | Ringkasan | Dashboard |
 | **Entri Harian** | Entri Harian | *(baru)* |
 | **Pengambilan** | PO Pengambilan | *(baru)* |
+| | Kotak Masuk Rekap (simulasi) | *(baru)* |
 | | Perubahan Timbangan | *(baru)* |
 | | Rekap Pengambilan | *(baru)* |
 | | Tagih Pelanggan | *(baru)* |
@@ -243,7 +244,7 @@ Nama-nama ini tetap dikenali aplikasi (dari tombol, Entri Harian, notifikasi, da
 | Nama | Dibuka dari / sekarang ada di | Alasan |
 |---|---|---|
 | Catat Pengambilan | Tombol **Catat Pengambilan** di PO Pengambilan, baris surat jalan di detail PO, kartu di Entri Harian | Langkah input per truk, bukan halaman tersendiri |
-| Impor Rekap Timbangan | Tombol di PO Pengambilan dan Perubahan Timbangan, kartu di Entri Harian | Langkah dari PO Pengambilan |
+| Impor Rekap Timbangan | Tombol di PO Pengambilan dan Perubahan Timbangan, **Impor manual** di Kotak Masuk Rekap, kartu di Entri Harian | Langkah dari PO Pengambilan |
 | Transfer Antar Gudang | Gudang → tab **Transfer Barang** | Halaman yang sama |
 | Jurnal Umum | Jurnal → filter **Jurnal Umum**; tombol **Buat Jurnal Umum** | Halaman yang sama dengan filter |
 | Audit Jurnal | Jurnal → filter Dari / Sampai / Akun / Cari | Daftar jurnal yang sama |
@@ -262,8 +263,9 @@ Nama-nama ini tetap dikenali aplikasi (dari tombol, Entri Harian, notifikasi, da
 |---|---|---|
 | Entri Harian | Kartu tugas harian: **Catat Pengambilan**, **Impor Rekap Timbangan**, **Tagih Pelanggan**, **Biaya Operasional** (membuka Pengeluaran Lain), dan pintasan **Buat PO**. Angka hari ini: pengambilan hari ini, perubahan timbangan, belum ditagih, biaya hari ini. Kartu yang modulnya tidak boleh dibuka pengguna tidak tampil | Pembelian |
 | PO Pengambilan | PO berjalan dan selesai (diambil vs kuota, surat jalan terpakai/siap, batas pengambilan, status); daftar **PO siap dibuka** (PO supplier Dikonfirmasi berisi satu barang) dengan tombol **Buka untuk pengambilan**; ekspor Excel untuk timbangan per supplier. Detail PO: surat jalan per truk, Catat Pengambilan, **Koreksi berat**, Ekspor Excel untuk timbangan, Cetak SJ, batalkan surat jalan yang belum dipakai, **Tutup PO** / **Buka kembali**. Setiap kali daftar dibuka, PO yang lewat batas pengambilan ditutup otomatis | Pembelian |
-| Catat Pengambilan (tombol di PO Pengambilan) | Form satu truk, nyaman dipakai di HP: PO, surat jalan, tanggal ambil, No. Polisi, sopir, bruto/tara/netto, tujuan, No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan | Pembelian |
-| Impor Rekap Timbangan (tombol di PO Pengambilan) | Unggah rekap Excel/CSV dari timbangan supplier; hasil dikelompokkan menjadi baru dicatat, sama, berubah, tidak cocok/bermasalah; tombol **Terapkan** | Pembelian |
+| Catat Pengambilan (tombol di PO Pengambilan) | Form satu truk, nyaman dipakai di HP: PO, surat jalan, tanggal ambil, No. Polisi, sopir, bruto/tara/netto, tujuan, No. DO / tiket timbang, foto DO (opsional, diperkecil otomatis), catatan | Pembelian |
+| Kotak Masuk Rekap | **Simulasi** email rekap dari supplier: rekap Excel dan foto DO dibaca, dicocokkan per surat jalan dengan yang tercatat; yang cocok dicatat sekali klik, yang beda menunggu keputusan; balasan ke supplier. Kotak masuk disimpan di browser saja — lihat [13](13-SIMULASI-EMAIL-DAN-CV.md) | Pembelian |
+| Impor Rekap Timbangan (tombol di PO Pengambilan, **Impor manual** di Kotak Masuk Rekap) | Unggah rekap Excel/CSV dari timbangan supplier; hasil dikelompokkan menjadi baru dicatat, sama, berubah, tidak cocok/bermasalah; tombol **Terapkan** | Pembelian |
 | Perubahan Timbangan | Berat yang berubah setelah ditagih (ditindaklanjuti dengan **Tandai selesai** + catatan) dan riwayat semua perubahan berat | Pembelian |
 | Rekap Pengambilan | Semua truk yang sudah mengambil, disaring per periode, pelanggan, supplier, PO; total netto, belum ditagih ke pelanggan, belum ada faktur supplier; ekspor Excel | Pembelian |
 | Tagih Pelanggan | Pelanggan dengan pengambilan belum ditagih → pilih periode dan truk → satu Faktur Penjualan; cetak dan ekspor rekap Excel untuk pelanggan | Penjualan |

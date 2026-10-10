@@ -380,13 +380,13 @@ Barang dibeli dari supplier dan diambil truk pelanggan langsung di lokasi suppli
 | # | Pertanyaan | Jawaban |
 |---|---|---|
 | 1 | Mulai dari mana | **Pengambilan → Catat Pengambilan**, tombol di PO Pengambilan / detail PO, atau kartu di Entri Harian. Formnya nyaman dipakai di HP |
-| 2 | Data diisi | PO pengambilan, surat jalan (yang masih Siap terpilih otomatis), tanggal ambil, No. Polisi, sopir, **bruto** dan **tara** (netto dihitung) atau netto langsung, tujuan (terisi alamat pelanggan), No. tiket timbangan, foto tiket (opsional, diperkecil otomatis), catatan |
+| 2 | Data diisi | PO pengambilan, surat jalan (yang masih Siap terpilih otomatis), tanggal ambil, No. Polisi, sopir, **bruto** dan **tara** (netto dihitung) atau netto langsung, tujuan (terisi alamat pelanggan), No. DO / tiket timbang, foto DO (opsional, diperkecil otomatis), catatan |
 | 3 | Wajib | PO dan surat jalan, tanggal, No. Polisi, netto > 0. Tara harus lebih kecil dari bruto; tanggal tidak sebelum tanggal PO dan tidak setelah batas pengambilan |
 | 4 | Saat disimpan | Surat jalan menjadi **Diambil**, netto menjadi qty. Harga jual = harga di PO pelanggan. Harga beli = **Harga Supplier** yang berlaku pada tanggal ambil (bila tidak ada, harga PO); bila berbeda dari harga PO muncul peringatan. Tujuan yang diubah dari alamat pelanggan ditandai "Tujuan diubah". Netto jauh di atas kapasitas truk (lebih dari 125%) memunculkan peringatan. Bila total diambil melebihi kuota PO, penyimpanan ditolak kecuali dikonfirmasi **Tetap simpan**. Bila kuota terpenuhi, PO ditutup otomatis |
 | 5 | Stok | **Tidak berubah** — barang langsung dari supplier ke pelanggan |
 | 6–7 | Jurnal | Satu jurnal per truk: pembelian (Persediaan + PPN Masukan vs Hutang), HPP vs Persediaan pada harga beli, dan penjualan (Piutang vs Penjualan + PPN Keluaran). Setelah ada faktur, bagian penjualan/pembelian pindah ke faktur — [04 §4.5](04-AKUNTANSI.md#45-pengambilan-trading) |
 | 8 | Status | Siap → **Diambil** → **Ditagih** (sudah ada Faktur Penjualan aktif) · **Batal** (surat jalan tidak dipakai) |
-| 9 | Bisa diubah | Berat diubah lewat **Impor Rekap Timbangan** (riwayat berat disimpan, §V3). Harga beli bisa dikoreksi di Tagihan Supplier selama truk belum masuk faktur supplier (riwayat harga disimpan). Menu Surat Jalan menolak ubah/hapus surat jalan pengambilan |
+| 9 | Bisa diubah | Berat diubah lewat **Impor Rekap Timbangan** / **Kotak Masuk Rekap** atau **Koreksi berat** di detail PO dengan alasan wajib (riwayat berat disimpan, §V3). Harga beli bisa dikoreksi di Tagihan Supplier selama truk belum masuk faktur supplier (riwayat harga disimpan). Menu Surat Jalan menolak ubah/hapus surat jalan pengambilan |
 | 10–12 | Batal | Pengambilan yang sudah dicatat tidak bisa dibatalkan atau dihapus dari aplikasi; yang bisa dibatalkan hanya surat jalan yang belum dipakai |
 | 13 | Menemukan lagi | Detail PO pengambilan, Rekap Pengambilan, Laporan per Periode (jenis Pengambilan), umur piutang/hutang dan Kartu Piutang/Hutang (selama belum ditagih), faktur yang menagihnya |
 
@@ -400,6 +400,7 @@ Barang dibeli dari supplier dan diambil truk pelanggan langsung di lokasi suppli
 | Hasil sebelum diterapkan | **Baru dicatat** (surat jalan Siap yang ada beratnya di rekap), **Sama** (dilewati), **Berubah** (berat berbeda dari yang tercatat; ditandai bila sudah ditagih), **Tidak cocok / bermasalah** (No SJ tidak dikenal, SJ muncul dua kali, SJ batal, PO sudah ditutup, lewat batas, netto kosong) |
 | Terapkan | Baris baru dicatat dengan aturan yang sama seperti Catat Pengambilan (centang "Tetap catat walau melebihi kuota PO" bila perlu). Baris berubah memperbarui berat dan menyimpan riwayatnya |
 | Rekap kumulatif | Rekap boleh berisi semua pengambilan sejak awal: baris yang sama dilewati, berat yang berubah ditandai |
+| Dari email (simulasi) | **Pengambilan → Kotak Masuk Rekap**: rekap Excel dan foto DO dari email supplier dibaca bersama; per surat jalan, angka rekap dibandingkan dengan foto DO dan yang tercatat. Yang cocok dicatat sekali klik lewat jalur yang sama dengan impor ini; yang beda (rekap ≠ foto, berat lama diubah, foto kurang jelas, tanpa foto) menunggu keputusan. Lihat [13](13-SIMULASI-EMAIL-DAN-CV.md) |
 
 **Perubahan Timbangan:** bila berat berubah pada truk yang **sudah masuk faktur** (pelanggan atau supplier), faktur **tidak diubah otomatis**. Muncul peringatan di Pengambilan → Perubahan Timbangan, PO Pengambilan, Ringkasan, dan notifikasi sampai ditandai **selesai** dengan catatan tindak lanjut (mis. "selisih ditagihkan susulan di faktur berikutnya"). Faktur berikutnya memakai berat baru. Halaman yang sama memuat riwayat semua perubahan berat (waktu, pengguna, sumber, berat lama → baru).
 

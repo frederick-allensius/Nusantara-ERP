@@ -187,11 +187,21 @@
   function hasAlert(d) {
     return !!(d && d.weightAlert && !d.weightAlert.resolved);
   }
+  // Two parties of the same name (one company, two sites) get their address
+  // beside the name so their trips and invoices are told apart.
   function partyName(c, id, fallback) {
-    var p = (db()[c.parties] || []).find(function (x) {
+    var list = db()[c.parties] || [];
+    var p = list.find(function (x) {
       return same(x.id, id);
     });
-    return (p && p.name) || fallback || String(id == null ? '' : id);
+    if (!p || !p.name) return fallback || String(id == null ? '' : id);
+    var key = String(p.name).trim().toLowerCase();
+    var twin =
+      p.address &&
+      list.some(function (x) {
+        return x !== p && String(x.name || '').trim().toLowerCase() === key;
+      });
+    return p.name + (twin ? ' (' + p.address + ')' : '');
   }
   function itemOf(d) {
     return (d && d.lines && d.lines[0]) || {};
@@ -1140,6 +1150,8 @@
   }
 
   function open(page) {
+    var ib = window._recapInbox;
+    if (ib && typeof ib.leave === 'function') ib.leave();
     active = true;
     S.page = page;
     // Opening from the menu starts at the overview.

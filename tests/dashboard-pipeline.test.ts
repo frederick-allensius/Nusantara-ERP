@@ -639,6 +639,25 @@ describe('Default layout', () => {
     }
   });
 
+  it('shows each KPI figure only to users who may open what it sums up', () => {
+    seedPickups();
+    // A user limited to Pengambilan and Penjualan: no bank balance, no profit.
+    w().RBAC = { canView: (m: string) => m === 'sales' || m === 'purchases' || m === 'dashboard' };
+    let html = render();
+    expect(html).toContain('data-n="2"');
+    expect(html).toContain('Piutang');
+    expect(html).toContain('Hutang');
+    expect(html).not.toContain('Kas &amp; bank');
+    expect(html).not.toContain('Laba kotor');
+    // Reports without the ledger still hides the profit tile.
+    w().RBAC = { canView: (m: string) => m !== 'gl' };
+    html = render();
+    expect(html).not.toContain('Laba kotor');
+    expect(html).toContain('data-n="2"');
+    w().RBAC = undefined;
+    expect(render()).toContain('data-n="4"');
+  });
+
   it('lists every block in Atur Tampilan, the optional ones unticked', () => {
     let body = '';
     w().openModal = (_title: string, b: string) => (body = b);

@@ -26,6 +26,8 @@ Semua dokumen ditulis dalam bahasa Indonesia dan menggambarkan **perilaku aplika
 | 10 | [Glosarium](10-GLOSARIUM.md) | Arti istilah dokumen, akuntansi, pajak, pengambilan, dan sistem |
 | 11 | [Kebutuhan yang Dikonfirmasi](11-KEBUTUHAN-MEETING-14-SEP-2026.md) | Kebutuhan pemilik usaha, penyelesaiannya di aplikasi, dan hal yang masih menunggu konfirmasi |
 | 12 | [Keamanan dan Infrastruktur](12-KEAMANAN-DAN-INFRASTRUKTUR.md) | Tempat menyimpan data, akses data, cadangan & arsip, perkiraan biaya server, spesifikasi perangkat |
+| 13 | [Kotak Masuk Rekap — Simulasi Email dan Baca Foto](13-SIMULASI-EMAIL-DAN-CV.md) | Simulasi rekap timbangan dan foto DO dari email: yang diperagakan, yang nyata, skrip demo, rancangan sistem nyata |
+| 14 | [Pertanyaan untuk Pemilik](14-PERTANYAAN-UNTUK-PEMILIK.md) | Keputusan dan bahan yang masih ditunggu dari pemilik, dengan pilihan bawaan aplikasi saat ini |
 
 ## Dokumen teknis
 

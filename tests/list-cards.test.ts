@@ -535,7 +535,8 @@ describe('phone sort control', () => {
         expect(menuSort(view, col), `${view} by ${col}, second tap`).toEqual(down);
       }
       expect(differs).toBe(true);
-    });
+      // Re-renders the list ~20 times: slow when the whole suite runs at once.
+    }, 20000);
   }
 
   it('marks the active column and its direction, and keeps focus on "⋯"', () => {

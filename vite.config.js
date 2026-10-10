@@ -95,6 +95,9 @@ const classicAll = [
   // weighbridge recap, customer and supplier billing from trips) over trading.js.
   'public/classic/core/pickup-view.js',
   'public/classic/core/pickup-billing.js',
+  // recap-inbox.js: Kotak Masuk Rekap — simulated e-mail recap + ticket photo
+  // check, renders into the pickups view and records through trading.js.
+  'public/classic/core/recap-inbox.js',
   'public/classic/core/menu-router.js',
   'public/classic/core/gl-sync.js',
   // trash.js between gl-sync and integrity: integrity wraps OUTERMOST, so a

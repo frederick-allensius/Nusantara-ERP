@@ -777,6 +777,21 @@ var _dashTrading = (function () {
       });
     }
     if (can('purchases')) {
+      var inbox =
+        window._recapInbox && typeof window._recapInbox.waiting === 'function'
+          ? window._recapInbox.waiting()
+          : 0;
+      rows.push({
+        label: 'Email rekap belum diperiksa',
+        hint: 'Rekap timbangan dan foto tiket dari supplier (simulasi)',
+        count: inbox,
+        open: 'Kotak Masuk Rekap',
+        rank: 1.5,
+        title: 'Periksa rekap dari email',
+        unit: 'email',
+        flow: 'pickups',
+        urgent: true,
+      });
       var diffs = S().supplierDiffs();
       rows.push({
         label: 'Perubahan timbangan belum ditindaklanjuti',
@@ -1904,13 +1919,22 @@ function renderDashboard() {
   var arSub = openSub(ar, 'Tidak ada piutang terbuka');
   var apSub = openSub(ap, 'Tidak ada hutang terbuka');
 
-  var tiles = [
+  // Each figure only for users who may open what it summarises (role and
+  // "Akses menu"): money in the bank and profit stay with the ledger/report
+  // users, not with a user limited to, say, Pengambilan and Penjualan.
+  var canSee = function (m) {
+    var R = window.RBAC;
+    return !R || typeof R.canView !== 'function' || R.canView(m);
+  };
+  var tileList = [
+    canSee('gl') &&
     tile({
       label: 'Kas & bank',
       value: money(cash.total),
       sub: cash.accounts.length ? cash.accounts.length + ' rekening' : 'Belum ada saldo kas atau bank',
       open: 'Riwayat Kas & Bank',
     }),
+    canSee('sales') &&
     tile({
       label: 'Piutang',
       value: money(ar.total),
@@ -1918,6 +1942,7 @@ function renderDashboard() {
       tone: arSub.tone,
       open: 'Faktur Penjualan',
     }),
+    canSee('purchases') &&
     tile({
       label: 'Hutang',
       value: money(ap.total),
@@ -1925,13 +1950,16 @@ function renderDashboard() {
       tone: apSub.tone,
       open: 'Faktur Pembelian',
     }),
+    canSee('reports') &&
+    canSee('gl') &&
     tile({
       label: 'Laba kotor ' + per.tile,
       value: money(revenue - cogs),
       sub: 'Penjualan ' + short(revenue),
       open: 'Laba Rugi',
     }),
-  ].join('');
+  ].filter(Boolean);
+  var tiles = tileList.join('');
 
   // Company data checklist
   var prep = '';
@@ -2206,9 +2234,9 @@ function renderDashboard() {
     _dashTrading.periodSwitch(per) +
     '<button type="button" class="btn-ghost btn-sm" data-action="dashLayout">Atur Tampilan</button></div></div>' +
     prep +
-    '<div class="dash-kpis">' +
-    tiles +
-    '</div>' +
+    (tileList.length
+      ? '<div class="dash-kpis" data-n="' + tileList.length + '">' + tiles + '</div>'
+      : '') +
     flow +
     (split.length ? '<div class="dash-row dash-row-split">' + split.join('') + '</div>' : '') +
     _dashTrading.extras(show) +

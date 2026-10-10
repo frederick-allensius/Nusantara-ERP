@@ -75,7 +75,7 @@ Aplikasi berjalan di browser; tidak perlu memasang program selain browser.
 | Layar | 1366×768 | **21–24 inci, 1920×1080**; ukuran teks aplikasi "Besar" |
 | Browser | Chrome atau Edge versi terbaru | Sama; aplikasi bisa dipasang sebagai aplikasi desktop (PWA) |
 | Internet (mode cloud) | 5 Mbps stabil | 10 Mbps atau lebih |
-| HP | Android 10+/iOS 15+ dengan browser terbaru | Untuk melihat data dan mengambil foto tiket timbangan; pekerjaan utama tetap di komputer |
+| HP | Android 10+/iOS 15+ dengan browser terbaru | Untuk melihat data dan mengambil foto DO; pekerjaan utama tetap di komputer |
 | Cadangan | Hard disk eksternal | Hard disk eksternal + penyimpanan cloud milik perusahaan |
 
 ## 6. Keputusan yang dibutuhkan

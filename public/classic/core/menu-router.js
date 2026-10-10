@@ -110,6 +110,7 @@
     'PO Pengambilan': ['_pickupView', 'openOrders'],
     'Catat Pengambilan': ['_pickupView', 'openRecord'],
     'Impor Rekap Timbangan': ['_pickupView', 'openRecapImport'],
+    'Kotak Masuk Rekap': ['_recapInbox', 'open'],
     'Perubahan Timbangan': ['_pickupView', 'openWeightChanges'],
     'Rekap Pengambilan': ['_pickupView', 'openTripRecap'],
     'Tagih Pelanggan': ['_pickupBilling', 'openCustomerBilling'],

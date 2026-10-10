@@ -91,7 +91,7 @@ Istilah yang muncul di aplikasi dan dokumentasi, dijelaskan dengan bahasa sehari
 | Trip / truk | Satu kali pengambilan oleh satu truk dengan satu surat jalan dan satu hasil timbangan |
 | Kapasitas truk | Muatan per truk yang dipakai menghitung jumlah surat jalan (bawaan 35 ton) |
 | Bruto / Tara / Netto | Berat truk bermuatan / berat truk kosong / berat barang (bruto − tara). Netto menjadi jumlah yang ditagih |
-| Tiket timbangan | Bukti hasil timbang dari supplier; nomornya dan fotonya bisa disimpan di pengambilan |
+| Tiket timbangan / DO supplier | Bukti hasil timbang dari supplier. Di meeting disebut **DO** (delivery order supplier, tercetak) dan dijadikan bukti utama bila angka berbeda; nomornya dan fotonya bisa disimpan di pengambilan |
 | Kuota PO | Jumlah di PO supplier; pengambilan yang melebihinya ditolak kecuali dikonfirmasi, dan PO ditutup saat kuota terpenuhi |
 | Cut-off / batas pengambilan | Tanggal terakhir PO boleh dipakai (bawaan akhir bulan). Setelah itu PO ditutup dan surat jalan sisa dibatalkan |
 | Selesai | Status PO supplier/PO pelanggan pengambilan yang sudah ditutup |
