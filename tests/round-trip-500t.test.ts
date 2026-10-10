@@ -208,7 +208,7 @@ describe('Contoh alur 500 ton', () => {
     const pi = T().createInvoice(
       'purchases',
       cmp.trips.map((d: any) => d.id),
-      { date: '2026-09-30', supplierRef: 'BAL/INV/2609-17' }
+      { date: '2026-09-30', supplierRef: 'BGP/INV/2609-17' }
     ).invoice;
     pi.supplierBill = { qty: 460, price: 125000, ourQty: 451.2, qtyDiff: 8.8, reason: 'Ditanyakan ke supplier' };
     expect(pi.amount).toBe(54666000 + 6013260); // 346,8 t × 120.000 + 104,4 t × 125.000

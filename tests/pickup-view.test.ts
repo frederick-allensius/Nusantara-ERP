@@ -374,7 +374,8 @@ describe('Impor Rekap Timbangan', () => {
     expect(slot(1)).toMatchObject({ date: TODAY, vehicle: 'B 1234 XY', driver: 'Budi' });
     expect(slot(2).weighing.net).toBe(30);
     expect(slot(3).status).toBe('Pending');
-    expect(slot(1).weighHistory[0].source).toBe(`Rekap rekap.xlsx ${TODAY}`);
+    // The file is named "rekap.xlsx": no "Rekap" prefix doubled in front of it.
+    expect(slot(1).weighHistory[0].source).toBe(`rekap.xlsx ${TODAY}`);
     expect(w().saveDB).toHaveBeenCalled();
     expect(view()).toContain('Rekap diterapkan');
     expect(view()).toContain('2 pengambilan baru dicatat');
@@ -395,7 +396,26 @@ describe('Impor Rekap Timbangan', () => {
 
     act('savePickupRecap');
     expect(slot(1).weightAlert).toMatchObject({ from: 30, to: 35, resolved: false });
+    expect(slot(1).weighHistory.slice(-1)[0].source).toBe(`rekap.csv ${TODAY}`);
     expect(view()).toContain('perlu ditindaklanjuti');
+  });
+
+  it('names the change source after the file, with "Rekap" only when the name lacks it', async () => {
+    openPO();
+    const aoa = [
+      ['No SJ', 'Tanggal', 'No Polisi', 'Netto'],
+      [slot(1).sjNo, dmy(TODAY), 'B 1', 30],
+    ];
+    PV().openRecapImport();
+    await PV().loadRecapFile(xlsxFile(aoa, 'timbangan minggu 1.xlsx'));
+    act('savePickupRecap');
+    expect(slot(1).weighHistory[0].source).toBe(`Rekap timbangan minggu 1.xlsx ${TODAY}`);
+
+    aoa[1][3] = 35;
+    PV().openRecapImport();
+    await PV().loadRecapFile(xlsxFile(aoa, 'Rekap timbangan minggu 2.xlsx'));
+    act('savePickupRecap');
+    expect(slot(1).weighHistory.slice(-1)[0].source).toBe(`Rekap timbangan minggu 2.xlsx ${TODAY}`);
   });
 
   it('lists per-row errors when a filled row cannot be recorded', async () => {

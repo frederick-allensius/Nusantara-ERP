@@ -2232,7 +2232,7 @@
     var over = document.getElementById('pv-recap-over');
     var out = T().applyRecap(rc.result, {
       // "Rekap <file> <date>", without doubling a file name that says Rekap already.
-      source: (/^rekap/i.test(rc.fileName) ? '' : 'Rekap ') + rc.fileName + ' ' + todayISO(),
+      source: (/^rekap\b/i.test(rc.fileName) ? '' : 'Rekap ') + rc.fileName + ' ' + todayISO(),
       allowOverQuota: !!(over && over.checked),
     });
     save();
