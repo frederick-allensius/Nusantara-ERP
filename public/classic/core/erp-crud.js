@@ -2386,9 +2386,10 @@ function confirmPartyName(kind, list, name, exceptId) {
   if (!other || typeof window.ask !== 'function') {
     return Promise.resolve(true);
   }
+  const site = String(other.address || '').split(',')[0].trim();
   return window.ask(
     `Nama "${name}" sudah dipakai ${kind} lain`,
-    `${other.address ? `Alamat ${kind} itu: ${other.address}. ` : ''}Saat membuat pesanan dan surat jalan, daftar pilihan membedakan keduanya dengan lokasi dari alamat, mis. "${name} · Cikarang". Isi alamat dengan lokasinya di depan agar mudah dipilih.`,
+    `${other.address ? `Alamat ${kind} itu: ${other.address}. ` : ''}Bila tetap disimpan, daftar pilihan di pesanan dan surat jalan membedakan keduanya dengan lokasi dari alamat (bagian sebelum koma pertama)${site ? `, mis. "${name} · ${site}"` : ''}. Isi alamat dengan lokasinya di depan agar mudah dipilih.`,
     { ok: 'Tetap simpan' }
   );
 }
