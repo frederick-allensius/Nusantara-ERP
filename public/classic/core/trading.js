@@ -788,6 +788,10 @@
       d.destination = dest;
     }
     if (data.ticketNo) d.ticketNo = String(data.ticketNo).trim();
+    // From the supplier's recap: its DO number, and the surat jalan number written
+    // there when it is not ours (the company's own SJ book).
+    if (data.doNo) d.doNo = String(data.doNo).trim();
+    if (data.sjRef && refKey(data.sjRef) !== refKey(d.sjNo)) d.sjRef = String(data.sjRef).trim();
     if (data.ticketPhoto) d.ticketPhoto = data.ticketPhoto;
     if (data.note) d.notes = String(data.note);
     d.weighing = w;
@@ -959,36 +963,70 @@
   }
 
   // ── Weighbridge recap (Excel) ──────────────────────────────────────────────
-  // Rows: { sjNo, poNumber, date, vehicle, driver, itemName, gross, tare, net }.
+  // Rows: { sjNo, doNo, ticketNo, poNumber, date, vehicle, driver, itemName,
+  // customer, gross, tare, net, row, sheet }.
+  // Two layouts are read: the sheet from "Ekspor Excel untuk timbangan" (No SJ,
+  // Tanggal, No Polisi, Bruto, Tara, Netto …) and the supplier's own recap — one
+  // sheet per material, a two-row header ("No" over GJIB / DO / Surat Jalan /
+  // Polisi / PO), "Isi / Kosong / Qty (kg)" columns that hold tons, and a
+  // subtotal row after each day. Headers are compared without units, dots and
+  // case; for each field the first of its keys found in the header wins.
   var RECAP_COLS = [
     {
       f: 'sjNo',
-      keys: [
-        'no sj',
-        'no. sj',
-        'nomor sj',
-        'surat jalan',
-        'no surat jalan',
-        'sj',
-        'nomor',
-        'no do',
-        'do',
-      ],
+      keys: ['no sj', 'nomor sj', 'no surat jalan', 'nomor surat jalan', 'surat jalan', 'sj', 'nomor'],
     },
-    { f: 'poNumber', keys: ['no po', 'no. po', 'nomor po', 'po', 'po number'] },
+    // The supplier's DO number and weighbridge ticket (on the DO photo: "Nomor
+    // DO" and "BAP"; in its recap: "No DO" and "No GJIB").
+    { f: 'doNo', keys: ['no do', 'nomor do', 'do', 'no delivery order'] },
+    {
+      f: 'ticketNo',
+      keys: ['no tiket', 'tiket', 'no timbang', 'ticket', 'no bap', 'bap', 'no gjib', 'gjib'],
+    },
+    // The supplier calls our PO its sales order ("Sales Order No" on the DO).
+    { f: 'poNumber', keys: ['no po', 'nomor po', 'po', 'po number', 'sales order no', 'no so'] },
     { f: 'date', keys: ['tanggal', 'tgl', 'date', 'tanggal ambil'] },
     {
       f: 'vehicle',
-      keys: ['no polisi', 'no. polisi', 'nopol', 'plat', 'no plat', 'truk', 'kendaraan', 'vehicle'],
+      keys: ['no polisi', 'nopol', 'plat', 'no plat', 'no truk', 'no truck', 'truk', 'kendaraan', 'vehicle'],
     },
     { f: 'driver', keys: ['sopir', 'supir', 'driver', 'pengemudi'] },
-    { f: 'itemName', keys: ['barang', 'nama barang', 'item', 'material', 'jenis'] },
-    { f: 'customer', keys: ['pelanggan', 'customer', 'tujuan'] },
-    { f: 'gross', keys: ['bruto', 'gross', 'berat kotor'] },
-    { f: 'tare', keys: ['tara', 'tare', 'berat kosong'] },
-    { f: 'net', keys: ['netto', 'neto', 'net', 'tonase', 'berat bersih', 'berat', 'qty', 'ton'] },
-    { f: 'ticketNo', keys: ['no tiket', 'no. tiket', 'tiket', 'no timbang', 'ticket'] },
+    { f: 'itemName', keys: ['barang', 'nama barang', 'item', 'material', 'produk', 'product', 'jenis'] },
+    // "Keterangan" carries the destination in the supplier's recap (customer + site).
+    { f: 'customer', keys: ['pelanggan', 'customer', 'tujuan', 'proyek', 'project', 'lokasi', 'keterangan'] },
+    { f: 'gross', keys: ['bruto', 'gross', 'berat kotor', 'berat isi', 'isi'] },
+    { f: 'tare', keys: ['tara', 'tare', 'berat kosong', 'kosong'] },
+    { f: 'net', keys: ['netto', 'neto', 'net', 'berat bersih', 'tonase', 'qty', 'berat', 'ton'] },
   ];
+
+  // "Isi(kg)" → "isi", "No. SJ" → "no sj".
+  function headerKey(c) {
+    return String(c == null ? '' : c)
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/[.:#_]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function knownHeaders(keys) {
+    return keys.filter(function (h) {
+      return (
+        h &&
+        RECAP_COLS.some(function (col) {
+          return col.keys.indexOf(h) !== -1;
+        })
+      );
+    }).length;
+  }
+  // A truck never carries 1,000 t: a larger figure is in kilograms.
+  function tons(n) {
+    return n != null && Math.abs(n) >= 1000 ? r3(n / 1000) : n;
+  }
+  function refKey(v) {
+    return String(v == null ? '' : v)
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
 
   function parseNum(v) {
     if (v == null || v === '') return null;
@@ -1028,107 +1066,207 @@
     return '';
   }
 
-  // Array-of-arrays (first non-empty row = headers) → recap rows.
-  function recapRowsFromAoa(aoa) {
-    var rows = (aoa || []).filter(function (r) {
+  // Array-of-arrays → recap rows. aoa[i] is sheet row i + 1 (+ opts.rowOffset);
+  // opts.sheet names the sheet (the material, in the supplier's recap).
+  function recapRowsFromAoa(aoa, opts) {
+    opts = opts || {};
+    aoa = aoa || [];
+    function cells(i) {
+      return (aoa[i] || []).map(headerKey);
+    }
+    function blank(r) {
       return (
-        r &&
-        r.some(function (c) {
+        !r ||
+        !r.some(function (c) {
           return String(c == null ? '' : c).trim() !== '';
         })
       );
-    });
-    if (!rows.length) return [];
-    // The header row is the first row that names at least two known columns.
-    var hIdx = 0;
-    for (var i = 0; i < Math.min(rows.length, 10); i++) {
-      var hits = 0;
-      rows[i].forEach(function (c) {
-        var h = String(c == null ? '' : c)
-          .trim()
-          .toLowerCase();
-        if (
-          RECAP_COLS.some(function (col) {
-            return col.keys.indexOf(h) !== -1;
-          })
-        )
-          hits++;
-      });
-      if (hits >= 2) {
+    }
+    // The header row is the first row that names at least two known columns. A
+    // row of words right under it completes a two-row header ("No" over "DO").
+    var hIdx = -1;
+    for (var i = 0; i < Math.min(aoa.length, 20); i++) {
+      if (!blank(aoa[i]) && knownHeaders(cells(i)) >= 2) {
         hIdx = i;
         break;
       }
     }
-    var headers = rows[hIdx].map(function (c) {
-      return String(c == null ? '' : c)
-        .trim()
-        .toLowerCase();
-    });
-    var idx = {};
-    RECAP_COLS.forEach(function (col) {
-      idx[col.f] = headers.findIndex(function (h) {
-        return col.keys.indexOf(h) !== -1;
+    if (hIdx < 0) {
+      for (var b = 0; b < aoa.length && blank(aoa[b]); b++);
+      if (b >= aoa.length) return [];
+      hIdx = b;
+    }
+    var headers = cells(hIdx);
+    var start = hIdx + 1;
+    var next = aoa[hIdx + 1];
+    if (
+      next &&
+      !blank(next) &&
+      next.every(function (c) {
+        return c == null || c === '' || (typeof c === 'string' && !/^[\d.,\s-]+$/.test(c));
+      })
+    ) {
+      var merged = headers.map(function (top, j) {
+        var bottom = headerKey(next[j]);
+        return bottom ? (top ? top + ' ' + bottom : bottom) : top;
       });
+      if (knownHeaders(merged) > knownHeaders(headers)) {
+        headers = merged;
+        start = hIdx + 2;
+      }
+    }
+    var idx = {};
+    var taken = {};
+    RECAP_COLS.forEach(function (col) {
+      idx[col.f] = -1;
+      for (var k = 0; k < col.keys.length; k++) {
+        var j = headers.indexOf(col.keys[k]);
+        if (j !== -1 && !taken[j]) {
+          idx[col.f] = j;
+          taken[j] = true;
+          return;
+        }
+      }
     });
     var out = [];
-    rows.slice(hIdx + 1).forEach(function (r, k) {
-      function cell(f) {
-        return idx[f] >= 0 ? r[idx[f]] : '';
-      }
+    for (var n = start; n < aoa.length; n++) {
+      var r = aoa[n];
+      if (blank(r)) continue;
+      // A header repeated further down the sheet.
+      if (knownHeaders(r.map(headerKey)) >= 3) continue;
+      var cell = function (f) {
+        var v = idx[f] >= 0 ? r[idx[f]] : '';
+        return String(v == null ? '' : v).trim();
+      };
       var rec = {
-        row: hIdx + k + 2,
-        sjNo: String(cell('sjNo') == null ? '' : cell('sjNo')).trim(),
-        poNumber: String(cell('poNumber') == null ? '' : cell('poNumber')).trim(),
-        date: parseDate(cell('date')),
-        vehicle: String(cell('vehicle') == null ? '' : cell('vehicle')).trim(),
-        driver: String(cell('driver') == null ? '' : cell('driver')).trim(),
-        itemName: String(cell('itemName') == null ? '' : cell('itemName')).trim(),
-        customer: String(cell('customer') == null ? '' : cell('customer')).trim(),
-        ticketNo: String(cell('ticketNo') == null ? '' : cell('ticketNo')).trim(),
-        gross: parseNum(cell('gross')),
-        tare: parseNum(cell('tare')),
-        net: parseNum(cell('net')),
+        row: n + 1 + (opts.rowOffset || 0),
+        sheet: opts.sheet || '',
+        sjNo: cell('sjNo'),
+        doNo: cell('doNo'),
+        ticketNo: cell('ticketNo'),
+        poNumber: cell('poNumber'),
+        date: parseDate(idx.date >= 0 ? r[idx.date] : ''),
+        vehicle: cell('vehicle'),
+        driver: cell('driver'),
+        itemName: cell('itemName'),
+        customer: cell('customer'),
+        gross: tons(parseNum(idx.gross >= 0 ? r[idx.gross] : '')),
+        tare: tons(parseNum(idx.tare >= 0 ? r[idx.tare] : '')),
+        net: tons(parseNum(idx.net >= 0 ? r[idx.net] : '')),
       };
       if (rec.gross != null && rec.gross > 0 && (rec.net == null || rec.net === 0)) {
         rec.net = r3(rec.gross - (rec.tare || 0));
       }
-      // Totals and notes: no surat jalan, no date and no truck.
-      if (!rec.sjNo && !rec.date && !rec.vehicle) return;
-      if (!(rec.net > 0) && !rec.sjNo) return;
+      if (rec.net != null) rec.net = r3(rec.net);
+      // Day subtotals, totals and notes: no surat jalan, no date and no truck.
+      if (!rec.sjNo && !rec.date && !rec.vehicle) continue;
+      if (!(rec.net > 0) && !rec.sjNo) continue;
       out.push(rec);
-    });
+    }
     return out;
+  }
+
+  // Every sheet of a workbook (the supplier keeps one per material). X = SheetJS.
+  // Returns { rows, sheets } — the names of the sheets that held recap rows.
+  function recapRowsFromWorkbook(wb, X) {
+    var rows = [];
+    var sheets = [];
+    ((wb && wb.SheetNames) || []).forEach(function (name) {
+      var ws = wb.Sheets[name];
+      if (!ws || !ws['!ref']) return;
+      // range 0: start at row 1 even when the sheet's own range starts lower, so
+      // row numbers match what the user sees in Excel.
+      var aoa = X.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', range: 0, blankrows: true });
+      var found = recapRowsFromAoa(aoa, { sheet: name });
+      if (found.length) {
+        sheets.push(name);
+        rows = rows.concat(found);
+      }
+    });
+    return { rows: rows, sheets: sheets };
   }
 
   // Match recap rows to pickup slots. Result groups:
   //   fill      — slot still Pending, recap has its weight → record the trip
   //   same      — trip recorded with the same weight
   //   changed   — trip recorded with a different weight (invoiced → alert)
-  //   unmatched — no slot found (wrong SJ number, unknown truck/date)
+  //   unmatched — no slot found (wrong SJ number, unknown truck/date or PO)
   //   problems  — slot found but unusable (voided, PO closed, past cut-off)
+  //   skipped   — dated before the first pickup PO in the app: the supplier's
+  //               recap runs cumulatively from long before the app was used
+  // A row finds its surat jalan by, in turn: our SJ number; the supplier's DO
+  // number or ticket already stored on a trip from an earlier recap; truck and
+  // date of a recorded trip; or its PO ("No PO" — the company number or just its
+  // running number, see DocEngine.sequenceOf), taking that PO's next unused
+  // surat jalan.
   function matchRecap(rows) {
     var slots = (db().deliveryOrders || []).filter(isPickup);
     var bySj = {};
+    var byDo = {};
+    var byTicket = {};
     slots.forEach(function (d) {
-      if (d.sjNo) bySj[String(d.sjNo).trim().toUpperCase()] = d;
+      if (d.sjNo) bySj[refKey(d.sjNo)] = d;
+      if (d.sjRef && !bySj[refKey(d.sjRef)]) bySj[refKey(d.sjRef)] = d;
+      if (d.doNo) byDo[refKey(d.doNo)] = d;
+      if (d.ticketNo) byTicket[refKey(d.ticketNo)] = d;
     });
+    var pickupPOs = (db().purchaseOrders || []).filter(isPickupOrder);
+    var firstDate = pickupPOs.reduce(function (min, p) {
+      return p.date && (!min || p.date < min) ? p.date : min;
+    }, '');
     var used = {};
-    var res = { fill: [], same: [], changed: [], unmatched: [], problems: [] };
+    var res = { fill: [], same: [], changed: [], unmatched: [], problems: [], skipped: [] };
     rows.forEach(function (row) {
-      var d = row.sjNo ? bySj[row.sjNo.trim().toUpperCase()] : null;
+      var d =
+        (row.sjNo && bySj[refKey(row.sjNo)]) ||
+        (row.doNo && byDo[refKey(row.doNo)]) ||
+        (row.ticketNo && byTicket[refKey(row.ticketNo)]) ||
+        null;
+      var po = row.poNumber ? poForRecap(row.poNumber, row.date, pickupPOs) : null;
+      // Truck and date alone are not unique — one truck can make two trips a day
+      // for different POs — so a trip with another DO number or PO is not it.
       if (!d && row.date && row.vehicle) {
         var p = plate(row.vehicle);
         d =
           slots.find(function (s) {
-            return isTrip(s) && s.date === row.date && plate(s.vehicle) === p && !used[s.id];
+            return (
+              isTrip(s) &&
+              s.date === row.date &&
+              plate(s.vehicle) === p &&
+              !used[s.id] &&
+              !(row.doNo && s.doNo && refKey(s.doNo) !== refKey(row.doNo)) &&
+              !(po && s.poId !== po.id)
+            );
           }) || null;
       }
+      if (!d && row.poNumber) {
+        if (po) {
+          d =
+            slotsFor(po.id).find(function (s) {
+              return s.status === 'Pending' && !used[s.id];
+            }) || null;
+          if (!d) {
+            res.problems.push({
+              row: row,
+              doId: null,
+              reason: 'Surat jalan PO ' + (po.number || po.id) + ' sudah terpakai semua',
+            });
+            return;
+          }
+        }
+      }
       if (!d) {
+        if (firstDate && row.date && row.date < firstDate) {
+          res.skipped.push({ row: row });
+          return;
+        }
         res.unmatched.push({
           row: row,
-          reason: row.sjNo
-            ? 'No. SJ tidak dikenal'
-            : 'Tanpa No. SJ dan tidak ada truk/tanggal yang cocok',
+          reason: row.poNumber
+            ? 'PO ' + row.poNumber + ' tidak dikenal'
+            : row.sjNo
+              ? 'No. SJ tidak dikenal'
+              : 'Tanpa No. SJ dan tidak ada truk/tanggal yang cocok',
         });
         return;
       }
@@ -1169,6 +1307,32 @@
     return res;
   }
 
+  // The pickup PO a recap's "No PO" names: the full number, or its running
+  // number — the latest PO with that number dated on or before the trip, since
+  // the company's numbers start again each year.
+  function poForRecap(ref, date, pos) {
+    var k = refKey(ref);
+    var exact = pos.find(function (p) {
+      return refKey(p.number) === k || refKey(p.id) === k;
+    });
+    if (exact) return exact;
+    var DE = window.DocEngine;
+    var seq = /^\d+$/.test(String(ref).trim())
+      ? parseInt(ref, 10)
+      : DE && DE.sequenceOf
+        ? DE.sequenceOf('PO', ref)
+        : null;
+    if (seq == null || isNaN(seq) || !DE || !DE.sequenceOf) return null;
+    var hits = pos
+      .filter(function (p) {
+        return DE.sequenceOf('PO', p.number) === seq && (!date || !p.date || p.date <= date);
+      })
+      .sort(function (a, b) {
+        return String(b.date || '').localeCompare(String(a.date || ''));
+      });
+    return hits[0] || null;
+  }
+
   // Apply a matched recap. Returns counts plus per-row errors for slots that could
   // not be filled (quota, cut-off).
   function applyRecap(result, meta) {
@@ -1186,6 +1350,8 @@
           vehicle: m.row.vehicle,
           driver: m.row.driver,
           ticketNo: m.row.ticketNo,
+          doNo: m.row.doNo,
+          sjRef: m.row.sjNo,
           source: source,
         },
         { allowOverQuota: !!meta.allowOverQuota }
@@ -1365,6 +1531,7 @@
     reopenPickupPO: reopenPickupPO,
     sweepCutoffs: sweepCutoffs,
     recapRowsFromAoa: recapRowsFromAoa,
+    recapRowsFromWorkbook: recapRowsFromWorkbook,
     matchRecap: matchRecap,
     applyRecap: applyRecap,
     weighbridgeSheet: weighbridgeSheet,

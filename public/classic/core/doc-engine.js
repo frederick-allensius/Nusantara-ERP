@@ -35,6 +35,11 @@
     const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
+
+    const custom = opts.format === undefined ? formatOf(docType) : opts.format;
+    if (custom) {
+      return nextCustomNumber(docType, def, custom, year, month, opts);
+    }
     const period = `${year}-${pad(month, 2)}`;
 
     const store = opts.sequences || (window.DB && window.DB.numberSequences) || {};
@@ -69,6 +74,98 @@
       store[docType] = { period, next: cur + 1 };
     }
     return number;
+  }
+
+  // ── Company number format (Pengaturan Umum → Nomor Dokumen) ────────────────
+  // DB.settings.numberFormats[docType] = { pattern, reset: 'year' | 'month' }, e.g.
+  // the company's PO numbers 'PO-{###}/BS/TMA/S/{BULAN-ROMAWI}/{TAHUN}' →
+  // PO-069/BS/TMA/S/VIII/2026, counting up through the year. The supplier writes
+  // this number on its DO and the sequence (69) in its weighbridge recap, which is
+  // how Trading.matchRecap finds the PO. Tokens: {###} the sequence (one # per
+  // digit), {TAHUN} 2026, {TH} 26, {BULAN} 08, {BULAN-ROMAWI} VIII.
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+  const TOKEN_RE = /\{(#+|TAHUN|TH|BULAN-ROMAWI|BULAN)\}/g;
+
+  function formatOf(docType) {
+    const all = window.DB && window.DB.settings && window.DB.settings.numberFormats;
+    const f = all && all[docType];
+    return f && typeof f.pattern === 'string' && /\{#+\}/.test(f.pattern) ? f : null;
+  }
+
+  function formatNumber(pattern, seq, year, month) {
+    return pattern.replace(TOKEN_RE, (m, t) => {
+      if (t[0] === '#') return pad(seq, t.length);
+      if (t === 'TAHUN') return String(year);
+      if (t === 'TH') return pad(year % 100, 2);
+      if (t === 'BULAN') return pad(month, 2);
+      return ROMAN[month - 1];
+    });
+  }
+
+  // The pattern as a parser: { seq, year, month } of a number written in it, or null.
+  function parseWith(pattern, number) {
+    const fields = [];
+    let re = '';
+    let last = 0;
+    pattern.replace(TOKEN_RE, (m, t, at) => {
+      re += pattern.slice(last, at).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (t[0] === '#') re += '(\\d+)';
+      else if (t === 'TAHUN') re += '(\\d{4})';
+      else if (t === 'TH' || t === 'BULAN') re += '(\\d{1,2})';
+      else re += '([IVX]+)';
+      fields.push(t);
+      last = at + m.length;
+      return m;
+    });
+    re += pattern.slice(last).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const hit = new RegExp('^' + re + '$', 'i').exec(String(number || '').trim());
+    if (!hit) return null;
+    const out = { seq: null, year: null, month: null };
+    fields.forEach((t, i) => {
+      const v = hit[i + 1];
+      if (t[0] === '#') out.seq = parseInt(v, 10);
+      else if (t === 'TAHUN') out.year = parseInt(v, 10);
+      else if (t === 'TH') out.year = 2000 + parseInt(v, 10);
+      else if (t === 'BULAN') out.month = parseInt(v, 10);
+      else out.month = ROMAN.indexOf(v.toUpperCase()) + 1 || null;
+    });
+    return out;
+  }
+
+  function nextCustomNumber(docType, def, fmt, year, month, opts) {
+    const monthly = fmt.reset === 'month';
+    const period = monthly ? `${year}-${pad(month, 2)}` : String(year);
+    const store = opts.sequences || (window.DB && window.DB.numberSequences) || {};
+    const key = docType + ':format';
+    const entry = store[key];
+    let cur = entry && entry.period === period ? entry.next : 1;
+    // As above: the issued documents are the record — start above the highest
+    // number of this period written in the pattern.
+    const docs =
+      opts.docs || (def && def.collection && window.DB && window.DB[def.collection]) || [];
+    for (let i = 0; i < docs.length; i++) {
+      const p = docs[i] && parseWith(fmt.pattern, docs[i].number);
+      const docYear = p && (p.year || Number(String(docs[i].date || '').slice(0, 4)));
+      const docMonth = p && (p.month || Number(String(docs[i].date || '').slice(5, 7)));
+      if (p && p.seq >= cur && docYear === year && (!monthly || docMonth === month)) {
+        cur = p.seq + 1;
+      }
+    }
+    if (opts.commit && store) {
+      store[key] = { period, next: cur + 1 };
+    }
+    return formatNumber(fmt.pattern, cur, year, month);
+  }
+
+  // The running sequence of a document number — the company format when one is
+  // set and the number is written in it, else PREFIX.YYYY.MM.NNNNN. Null when
+  // neither fits.
+  function sequenceOf(docType, number) {
+    const fmt = formatOf(docType);
+    const p = fmt && parseWith(fmt.pattern, number);
+    if (p && p.seq != null) return p.seq;
+    const m = /^[A-Z]+\.\d{4}\.\d{2}\.(\d+)$/i.exec(String(number || '').trim());
+    return m ? parseInt(m[1], 10) : null;
   }
 
   // Totals for a set of lines. Forward-looking: it honours per-line `lineDiscount`
@@ -150,6 +247,8 @@
 
   const DocEngine = {
     nextNumber,
+    formatNumber,
+    sequenceOf,
     computeTotals,
     canTransition,
     statusLabel,

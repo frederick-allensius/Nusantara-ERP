@@ -2252,6 +2252,14 @@ function renderSettings() {
       icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
       action: 'editTaxSettings',
     },
+    {
+      title: 'Nomor Dokumen',
+      sub: DB.settings?.numberFormats?.PO?.pattern
+        ? `Nomor PO: ${DB.settings.numberFormats.PO.pattern}`
+        : 'Format nomor PO perusahaan',
+      icon: '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
+      action: 'editNumberFormats',
+    },
   ];
 
   return `
@@ -2770,6 +2778,9 @@ document.addEventListener('click', async e => {
       break;
     case 'editTaxSettings':
       showTaxSettings();
+      break;
+    case 'editNumberFormats':
+      showNumberFormats();
       break;
     case 'manageUsers':
       showUserManagement();

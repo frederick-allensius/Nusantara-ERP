@@ -1868,17 +1868,9 @@
   function recapRowsFromBuffer(buf, isCsv) {
     var X = window.XLSX;
     var wb = X.read(new Uint8Array(buf), { type: 'array', raw: !!isCsv });
-    var names = wb.SheetNames.slice().sort(function (a, b) {
-      var pa = /surat jalan|rekap|timbang/i.test(a) ? 0 : 1;
-      var pb = /surat jalan|rekap|timbang/i.test(b) ? 0 : 1;
-      return pa - pb;
-    });
-    for (var i = 0; i < names.length; i++) {
-      var aoa = X.utils.sheet_to_json(wb.Sheets[names[i]], { header: 1, raw: true, defval: '' });
-      var rows = T().recapRowsFromAoa(aoa);
-      if (rows.length) return { rows: rows, sheet: names[i] };
-    }
-    return { rows: [], sheet: names[0] || '' };
+    // Every sheet: the supplier keeps one per material.
+    var got = T().recapRowsFromWorkbook(wb, X);
+    return { rows: got.rows, sheet: got.sheets.join(', ') || wb.SheetNames[0] || '' };
   }
 
   function loadRecapFile(file) {
@@ -1939,12 +1931,21 @@
     if (po.date && m.row.date < po.date) return 'Sebelum tanggal PO';
     return '';
   }
-  function rowCells(row) {
+  // Row number (with its sheet when the file has several — the supplier keeps
+  // one per material) and the SJ/DO number written in the recap; when the
+  // recap's number is not ours, the surat jalan it was matched to underneath.
+  function rowCells(row, doId) {
+    var multi = S.recap && /,/.test(S.recap.sheet || '');
+    var d = doId ? find('deliveryOrders', doId) : null;
+    var written = row.sjNo || (row.doNo ? 'DO ' + row.doNo : '');
+    var ours = d && d.sjNo && d.sjNo !== row.sjNo ? d.sjNo : '';
     return (
       '<td class="t-num">' +
       esc(row.row) +
+      (multi && row.sheet ? '<div class="t-muted pv-sheet">' + esc(row.sheet) + '</div>' : '') +
       '</td><td class="doc-no">' +
-      esc(row.sjNo || '—') +
+      esc(written || '—') +
+      (ours ? '<div class="t-muted">' + esc('→ ' + ours) + '</div>' : '') +
       '</td><td>' +
       esc(row.date ? fmtDate(row.date) : '—') +
       '</td><td>' +
@@ -1967,7 +1968,7 @@
       '</span></div>' +
       '<details class="pv-help"><summary>Kolom yang dibaca</summary>' +
       '<div class="pv-cols">' +
-      ['No SJ', 'Tanggal', 'No Polisi', 'Sopir', 'Bruto', 'Tara', 'Netto']
+      ['No SJ', 'No DO', 'No PO', 'Tanggal', 'No Polisi', 'Sopir', 'Bruto / Isi', 'Tara / Kosong', 'Netto / Qty']
         .map(function (c) {
           return '<span class="chip">' + esc(c) + '</span>';
         })
@@ -1975,6 +1976,7 @@
       '</div>' +
       '<ul class="pv-list">' +
       '<li>Paling tepat: file dari <strong>Ekspor Excel untuk timbangan</strong> di PO Pengambilan, diisi bagian timbangan.</li>' +
+      '<li>Rekap dari supplier juga terbaca: semua sheet, judul kolom dua baris, berat dalam ton atau kg. Truk dicocokkan lewat No PO, lalu No DO di rekap berikutnya.</li>' +
       '<li>Tanpa No SJ: dicocokkan lewat Tanggal + No Polisi.</li>' +
       '<li>Rekap kumulatif boleh: baris yang sama dilewati, berat yang berubah ditandai.</li>' +
       '</ul></details></div>';
@@ -2036,7 +2038,7 @@
           var issue = fillIssue(m);
           return (
             '<tr>' +
-            rowCells(m.row) +
+            rowCells(m.row, m.doId) +
             '<td>' +
             esc(m.row.driver || '—') +
             '</td><td>' +
@@ -2068,7 +2070,7 @@
             '<tr' +
             (m.invoiced ? ' class="pv-row-danger"' : '') +
             '>' +
-            rowCells(m.row) +
+            rowCells(m.row, m.doId) +
             '<td>' +
             esc(d.customer || '—') +
             '</td><td class="pv-change">' +
@@ -2092,12 +2094,12 @@
     if (r.unmatched.length) {
       html += tableCard(
         'Tidak cocok',
-        'Periksa No SJ, tanggal, atau No. Polisi',
+        'Periksa No PO, No SJ, tanggal, atau No. Polisi',
         ['#Baris', 'No SJ', 'Tanggal', 'No. Polisi', '#Netto', 'Alasan'],
         r.unmatched.map(function (m) {
           return (
             '<tr>' +
-            rowCells(m.row) +
+            rowCells(m.row, m.doId) +
             '<td class="t-num">' +
             esc(m.row.net != null ? fmtT(m.row.net) : '—') +
             '</td><td>' +
@@ -2115,7 +2117,7 @@
         split.problems.map(function (m) {
           return (
             '<tr>' +
-            rowCells(m.row) +
+            rowCells(m.row, m.doId) +
             '<td class="t-num">' +
             esc(m.row.net != null ? fmtT(m.row.net) : '—') +
             '</td><td>' +
@@ -2125,8 +2127,19 @@
         })
       );
     }
-    if (split.skipped.length || r.same.length) {
+    var before = r.skipped || [];
+    if (split.skipped.length || r.same.length || before.length) {
       html += '<div class="card">';
+      // The supplier's recap runs from long before the app was used.
+      if (before.length) {
+        html +=
+          '<p class="pv-quiet">' +
+          esc(
+            before.length +
+              ' baris bertanggal sebelum PO pengambilan pertama di aplikasi — dilewati'
+          ) +
+          '</p>';
+      }
       if (split.skipped.length) {
         html +=
           '<details class="pv-details"><summary>' +
@@ -3014,6 +3027,7 @@
       '.pv-photo-full{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:var(--r-sm)}',
       '.pv-quiet{margin:0 0 var(--card-gap);color:var(--muted);font-size:.8125rem}',
       '.pv-help{margin-top:14px;font-size:.8125rem}',
+      '.pv-sheet{font-size:.6875rem;white-space:nowrap}',
       '.pv-help summary{cursor:pointer;color:var(--accent-text);width:max-content}',
       '.pv-help .pv-cols{margin:10px 0 6px}',
       '.pv-submit{width:100%;height:3.25rem;font-size:1.125rem;font-weight:600}',

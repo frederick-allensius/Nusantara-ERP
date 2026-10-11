@@ -224,3 +224,46 @@ describe('DocEngine.resolvePartyId (Phase 1)', () => {
     expect(window.DocEngine.resolvePartyId('NOPE', 'PT Maju Jaya')).toBeNull();
   });
 });
+
+// The company's own PO numbers (Pengaturan Umum → Nomor Dokumen): the supplier
+// writes them on its DO and the sequence in its weighbridge recap.
+describe('DocEngine company number format', () => {
+  const FMT = { pattern: 'PO-{###}/BS/TMA/S/{BULAN-ROMAWI}/{TAHUN}', reset: 'year' };
+  const withFormat = (fmt: any, docs: any[] = []) => {
+    (window as any).DB = { settings: { numberFormats: { PO: fmt } }, numberSequences: {}, purchaseOrders: docs };
+  };
+
+  it('writes the number in the pattern, counting through the year', () => {
+    withFormat(FMT);
+    expect(window.DocEngine.nextNumber('PO', '2026-08-31')).toBe('PO-001/BS/TMA/S/VIII/2026');
+    withFormat(FMT, [
+      { number: 'PO-068/BS/TMA/S/VII/2026', date: '2026-07-29' },
+      { number: 'PO-133/BS/TMA/S/XII/2025', date: '2025-12-13' },
+      { number: 'PO.2026.08.00004', date: '2026-08-02' },
+    ]);
+    expect(window.DocEngine.nextNumber('PO', '2026-08-31')).toBe('PO-069/BS/TMA/S/VIII/2026');
+    // A new year starts again at 1.
+    expect(window.DocEngine.nextNumber('PO', '2027-01-04')).toBe('PO-001/BS/TMA/S/I/2027');
+  });
+
+  it('commits the counter and resets monthly when asked', () => {
+    withFormat({ pattern: 'PO/{TH}{BULAN}/{####}', reset: 'month' });
+    const opts = { commit: true };
+    expect(window.DocEngine.nextNumber('PO', '2026-09-01', opts)).toBe('PO/2609/0001');
+    expect(window.DocEngine.nextNumber('PO', '2026-09-02', opts)).toBe('PO/2609/0002');
+    expect(window.DocEngine.nextNumber('PO', '2026-10-01', opts)).toBe('PO/2610/0001');
+  });
+
+  it('reads the sequence back from either format', () => {
+    withFormat(FMT);
+    expect(window.DocEngine.sequenceOf('PO', 'PO-069/BS/TMA/S/VIII/2026')).toBe(69);
+    expect(window.DocEngine.sequenceOf('PO', 'po-069/bs/tma/s/viii/2026')).toBe(69);
+    expect(window.DocEngine.sequenceOf('PO', 'PO.2026.09.00101')).toBe(101);
+    expect(window.DocEngine.sequenceOf('PO', 'catatan')).toBeNull();
+  });
+
+  it('keeps PREFIX.YYYY.MM.NNNNN when no format is set', () => {
+    (window as any).DB = { settings: {}, numberSequences: {}, purchaseOrders: [] };
+    expect(window.DocEngine.nextNumber('PO', '2026-09-01')).toBe('PO.2026.09.00001');
+  });
+});

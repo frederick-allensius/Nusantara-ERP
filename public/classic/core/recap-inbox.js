@@ -557,21 +557,17 @@
   function excelRows(email) {
     if (excelCache[email.id]) return excelCache[email.id];
     var X = window.XLSX;
-    var aoa = aoaOf(email);
-    if (X) {
+    var rows = null;
+    if (X && T()) {
       try {
         var buf = X.write(workbook(email), { bookType: 'xlsx', type: 'array' });
         var wb = X.read(new Uint8Array(buf), { type: 'array' });
-        aoa = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
-          header: 1,
-          raw: true,
-          defval: '',
-        });
+        rows = T().recapRowsFromWorkbook(wb, X).rows;
       } catch (_) {
         /* read the sheet's rows as written */
       }
     }
-    var rows = T() ? T().recapRowsFromAoa(aoa) : [];
+    if (!rows) rows = T() ? T().recapRowsFromAoa(aoaOf(email)) : [];
     excelCache[email.id] = rows;
     return rows;
   }

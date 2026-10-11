@@ -3045,6 +3045,71 @@ function showTaxSettings() {
   }, 50);
 }
 
+// ── Nomor Dokumen: the company's own PO number format (doc-engine.js) ─────────
+// Suppliers write the PO number on their DO and its running number in their
+// weighbridge recap; with the company format set, Impor Rekap Timbangan finds
+// the PO from that number.
+function showNumberFormats() {
+  const cur = (DB.settings && DB.settings.numberFormats && DB.settings.numberFormats.PO) || {};
+  const pattern = cur.pattern || '';
+  const preview = p => {
+    if (!p || !/\{#+\}/.test(p) || !window.DocEngine) return 'Format bawaan: ' + (window.DocEngine ? window.DocEngine.nextNumber('PO', today(), { format: null }) : 'PO.TTTT.BB.NNNNN');
+    return 'Contoh: ' + window.DocEngine.formatNumber(p, 69, Number(today().slice(0, 4)), Number(today().slice(5, 7)));
+  };
+  openModal(
+    'Nomor Dokumen',
+    `
+    <div class="form-group">
+      <label class="form-label" for="nf-po">Format nomor PO</label>
+      <input class="form-input" id="nf-po" type="text" value="${escapeHtml(pattern)}" placeholder="PO-{###}/BS/TMA/S/{BULAN-ROMAWI}/{TAHUN}" autocomplete="off">
+      <div class="form-hint" id="nf-po-preview">${escapeHtml(preview(pattern))}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="nf-po-reset">Nomor urut mulai lagi</label>
+      <select class="form-select" id="nf-po-reset">
+        <option value="year" ${cur.reset !== 'month' ? 'selected' : ''}>Setiap tahun</option>
+        <option value="month" ${cur.reset === 'month' ? 'selected' : ''}>Setiap bulan</option>
+      </select>
+    </div>
+    <div class="form-hint">{###} nomor urut · {TAHUN} 2026 · {TH} 26 · {BULAN} 08 · {BULAN-ROMAWI} VIII. Kosongkan untuk memakai format bawaan.</div>
+  `,
+    `<button class="btn-ghost" data-action="closeModal">Batal</button>
+     <button class="btn" id="saveNumberFormats">Simpan</button>`
+  );
+  setTimeout(() => {
+    const input = document.getElementById('nf-po');
+    const out = document.getElementById('nf-po-preview');
+    if (input && out) {
+      input.addEventListener('input', () => {
+        out.textContent = preview(input.value.trim());
+      });
+    }
+    const btn = document.getElementById('saveNumberFormats');
+    if (!btn) {
+      return;
+    }
+    btn.addEventListener('click', () => {
+      const p = sanitizeInput(document.getElementById('nf-po').value).trim();
+      if (p && !/\{#+\}/.test(p)) {
+        showToast('Format harus berisi nomor urut {###}', 'warning');
+        return;
+      }
+      if (!DB.settings) {
+        DB.settings = {};
+      }
+      DB.settings.numberFormats = DB.settings.numberFormats || {};
+      if (p) {
+        DB.settings.numberFormats.PO = { pattern: p, reset: document.getElementById('nf-po-reset').value };
+      } else {
+        delete DB.settings.numberFormats.PO;
+      }
+      saveDB();
+      closeModal();
+      showToast('Format nomor PO disimpan', 'success');
+    });
+  }, 50);
+}
+
 // ── Department → role access (RBAC, option 1: department drives access) ───────
 // Departments are stored in DB.settings.departments [{ id, name, role }]. An
 // employee belongs to a department and carries an email; the login account whose
