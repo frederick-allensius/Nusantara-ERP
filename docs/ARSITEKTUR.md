@@ -44,7 +44,7 @@ flowchart TB
 2. Muat `doc-registry` (ES) dan Chart.js (`window.Chart`).
 3. `idb.init()` → `initAuth()`.
 4. Belum login → layar login (`setupLoginScreen`). Sudah login → `startApp()`:
-   1. `loadDB()` — lokal: dari IndexedDB; cloud: snapshot Firestore.
+   1. `loadDB()` — lokal: dari IndexedDB; cloud: salinan data server di IndexedDB (`erp_fs_cache_v1`) ditambah dokumen dengan `updatedAt` ≥ yang terbaru di salinan itu, plus hitungan dokumen per koleksi. Hitungan yang berbeda (dokumen dihapus di perangkat lain) atau salinan berumur > 30 hari membuat koleksi itu dimuat penuh. Salinan dihapus saat logout.
    2. `resolveUserRole()` → `window.__ERP_USER`.
    3. `initBackup()`.
    4. Muat `/classic/bundle.js`.
@@ -59,7 +59,7 @@ Mode ditentukan `isFirebaseConfigured` (`src/config/firebase.js`): kunci `VITE_F
 - Semua data ada di satu objek **`window.DB`**: koleksi berbentuk array (`salesOrders`, `purchaseOrders`, `inventoryItems`, `deliveryOrders`, `salesInvoices`, …) dan objek tunggal (`settings`, `accounts`, `reservations`, `numberSequences`).
 - **Menyimpan:** ubah `DB` lalu panggil `window.saveDB()`.
   - Mode lokal: seluruh `DB` ditulis ke IndexedDB (`nsa-local` → store `kv` → kunci `erp_db_v1`).
-  - Mode cloud: dokumen yang berubah dikirim ke Firestore (debounce ±250 ms); snapshot real-time digabung tanpa menimpa perubahan lokal yang belum tersimpan; setiap tulis diberi `updatedBy`.
+  - Mode cloud: dokumen yang berubah dikirim ke Firestore (debounce ±250 ms); listener real-time hanya memantau dokumen dengan `updatedAt` ≥ batas saat dimuat, dan perubahannya digabung per dokumen tanpa menimpa perubahan lokal yang belum tersimpan; hitungan per koleksi dicek ulang setiap 30 menit selama aplikasi terbuka; setiap tulis diberi `updatedAt` (waktu server) dan `updatedBy`.
 - **Koleksi tersinkron** ditentukan `COLLECTIONS` di `src/core/db.js` (dan harus sama dengan `functions/backup.js` serta `firestore.rules`). Koleksi di luar daftar hanya tersimpan lokal (T-27).
 - **Data turunan** — dihitung ulang, bukan sumber kebenaran: jurnal otomatis, harga pokok, total stok (`item.stock` = Σ stok per gudang).
 - **Skema & migrasi:** `core/schema.js` (versi skema, gudang default), `core/doc-migrate.js` (penomoran & referensi), `normalizeImportedDB` (impor backup).

@@ -62,7 +62,7 @@ Aplikasi memakai Cloud Functions untuk login dengan username, 2FA, manajemen pen
 Perkiraan untuk perusahaan ini:
 
 - **Ukuran data.** ±2–3 truk per PO per hari, beberapa PO berjalan, plus faktur dan pengeluaran. Kira-kira puluhan ribu dokumen per tahun — jauh di bawah 1 GiB.
-- **Pembacaan data.** Setiap kali aplikasi dibuka, data dimuat dari server. Saat data sudah beberapa tahun dan beberapa pengguna membuka aplikasi beberapa kali sehari, pembacaan bisa melewati 50.000 per hari. Biaya kelebihannya kecil (sen dolar per 100.000 baca), tetapi perlu dipantau.
+- **Pembacaan data.** Aplikasi menyimpan salinan data di browser dan setiap kali dibuka hanya mengambil yang berubah sejak terakhir dibuka, ditambah satu hitungan per koleksi: ±60–100 baca per pembukaan, berapa pun besar datanya. Kuota 50.000 baca per hari cukup untuk ±400 pembukaan per hari. Pembukaan pertama di perangkat baru (dan sebulan sekali per koleksi) memuat semua data.
 - **Saran.** Pasang **batas anggaran dan peringatan biaya** di Google Cloud (Budget alert) saat proyek dibuat. Perkiraan bulanan yang pasti dibuat setelah uji coba dengan data nyata — **REQUIRES USER CONFIRMATION**.
 
 ## 5. Spesifikasi perangkat

@@ -752,6 +752,14 @@ export async function logout(message) {
   clearSession();
   currentUser = null;
   _pending2FA = null;
+  // The company data cached in this browser for fast loading goes with the session.
+  if (typeof window.__nsaClearSyncCache === 'function') {
+    try {
+      await window.__nsaClearSyncCache();
+    } catch (e) {
+      console.warn('[Auth] sync cache not cleared:', e);
+    }
+  }
   if (_useFirebase && fbAuth) {
     // Best-effort server-side audit entry — must run before signOut() drops the
     // ID token the callable needs to identify the caller.

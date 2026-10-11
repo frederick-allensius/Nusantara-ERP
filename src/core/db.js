@@ -11,6 +11,10 @@ import {
   onSnapshot,
   writeBatch,
   serverTimestamp,
+  query,
+  where,
+  getCountFromServer,
+  Timestamp,
 } from 'firebase/firestore';
 import { db as firestore, isFirebaseConfigured } from '../config/firebase.js';
 import { kvGet, kvSet } from './local-store.js';
@@ -102,6 +106,191 @@ function isObjectCollection(name) {
 
 // Real-time listeners
 const listeners = new Map();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Incremental sync. Firestore bills one read per document returned, so loading
+// every collection on each open (and again through each listener's first
+// snapshot) made reads grow with the data and the number of opens. Instead:
+//   • the server's copy of every synced document is kept in IndexedDB
+//     (SYNC_CACHE_KEY, server state only — never un-flushed local edits);
+//   • an open asks only for documents with updatedAt ≥ the newest one cached,
+//     plus a count per collection: a count that differs from the cache means a
+//     document was deleted elsewhere (or lacks updatedAt) → that collection is
+//     loaded in full;
+//   • listeners watch updatedAt ≥ that same mark, so their first snapshot holds
+//     only what changed since the load;
+//   • while the app stays open, the counts are compared again every
+//     RECONCILE_INTERVAL (deletions of older documents fire no listener event);
+//   • a collection is loaded in full at least every SYNC_FULL_RELOAD_AGE.
+// updatedAt is held as epoch milliseconds in memory and in the cache; every
+// write replaces it with serverTimestamp() as before.
+// ─────────────────────────────────────────────────────────────────────────────
+const SYNC_CACHE_KEY = 'erp_fs_cache_v1';
+const SYNC_FULL_RELOAD_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+const RECONCILE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const RECONCILE_ON_FOCUS_AFTER = 10 * 60 * 1000; // 10 minutes
+// collectionName → Map(id → record as last seen on the server)
+const _serverDocs = new Map();
+// collectionName → epoch ms of the last full load of that collection
+const _fullLoadedAt = new Map();
+// collectionName → Set(id) written by this device and not yet acknowledged.
+// While a write waits for the server its updatedAt is a pending server
+// timestamp, which Firestore does not match against `updatedAt >= …`, so the
+// listener reports the document as removed until the committed version
+// arrives; such removals are not deletions.
+const _inflight = new Map();
+function markInflight(written, name, id) {
+  if (!_inflight.has(name)) {
+    _inflight.set(name, new Set());
+  }
+  _inflight.get(name).add(String(id));
+  written.push([name, String(id)]);
+}
+function clearInflight(written) {
+  written.forEach(([name, id]) => _inflight.has(name) && _inflight.get(name).delete(id));
+}
+
+function toMillis(v) {
+  if (v == null) {
+    return null;
+  }
+  if (typeof v === 'number') {
+    return v;
+  }
+  if (typeof v.toMillis === 'function') {
+    return v.toMillis();
+  }
+  if (typeof v.seconds === 'number') {
+    return v.seconds * 1000 + (Number(v.nanoseconds) || 0) / 1e6;
+  }
+  return null;
+}
+
+/** A Firestore document as an in-memory record (updatedAt as epoch ms). */
+function fromServer(snap) {
+  const data = snap.data() || {};
+  const rec = { id: snap.id, ...data };
+  if ('updatedAt' in data) {
+    rec.updatedAt = toMillis(data.updatedAt);
+  }
+  return rec;
+}
+
+// Firestore returns documents ordered by id; keep that order after merging.
+function byIdOrder(a, b) {
+  const x = String(a.id);
+  const y = String(b.id);
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+function clone(v) {
+  return v == null ? v : JSON.parse(JSON.stringify(v));
+}
+
+function newestUpdate(records) {
+  let max = null;
+  for (const r of records) {
+    const t = r && typeof r.updatedAt === 'number' ? r.updatedAt : null;
+    if (t != null && (max == null || t > max)) {
+      max = t;
+    }
+  }
+  return max;
+}
+
+function cacheProject() {
+  try {
+    return (firestore && firestore.app && firestore.app.options.projectId) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+async function readSyncCache() {
+  try {
+    const c = await kvGet(SYNC_CACHE_KEY);
+    if (!c || c.v !== 1 || c.project !== cacheProject() || !c.collections) {
+      return null;
+    }
+    return c;
+  } catch (_) {
+    return null;
+  }
+}
+
+let _cachePersistTimer = null;
+function scheduleCachePersist() {
+  if (_cachePersistTimer) {
+    clearTimeout(_cachePersistTimer);
+  }
+  _cachePersistTimer = setTimeout(persistSyncCache, 1500);
+}
+
+function persistSyncCache() {
+  _cachePersistTimer = null;
+  const collections = {};
+  for (const [name, docs] of _serverDocs) {
+    collections[name] = { docs: [...docs.values()], fullAt: _fullLoadedAt.get(name) || 0 };
+  }
+  kvSet(SYNC_CACHE_KEY, { v: 1, project: cacheProject(), savedAt: Date.now(), collections }).catch(
+    e => console.warn('[DB] sync cache not saved:', e)
+  );
+}
+
+export { persistSyncCache as _persistSyncCache };
+
+/** Forget the cached server data (logout, reset, migration). */
+export async function clearSyncCache() {
+  if (_cachePersistTimer) {
+    clearTimeout(_cachePersistTimer);
+    _cachePersistTimer = null;
+  }
+  _serverDocs.clear();
+  _fullLoadedAt.clear();
+  try {
+    await kvSet(SYNC_CACHE_KEY, null);
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+async function loadFullCollection(name) {
+  const snap = await getDocs(collection(firestore, name));
+  const docs = [];
+  snap.forEach(d => docs.push(fromServer(d)));
+  docs.sort(byIdOrder);
+  return { name, docs, fullAt: Date.now() };
+}
+
+/**
+ * One collection for loadDB: the cached copy plus the documents changed since
+ * its newest update, or a full load when there is no usable cache, the cache is
+ * older than SYNC_FULL_RELOAD_AGE, or the count on the server differs.
+ */
+async function loadCollection(name, cached) {
+  const usable =
+    cached &&
+    Array.isArray(cached.docs) &&
+    Date.now() - (Number(cached.fullAt) || 0) < SYNC_FULL_RELOAD_AGE;
+  const since = usable ? newestUpdate(cached.docs) : null;
+  if (since != null) {
+    try {
+      const ref = collection(firestore, name);
+      const [changed, counted] = await Promise.all([
+        getDocs(query(ref, where('updatedAt', '>=', Timestamp.fromMillis(since)))),
+        getCountFromServer(ref),
+      ]);
+      const byId = new Map(cached.docs.filter(r => r && r.id != null).map(r => [String(r.id), r]));
+      changed.forEach(d => byId.set(d.id, fromServer(d)));
+      if (counted.data().count === byId.size) {
+        return { name, docs: [...byId.values()].sort(byIdOrder), fullAt: cached.fullAt };
+      }
+    } catch (e) {
+      console.warn(`[DB] incremental load of ${name} failed, loading it in full:`, e.message);
+    }
+  }
+  return loadFullCollection(name);
+}
 
 // Local-first persistence: when Firestore is unavailable, the whole DB is
 // mirrored to IndexedDB (store 'kv' of database 'nsa-local') so data survives a
@@ -319,17 +508,12 @@ export async function loadDB() {
     // eslint-disable-next-line no-console
     console.log('[DB] Loading data from Firestore...');
 
-    // Load all collections in parallel
-    const promises = Object.entries(COLLECTIONS).map(async ([_key, collectionName]) => {
-      const snapshot = await getDocs(collection(firestore, collectionName));
-      const data = [];
-      snapshot.forEach(doc => {
-        data.push({ id: doc.id, ...doc.data() });
-      });
-      // Key the in-memory cache by the camelCase collection name (e.g.
-      // "salesOrders"), which is what the rest of the app reads from DB.
-      return [collectionName, data];
-    });
+    // Load all collections in parallel: from the sync cache plus what changed
+    // since, or in full (see loadCollection).
+    const cache = await readSyncCache();
+    const promises = Object.values(COLLECTIONS).map(name =>
+      loadCollection(name, cache && cache.collections[name])
+    );
 
     // If Firestore is unreachable (e.g. the database isn't provisioned) the SDK
     // retries for ~30s and would block boot. Cap the wait and fall back.
@@ -342,15 +526,21 @@ export async function loadDB() {
     );
     const results = await Promise.race([Promise.all(promises), timeout]);
 
-    // Populate DB object
-    results.forEach(([key, data]) => {
-      if (isObjectCollection(key)) {
+    // Populate DB object. DB gets copies: screens edit records in place, and the
+    // server copy (and the cache made from it) must not see un-flushed edits.
+    // Keyed by the camelCase collection name (e.g. "salesOrders"), which is what
+    // the rest of the app reads from DB.
+    results.forEach(({ name, docs, fullAt }) => {
+      _serverDocs.set(name, new Map(docs.map(r => [String(r.id), r])));
+      _fullLoadedAt.set(name, fullAt);
+      if (isObjectCollection(name)) {
         // These are objects, not arrays
-        DB[key] = data.length > 0 ? data[0] : getDefaultValue(key);
+        DB[name] = docs.length > 0 ? clone(docs[0]) : getDefaultValue(name);
       } else {
-        DB[key] = data;
+        DB[name] = docs.map(clone);
       }
     });
+    scheduleCachePersist();
 
     // Load the GL seed (Accurate journals + chart of accounts) from the
     // auth-gated glSeed collection. This is the sole source for that data now
@@ -370,8 +560,9 @@ export async function loadDB() {
     // just in local mode. Disable by setting VITE_SEED_DEMO=false.
     await seedDemoIfEmpty();
 
-    // Set up real-time listeners
+    // Set up real-time listeners, and the periodic count check for deletions
     setupRealtimeListeners();
+    startReconcileLoop();
 
     // eslint-disable-next-line no-console
     console.log('✓ Data loaded from Firestore');
@@ -550,45 +741,63 @@ async function flushDirtyCollections() {
   };
 
   const updatedBy = currentUserName();
-  for (const [name, diff] of dirty) {
-    if (diff.kind === 'object') {
-      batch.set(
-        doc(firestore, name, 'default'),
-        stripUndefined({
-          ...diff.data,
-          updatedAt: serverTimestamp(),
-          ...(updatedBy ? { updatedBy } : {}),
-        }),
-        { merge: true }
-      );
-      await addOp();
-      continue;
+  const written = [];
+  try {
+    for (const [name, diff] of dirty) {
+      if (diff.kind === 'object') {
+        markInflight(written, name, 'default');
+        batch.set(
+          doc(firestore, name, 'default'),
+          stripUndefined({
+            ...diff.data,
+            updatedAt: serverTimestamp(),
+            ...(updatedBy ? { updatedBy } : {}),
+          }),
+          { merge: true }
+        );
+        await addOp();
+        continue;
+      }
+      for (const item of diff.sets) {
+        markInflight(written, name, item.id);
+        batch.set(
+          doc(firestore, name, String(item.id)),
+          stripUndefined({
+            ...item,
+            updatedAt: serverTimestamp(),
+            ...(updatedBy ? { updatedBy } : {}),
+          }),
+          { merge: true }
+        );
+        await addOp();
+      }
+      for (const id of diff.deletes) {
+        markInflight(written, name, id);
+        batch.delete(doc(firestore, name, id));
+        await addOp();
+      }
     }
-    for (const item of diff.sets) {
-      batch.set(
-        doc(firestore, name, String(item.id)),
-        stripUndefined({
-          ...item,
-          updatedAt: serverTimestamp(),
-          ...(updatedBy ? { updatedBy } : {}),
-        }),
-        { merge: true }
-      );
-      await addOp();
+    if (ops > 0) {
+      await batch.commit();
     }
-    for (const id of diff.deletes) {
-      batch.delete(doc(firestore, name, id));
-      await addOp();
-    }
-  }
-  if (ops > 0) {
-    await batch.commit();
+  } finally {
+    clearInflight(written);
   }
 
   // Baseline only after every batch committed; a partial failure simply
   // rewrites the affected records on the next flush (sets are merge-idempotent).
+  let deleted = false;
   for (const [name, diff] of dirty) {
     _savedSnapshot.set(name, diff.snapshot);
+    // A deleted document leaves the server copy now: listeners only report
+    // deletions of documents changed since the load.
+    if (diff.kind === 'array' && diff.deletes.length && _serverDocs.has(name)) {
+      diff.deletes.forEach(id => _serverDocs.get(name).delete(id));
+      deleted = true;
+    }
+  }
+  if (deleted) {
+    scheduleCachePersist();
   }
   // eslint-disable-next-line no-console
   console.log(`✓ Data saved to Firestore (${total} operations, ${dirty.length} collections)`);
@@ -768,11 +977,21 @@ export async function saveDB(collectionName = null, data = null) {
  */
 async function saveCollection(collectionName, data) {
   const updatedBy = currentUserName();
+  const written = [];
+  try {
+    await writeCollection(collectionName, data, updatedBy, written);
+  } finally {
+    clearInflight(written);
+  }
+}
+
+async function writeCollection(collectionName, data, updatedBy, written) {
   if (Array.isArray(data)) {
     // Save array items in chunks — a Firestore writeBatch caps at 500 ops.
     for (let i = 0; i < data.length; i += 450) {
       const batch = writeBatch(firestore);
       data.slice(i, i + 450).forEach(item => {
+        markInflight(written, collectionName, item.id);
         const docRef = doc(firestore, collectionName, String(item.id));
         batch.set(
           docRef,
@@ -788,6 +1007,7 @@ async function saveCollection(collectionName, data) {
     }
   } else {
     // Save single object
+    markInflight(written, collectionName, 'default');
     const docRef = doc(firestore, collectionName, 'default');
     await setDoc(
       docRef,
@@ -860,6 +1080,102 @@ function mergeRemoteSnapshot(name, remoteData) {
 // Test hook: exercised directly in tests (the onSnapshot plumbing is mocked away).
 export { mergeRemoteSnapshot as _mergeRemoteSnapshot };
 
+// JSON with sorted keys, so field order doesn't count as a difference.
+function stableJson(v) {
+  if (Array.isArray(v)) {
+    return '[' + v.map(stableJson).join(',') + ']';
+  }
+  if (v && typeof v === 'object') {
+    return (
+      '{' +
+      Object.keys(v)
+        .sort()
+        .map(k => JSON.stringify(k) + ':' + stableJson(v[k]))
+        .join(',') +
+      '}'
+    );
+  }
+  return JSON.stringify(v);
+}
+
+// A record's content for the conflict check, without the stamps every write
+// changes (updatedAt, updatedBy): an echo of this device's own save is not a
+// change made elsewhere.
+function contentOf(json) {
+  try {
+    const o = JSON.parse(json);
+    if (o && typeof o === 'object') {
+      delete o.updatedAt;
+      delete o.updatedBy;
+    }
+    return stableJson(o);
+  } catch (_) {
+    return json;
+  }
+}
+
+/**
+ * Fold changed documents from a listener into an array collection — the
+ * per-document form of mergeRemoteSnapshot, with the same rules: un-flushed
+ * local edits and deletions stay local (and still flush), everything else
+ * takes the server's version. `removedIds` are documents deleted on the server.
+ * Returns the number of true conflicts.
+ */
+function mergeRemoteChanges(name, upserts, removedIds) {
+  const localDiff = diffCollection(name);
+  const pendingEdits = new Set();
+  const pendingDeletes = new Set();
+  if (localDiff && localDiff.kind === 'array') {
+    localDiff.sets.forEach(item => pendingEdits.add(String(item.id)));
+    localDiff.deletes.forEach(id => pendingDeletes.add(id));
+  }
+  const prev = _savedSnapshot.get(name);
+  const baseline = prev instanceof Map ? prev : new Map();
+  const current = new Map(
+    (Array.isArray(DB[name]) ? DB[name] : [])
+      .filter(r => r && r.id != null)
+      .map(r => [String(r.id), r])
+  );
+  let conflicts = 0;
+  for (const rec of upserts) {
+    const id = String(rec.id);
+    const json = JSON.stringify(rec);
+    if (pendingDeletes.has(id)) {
+      baseline.set(id, json); // deleted here — the flush deletes it remotely
+      continue;
+    }
+    if (pendingEdits.has(id) && current.has(id)) {
+      // The server now holds what this device holds (the echo of its own save):
+      // take the server copy, nothing is pending any more.
+      if (contentOf(JSON.stringify(current.get(id))) === contentOf(json)) {
+        current.set(id, rec);
+        baseline.set(id, json);
+        continue;
+      }
+    }
+    if (pendingEdits.has(id)) {
+      const base = baseline.get(id);
+      if (base === undefined || contentOf(base) !== contentOf(json)) {
+        conflicts++;
+      }
+      baseline.set(id, json); // local edit stays dirty against the remote → flushes
+      continue;
+    }
+    current.set(id, rec);
+    baseline.set(id, json);
+  }
+  for (const id of removedIds) {
+    baseline.delete(id);
+    if (!pendingEdits.has(id)) {
+      current.delete(id); // edited here while deleted elsewhere: kept, re-created
+    }
+  }
+  DB[name] = [...current.values()].sort(byIdOrder);
+  _savedSnapshot.set(name, baseline);
+  return conflicts;
+}
+export { mergeRemoteChanges as _mergeRemoteChanges };
+
 let _conflictToastAt = 0;
 function notifyEditConflict(name, count) {
   // At most one warning per 10s — the flush right after resolves the state.
@@ -919,89 +1235,198 @@ function scheduleRemoteRefresh() {
   }
 }
 
-function setupRealtimeListeners() {
-  Object.entries(COLLECTIONS).forEach(([, collectionName]) => {
-    const dataKey = collectionName;
+// After a remote change reached DB: keep the global handle, the ledger and the
+// integrity/recycle-bin/RBAC baselines in step, and redraw the open screen.
+function afterRemoteChange(name) {
+  // SO/PO status is owned by the sync script (Accurate authority); do not
+  // re-derive from DO linkage here (see applyDefaults note + _deriveOrderStatuses).
+  syncDBGlobal();
 
+  // Vouchers synced from another device must reach DB.journals before the
+  // integrity/RBAC snapshots re-baseline below; otherwise the next local
+  // save would treat them as local additions.
+  if (name === 'journalVouchers' && window.GL && typeof window.GL.reconcileAll === 'function') {
+    try {
+      window.GL.reconcileAll();
+    } catch (e) {
+      console.warn('[DB] ledger merge after voucher sync failed:', e);
+    }
+  }
+
+  // A remote change just reached a local collection. Re-baseline the
+  // data-integrity snapshot (integrity.js) so the next local save diffs
+  // against the synced state — otherwise audit/period-lock would misfire
+  // on records that arrived via sync, not via this device.
+  if (window.Integrity && typeof window.Integrity.refreshSnapshot === 'function') {
+    window.Integrity.refreshSnapshot();
+  }
+  // Same for the recycle bin (trash.js): records removed by a remote sync
+  // were already binned on the deleting device — don't re-capture them.
+  if (window.Trash && typeof window.Trash.refreshSnapshot === 'function') {
+    window.Trash.refreshSnapshot();
+  }
+  // Same for the RBAC safety net (rbac.js): a remote-synced change is not a
+  // local edit, so re-baseline before the next save diffs against it.
+  if (window.RBAC && typeof window.RBAC.refreshSnapshot === 'function') {
+    window.RBAC.refreshSnapshot();
+  }
+
+  // Re-render the active view on any relevant remote change. Most views
+  // aggregate several collections, so refresh broadly (coalesced to one
+  // render per animation frame to absorb a multi-collection burst).
+  scheduleRemoteRefresh();
+}
+
+/** Server changes to one collection (from a listener) into the server copy and DB. */
+function applyRemoteChanges(name, upserts, removedIds) {
+  const server = _serverDocs.get(name) || new Map();
+  _serverDocs.set(name, server);
+  upserts.forEach(r => server.set(String(r.id), r));
+  removedIds.forEach(id => server.delete(id));
+
+  if (isObjectCollection(name)) {
+    // Object collections replace outright and re-baseline (single document).
+    const rec = server.get('default') || server.values().next().value;
+    DB[name] = rec ? clone(rec) : getDefaultValue(name);
+    markCollectionSaved(name, DB[name]);
+  } else {
+    // Array collections merge so a remote change can't silently clobber local
+    // edits that haven't flushed yet — conflicts are surfaced, not dropped.
+    const conflicts = mergeRemoteChanges(name, upserts.map(clone), removedIds);
+    if (conflicts > 0) {
+      notifyEditConflict(name, conflicts);
+    }
+  }
+  afterRemoteChange(name);
+  scheduleCachePersist();
+}
+
+/**
+ * Set up real-time listeners for all collections. Each one watches the
+ * documents updated at or after the newest one loaded, so its first snapshot
+ * holds only what changed since (a collection without updatedAt is watched
+ * whole).
+ */
+function setupRealtimeListeners() {
+  Object.values(COLLECTIONS).forEach(name => {
     // Skip if listener already exists
-    if (listeners.has(collectionName)) {
+    if (listeners.has(name)) {
       return;
     }
+    const ref = collection(firestore, name);
+    const since = newestUpdate((_serverDocs.get(name) || new Map()).values());
+    const target =
+      since == null ? ref : query(ref, where('updatedAt', '>=', Timestamp.fromMillis(since)));
 
     const unsubscribe = onSnapshot(
-      collection(firestore, collectionName),
+      target,
       snapshot => {
-        const data = [];
-        snapshot.forEach(doc => {
-          data.push({ id: doc.id, ...doc.data() });
+        const upserts = [];
+        const removed = [];
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'removed') {
+            // updatedAt only grows, so leaving the result set means deleted —
+            // except for this device's own writes awaiting the server (see
+            // _inflight); object collections are never deleted one by one.
+            const own = _inflight.get(name);
+            if (!isObjectCollection(name) && !(own && own.has(change.doc.id))) {
+              removed.push(change.doc.id);
+            }
+          } else if (!(change.doc.metadata && change.doc.metadata.hasPendingWrites)) {
+            // This device's own un-committed writes are skipped; the committed
+            // version follows with the server's updatedAt.
+            upserts.push(fromServer(change.doc));
+          }
         });
-
-        // Update in-memory cache. Object collections replace outright; array
-        // collections merge so an incoming snapshot can't silently clobber local
-        // edits that haven't flushed yet — conflicts are surfaced, not dropped.
-        if (isObjectCollection(dataKey)) {
-          DB[dataKey] = data.length > 0 ? data[0] : getDefaultValue(dataKey);
-          // This collection now mirrors the server — re-baseline the dirty
-          // tracker so the next saveDB() doesn't rewrite synced records.
-          markCollectionSaved(dataKey, DB[dataKey]);
-        } else {
-          const conflicts = mergeRemoteSnapshot(dataKey, data);
-          if (conflicts > 0) {
-            notifyEditConflict(dataKey, conflicts);
-          }
+        if (upserts.length || removed.length) {
+          applyRemoteChanges(name, upserts, removed);
         }
-        // SO/PO status is owned by the sync script (Accurate authority); do not
-        // re-derive from DO linkage here (see applyDefaults note + _deriveOrderStatuses).
-        syncDBGlobal();
-
-        // Vouchers synced from another device must reach DB.journals before the
-        // integrity/RBAC snapshots re-baseline below; otherwise the next local
-        // save would treat them as local additions.
-        if (
-          dataKey === 'journalVouchers' &&
-          window.GL &&
-          typeof window.GL.reconcileAll === 'function'
-        ) {
-          try {
-            window.GL.reconcileAll();
-          } catch (e) {
-            console.warn('[DB] ledger merge after voucher sync failed:', e);
-          }
-        }
-
-        // A remote snapshot just replaced a local collection. Re-baseline the
-        // data-integrity snapshot (integrity.js) so the next local save diffs
-        // against the synced state — otherwise audit/period-lock would misfire
-        // on records that arrived via sync, not via this device.
-        if (window.Integrity && typeof window.Integrity.refreshSnapshot === 'function') {
-          window.Integrity.refreshSnapshot();
-        }
-        // Same for the recycle bin (trash.js): records removed by a remote sync
-        // were already binned on the deleting device — don't re-capture them.
-        if (window.Trash && typeof window.Trash.refreshSnapshot === 'function') {
-          window.Trash.refreshSnapshot();
-        }
-        // Same for the RBAC safety net (rbac.js): a remote-synced change is not a
-        // local edit, so re-baseline before the next save diffs against it.
-        if (window.RBAC && typeof window.RBAC.refreshSnapshot === 'function') {
-          window.RBAC.refreshSnapshot();
-        }
-
-        // Re-render the active view on any relevant remote change. Most views
-        // aggregate several collections, so refresh broadly (coalesced to one
-        // render per animation frame to absorb the initial multi-collection burst).
-        scheduleRemoteRefresh();
       },
       error => {
-        console.error(`Listener error for ${collectionName}:`, error);
+        console.error(`Listener error for ${name}:`, error);
       }
     );
 
-    listeners.set(collectionName, unsubscribe);
+    listeners.set(name, unsubscribe);
   });
 
   // eslint-disable-next-line no-console
   console.log('✓ Real-time listeners active');
+}
+
+/**
+ * Compare each collection's count on the server with the server copy held
+ * here; a difference (a document deleted elsewhere, which no listener reports
+ * for documents older than the load) reloads that collection in full.
+ */
+let _lastReconcile = 0;
+let _reconcileRunning = false;
+async function reconcileCounts() {
+  if (usingLocalStore || !firestore || _reconcileRunning) {
+    return;
+  }
+  _reconcileRunning = true;
+  _lastReconcile = Date.now();
+  try {
+    const names = Object.values(COLLECTIONS);
+    const counts = await Promise.all(
+      names.map(name =>
+        getCountFromServer(collection(firestore, name))
+          .then(c => c.data().count)
+          .catch(() => null)
+      )
+    );
+    let changed = false;
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      if (counts[i] == null || counts[i] === (_serverDocs.get(name) || new Map()).size) {
+        continue;
+      }
+      try {
+        const { docs, fullAt } = await loadFullCollection(name);
+        _serverDocs.set(name, new Map(docs.map(r => [String(r.id), r])));
+        _fullLoadedAt.set(name, fullAt);
+        if (isObjectCollection(name)) {
+          DB[name] = docs.length > 0 ? clone(docs[0]) : getDefaultValue(name);
+          markCollectionSaved(name, DB[name]);
+        } else {
+          const conflicts = mergeRemoteSnapshot(name, docs.map(clone));
+          if (conflicts > 0) {
+            notifyEditConflict(name, conflicts);
+          }
+        }
+        afterRemoteChange(name);
+        changed = true;
+      } catch (e) {
+        console.warn(`[DB] reload of ${name} failed:`, e.message);
+      }
+    }
+    if (changed) {
+      scheduleCachePersist();
+    }
+  } finally {
+    _reconcileRunning = false;
+  }
+}
+export { reconcileCounts as _reconcileCounts };
+
+let _reconcileTimer = null;
+function startReconcileLoop() {
+  if (_reconcileTimer || typeof document === 'undefined') {
+    return;
+  }
+  const visible = () => document.visibilityState !== 'hidden';
+  _reconcileTimer = setInterval(() => {
+    if (visible()) {
+      reconcileCounts();
+    }
+  }, RECONCILE_INTERVAL);
+  document.addEventListener('visibilitychange', () => {
+    if (visible() && Date.now() - _lastReconcile > RECONCILE_ON_FOCUS_AFTER) {
+      reconcileCounts();
+    }
+  });
+  _lastReconcile = Date.now();
 }
 
 /**
@@ -1143,6 +1568,8 @@ export async function migrateLocalToFirestore(onProgress) {
   } catch (_) {
     /* ignore */
   }
+  // The server data was replaced: the next load starts from it in full.
+  await clearSyncCache();
   return written;
 }
 
@@ -1479,7 +1906,9 @@ function _deriveOrderStatuses() {
  */
 export async function resetDB() {
   if (
-    !(await window.confirmAsk('Apakah Anda yakin ingin mereset semua data? Tindakan ini tidak dapat dibatalkan.'))
+    !(await window.confirmAsk(
+      'Apakah Anda yakin ingin mereset semua data? Tindakan ini tidak dapat dibatalkan.'
+    ))
   ) {
     return;
   }
@@ -1517,6 +1946,7 @@ export async function resetDB() {
     // The server was just wiped — clear the dirty-tracking baseline so the
     // full default dataset is written, not just what differs from pre-reset.
     _savedSnapshot.clear();
+    await clearSyncCache();
     await saveDB();
 
     if (typeof navigate !== 'undefined' && typeof activeView !== 'undefined') {
@@ -1702,5 +2132,7 @@ window.loadDB = loadDB;
 window.saveDB = saveDB;
 window.resetDB = resetDB;
 window.migrateLocalToFirestore = migrateLocalToFirestore;
+// Logout (auth.js) forgets the cached server data on this browser.
+window.__nsaClearSyncCache = clearSyncCache;
 // Dormant Option-B helper: derive SO/PO statuses from DO/GR linkage on demand.
 window.deriveOrderStatuses = _deriveOrderStatuses;
