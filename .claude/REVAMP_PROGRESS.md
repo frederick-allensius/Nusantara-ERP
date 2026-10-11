@@ -458,3 +458,19 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   BRIEF.md + STORYBOARD.md v1 (21 frames, 3:22, 4 cases). Waiting for the owner-side review of the
   plan, then sketches.
 - sw v1.1.23. 635 tests.
+
+## Session 2026-10-11 (sore) — walkthrough videos of every met requirement
+
+- Two videos outside the repo, recorded from the app with made-up data (../videos):
+  `alur-pengambilan` (Bagian 1, 5:02: pickup flow, 4 cases, supplier invoice + payment, Rekap
+  Pengambilan, Ringkasan pipeline, jurnal + Neraca Saldo, cut-off and next-month PO) and
+  `bagian-2-keuangan` (Bagian 2, 1:57: Entri Harian, Pengeluaran Lain + rekap per kategori, bank
+  balance vs statement + bank charges, PPN, Coretax, Akses menu, ukuran teks, Arsip Excel).
+  Recorder: ../videos/alur-pengambilan/tools/record.cjs (Playwright on the harness).
+- Bank scene follows the transcript [1:07:55]–[1:09:28]: the statement is only compared on its
+  closing balance; statement lines are not entered (the owner said no when asked).
+- Harness font fixed: harness.local/ui.html loaded Inter while app.html loads Geist, so every
+  harness screenshot fell back to Segoe UI. It now loads Geist + Geist Mono like app.html. The
+  screenshots in docs/pitch/* were taken before this and show the fallback font (retake pending,
+  together with the older Kotak Masuk Rekap shots).
+- No app code changed this session.
