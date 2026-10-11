@@ -281,7 +281,7 @@ Dibuka dari nama pengguna di bar atas: Profil & Perusahaan, Manajemen Pengguna (
 
 ### Pengaturan Umum
 
-Hanya berisi hal yang tidak punya tempat lain: Kelola Backup, Notifikasi Sistem, Manajemen Pengguna, Pengaturan Pajak, Ekspor/Impor Backup JSON, Sinkronisasi ke Firebase, dan Reset Data. Profil Perusahaan ada di menu Pengaturan dan menu pengguna; Ganti Password dan Instal Aplikasi di menu pengguna; Kategori Barang dan Satuan Barang di Data Master; Bagan Akun di Akuntansi.
+Hanya berisi hal yang tidak punya tempat lain: Kelola Backup, Notifikasi Sistem, Manajemen Pengguna, Pengaturan Pajak, **Nomor Dokumen** (format nomor PO perusahaan, mis. `PO-{###}/BS/TMA/S/{BULAN-ROMAWI}/{TAHUN}`, urut per tahun; kosong = format bawaan PO.TTTT.BB.NNNNN), Ekspor/Impor Backup JSON, Sinkronisasi ke Firebase, dan Reset Data. Profil Perusahaan ada di menu Pengaturan dan menu pengguna; Ganti Password dan Instal Aplikasi di menu pengguna; Kategori Barang dan Satuan Barang di Data Master; Bagan Akun di Akuntansi.
 
 ### Data karyawan
 
