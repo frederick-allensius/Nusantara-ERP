@@ -89,7 +89,7 @@ Bagan akun (22 akun) dibuat otomatis bila kosong; akun bawaan yang belum ada di 
 | Dokumen / kejadian | Kapan jurnal dibuat | Debit | Kredit |
 |---|---|---|---|
 | **SO → Terkirim** | Status = Terkirim | **HPP** (qty × harga pokok rata-rata); selama SO belum difakturkan juga Piutang Usaha (neto + PPN) dan Diskon Penjualan | **Persediaan**; selama belum difakturkan juga Penjualan (bruto) dan PPN Keluaran |
-| Log Pembayaran SO | Setiap baris log (kecuali yang berasal dari uang muka) | Kas / Bank (sesuai metode) | Piutang Usaha |
+| Log Pembayaran SO (data lama, dan uang muka yang diterapkan) | Setiap baris log (kecuali yang berasal dari uang muka) | Kas / Bank (sesuai metode) | Piutang Usaha |
 | **Faktur Penjualan** | Status Belum Lunas atau Lunas | Piutang Usaha; Diskon; HPP (harga pokok statis) **hanya** untuk faktur tanpa SO sumber dan bukan dari pengambilan | Penjualan; PPN Keluaran; Persediaan (bila ada HPP) |
 | Penerimaan (SR) | Status Diposting | Kas / Bank | Piutang Usaha |
 | Uang muka diterima | Status Diterima/Diterapkan | Kas / Bank | Uang Muka Penjualan |
@@ -109,7 +109,7 @@ Bagan akun (22 akun) dibuat otomatis bila kosong; akun bawaan yang belum ada di 
 |---|---|---|---|
 | **PO → Diterima** | Status = Diterima dan PO belum punya Faktur Pembelian aktif | Persediaan (baris barang); Beban Operasional Lain (baris manual); PPN Masukan | Hutang Usaha |
 | **Penerimaan Barang yang belum difakturkan** (PO yang difakturkan per penerimaan) | Penerimaan sudah menambah stok, belum ada faktur untuk penerimaan itu | Persediaan (qty diterima × harga satuan penerimaan, atau harga neto PO); PPN Masukan (tarif PO) | Hutang Usaha |
-| Log Pembayaran PO | Setiap baris log (kecuali yang berasal dari uang muka) | Hutang Usaha | Kas / Bank |
+| Log Pembayaran PO (data lama, dan uang muka yang diterapkan) | Setiap baris log (kecuali yang berasal dari uang muka) | Hutang Usaha | Kas / Bank |
 | **Faktur Pembelian** | Belum Lunas / Lunas | Persediaan; Beban; PPN Masukan | Hutang Usaha |
 | Pembayaran (PP) | Diposting | Hutang Usaha | Kas / Bank |
 | Uang muka dibayar | Dibayar/Diterapkan | Uang Muka Pembelian | Kas / Bank |

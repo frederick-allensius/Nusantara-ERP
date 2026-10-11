@@ -16,7 +16,7 @@
 | Pesanan penjualan | SO dengan status, reservasi stok, cetak, duplikat, ubah status massal | Pesanan + cek batas kredit + persetujuan | 🟡 | Tanpa batas kredit & persetujuan |
 | Pengiriman / surat jalan | Kirim sebagian, bagi muatan per truk, cetak; untuk pengambilan: surat jalan per truk dibuat sekaligus per PO, timbangan per truk | Pengiriman terhubung stok & pelacakan | 🟡 | Barang stok: stok berkurang dari status SO, bukan surat jalan |
 | Faktur penjualan | Faktur dari SO terkirim; faktur gabungan banyak truk per periode dari pengambilan (Tagih Pelanggan); bisa dibatalkan | Faktur dari satu/lebih pengiriman, faktur gabungan | 🟡 | Barang stok: 1 faktur = 1 SO |
-| Penerimaan pembayaran | Per faktur atau per SO; cicilan | Satu penerimaan untuk banyak faktur, lebih bayar, giro | 🟡 | Dua jalur tidak saling mengenali (T-06) |
+| Penerimaan pembayaran | Per faktur (cicilan); sebelum faktur sebagai uang muka | Satu penerimaan untuk banyak faktur, lebih bayar, giro | 🟡 | Jalur baku per faktur (keputusan 11 Okt 2026, T-06 selesai); satu penerimaan untuk banyak faktur dan giro belum ada |
 | Uang muka pelanggan | Terima & terapkan ke SO | Sama | ✅ | Jurnal ganda sudah diperbaiki (T-04) |
 | Retur penjualan | Retur dari SO/faktur | Retur + nota kredit / pengembalian dana | 🟡 | Retur dari faktur gagal (T-12) |
 | Harga & diskon | Harga jual per barang; diskon nominal per baris | Daftar harga per pelanggan/volume, promosi | 🟡 | |

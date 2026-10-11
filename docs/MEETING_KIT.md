@@ -142,7 +142,7 @@ Gambaran usaha yang sudah dikonfirmasi pemilik (trading, batu split per ton, pen
 | S2 | 🔴 | Kapan faktur dibuat: saat barang dikirim, setelah semua terkirim, atau direkap per periode? | Menentukan kapan pendapatan & piutang dicatat | |
 | S3 | 🔴 | Satu pesanan bisa dikirim beberapa kali? Satu faktur bisa mencakup beberapa pengiriman? | Faktur per pengiriman vs gabungan | |
 | S4 | 🔴 | Bagaimana pelanggan membayar (tunai, transfer, giro)? Ke rekening mana saja? Sering dicicil? | Akun kas/bank & cara mencatat penerimaan | |
-| S5 | 🔴 | Pembayaran pelanggan dicatat per faktur atau per pesanan? Siapa yang mencatat? | Memilih satu jalur pembayaran baku (T-06) | |
+| S5 | 🔴 | Pembayaran pelanggan dicatat per faktur atau per pesanan? Siapa yang mencatat? | Memilih satu jalur pembayaran baku (T-06) | Per faktur (11 Okt 2026) |
 | S6 | 🟡 | Apakah ada penawaran harga tertulis sebelum pesanan? | Relevansi menu Penawaran | |
 | S7 | 🟡 | Termin pembayaran standar berapa hari? Berbeda per pelanggan? Ada batas kredit? | Jatuh tempo & peringatan | |
 | S8 | 🟡 | Harga jual tetap per barang, per pelanggan, atau negosiasi per pesanan? Siapa boleh memberi diskon? | Daftar harga & hak akses | |
@@ -290,7 +290,7 @@ Setelah demo, tanyakan: *"Dari yang barusan, bagian mana yang paling mirip denga
 
 - Tunjukkan alur, bukan jumlah fitur. Banyaknya menu tidak perlu dijelaskan satu per satu.
 - Jika ditanya "apakah bisa …", jawab jujur berdasarkan [07-MATRIKS-KAPABILITAS.md](07-MATRIKS-KAPABILITAS.md): tersedia, sebagian, atau belum ada.
-- Temuan perhitungan dan perbaikannya tercatat di [08-TEMUAN-TEKNIS.md](08-TEMUAN-TEKNIS.md); yang masih menunggu keputusan adalah T-06 (jalur pembayaran baku) dan T-44 (metode penilaian persediaan). Semua angka di data demo fiktif — jangan dipakai sebagai contoh angka pajak perusahaan.
+- Temuan perhitungan dan perbaikannya tercatat di [08-TEMUAN-TEKNIS.md](08-TEMUAN-TEKNIS.md); yang masih menunggu keputusan adalah T-44 (metode penilaian persediaan). Semua angka di data demo fiktif — jangan dipakai sebagai contoh angka pajak perusahaan.
 - Catat istilah yang dipakai pengguna sendiri (mis. "nota", "DO", "kwitansi") — istilah itu nanti dipakai di aplikasi.
 
 ---

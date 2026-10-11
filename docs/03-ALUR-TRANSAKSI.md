@@ -22,7 +22,7 @@ flowchart LR
   SO -->|Buat Faktur| SI["Faktur Penjualan (SI)"]
   SI --> AR(["Piutang"])
   SI -->|Catat Penerimaan| SR["Penerimaan Pembayaran (SR)"]
-  SO -.->|alternatif: Catat Pembayaran di SO| PL["Log Pembayaran SO"]
+  SO -.->|sebelum ada faktur| PL["Uang Muka Penjualan"]
   SO -.->|DP| SDP["Uang Muka Penjualan"]
   SO -->|barang kembali| SRN["Retur Penjualan"]
   SI --> SRN
@@ -34,7 +34,7 @@ flowchart LR
 | Sales Order (SO) | **Wajib** untuk alur berbasis dokumen | Operasional | Reservasi (Dikonfirmasi), keluar (Terkirim) | Ya saat **Terkirim** |
 | Surat Jalan (DO) | Opsional (untuk cetak & kontrol kirim) | Operasional/logistik | **Tidak** | Tidak |
 | Faktur Penjualan (SI) | Opsional di sistem (umumnya wajib di bisnis) | Keuangan | Tidak | Ya |
-| Penerimaan Pembayaran (SR) atau Log Pembayaran SO | Salah satu | Keuangan | Tidak | Ya |
+| Penerimaan Pembayaran (SR) atas faktur; sebelum faktur: Uang Muka | Per faktur | Keuangan | Tidak | Ya |
 | Retur Penjualan | Bila ada barang kembali | Operasional + keuangan | Ya (masuk) | Ya |
 
 > **Pendapatan dicatat sekali (T-01, diperbaiki):** *SO Terkirim* membentuk HPP dan pengurangan persediaan. Pendapatan, piutang, dan PPN keluaran dibentuk oleh Faktur Penjualan bila SO sudah difakturkan; bila belum, oleh SO Terkirim. Rincian di [04-AKUNTANSI.md](04-AKUNTANSI.md) §4.1.
@@ -52,7 +52,7 @@ flowchart LR
   PO -->|Buat Faktur| PI["Faktur Pembelian (PI)"]
   PI --> AP(["Hutang"])
   PI -->|Catat Pembayaran| PP["Pembayaran ke Supplier (PP)"]
-  PO -.->|alternatif: Catat Pembayaran di PO| PLP["Log Pembayaran PO"]
+  PO -.->|sebelum ada faktur| PLP["Uang Muka Pembelian"]
   PO -.->|DP| PDP["Uang Muka Pembelian"]
   PO -->|barang dikembalikan| PRN["Retur Pembelian"]
   PI --> PRN
@@ -65,7 +65,7 @@ flowchart LR
 | Penerimaan Barang (GR) | Opsional (jalur terpisah, bisa bertahap) | Operasional/gudang | Ya (bila "Langsung update stok") | Lewat PO saat PO menjadi *Diterima*; per penerimaan bila PO difakturkan per penerimaan |
 | Rekonsiliasi Timbangan | Opsional | Kontrol | Tidak | Tidak (menentukan qty faktur) |
 | Faktur Pembelian (PI) | Opsional di sistem | Keuangan | Tidak | Ya |
-| Pembayaran (PP) atau Log Pembayaran PO | Salah satu | Keuangan | Tidak | Ya |
+| Pembayaran (PP) atas faktur; sebelum faktur: Uang Muka | Per faktur | Keuangan | Tidak | Ya |
 | Retur Pembelian | Bila barang dikembalikan | Operasional + keuangan | Ya (keluar) | Ya |
 
 > **Persediaan & hutang dicatat sekali (T-02, T-07, diperbaiki):** bila PO sudah punya Faktur Pembelian aktif, jurnal penerimaan PO tidak dibentuk; faktur yang menjadi dasarnya. Ada **dua cara** mencatat barang datang (status PO *Diterima* dan menu *Penerimaan Barang*); keduanya dicegah menambah stok dua kali, dan penerimaan yang melengkapi seluruh qty PO mengubah status PO menjadi *Diterima*.
@@ -182,7 +182,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | Cara | Lokasi | Dasar | Efek |
 |---|---|---|---|
 | **Penerimaan (SR)** | Penjualan → Penerimaan → Catat Penerimaan | Faktur Belum Lunas | Jurnal Kas/Bank vs Piutang; faktur jadi Lunas bila penuh |
-| **Log Pembayaran SO** | Detail SO → + Catat Pembayaran | Sales Order | Jurnal Kas/Bank vs Piutang; SO jadi Lunas bila penuh (kecuali sudah Terkirim) |
+| **Log Pembayaran SO** (data lama) | Tidak dibuat lagi dari Detail SO sejak keputusan per faktur (11 Okt 2026). Log yang sudah ada tetap tampil di Detail SO, tetap dihitung di sisa tagihan, dan bisa dihapus. Sebelum ada faktur, Detail SO menawarkan **+ Terima Uang Muka** | Sales Order | Jurnal Kas/Bank vs Piutang |
 
 | # | Pertanyaan | Jawaban (SR) |
 |---|---|---|
@@ -192,7 +192,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | 9–12 | Ubah/batal | Tidak bisa diubah atau dihapus. **Batalkan**: saldo kas/bank dan piutang dikembalikan, status faktur dihitung ulang |
 | 13 | Menemukan | Tab Penerimaan, Kartu Piutang, Riwayat Akun Kas |
 
-⚠ Kedua cara tidak saling mengenali: mencatat pembayaran yang sama di SO **dan** di faktur akan menggandakan kas (T-06). Sebagai pengaman, dialog Catat Pembayaran (SO/PO) dan Catat Penerimaan/Pembayaran (faktur) menampilkan pembayaran yang sudah tercatat di jalur lain dan sisa tagihan gabungan, lalu meminta konfirmasi bila jumlah melebihi sisa. Pembayaran sebagian didukung di kedua cara.
+**Jalur baku: per faktur** (keputusan 11 Okt 2026, [14 A1](14-PERTANYAAN-UNTUK-PEMILIK.md)). Uang yang diterima sebelum faktur dibuat dicatat sebagai **uang muka** (Detail SO → + Terima Uang Muka, atau Penjualan → Uang Muka Penjualan) lalu diterapkan ke pesanannya. Dialog Catat Penerimaan/Pembayaran di faktur tetap menampilkan log lama dari pesanan dan sisa tagihan gabungan, dan meminta konfirmasi bila jumlah melebihi sisa. Pembayaran sebagian (cicilan) didukung.
 
 ❓ Bagaimana pelanggan membayar (tunai/transfer/giro), apakah sering dicicil, rekening bank apa yang dipakai? — **REQUIRES USER CONFIRMATION**
 

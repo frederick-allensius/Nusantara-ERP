@@ -341,7 +341,9 @@
     injectView('sales', html);
   }
 
-  function addSalesDPModal() {
+  // fromOrderId: opened from the order dialog (no invoice yet) — that order is
+  // selected and the dialog returns to it after saving.
+  function addSalesDPModal(fromOrderId) {
     var sos = (db().salesOrders || []).filter(function (o) {
       return o.status !== 'Paid' && o.status !== 'Cancelled';
     });
@@ -354,8 +356,10 @@
           esc(o.customer || '') +
           '" data-amount="' +
           (o.amount || 0) +
-          '">' +
-          esc(o.id) +
+          '"' +
+          (fromOrderId && String(o.id) === String(fromOrderId) ? ' selected' : '') +
+          '>' +
+          esc(o.number || o.id) +
           ' — ' +
           esc(o.customer || '?') +
           ' (' +
@@ -418,7 +422,14 @@
         save();
         closeM();
         toast('Uang muka penjualan dicatat', 'success');
-        openSalesDP();
+        if (fromOrderId && typeof window.viewSO === 'function') {
+          // after the closing dialog has gone (closeModal cleans up late)
+          setTimeout(function () {
+            window.viewSO(orderId);
+          }, 300);
+        } else {
+          openSalesDP();
+        }
       });
     }, 60);
   }
@@ -527,7 +538,8 @@
     injectView('purchase', html);
   }
 
-  function addPurchaseDPModal() {
+  // fromOrderId: as addSalesDPModal.
+  function addPurchaseDPModal(fromOrderId) {
     var pos = (db().purchaseOrders || []).filter(function (o) {
       return o.status !== 'Paid' && o.status !== 'Received' && o.status !== 'Cancelled';
     });
@@ -538,8 +550,10 @@
           esc(o.id) +
           '" data-supplier="' +
           esc(o.supplier || '') +
-          '">' +
-          esc(o.id) +
+          '"' +
+          (fromOrderId && String(o.id) === String(fromOrderId) ? ' selected' : '') +
+          '>' +
+          esc(o.number || o.id) +
           ' — ' +
           esc(o.supplier || '?') +
           ' (' +
@@ -602,7 +616,14 @@
         save();
         closeM();
         toast('Uang muka pembelian dicatat', 'success');
-        openPurchaseDP();
+        if (fromOrderId && typeof window.viewPO === 'function') {
+          // after the closing dialog has gone (closeModal cleans up late)
+          setTimeout(function () {
+            window.viewPO(orderId);
+          }, 300);
+        } else {
+          openPurchaseDP();
+        }
       });
     }, 60);
   }
@@ -1631,6 +1652,9 @@
   window._salesPurchaseExtras = {
     openSalesDP: openSalesDP,
     openPurchaseDP: openPurchaseDP,
+    // Uang muka for one order, from its dialog (erp-crud.js addOrderDP).
+    addSalesDP: addSalesDPModal,
+    addPurchaseDP: addPurchaseDPModal,
     openSalesTarget: openSalesTarget,
     openReceiveItem: openReceiveItem,
     openSupplierPrice: openSupplierPrice,

@@ -4624,7 +4624,7 @@ function paymentLogHTML(type, orderId, order) {
 
   const logsHtml =
     logs.length === 0
-      ? '<div class="empty-inline">Belum ada pembayaran yang dicatat pada pesanan ini.</div>'
+      ? '<div class="empty-inline">Belum ada pembayaran.</div>'
       : `<table class="data-table compact">
           <thead><tr><th>Tanggal</th><th>Metode</th><th class="t-num">Jumlah</th><th>Catatan</th><th></th></tr></thead>
           <tbody>${logs
@@ -4654,13 +4654,15 @@ function paymentLogHTML(type, orderId, order) {
       </div>`
     : '';
 
-  // Once invoiced, new payments are recorded on the invoice (the balance counts both).
+  // Payments are recorded per invoice (owner decision, docs/14 A1). Before the
+  // order is invoiced, money received or paid is an advance: Uang Muka, applied
+  // to the order later. Payment logs recorded here earlier still count.
   const action =
     !order || order.status === 'Cancelled' || settled
       ? ''
       : invoice
         ? `<button class="btn-ghost btn-sm" data-action="settleInvoice" data-type="${type === 'SO' ? 'SI' : 'PI'}" data-id="${escapeHtml(invoice.id)}">+ Catat ${type === 'SO' ? 'Penerimaan' : 'Pembayaran'}</button>`
-        : `<button class="btn-ghost btn-sm" data-action="addPayment" data-type="${type}" data-id="${escapeHtml(orderId)}">+ Catat Pembayaran</button>`;
+        : `<button class="btn-ghost btn-sm" data-action="addOrderDP" data-type="${type}" data-id="${escapeHtml(orderId)}" title="Pembayaran dicatat di faktur. Sebelum ada faktur, catat sebagai uang muka.">+ ${type === 'SO' ? 'Terima' : 'Bayar'} Uang Muka</button>`;
   const invoiceNote = invoice
     ? `<div class="notice notice-info">Sudah difakturkan (${escapeHtml(docNum(invoice.number, invoice.id))}). Sisa tagihan dihitung dari faktur, termasuk pembayaran di bawah ini.</div>`
     : '';
@@ -6865,6 +6867,18 @@ document.addEventListener('click', e => {
     case 'addPayment':
       showAddPayment(btn.dataset.type, id);
       break;
+    // Uang muka for an order not invoiced yet (payments go on the invoice, A1).
+    case 'addOrderDP': {
+      const ext = window._salesPurchaseExtras;
+      const open = ext && (btn.dataset.type === 'SO' ? ext.addSalesDP : ext.addPurchaseDP);
+      if (open) {
+        closeModal();
+        setTimeout(() => open(id), 300);
+      } else {
+        showAddPayment(btn.dataset.type, id);
+      }
+      break;
+    }
 
     case 'bulkSOStatus':
       bulkSOStatus(btn.dataset.status);

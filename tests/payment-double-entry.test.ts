@@ -34,6 +34,28 @@ describe('order payment log dialog', () => {
   });
 });
 
+// Owner decision (docs/14 A1): payments are recorded per invoice. An order not
+// invoiced yet offers Uang Muka instead of a payment log; logs recorded earlier
+// still count in the balances above.
+describe('payments per invoice (A1)', () => {
+  const log = body(CRUD, 'function paymentLogHTML(');
+  const SPE = read('public/classic/core/sales-purchase-extras.js');
+
+  it('sends a new payment to the invoice, or to Uang Muka before there is one', () => {
+    expect(log).toContain('data-action="settleInvoice"');
+    expect(log).toContain('data-action="addOrderDP"');
+    expect(log).toContain('Uang Muka');
+    expect(log).not.toContain('data-action="addPayment"');
+  });
+
+  it('opens the down-payment dialog for that order and returns to it', () => {
+    expect(body(CRUD, "case 'addOrderDP':")).toMatch(/addSalesDP[\s\S]{0,40}addPurchaseDP/);
+    expect(SPE).toMatch(/addSalesDP: addSalesDPModal,\s*addPurchaseDP: addPurchaseDPModal/);
+    expect(body(SPE, 'function addSalesDPModal(fromOrderId)')).toMatch(/fromOrderId[\s\S]{0,250}window\.viewSO\(orderId\)/);
+    expect(body(SPE, 'function addPurchaseDPModal(fromOrderId)')).toMatch(/fromOrderId[\s\S]{0,250}window\.viewPO\(orderId\)/);
+  });
+});
+
 describe('invoice receipt/payment dialog', () => {
   it('shows payments logged on the order and asks before overpaying', () => {
     expect(INV).toContain('Dibayar lewat pesanan');
