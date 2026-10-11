@@ -29,6 +29,7 @@ Semua dokumen ditulis dalam bahasa Indonesia dan menggambarkan **perilaku aplika
 | 13 | [Kotak Masuk Rekap — Simulasi Email dan Baca Foto](13-SIMULASI-EMAIL-DAN-CV.md) | Simulasi rekap timbangan dan foto DO dari email: yang diperagakan, yang nyata, skrip demo, rancangan sistem nyata |
 | 14 | [Pertanyaan untuk Pemilik](14-PERTANYAAN-UNTUK-PEMILIK.md) | Keputusan dan bahan yang masih ditunggu dari pemilik, dengan pilihan bawaan aplikasi saat ini |
 | 15 | [Contoh Alur 500 Ton](15-CONTOH-ALUR-500-TON.md) | Satu PO 500 ton dari pesanan pelanggan sampai tutup bulan: truk, rekap timbangan, faktur mingguan, selisih berat, harga naik, tagihan supplier, cut-off, dan laporan akhir |
+| 16 | [Estimasi Biaya](16-ESTIMASI-BIAYA.md) | Paket langganan, batas pemakaian, catatan baca foto DO, komputer minimal, dan gambaran ukuran data |
 
 ## Dokumen teknis
 
