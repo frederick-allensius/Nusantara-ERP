@@ -114,4 +114,6 @@ Aturan posting ada di [04 Akuntansi](docs/04-AKUNTANSI.md). Semua temuan di [08]
 npx vitest run && npx tsc --noEmit && npx eslint . && npx vite build
 ```
 
-**Video walkthrough** (rekaman layar aplikasi dengan data fiktif): *Bagian 1 — Alur Pengambilan* (11:11) dan *Bagian 2 — Biaya, Bank, Pajak, Akses* (2:12). Lokasinya: lihat bagian Releases repo ini.
+**Video walkthrough** (rekaman layar aplikasi dengan data fiktif, disimpan lewat Git LFS — jalankan `git lfs pull` bila yang terunduh hanya file penunjuk):
+- [Bagian 1 — Alur Pengambilan](docs/video/Nusantara-ERP-Bagian-1-Alur-Pengambilan.mp4) (11:11): alur pengambilan dari PO sampai tutup bulan, dengan cabang setiap tahap dan empat kasus.
+- [Bagian 2 — Biaya, Bank, Pajak, Akses](docs/video/Nusantara-ERP-Bagian-2-Biaya-Bank-Pajak-Akses.mp4) (2:12): Entri Harian, biaya, saldo bank, PPN, akses menu, ukuran teks, arsip.
