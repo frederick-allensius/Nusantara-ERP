@@ -11,6 +11,8 @@ Seluruh aplikasi berjalan di Firebase. Setiap bagian di-deploy terpisah.
 
 Project default ada di `.firebaserc`.
 
+**Demo (prototype):** `npm run deploy:demo` membangun aplikasi dalam mode lokal (data demo di browser masing-masing pengunjung, login bawaan, tanpa Firestore) dan men-deploy hosting saja ke project `nusantara-erp-demo` → https://nusantara-erp-demo.web.app/app. Konfigurasinya `firebase.demo.json` (hosting tanpa rewrite ke Cloud Function).
+
 ---
 
 ## Prasyarat (sekali)

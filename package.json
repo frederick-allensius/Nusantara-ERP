@@ -18,7 +18,8 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "deploy:rules": "firebase deploy --only firestore:rules"
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:demo": "vite build --mode offline && firebase deploy --only hosting --project nusantara-erp-demo --config firebase.demo.json"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
