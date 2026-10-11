@@ -427,3 +427,34 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   Harga Supplier counts) — the tiles were asked for earlier; Tagihan pelanggan block on Ringkasan
   stays off by default.
 - sw v1.1.22. 622 tests.
+
+## Session 2026-10-11 (siang) — real samples from the owner, A1, PO number format, video plan
+
+- Owner's samples (kept OUTSIDE the repo, never committed): two weighbridge recap files (Cikande,
+  Serang), one DO photo, an Outlook screenshot of the supplier's e-mail. What they showed: one
+  file per site, one sheet per material, two-row header ("No" over GJIB/DO/Surat Jalan/Polisi/PO),
+  Isi/Kosong/Qty labelled (kg) but in tons, day subtotals, cumulative since Dec 2025; GJIB = BAP on
+  the DO, "No PO" = running number of the company PO (PO-069/BS/TMA/S/VIII/2026 → 69); subject
+  "Rekap & SJ <code>-<site> <dates>"; DO + SJ photos mixed. "Rekap Pengambilan … .xlsx" was the
+  app's own export.
+- A1 decided (owner side, "akal sehat"): payments per invoice (107e51a). Order dialogs offer
+  Terima/Bayar Uang Muka before an invoice exists; T-06 closed.
+- Recap reader (3b94ce4, d325957): every sheet, two-row headers, kg/ton, subtotals skipped; matching
+  SJ → DO/ticket → truck+date (only when DO/PO agree; one truck can do two trips a day) → No PO
+  (full or running number) filling the PO's next SJ; history before the first pickup PO skipped;
+  "Tujuan di rekap: …" when Keterangan names another site (K-07). Tested on the real files locally
+  (210 rows read, before: 0) with a scratchpad-only test; tests/recap-supplier-format.test.ts mirrors
+  the layout with made-up data.
+- Pengaturan Umum → Nomor Dokumen: company PO number pattern ({###}, {TAHUN}, {TH}, {BULAN},
+  {BULAN-ROMAWI}; yearly or monthly reset) in DocEngine (formatNumber/sequenceOf). Owner chose the
+  company format; meaning of BS / S asked in doc 14 A9.
+- Cut-off: transcript 29:18–29:38 says month-end stop + 15 SJ; real recaps show POs across months
+  → asked again (doc 14 A3), behaviour unchanged.
+- Kotak Masuk Rekap rework (59473f3): keyed by DO number, supplier-format Excel, DO photo drawn like
+  the real continuous form (phone-photo look), SJ photos attached; storage v2. Demo screenshots in
+  docs/pitch/kotak-masuk-rekap are now from the older version (flagged in its README).
+- Codex prompt for synthetic look-alike documents: ../CODEX-PROMPT-DOKUMEN-CONTOH.md (outside repo).
+- Video (hyperframes, companion, storyboard yes): project ../videos/alur-pengambilan (outside repo),
+  BRIEF.md + STORYBOARD.md v1 (21 frames, 3:22, 4 cases). Waiting for the owner-side review of the
+  plan, then sketches.
+- sw v1.1.23. 635 tests.
