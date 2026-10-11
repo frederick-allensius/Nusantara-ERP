@@ -430,3 +430,82 @@ describe('ledger', () => {
     expect(sales.credit - sales.debit).toBe(9750000);
   });
 });
+
+// A down payment received before the first invoice and applied to the order:
+// per-invoice billing (doc 14 A1) means the pickup invoices drawn from that
+// order use it up, oldest first, then the trips not invoiced yet — the same
+// amounts the ledger takes off the receivable.
+describe('down payment on a pickup order', () => {
+  const applyDP = (amount: number) => {
+    const d = w().DB;
+    d.salesDownPayments = d.salesDownPayments || [];
+    d.salesDownPayments.push({
+      id: 'SDP-1', orderId: 'SO-1', customerName: 'PT Arta', date: '2026-09-02',
+      amount, method: 'Transfer BCA', status: 'Applied', appliedDate: '2026-09-02',
+    });
+    d.paymentLogs.push({
+      id: 1, type: 'SO', orderId: 'SO-1', date: '2026-09-02', amount,
+      method: 'Down Payment', source: 'DP', dpId: 'SDP-1', note: 'DP: SDP-1',
+    });
+    w().Balances.recalcOrderInvoices('sales', 'SO-1');
+  };
+  const B = () => w().Balances;
+
+  beforeEach(() => {
+    T().openPickupPO('PO-1', { soId: 'SO-1', capacity: 35 });
+    trip(1, '2026-09-03', 35);
+    trip(2, '2026-09-04', 35);
+  });
+
+  it('settles the first invoice and leaves the rest on the next truck', () => {
+    applyDP(6000000);
+    const inv = T().createInvoice('sales', [slot(1).id], { date: '2026-09-05' }).invoice;
+    // 35 t × 150.000 + 11% = 5.827.500
+    expect(inv.amount).toBe(5827500);
+    expect(inv.status).toBe('Paid');
+    expect(B().invoiceBalance('sales', inv).outstanding).toBe(0);
+    const items = B().openItems('sales');
+    const t2 = items.find((it: any) => it.docType === 'DO' && it.id === slot(2).id);
+    expect(t2.outstanding).toBe(5827500 - 172500);
+    // The customer list and the ledger tell the same receivable.
+    expect(balanceOf('110201').bal).toBe(B().summary('sales').total);
+  });
+
+  it('a smaller down payment leaves the rest of the invoice open', () => {
+    applyDP(3000000);
+    const inv = T().createInvoice('sales', [slot(1).id], { date: '2026-09-05' }).invoice;
+    expect(inv.status).toBe('Outstanding');
+    expect(B().invoiceBalance('sales', inv).outstanding).toBe(2827500);
+    expect(balanceOf('110201').bal).toBe(B().summary('sales').total);
+  });
+
+  it('applied after the invoice, it settles that invoice', () => {
+    const inv = T().createInvoice('sales', [slot(1).id], { date: '2026-09-05' }).invoice;
+    expect(inv.status).toBe('Outstanding');
+    applyDP(5827500);
+    expect(inv.status).toBe('Paid');
+  });
+
+  it('a cancelled invoice hands its share to the next one', () => {
+    applyDP(5827500);
+    const first = T().createInvoice('sales', [slot(1).id], { date: '2026-09-05' }).invoice;
+    expect(first.status).toBe('Paid');
+    first.status = 'Cancelled';
+    T().releaseInvoice('sales', first);
+    const again = T().createInvoice('sales', [slot(1).id], { date: '2026-09-06' }).invoice;
+    expect(again.status).toBe('Paid');
+    expect(balanceOf('110201').bal).toBe(B().summary('sales').total);
+  });
+
+  it('a down payment to the supplier settles the supplier bill of the pickup PO', () => {
+    w().DB.paymentLogs.push({
+      id: 2, type: 'PO', orderId: 'PO-1', date: '2026-09-02', amount: 3885000,
+      method: 'Down Payment', source: 'DP', dpId: 'PDP-1', note: 'DP: PDP-1',
+    });
+    // 35 t × 100.000 + 11% = 3.885.000
+    const bill = T().createInvoice('purchases', [slot(1).id], { date: '2026-09-10' }).invoice;
+    expect(bill.amount).toBe(3885000);
+    expect(bill.status).toBe('Paid');
+    expect(B().invoiceBalance('purchases', bill).outstanding).toBe(0);
+  });
+});

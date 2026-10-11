@@ -104,32 +104,32 @@ flowchart LR
 | # | Pertanyaan | Jawaban (perilaku saat ini) |
 |---|---|---|
 | 1 | Mulai dari mana | Menu **Penjualan → Penawaran Penjualan** → tombol **Buat Quotation** |
-| 2 | Data diisi | Pelanggan (ketik/pilih), tanggal, berlaku s/d, baris barang (barang atau manual, qty, harga), catatan |
+| 2 | Data diisi | Pelanggan (ketik/pilih; dua pelanggan bernama sama dipilih dengan lokasinya, mis. "PT X · Cikande"), tanggal, berlaku s/d, baris barang (barang atau manual, qty, harga), catatan |
 | 3 | Wajib | Pelanggan; minimal 1 baris dengan qty & harga > 0 |
 | 4 | Saat disimpan | Dokumen tersimpan berstatus **Draft** dengan nomor `SQ.YYYY.MM.NNNNN` |
 | 5 | Stok | Tidak berubah |
 | 6–7 | Akuntansi / jurnal | Tidak ada |
 | 8 | Status | Draft → **Dikirim** (tombol Kirim) → **Diterima** / **Ditolak** (di detail) |
-| 9 | Bisa diubah | ❌ Tidak ada tombol ubah/hapus |
+| 9 | Bisa diubah | Selama **Draft**: tombol **Ubah** dan **Hapus** di detail; penawaran yang sudah dikirim bisa dikembalikan ke Draft |
 | 10 | Setelah diterima | Muncul tombol **Convert → SO**: membuat SO Draft dengan baris yang sama |
 | 11–12 | Batal | Status **Ditolak**; tidak ada efek stok/akuntansi |
 | 13 | Menemukan lagi | Tab Penawaran Penjualan; "Jejak Dokumen" dari SO hasil konversi |
 
-Catatan: baris "item manual" tersimpan dengan nama "Custom Item" (nama yang diketik hilang); konversi bisa dilakukan berulang kali pada penawaran yang sama (T-15); tombol Terima/Tolak memakai skrip inline yang diblokir kebijakan keamanan di hosting produksi (T-14).
+Catatan: baris barang manual menyimpan nama yang diketik, dan satu penawaran hanya bisa dikonversi sekali (T-15, diperbaiki). Tombol Terima/Tolak berjalan juga di hosting produksi (T-14, diperbaiki).
 
 ## B. Sales Order (SO)
 
 | # | Pertanyaan | Jawaban |
 |---|---|---|
 | 1 | Mulai dari mana | **Penjualan → Sales Order** → **Buat SO Baru** |
-| 2 | Data diisi | Pelanggan, tanggal, jatuh tempo (opsional), status awal, gudang (bila >1 gudang), baris barang (barang/manual, qty, harga, diskon per baris), centang PPN |
+| 2 | Data diisi | Pelanggan (dua pelanggan bernama sama — satu perusahaan, dua lokasi — dipilih dari daftar sebagai "Nama · Lokasi"; lokasi = bagian alamat sebelum koma pertama; nama saja ditolak dengan pesan), tanggal, jatuh tempo (opsional), status awal, gudang (bila >1 gudang), baris barang (barang/manual, qty, harga, diskon per baris), centang PPN |
 | 3 | Wajib | Pelanggan, tanggal, minimal 1 baris |
-| 4 | Saat disimpan | Nomor `SO.YYYY.MM.NNNNN`; total = subtotal + PPN (bila dicentang). Bila status **Dikonfirmasi** → stok direservasi (peringatan bila tidak cukup). Bila status **Terkirim** → stok langsung dikurangi |
+| 4 | Saat disimpan | Nomor `SO.YYYY.MM.NNNNN`; total = subtotal + PPN (bila dicentang). Bila status **Dikonfirmasi** → stok direservasi (peringatan bila tidak cukup). Barang yang tidak pernah disimpan di gudang (mis. batu yang diambil langsung di supplier) tidak direservasi dan tidak memunculkan peringatan stok. Bila status **Terkirim** → stok langsung dikurangi |
 | 5 | Stok | Reservasi saat *Dikonfirmasi*; stok fisik berkurang saat *Terkirim* |
 | 6–7 | Akuntansi / jurnal | Saat *Terkirim*: Piutang (+PPN Keluaran) vs Penjualan, dan HPP vs Persediaan (harga pokok rata-rata). Pembayaran lewat "Catat Pembayaran": Kas/Bank vs Piutang |
 | 8 | Status | Draft · Dikonfirmasi · Terkirim · Lunas · Dibatalkan · **Selesai** (pesanan pengambilan yang sudah habis diambil, lihat [§V](#v-pengambilan-trading)) (+ status impor Accurate: Menunggu Proses, Diproses Sebagian, Diproses) |
 | 9 | Bisa diubah | ✅ Ya, di semua status (form Edit), termasuk mengganti status |
-| 10 | Setelah Terkirim | Mengubah baris akan mengembalikan stok lama lalu mengurangi stok baru; jurnal dihitung ulang otomatis. ⚠ Perhitungan ulang stok saat edit tidak memperbarui stok per gudang dengan benar (T-05) |
+| 10 | Setelah Terkirim | Mengubah baris akan mengembalikan stok lama lalu mengurangi stok baru, per gudang (T-05, diperbaiki); jurnal dihitung ulang otomatis |
 | 11 | Batal | Ubah status ke **Dibatalkan** (tidak dikunci), atau **Hapus** (dengan undo + recycle bin) |
 | 12 | Efek batal | Reservasi dilepas; bila sebelumnya Terkirim, stok dikembalikan; jurnal hilang dari buku besar (dihitung ulang dari status). Dokumen turunan (Surat Jalan, Faktur) **tidak** ikut dibatalkan |
 | 13 | Menemukan lagi | Daftar SO (filter status, rentang tanggal, urut kolom), pencarian global, detail SO menampilkan Surat Jalan & Faktur terkait, tombol **Jejak** |
@@ -203,7 +203,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | Mulai | Penjualan → Uang Muka Penjualan → **Terima DP** |
 | Data | SO (yang belum Lunas), tanggal, jumlah, catatan |
 | Saat disimpan | Status **Diterima** → jurnal Kas vs Uang Muka Penjualan (kewajiban) |
-| Terapkan | Tombol **Terapkan** → status Diterapkan → jurnal Uang Muka vs Piutang, **dan** otomatis menambah Log Pembayaran SO (⚠ membentuk jurnal kas kedua — T-04) |
+| Terapkan | Tombol **Terapkan** → status Diterapkan → jurnal Uang Muka vs Piutang, dan Log Pembayaran SO bermetode "Down Payment" yang **tidak** membentuk jurnal kas kedua (T-04, diperbaiki). Untuk pesanan pengambilan, uang muka mengurangi faktur pengambilan pesanan itu mulai dari yang terlama; sisanya untuk truk berikutnya yang belum ditagih ([§V5](#v5-tagih-pelanggan)) |
 | Batal | Hapus (tanpa pembatasan) |
 
 ## G. Retur Penjualan (SRN)
@@ -215,7 +215,7 @@ Ada **dua cara** mencatat uang masuk dari pelanggan:
 | Saat disimpan | Status **Draft** (belum ada efek) |
 | Posting | Tombol **Post** → stok barang bertambah; jurnal: Penjualan & PPN (debit) vs Piutang, Persediaan vs HPP |
 | Ubah/batal | ❌ Tidak ada ubah/hapus; posting tidak bisa dibatalkan |
-| Catatan | Retur dari **Faktur** tidak memuat baris barang (T-12); stok retur tidak tercatat per gudang (T-05) |
+| Catatan | Retur dari **Faktur** memuat baris barangnya (T-12, diperbaiki); stok retur tercatat per gudang (T-05, diperbaiki) |
 
 ❓ Apakah retur sering terjadi? Barang retur kembali ke stok jual atau dianggap rusak? Uang dikembalikan atau dipotong tagihan berikutnya? — **REQUIRES USER CONFIRMATION**
 
@@ -235,7 +235,7 @@ Sama seperti Penawaran Penjualan, tetapi pihaknya **Supplier** dan harga default
 | 6–7 | Jurnal | Saat *Diterima*: Persediaan (barang stok) / Beban Operasional Lain (baris manual) + PPN Masukan vs Hutang Usaha. Pembayaran via log: Hutang vs Kas/Bank |
 | 8 | Status | Draft · Dikonfirmasi · Diterima · Lunas · Dibatalkan · **Selesai** (PO pengambilan yang ditutup, lihat [§V](#v-pengambilan-trading)) (+ status impor) |
 | 9 | Bisa diubah | ✅ Ya, semua status (tanpa validasi transisi di form) |
-| 10 | Setelah Diterima | Edit mengembalikan stok lama lalu menambah stok baru. ⚠ Bisa menggandakan stok (T-05) |
+| 10 | Setelah Diterima | Edit mengembalikan stok lama lalu menambah stok baru, per gudang (T-05, diperbaiki); jumlah yang sudah terpakai tidak bisa dikurangi |
 | 11–12 | Batal | Status Dibatalkan atau Hapus; bila sudah Diterima stok dikurangi kembali; jurnal hilang |
 | 13 | Menemukan | Daftar PO, pencarian, detail PO (DO & Faktur terkait), Jejak Dokumen, Kartu Hutang |
 
@@ -266,7 +266,7 @@ Sama seperti Faktur Penjualan & Penerimaan (bagian D–E), dengan arah berlawana
 
 ## L. Uang Muka Pembelian dan Retur Pembelian
 
-- **Uang muka pembelian:** Pembelian → Uang Muka Pembelian → **Bayar DP** (PO belum Diterima/Lunas) → jurnal Uang Muka Pembelian vs Kas; **Terapkan** → Hutang vs Uang Muka + log pembayaran PO (⚠ T-04).
+- **Uang muka pembelian:** Pembelian → Uang Muka Pembelian → **Bayar DP** (PO belum Diterima/Lunas) → jurnal Uang Muka Pembelian vs Kas; **Terapkan** → Hutang vs Uang Muka + log pembayaran PO tanpa jurnal kas kedua (T-04, diperbaiki). Untuk PO pengambilan, uang muka mengurangi tagihan supplier PO itu mulai dari yang terlama.
 - **Retur pembelian:** dari PO Diterima atau Faktur Pembelian → Draft → **Post** → stok berkurang; jurnal Hutang vs Persediaan/Beban & PPN Masukan.
 
 ## M. Penyesuaian Stok (Item Adjustment)

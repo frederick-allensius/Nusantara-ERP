@@ -230,10 +230,53 @@
     return (def && def.getFrom) || [];
   }
 
+  // Customers or suppliers can share a name (one company, two sites). Pickers then
+  // offer "Name · Site" (site = the address up to its first comma; the whole
+  // address, or the record id, when that does not tell the twins apart) so the
+  // right record is chosen; documents keep the plain name and that record's id.
+  function partySite(p) {
+    return String((p && p.address) || '')
+      .split(',')[0]
+      .trim();
+  }
+  function partyLabel(p, list) {
+    const twins = (list || []).filter(o => o && o !== p && o.name === p.name);
+    if (!twins.length) {
+      return p.name;
+    }
+    const address = o => String((o && o.address) || '').trim();
+    let site = partySite(p);
+    if (twins.some(o => partySite(o) === site)) {
+      site = address(p);
+    }
+    if (!site || twins.some(o => address(o) === site)) {
+      site = String(p.id);
+    }
+    return `${p.name} · ${site}`;
+  }
+  // The record a typed or picked value means: a unique name, or "Name · Site".
+  // A name shared by several records without its site is ambiguous.
+  function pickParty(list, input) {
+    const v = String(input || '').trim();
+    if (!v) {
+      return { party: null, ambiguous: false };
+    }
+    const named = (list || []).filter(p => p && p.name === v);
+    if (named.length === 1) {
+      return { party: named[0], ambiguous: false };
+    }
+    const labelled = (list || []).find(p => p && partyLabel(p, list) === v);
+    if (labelled) {
+      return { party: labelled, ambiguous: false };
+    }
+    return { party: null, ambiguous: named.length > 1 };
+  }
+
   // Phase 1: resolve a party (customer/supplier) id from its name, using the
   // docType's party collection from the registry. Returns the id, or null when no
   // record matches (e.g. a free-text party typed in the form). The denormalized
-  // name remains the authoritative display value (name-sync shim).
+  // name remains the authoritative display value (name-sync shim). A shared name
+  // without its site resolves to the first record, as before.
   function resolvePartyId(docType, name) {
     const reg = registry();
     const def = reg && reg.get(docType);
@@ -241,6 +284,10 @@
       return null;
     }
     const coll = (window.DB && window.DB[def.partyCollection]) || [];
+    const picked = pickParty(coll, name);
+    if (picked.party) {
+      return picked.party.id;
+    }
     const hit = coll.find(p => p && p.name === name);
     return hit ? hit.id : null;
   }
@@ -254,6 +301,8 @@
     statusLabel,
     getFromSources,
     resolvePartyId,
+    partyLabel,
+    pickParty,
   };
 
   window.DocEngine = DocEngine;

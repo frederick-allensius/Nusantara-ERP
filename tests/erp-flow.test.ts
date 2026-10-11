@@ -193,6 +193,33 @@ describe('checkOversell', () => {
   it('returns [] for a line whose item is not in DB', () => {
     expect(checkOversell([{ itemId: 9999, qty: 1 }], null)).toHaveLength(0);
   });
+
+  // Goods picked up at the supplier never enter a warehouse: confirming an order
+  // for them warns about nothing and reserves nothing.
+  it('skips items never held in a warehouse, and does not reserve them', () => {
+    seedDB({
+      inventoryItems: [
+        { id: 100, name: 'Granit', unit: 'm2', stock: 50, cost: 60000, sell: 100000 },
+        { id: 300, name: 'Split 1-2', unit: 'Ton', stock: 0, warehouseStock: {} },
+      ],
+    });
+    expect(checkOversell([{ itemId: 300, qty: 350 }], null)).toHaveLength(0);
+    reserveStock('SO-PICKUP', [
+      { itemId: 300, qty: 350 },
+      { itemId: 100, qty: 5 },
+    ]);
+    expect(getReservedQty(300)).toBe(0);
+    expect(getReservedQty(100)).toBe(5);
+  });
+
+  it('still warns for a stocked item that ran out', () => {
+    seedDB({
+      inventoryItems: [{ id: 100, name: 'Granit', unit: 'm2', stock: 0, warehouseStock: { 'WH-DEFAULT': 0 } }],
+    });
+    const problems = checkOversell([{ itemId: 100, qty: 5 }], null);
+    expect(problems).toHaveLength(1);
+    expect(problems[0].available).toBe(0);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

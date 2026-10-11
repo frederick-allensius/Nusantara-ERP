@@ -183,6 +183,65 @@
     return { invoices, pending, pendingTotal, shares, pendingShare: shares[shares.length - 1] };
   }
 
+  // ── Pickup orders, invoiced from trips per period ───────────────────────────
+  // A customer or supplier order whose trucks are billed per period has several
+  // pickup invoices (sourceType 'DO', sourceId = the order) plus trips not
+  // invoiced yet. Credits booked on the order itself — an applied down payment,
+  // older order payment logs, returns against the order — count once: oldest
+  // invoice first, then the trips not invoiced yet (oldest first), the same way
+  // gl.js takes them off the receivable/payable. Whatever is left stays on the
+  // last invoice (or trip) as overpayment. Returns null for any other order.
+  function tripOrderShares(sideKey, order) {
+    const side = SIDES[sideKey];
+    if (!order || !order.pickupFlow) {
+      return null;
+    }
+    const invoices = (db()[side.invoices] || [])
+      .filter(inv => isActiveInvoice(inv) && inv.sourceType === 'DO' && same(inv.sourceId, order.id))
+      .sort(
+        (a, b) =>
+          String(a.date || '').localeCompare(String(b.date || '')) ||
+          String(a.number || a.id).localeCompare(String(b.number || b.id))
+      );
+    const key = sideKey === 'sales' ? 'soId' : 'poId';
+    const pending = unbilledTrips(sideKey).filter(t => same(t[key], order.id));
+    let pay = orderPaid(side, order.id);
+    let ret = returned(side, side.orderType, order.id);
+    const charges = invoices
+      .map(inv => ({ inv, trip: null, total: num(inv.amount), own: settled(side, inv.id) + returned(side, side.invoiceType, inv.id) }))
+      .concat(pending.map(t => ({ inv: null, trip: t, total: tripTotal(sideKey, t), own: 0 })));
+    const shares = charges.map(c => {
+      let room = Math.max(0, c.total - c.own);
+      const p = Math.min(pay, room);
+      pay -= p;
+      room -= p;
+      const r = Math.min(ret, room);
+      ret -= r;
+      return { inv: c.inv, trip: c.trip, payments: p, returns: r };
+    });
+    if (shares.length) {
+      const last = invoices.length ? shares[invoices.length - 1] : shares[shares.length - 1];
+      last.payments += pay;
+      last.returns += ret;
+    }
+    return { invoices, pending, shares };
+  }
+
+  // Credits from the order that fall on each trip not invoiced yet.
+  function tripCredits(sideKey) {
+    const side = SIDES[sideKey];
+    const credits = new Map();
+    (db()[side.orders] || []).forEach(o => {
+      const sh = tripOrderShares(sideKey, o);
+      (sh ? sh.shares : []).forEach(s => {
+        if (s.trip && (s.payments > 0 || s.returns > 0)) {
+          credits.set(String(s.trip.id), { payments: s.payments, returns: s.returns });
+        }
+      });
+    });
+    return credits;
+  }
+
   function result(total, payments, settlements, returns) {
     const credited = payments + settlements + returns;
     return {
@@ -198,6 +257,19 @@
 
   function invoiceBalance(sideKey, inv) {
     const side = SIDES[sideKey];
+    if (inv && inv.sourceType === 'DO' && inv.sourceId) {
+      const order = (db()[side.orders] || []).find(o => same(o.id, inv.sourceId));
+      const trips = tripOrderShares(sideKey, order);
+      const tripShare = trips && trips.shares.find(s => s.inv && same(s.inv.id, inv.id));
+      if (tripShare) {
+        return result(
+          num(inv.amount),
+          tripShare.payments,
+          settled(side, inv.id),
+          returned(side, side.invoiceType, inv.id) + tripShare.returns
+        );
+      }
+    }
     const src = sourceOrder(sideKey, inv);
     const multi = src && inv.receiptId ? perReceiptOrder(sideKey, src) : null;
     const share = multi && multi.shares.find(s => s.inv && same(s.inv.id, inv.id));
@@ -356,9 +428,12 @@
     });
     // A trip has no due date until it is invoiced (the term runs from the
     // invoice), so it is never overdue here; a billing delay shows as the
-    // "belum ditagih" alert instead.
+    // "belum ditagih" alert instead. A down payment applied to its order and not
+    // used by the order's invoices is taken off the trip.
+    const credits = tripCredits(sideKey);
     unbilledTrips(sideKey).forEach(t => {
-      const bal = result(tripTotal(sideKey, t), 0, 0, 0);
+      const c = credits.get(String(t.id));
+      const bal = result(tripTotal(sideKey, t), c ? c.payments : 0, 0, c ? c.returns : 0);
       if (keep(bal)) {
         const item = makeItem(sideKey, 'DO', t, bal, asOf);
         item.number = t.sjNo || item.number;
@@ -407,13 +482,34 @@
   }
 
   // Keep an active invoice's status in step with its balance (Outstanding ⇄ Paid).
+  // Pickup invoices of one order share the order's credits, so a change on one
+  // of them can settle or reopen the others: they are recalculated together.
   function recalcInvoiceStatus(sideKey, inv) {
     if (!isActiveInvoice(inv)) {
       return inv ? inv.status : null;
     }
-    const bal = invoiceBalance(sideKey, inv);
-    inv.status = bal.total > 0 && bal.outstanding <= EPS ? 'Paid' : 'Outstanding';
+    const set = i => {
+      const bal = invoiceBalance(sideKey, i);
+      i.status = bal.total > 0 && bal.outstanding <= EPS ? 'Paid' : 'Outstanding';
+    };
+    if (inv.sourceType === 'DO' && inv.sourceId) {
+      recalcOrderInvoices(sideKey, inv.sourceId);
+    } else {
+      set(inv);
+    }
     return inv.status;
+  }
+
+  // Every active invoice drawn from one order (after a payment or down payment
+  // on the order, or a change to one of its invoices).
+  function recalcOrderInvoices(sideKey, orderId) {
+    const side = SIDES[sideKey];
+    (db()[side.invoices] || []).forEach(i => {
+      if (isActiveInvoice(i) && same(i.sourceId, orderId)) {
+        const bal = invoiceBalance(sideKey, i);
+        i.status = bal.total > 0 && bal.outstanding <= EPS ? 'Paid' : 'Outstanding';
+      }
+    });
   }
 
   // Chronological statement for one customer (sales) or supplier (purchases):
@@ -500,6 +596,7 @@
     openItems,
     summary,
     recalcInvoiceStatus,
+    recalcOrderInvoices,
     partyStatement,
     todayISO,
     addDays,

@@ -426,12 +426,21 @@
         d.status = 'Invoiced';
       });
     }
+    // A down payment already applied to the order counts on the new invoice.
+    if (inv.sourceId && window.Balances && typeof window.Balances.recalcOrderInvoices === 'function') {
+      window.Balances.recalcOrderInvoices(sideKey, inv.sourceId);
+    }
     return { invoice: inv };
   }
 
-  // When an invoice is cancelled its trips go back to "not invoiced".
+  // When an invoice is cancelled its trips go back to "not invoiced", and the
+  // order's other invoices take over the credits it carried.
   function releaseInvoice(sideKey, inv) {
-    if (!inv || !Array.isArray(inv.doIds) || sideKey !== 'sales') return;
+    if (!inv) return;
+    if (inv.sourceId && window.Balances && typeof window.Balances.recalcOrderInvoices === 'function') {
+      window.Balances.recalcOrderInvoices(sideKey, inv.sourceId);
+    }
+    if (!Array.isArray(inv.doIds) || sideKey !== 'sales') return;
     inv.doIds.forEach(function (id) {
       var d = find('deliveryOrders', id);
       if (d && d.status === 'Invoiced' && !coveringInvoice('sales', id)) d.status = 'Delivered';

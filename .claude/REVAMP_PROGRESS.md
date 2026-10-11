@@ -474,3 +474,20 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
   screenshots in docs/pitch/* were taken before this and show the fallback font (retake pending,
   together with the older Kotak Masuk Rekap shots).
 - No app code changed this session.
+
+## Session 2026-10-11 (malam) — findings from recording the videos (T-45..T-47)
+
+- T-45: a down payment on a pickup order now reaches its pickup invoices (balances.js
+  tripOrderShares/tripCredits/recalcOrderInvoices; trading.js createInvoice/releaseInvoice;
+  sales-purchase-extras.js apply/remove DP). Oldest invoice first, rest credits the next unbilled
+  trip. Both sides (customer DP and supplier DP).
+- T-46: same-name parties picked by site. DocEngine.partyLabel/pickParty; erp-crud.js
+  partyOption/partyInputValue/partyFromInput/customerHintHTML on PO, SO, DO; quotation-view.js;
+  inventory-extras.js (PO from requisition). A bare shared name is refused with a toast.
+- T-47: no stock warning or reservation for items never held in a warehouse
+  (src/core/stock.js keptInStock; bulk confirm in erp-crud.js). Demo traded items no longer carry
+  zero per-warehouse entries (demo-data.js).
+- Doc 03: stale T-04/T-05/T-12/T-14/T-15 notes rewritten to current behaviour.
+- tests/dashboard-pipeline.test.ts seed marks invoices paid after the order's last invoice
+  (creating an invoice now recalculates its siblings).
+- sw v1.1.24. 646 tests. Next: re-record both videos, show the DP branch in Bagian 1, ask before rendering.

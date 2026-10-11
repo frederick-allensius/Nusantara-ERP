@@ -1881,14 +1881,17 @@ export function buildDemoData(now = new Date()) {
 
   // ── Items with the resulting stock ─────────────────────────────────────────
   const inventoryItems = ITEMS.map(i => {
-    const warehouseStock = { [WH_MAIN]: stock[i.id][WH_MAIN], [WH_BKS]: stock[i.id][WH_BKS] };
+    // Traded goods pass through (picked up at the supplier): no warehouse record.
+    const warehouseStock = i.wh
+      ? { [WH_MAIN]: stock[i.id][WH_MAIN], [WH_BKS]: stock[i.id][WH_BKS] }
+      : {};
     return {
       id: i.id,
       code: i.code,
       name: i.name,
       category: i.category,
       unit: i.unit,
-      stock: round3(warehouseStock[WH_MAIN] + warehouseStock[WH_BKS]),
+      stock: round3((warehouseStock[WH_MAIN] || 0) + (warehouseStock[WH_BKS] || 0)),
       min: i.min,
       cost: i.cost,
       sell: i.sell,

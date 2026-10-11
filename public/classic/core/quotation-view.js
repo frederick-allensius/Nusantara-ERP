@@ -191,7 +191,14 @@
       toast('Hanya penawaran Draft yang bisa diubah', 'info');
       return;
     }
-    const parties = (db()[t.partyColl] || []).map(p => `<option value="${esc(p.name)}">`).join('');
+    // A name shared by two records is offered as "Name · Site" (DocEngine.partyLabel).
+    const partyList = db()[t.partyColl] || [];
+    const label = p => (window.DocEngine ? window.DocEngine.partyLabel(p, partyList) : p.name);
+    const parties = partyList
+      .map(p => `<option value="${esc(label(p))}"${p.address ? ` label="${esc(p.address)}"` : ''}>`)
+      .join('');
+    const current = existing && partyList.find(p => existing[t.partyId] != null && String(p.id) === String(existing[t.partyId]));
+    const partyValue = current ? label(current) : existing ? existing[t.party] || '' : '';
     const lines = existing && existing.lines && existing.lines.length ? existing.lines : [null];
 
     window.openModal(
@@ -199,7 +206,7 @@
       `<div class="form-row">
         <div class="form-group">
           <label class="form-label" for="qt-party">${t.partyLabel} <span class="req">*</span></label>
-          <input class="form-input" id="qt-party" type="text" list="qt-parties" value="${esc(existing ? existing[t.party] || '' : '')}" placeholder="Nama ${t.partyLabel.toLowerCase()}">
+          <input class="form-input" id="qt-party" type="text" list="qt-parties" value="${esc(partyValue)}" placeholder="Nama ${t.partyLabel.toLowerCase()}">
           <datalist id="qt-parties">${parties}</datalist>
         </div>
         <div class="form-group">
@@ -284,11 +291,17 @@
       });
 
       document.getElementById('qt-save').addEventListener('click', () => {
-        const partyName = (document.getElementById('qt-party').value || '').trim();
-        if (!partyName) {
+        const partyInput = (document.getElementById('qt-party').value || '').trim();
+        if (!partyInput) {
           toast(`${t.partyLabel} harus diisi`, 'warning');
           return;
         }
+        const pick = window.DocEngine ? window.DocEngine.pickParty(partyList, partyInput) : { party: null };
+        if (pick.ambiguous) {
+          toast(`Ada beberapa ${t.partyLabel.toLowerCase()} bernama "${partyInput}". Pilih dari daftar yang sesuai lokasinya.`, 'warning');
+          return;
+        }
+        const partyName = pick.party ? pick.party.name : partyInput;
         const date = document.getElementById('qt-date').value || todayStr();
         const collected = [];
         let missingName = false;
@@ -337,7 +350,7 @@
           lines: collected,
           note: (document.getElementById('qt-note').value || '').trim(),
           [t.party]: partyName,
-          [t.partyId]: window.DocEngine ? window.DocEngine.resolvePartyId(type, partyName) : null,
+          [t.partyId]: pick.party ? pick.party.id : null,
         };
         let number;
         if (existing) {

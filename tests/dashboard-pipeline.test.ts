@@ -121,10 +121,14 @@ function seedPickups() {
     expect(T.recordTrip(slots[i].id, { date, net: 30, vehicle: 'B ' + i }).ok).toBe(true);
     return slots[i].id;
   });
-  T.createInvoice('sales', [trips[1], trips[2]], { date: TODAY }).invoice.status = 'Paid';
+  const paidSale = T.createInvoice('sales', [trips[1], trips[2]], { date: TODAY }).invoice;
   T.createInvoice('sales', [trips[3]], { date: TODAY });
-  T.createInvoice('purchases', [trips[0], trips[1]], { date: TODAY }).invoice.status = 'Paid';
+  const paidBill = T.createInvoice('purchases', [trips[0], trips[1]], { date: TODAY }).invoice;
   T.createInvoice('purchases', [trips[2]], { date: TODAY });
+  // Marked paid directly, after the order's last invoice: creating an invoice
+  // recalculates the status of the order's other invoices from their payments.
+  paidSale.status = 'Paid';
+  paidBill.status = 'Paid';
   w().GL.reconcileAll();
   return trips;
 }

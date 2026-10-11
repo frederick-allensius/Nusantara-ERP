@@ -225,6 +225,52 @@ describe('DocEngine.resolvePartyId (Phase 1)', () => {
   });
 });
 
+// One company, two sites: two customers share a name and are told apart by the
+// site in their address.
+describe('DocEngine party picker — shared names', () => {
+  const twins = [
+    { id: 'C-1', name: 'PT Beton', address: 'Cikande, Serang, Banten' },
+    { id: 'C-2', name: 'PT Beton', address: 'Kragilan, Serang, Banten' },
+    { id: 'C-3', name: 'CV Sukses', address: 'Bekasi' },
+  ];
+  beforeAll(() => {
+    (window as any).DB = { customers: twins, suppliers: [] };
+  });
+
+  it('labels a shared name with its site and a unique name plainly', () => {
+    const D = window.DocEngine;
+    expect(D.partyLabel(twins[0], twins)).toBe('PT Beton · Cikande');
+    expect(D.partyLabel(twins[1], twins)).toBe('PT Beton · Kragilan');
+    expect(D.partyLabel(twins[2], twins)).toBe('CV Sukses');
+  });
+
+  it('falls back to the whole address, then the id, when the site repeats', () => {
+    const D = window.DocEngine;
+    const sameSite = [
+      { id: 'S-1', name: 'UD Batu', address: 'Cikande, Blok A' },
+      { id: 'S-2', name: 'UD Batu', address: 'Cikande, Blok B' },
+    ];
+    expect(D.partyLabel(sameSite[0], sameSite)).toBe('UD Batu · Cikande, Blok A');
+    const noAddress = [
+      { id: 'S-1', name: 'UD Batu' },
+      { id: 'S-2', name: 'UD Batu' },
+    ];
+    expect(D.partyLabel(noAddress[1], noAddress)).toBe('UD Batu · S-2');
+  });
+
+  it('picks the record a label or a unique name means; a bare shared name is ambiguous', () => {
+    const D = window.DocEngine;
+    expect(D.pickParty(twins, 'PT Beton · Kragilan').party.id).toBe('C-2');
+    expect(D.pickParty(twins, 'CV Sukses').party.id).toBe('C-3');
+    expect(D.pickParty(twins, 'PT Beton')).toEqual({ party: null, ambiguous: true });
+    expect(D.pickParty(twins, 'Someone New')).toEqual({ party: null, ambiguous: false });
+  });
+
+  it('resolvePartyId takes the labelled site', () => {
+    expect(window.DocEngine.resolvePartyId('SO', 'PT Beton · Kragilan')).toBe('C-2');
+  });
+});
+
 // The company's own PO numbers (Pengaturan Umum → Nomor Dokumen): the supplier
 // writes them on its DO and the sequence in its weighbridge recap.
 describe('DocEngine company number format', () => {

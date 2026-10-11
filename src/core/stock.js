@@ -123,16 +123,39 @@ export function getReservedQty(itemId) {
 }
 
 /**
- * Reserve stock for an order
+ * Whether the company keeps an item in stock: a warehouse holds it, or held it
+ * before (its per-warehouse record exists). Goods that only pass through — picked
+ * up at the supplier by the customer's trucks — never are, so an order for them
+ * has no warehouse stock to reserve or to run short of.
+ */
+export function keptInStock(item) {
+  if (!item) {
+    return false;
+  }
+  if ((Number(item.stock) || 0) > 0) {
+    return true;
+  }
+  const ws = item.warehouseStock;
+  return !!ws && typeof ws === 'object' && Object.keys(ws).length > 0;
+}
+
+function itemOf(itemId) {
+  return (DB.inventoryItems || []).find(i => String(i.id) === String(itemId)) || null;
+}
+
+/**
+ * Reserve stock for an order (items kept in stock only)
  */
 export function reserveStock(orderId, lines) {
   if (!DB.reservations) {
     DB.reservations = {};
   }
-  DB.reservations[orderId] = lines.map(l => ({
-    itemId: l.itemId,
-    qty: l.qty,
-  }));
+  DB.reservations[orderId] = lines
+    .filter(l => l.itemId === 'custom' || !itemOf(l.itemId) || keptInStock(itemOf(l.itemId)))
+    .map(l => ({
+      itemId: l.itemId,
+      qty: l.qty,
+    }));
 }
 
 /**
@@ -155,7 +178,7 @@ export function checkOversell(lines, excludeOrderId) {
       return;
     }
     const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-    if (!item) {
+    if (!item || !keptInStock(item)) {
       return;
     }
 
@@ -211,4 +234,5 @@ window.getReservedQty = getReservedQty;
 window.reserveStock = reserveStock;
 window.releaseReservation = releaseReservation;
 window.checkOversell = checkOversell;
+window.keptInStock = keptInStock;
 window.getAvailableStock = getAvailableStock;

@@ -402,8 +402,12 @@
     if (!req) return;
 
     var suppliers = db().suppliers || [];
+    // A name shared by two suppliers is offered as "Name · Site" (DocEngine.partyLabel).
     var suppOpts = suppliers
-      .map(function (s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; })
+      .map(function (s) {
+        var v = window.DocEngine ? window.DocEngine.partyLabel(s, suppliers) : s.name;
+        return '<option value="' + esc(v) + '">' + esc(s.address || s.name) + '</option>';
+      })
       .join('');
 
     var itemRows = (req.items || [])
@@ -444,9 +448,15 @@
       var btn = document.getElementById('saveIRtoPO');
       if (!btn) return;
       btn.addEventListener('click', function () {
-        var supplier = (document.getElementById('ir-po-supplier').value || '').trim();
+        var supplierInput = (document.getElementById('ir-po-supplier').value || '').trim();
         var date = document.getElementById('ir-po-date').value;
-        if (!supplier) { toast('Nama supplier wajib diisi', 'warning'); return; }
+        if (!supplierInput) { toast('Nama supplier wajib diisi', 'warning'); return; }
+        var pick = window.DocEngine ? window.DocEngine.pickParty(suppliers, supplierInput) : { party: null };
+        if (pick.ambiguous) {
+          toast('Ada beberapa supplier bernama "' + supplierInput + '". Pilih dari daftar yang sesuai lokasinya.', 'warning');
+          return;
+        }
+        var supplier = pick.party ? pick.party.name : supplierInput;
         if (!date) { toast('Tanggal PO wajib diisi', 'warning'); return; }
 
         var lines = [];
@@ -473,7 +483,7 @@
           id: poId,
           number: poNumber || undefined,
           supplier: supplier,
-          supplierId: window.DocEngine ? window.DocEngine.resolvePartyId('PO', supplier) : null,
+          supplierId: pick.party ? pick.party.id : null,
           date: date,
           amount: amount,
           status: 'Draft',

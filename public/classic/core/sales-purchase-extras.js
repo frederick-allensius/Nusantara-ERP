@@ -110,8 +110,8 @@
           window.reserveStock(order.id, order.lines || []);
         }
       }
-      var inv = B.activeInvoiceFor(side, order.id);
-      if (inv) B.recalcInvoiceStatus(side, inv);
+      // Pickup orders have several invoices; all of them share the order's credits.
+      B.recalcOrderInvoices(side, order.id);
     }
     save();
   }
@@ -154,8 +154,8 @@
           order.status = 'Paid';
         }
       }
-      var inv = B.activeInvoiceFor(side, order.id);
-      if (inv) B.recalcInvoiceStatus(side, inv);
+      // Pickup orders have several invoices; all of them share the order's credits.
+      B.recalcOrderInvoices(side, order.id);
     }
     dp.status = 'Applied';
     dp.appliedDate = today();

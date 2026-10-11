@@ -737,7 +737,7 @@ function buildDeliveryOrderDoc(data) {
     <!-- ROW 12: Customer name + Destination -->
     <tr>
       <td colspan="6" style="padding:1px 0 6px;font-weight:bold;font-size:12px">${escapeHtml(data.customer || data.customerName || '')}</td>
-      <td colspan="5" style="padding:1px 0 6px;font-size:12px">${escapeHtml(data.destination || _getCustomerAddress(data.customer || data.customerName) || '')}</td>
+      <td colspan="5" style="padding:1px 0 6px;font-size:12px">${escapeHtml(data.destination || _getCustomerAddress(data.customer || data.customerName, data.customerId) || '')}</td>
     </tr>
 
     <!-- ROW 13-14: spacer -->
@@ -1538,13 +1538,18 @@ function showAddPO() {
   setTimeout(() => {
     const collectLines = initLineItems('cost', []);
     document.getElementById('savePO')?.addEventListener('click', () => {
-      const supplier = sanitizeInput(document.getElementById('po-supplier').value);
+      const supplierInput = sanitizeInput(document.getElementById('po-supplier').value);
       const date = sanitizeInput(document.getElementById('po-date').value, 'date');
       const status = document.getElementById('po-status').value;
-      if (!supplier) {
+      if (!supplierInput) {
         showToast('Nama supplier harus diisi', 'warning');
         return;
       }
+      const party = partyFromInput(DB.suppliers || [], supplierInput, 'supplier');
+      if (!party) {
+        return;
+      }
+      const supplier = party.name;
       if (!date) {
         showToast('Tanggal harus diisi', 'warning');
         return;
@@ -1569,7 +1574,7 @@ function showAddPO() {
         id: nextId('PO', DB.purchaseOrders),
         number: poNumber || undefined,
         supplier,
-        supplierId: window.DocEngine?.resolvePartyId('PO', supplier) ?? null,
+        supplierId: party.id,
         date,
         dueDate: poDueDate || null,
         amount,
@@ -1615,7 +1620,7 @@ function editPO(id) {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Supplier</label>
-        <input class="form-input" id="po-supplier" type="text" value="${escapeHtml(o.supplier)}" list="po-supp-list" autocomplete="off">
+        <input class="form-input" id="po-supplier" type="text" value="${escapeHtml(partyInputValue(DB.suppliers, o.supplierId, o.supplier))}" list="po-supp-list" autocomplete="off">
         <datalist id="po-supp-list">${suppOpts}</datalist>
       </div>
       <div class="form-group">
@@ -1645,13 +1650,18 @@ function editPO(id) {
     if (ppnChkEdit && o.taxRate > 0) { ppnChkEdit.checked = true; }
     const collectLines = initLineItems('cost', o.lines || []);
     document.getElementById('updatePO')?.addEventListener('click', () => {
-      const supplier = sanitizeInput(document.getElementById('po-supplier').value);
+      const supplierInput = sanitizeInput(document.getElementById('po-supplier').value);
       const date = sanitizeInput(document.getElementById('po-date').value, 'date');
       const status = document.getElementById('po-status').value;
-      if (!supplier) {
+      if (!supplierInput) {
         showToast('Nama supplier harus diisi', 'warning');
         return;
       }
+      const party = partyFromInput(DB.suppliers || [], supplierInput, 'supplier');
+      if (!party) {
+        return;
+      }
+      const supplier = party.name;
       if (!date) {
         showToast('Tanggal harus diisi', 'warning');
         return;
@@ -1711,7 +1721,7 @@ function editPO(id) {
 
       const poDueDate = sanitizeInput(document.getElementById('po-due-date')?.value || '', 'date');
       o.supplier = supplier;
-      o.supplierId = window.DocEngine?.resolvePartyId('PO', supplier) ?? null;
+      o.supplierId = party.id;
       o.date = date;
       o.dueDate = poDueDate || null;
       o.status = status;
@@ -2338,10 +2348,38 @@ function samePartyName(list, name, exceptId) {
     ) || null
   );
 }
-// Datalist option for a party: the name, with its address beside it so two
-// parties of the same name can be told apart when picking.
-function partyOption(p) {
-  return `<option value="${escapeHtml(p.name)}"${p.address ? ` label="${escapeHtml(p.address)}"` : ''}>`;
+// Datalist option for a party (used as list.map(partyOption)): the name, or
+// "Name · Site" when another party shares the name, with the address beside it.
+function partyOption(p, _i, list) {
+  const value = window.DocEngine ? window.DocEngine.partyLabel(p, list) : p.name;
+  return `<option value="${escapeHtml(value)}"${p.address ? ` label="${escapeHtml(p.address)}"` : ''}>`;
+}
+// What a party field shows for a saved document: its record's picker value.
+function partyInputValue(list, id, name) {
+  const p = id != null ? (list || []).find(x => String(x.id) === String(id)) : null;
+  return p && window.DocEngine ? window.DocEngine.partyLabel(p, list) : name || '';
+}
+// The party a form field means: { name, id } (id null for a name not on file), or
+// null — with a toast — when a shared name was typed without its site. `lenient`
+// keeps such a name as typed (the document takes its party from an order).
+function partyFromInput(list, input, kind, lenient) {
+  const pick = window.DocEngine ? window.DocEngine.pickParty(list, input) : { party: null };
+  if (pick.ambiguous && !lenient) {
+    showToast(`Ada beberapa ${kind} bernama "${input}". Pilih dari daftar yang sesuai lokasinya.`, 'warning');
+    return null;
+  }
+  return pick.party ? { name: pick.party.name, id: pick.party.id } : { name: input, id: null };
+}
+// Hint under a customer field: found, shared name, or not on file.
+function customerHintHTML(input) {
+  const pick = window.DocEngine
+    ? window.DocEngine.pickParty(DB.customers || [], input)
+    : { party: (DB.customers || []).find(c => c.name === input) || null };
+  return pick.ambiguous
+    ? `<span style="color:var(--warning)">Ada beberapa pelanggan bernama ini — pilih dari daftar yang sesuai lokasinya</span>`
+    : pick.party
+    ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
+    : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
 }
 function confirmPartyName(kind, list, name, exceptId) {
   const other = samePartyName(list, name, exceptId);
@@ -2350,7 +2388,7 @@ function confirmPartyName(kind, list, name, exceptId) {
   }
   return window.ask(
     `Nama "${name}" sudah dipakai ${kind} lain`,
-    `${other.address ? `Alamat ${kind} itu: ${other.address}. ` : ''}Pesanan, surat jalan, dan faktur memilih ${kind} dari namanya, jadi dua ${kind} bernama sama bisa tertukar. Sebaiknya beri keterangan lokasi pada nama, mis. "${name} (Cikarang)".`,
+    `${other.address ? `Alamat ${kind} itu: ${other.address}. ` : ''}Saat membuat pesanan dan surat jalan, daftar pilihan membedakan keduanya dengan lokasi dari alamat, mis. "${name} · Cikarang". Isi alamat dengan lokasinya di depan agar mudah dipilih.`,
     { ok: 'Tetap simpan' }
   );
 }
@@ -5214,8 +5252,9 @@ function viewPO(id) {
 // § 6  OVERRIDE: showAddDO + editDO + viewDO  — SO linkage, auto-fill, soId
 // ════════════════════════════════════════════════════════════════════════════════
 
-function _getCustomerAddress(name) {
-  const c = (DB.customers || []).find(c => c.name === name);
+function _getCustomerAddress(name, id) {
+  const list = DB.customers || [];
+  const c = (id != null && list.find(c => String(c.id) === String(id))) || list.find(c => c.name === name);
   return c ? c.address || '' : '';
 }
 
@@ -5225,8 +5264,9 @@ function _getCustomerAddress(name) {
  * differs from the registered customer/supplier address, the DO is flagged and a
  * note "Tujuan diubah dari X ke Y" is produced so logistics can see the override.
  */
-function _detectDestChange(refType, party, destination) {
-  const expected = refType === 'PO' ? _getSupplierAddress(party) : _getCustomerAddress(party);
+function _detectDestChange(refType, party, destination, partyId) {
+  const expected =
+    refType === 'PO' ? _getSupplierAddress(party, partyId) : _getCustomerAddress(party, partyId);
   const norm = s =>
     String(s || '')
       .replace(/\s+/g, ' ')
@@ -5286,7 +5326,7 @@ function _soRefOptions(currentSoId, currentDoId) {
       const hasDO = linkedSoIds.has(o.id);
       return `<option value="${escapeHtml(o.id)}"
       data-customer="${escapeHtml(o.customer)}"
-      data-destination="${escapeHtml(_getCustomerAddress(o.customer))}"
+      data-destination="${escapeHtml(_getCustomerAddress(o.customer, o.customerId))}"
       ${currentSoId === o.id ? 'selected' : ''}
       >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.customer)}${hasDO ? ' — sudah ada surat jalan' : ''}</option>`;
     })
@@ -5312,15 +5352,16 @@ function _poRefOptions(currentPoId, currentDoId) {
       const hasDO = linkedPoIds.has(o.id);
       return `<option value="${escapeHtml(o.id)}"
       data-supplier="${escapeHtml(o.supplier)}"
-      data-destination="${escapeHtml(_getSupplierAddress(o.supplier))}"
+      data-destination="${escapeHtml(_getSupplierAddress(o.supplier, o.supplierId))}"
       ${currentPoId === o.id ? 'selected' : ''}
       >${escapeHtml(docNum(o.number, o.id))} · ${escapeHtml(o.supplier)}${hasDO ? ' — sudah ada surat jalan' : ''}</option>`;
     })
     .join('');
 }
 
-function _getSupplierAddress(name) {
-  const s = (DB.suppliers || []).find(s => s.name === name);
+function _getSupplierAddress(name, id) {
+  const list = DB.suppliers || [];
+  const s = (id != null && list.find(s => String(s.id) === String(id))) || list.find(s => s.name === name);
   return s ? s.address || '' : '';
 }
 
@@ -5438,7 +5479,7 @@ function _doFormBody(o, opts) {
       <div class="form-group">
         <label class="form-label" id="do-party-label">${refType === 'PO' ? 'Supplier' : 'Pelanggan'}</label>
         <input class="form-input" id="do-customer" type="text"
-          value="${escapeHtml(cur.customer || cur.supplier || '')}"
+          value="${escapeHtml(cur.poId ? cur.customer || cur.supplier || '' : partyInputValue(DB.customers, cur.customerId, cur.customer || ''))}"
           placeholder="${refType === 'PO' ? 'Nama supplier' : 'Nama pelanggan'}" list="do-cust-list">
         <datalist id="do-cust-list">${custOpts}</datalist>
       </div>
@@ -5629,7 +5670,7 @@ function showAddDO(preselect) {
       const refType = document.querySelector('input[name="do-ref-type"]:checked')?.value || 'none';
       const soId = refType === 'SO' ? document.getElementById('do-so-ref')?.value || null : null;
       const poId = refType === 'PO' ? document.getElementById('do-po-ref')?.value || null : null;
-      const customer = sanitizeInput(document.getElementById('do-customer').value);
+      const customerInput = sanitizeInput(document.getElementById('do-customer').value);
       const destination = sanitizeInput(document.getElementById('do-destination').value);
       const date = sanitizeInput(document.getElementById('do-date').value, 'date');
       const status = document.getElementById('do-status').value;
@@ -5637,13 +5678,23 @@ function showAddDO(preselect) {
       const vehicle = sanitizeInput(document.getElementById('do-vehicle').value) || '—';
       const customerPO = sanitizeInput(document.getElementById('do-customer-po')?.value || '');
       const notes = sanitizeInput(document.getElementById('do-notes')?.value || '');
-      if (!customer) {
+      if (!customerInput) {
         showToast(
           refType === 'PO' ? 'Nama supplier harus diisi' : 'Nama pelanggan harus diisi',
           'warning'
         );
         return;
       }
+      // A customer picked from the list ("Name · Site") is stored by its plain name;
+      // a manual DO must pick a shared name with its site.
+      const picked =
+        refType === 'PO'
+          ? { name: customerInput, id: null }
+          : partyFromInput(DB.customers || [], customerInput, 'pelanggan', refType === 'SO');
+      if (!picked) {
+        return;
+      }
+      const customer = picked.name;
       if (!destination) {
         showToast('Tujuan harus diisi', 'warning');
         return;
@@ -5668,13 +5719,13 @@ function showAddDO(preselect) {
         ? (DB.salesOrders.find(s => s.id === soId)?.customerId ?? null)
         : poId
           ? (DB.purchaseOrders.find(p => p.id === poId)?.supplierId ?? null)
-          : null;
+          : picked.id;
       // Single canonical DO number: the id IS the formatted number
       // (DO.YYYY.MM.NNNNN), so number mirrors it — no separate counter that can
       // drift from the id sequence.
       const newDoId = nextId('DO', DB.deliveryOrders);
       // Flag deliveries routed to a different address than the party's on file.
-      const dc = _detectDestChange(refType, customer, destination);
+      const dc = _detectDestChange(refType, customer, destination, partyId);
       const finalNotes = dc.changed ? (notes ? `${dc.note}\n${notes}` : dc.note) : notes;
       const newDO = {
         id: newDoId,
@@ -5682,7 +5733,7 @@ function showAddDO(preselect) {
         soId: soId || null,
         poId: poId || null,
         customer,
-        customerId: soId ? partyId : null,
+        customerId: poId ? null : partyId,
         supplierId: poId ? partyId : null,
         destination,
         destChanged: dc.changed,
@@ -5728,7 +5779,7 @@ function editDO(id) {
       const refType = document.querySelector('input[name="do-ref-type"]:checked')?.value || 'none';
       const soId = refType === 'SO' ? document.getElementById('do-so-ref')?.value || null : null;
       const poId = refType === 'PO' ? document.getElementById('do-po-ref')?.value || null : null;
-      const customer = sanitizeInput(document.getElementById('do-customer').value);
+      const customerInput = sanitizeInput(document.getElementById('do-customer').value);
       const destination = sanitizeInput(document.getElementById('do-destination').value);
       const date = sanitizeInput(document.getElementById('do-date').value, 'date');
       const status = document.getElementById('do-status').value;
@@ -5736,13 +5787,23 @@ function editDO(id) {
       const vehicle = sanitizeInput(document.getElementById('do-vehicle').value) || '—';
       const customerPO = sanitizeInput(document.getElementById('do-customer-po')?.value || '');
       const notes = sanitizeInput(document.getElementById('do-notes')?.value || '');
-      if (!customer) {
+      if (!customerInput) {
         showToast(
           refType === 'PO' ? 'Nama supplier harus diisi' : 'Nama pelanggan harus diisi',
           'warning'
         );
         return;
       }
+      // A customer picked from the list ("Name · Site") is stored by its plain name;
+      // a manual DO must pick a shared name with its site.
+      const picked =
+        refType === 'PO'
+          ? { name: customerInput, id: null }
+          : partyFromInput(DB.customers || [], customerInput, 'pelanggan', refType === 'SO');
+      if (!picked) {
+        return;
+      }
+      const customer = picked.name;
       if (!destination) {
         showToast('Tujuan harus diisi', 'warning');
         return;
@@ -5766,7 +5827,11 @@ function editDO(id) {
       o.soId = soId || null;
       o.poId = poId || null;
       o.customer = customer;
-      o.customerId = soId ? (DB.salesOrders.find(s => s.id === soId)?.customerId ?? null) : null;
+      o.customerId = soId
+        ? (DB.salesOrders.find(s => s.id === soId)?.customerId ?? null)
+        : poId
+          ? null
+          : picked.id;
       o.supplierId = poId ? (DB.purchaseOrders.find(p => p.id === poId)?.supplierId ?? null) : null;
       o.destination = destination;
       o.date = date;
@@ -5777,7 +5842,7 @@ function editDO(id) {
         .filter(l => !l.trim().startsWith('⚠ Tujuan diubah'))
         .join('\n')
         .trim();
-      const dc = _detectDestChange(refType, customer, destination);
+      const dc = _detectDestChange(refType, customer, destination, poId ? o.supplierId : o.customerId);
       o.destChanged = dc.changed;
       o.destOriginal = dc.changed ? dc.from : '';
       o.notes = dc.changed ? (dcNotes ? `${dc.note}\n${dcNotes}` : dc.note) : dcNotes;
@@ -6366,25 +6431,24 @@ function showAddSO() {
           custHint.innerHTML = '';
           return;
         }
-        const matches = (DB.customers || []).filter(c => c.name === name);
-        const match = matches[0];
-        custHint.innerHTML = matches.length > 1
-          ? `<span style="color:var(--warning)">Ada ${matches.length} pelanggan bernama ini — pesanan akan memakai yang pertama. Beri keterangan lokasi pada nama di <strong>Pelanggan</strong> agar tidak tertukar</span>`
-          : match
-          ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
-          : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
+        custHint.innerHTML = customerHintHTML(name);
       });
     }
 
     const collectLines = initLineItems('sell', []);
     document.getElementById('saveSO')?.addEventListener('click', () => {
-      const customer = sanitizeInput(document.getElementById('so-customer').value);
+      const customerInput = sanitizeInput(document.getElementById('so-customer').value);
       const date = sanitizeInput(document.getElementById('so-date').value, 'date');
       const status = document.getElementById('so-status').value;
-      if (!customer) {
+      if (!customerInput) {
         showToast('Nama pelanggan harus diisi', 'warning');
         return;
       }
+      const party = partyFromInput(DB.customers || [], customerInput, 'pelanggan');
+      if (!party) {
+        return;
+      }
+      const customer = party.name;
       if (!date) {
         showToast('Tanggal harus diisi', 'warning');
         return;
@@ -6409,7 +6473,7 @@ function showAddSO() {
         id: nextId('SO', DB.salesOrders),
         number: soNumber || undefined,
         customer,
-        customerId: window.DocEngine?.resolvePartyId('SO', customer) ?? null,
+        customerId: party.id,
         date,
         dueDate: dueDate || null,
         amount,
@@ -6470,7 +6534,7 @@ function editSO(id) {
       <div class="form-group">
         <label class="form-label">Pelanggan</label>
         <input class="form-input" id="so-customer" type="text"
-          value="${escapeHtml(o.customer)}" list="so-cust-list" autocomplete="off">
+          value="${escapeHtml(partyInputValue(DB.customers, o.customerId, o.customer))}" list="so-cust-list" autocomplete="off">
         <datalist id="so-cust-list">${custOpts}</datalist>
         <div id="so-cust-hint" style="font-size:.75rem;margin-top:3px;min-height:14px"></div>
       </div>
@@ -6509,13 +6573,7 @@ function editSO(id) {
           custHint.innerHTML = '';
           return;
         }
-        const matches = (DB.customers || []).filter(c => c.name === name);
-        const match = matches[0];
-        custHint.innerHTML = matches.length > 1
-          ? `<span style="color:var(--warning)">Ada ${matches.length} pelanggan bernama ini — pesanan akan memakai yang pertama. Beri keterangan lokasi pada nama di <strong>Pelanggan</strong> agar tidak tertukar</span>`
-          : match
-          ? `<span style="color:var(--success)">✓ Rekaman pelanggan ditemukan</span>`
-          : `<span style="color:var(--warning)">Tidak cocok rekaman — tambah di <strong>Master Data</strong> jika pelanggan baru</span>`;
+        custHint.innerHTML = customerHintHTML(name);
       });
     }
 
@@ -6523,13 +6581,18 @@ function editSO(id) {
     if (ppnChkEdit && o.taxRate > 0) { ppnChkEdit.checked = true; }
     const collectLines = initLineItems('sell', o.lines || []);
     document.getElementById('updateSO')?.addEventListener('click', () => {
-      const customer = sanitizeInput(document.getElementById('so-customer').value);
+      const customerInput = sanitizeInput(document.getElementById('so-customer').value);
       const date = sanitizeInput(document.getElementById('so-date').value, 'date');
       const status = document.getElementById('so-status').value;
-      if (!customer) {
+      if (!customerInput) {
         showToast('Nama pelanggan harus diisi', 'warning');
         return;
       }
+      const party = partyFromInput(DB.customers || [], customerInput, 'pelanggan');
+      if (!party) {
+        return;
+      }
+      const customer = party.name;
       if (!date) {
         showToast('Tanggal harus diisi', 'warning');
         return;
@@ -6592,7 +6655,7 @@ function editSO(id) {
         : 0;
 
       o.customer = customer;
-      o.customerId = window.DocEngine?.resolvePartyId('SO', customer) ?? null;
+      o.customerId = party.id;
       o.date = date;
       o.dueDate = dueDate || null;
       o.status = status;
@@ -6748,7 +6811,7 @@ async function bulkSOStatus(newStatus) {
           return;
         }
         const item = DB.inventoryItems.find(i => String(i.id) === String(line.itemId));
-        if (!item) {
+        if (!item || (window.keptInStock && !window.keptInStock(item))) {
           return;
         }
 
