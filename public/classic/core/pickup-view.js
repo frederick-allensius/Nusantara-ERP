@@ -1929,6 +1929,8 @@
     var u = T().usage(po, m.row.date);
     if (u.cutoff && m.row.date > u.cutoff) return 'Lewat batas PO (' + fmtDate(u.cutoff) + ')';
     if (po.date && m.row.date < po.date) return 'Sebelum tanggal PO';
+    // The recap names another site of the customer (Trading.destinationOff).
+    if (m.destinationOff) return 'Tujuan di rekap: ' + m.destinationOff;
     return '';
   }
   // Row number (with its sheet when the file has several — the supplier keeps

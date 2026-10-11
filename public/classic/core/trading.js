@@ -1288,7 +1288,8 @@
         return;
       }
       if (d.status === 'Pending') {
-        res.fill.push({ row: row, doId: d.id });
+        var off = destinationOff(row, d);
+        res.fill.push(off ? { row: row, doId: d.id, destinationOff: off } : { row: row, doId: d.id });
         return;
       }
       var from = netOf(d);
@@ -1305,6 +1306,29 @@
       }
     });
     return res;
+  }
+
+  // The destination written in the recap ("Keterangan", e.g. "TRIAS SERANG")
+  // when it names a place the trip's customer and site do not — a truck that may
+  // have gone to the other site of the same customer. Words under four letters
+  // (codes like "TMA CKD") are not compared. Returns the recap's text, or ''.
+  function destinationOff(row, d) {
+    var text = String((row && row.customer) || '').trim();
+    if (!text || !d) return '';
+    var cust = d.customerId ? find('customers', d.customerId) : null;
+    var hay = [d.customer, d.destination, cust && cust.name, cust && cust.address]
+      .join(' ')
+      .toLowerCase();
+    var words = text
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(function (w) {
+        return w.length >= 4;
+      });
+    var off = words.some(function (w) {
+      return hay.indexOf(w) === -1;
+    });
+    return off ? text : '';
   }
 
   // The pickup PO a recap's "No PO" names: the full number, or its running
@@ -1532,6 +1556,7 @@
     sweepCutoffs: sweepCutoffs,
     recapRowsFromAoa: recapRowsFromAoa,
     recapRowsFromWorkbook: recapRowsFromWorkbook,
+    destinationOff: destinationOff,
     matchRecap: matchRecap,
     applyRecap: applyRecap,
     weighbridgeSheet: weighbridgeSheet,

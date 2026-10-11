@@ -179,6 +179,15 @@ describe('matching the supplier recap to pickup POs', () => {
     expect(T().slotsFor('P69').find((s: any) => s.id === next.changed[0].doId).doNo).toBe('29201');
   });
 
+  it("marks a truck whose recap names the customer's other site", () => {
+    const rows = rowsOf(workbook()).rows;
+    rows[2].customer = 'BETON SERANG'; // written in the recap; the PO is for Cikande
+    const m = T().matchRecap(rows);
+    expect(m.fill.map((f: any) => f.destinationOff || '')).toEqual(['', 'BETON SERANG', '', '']);
+    // Codes shorter than four letters are not compared.
+    expect(T().destinationOff({ customer: 'NSA CKD' }, T().slotsFor('P69')[0])).toBe('');
+  });
+
   it('says when a PO has no surat jalan left', () => {
     const rows = rowsOf(workbook()).rows.filter((r: any) => r.poNumber === '69');
     const extra = [1, 2].map(i => ({ ...rows[0], doNo: 'X' + i, ticketNo: 'Y' + i, sjNo: 'Z' + i, vehicle: 'B800' + i + 'XA' }));
