@@ -490,4 +490,6 @@ opened in the harness (title, tabs, header buttons), then the overlaps checked i
 - Doc 03: stale T-04/T-05/T-12/T-14/T-15 notes rewritten to current behaviour.
 - tests/dashboard-pipeline.test.ts seed marks invoices paid after the order's last invoice
   (creating an invoice now recalculates its siblings).
-- sw v1.1.24. 646 tests. Next: re-record both videos, show the DP branch in Bagian 1, ask before rendering.
+- Same-name warning now gives a real example ("Nama · Cikande" from the existing party's address).
+- sw v1.1.24. 646 tests. Both videos re-recorded and rebuilt (Bagian 1 11:11 with new branches 8C
+  down payment and 16C same-name picker; Bagian 2 2:12); checks pass. Render waits for approval.
