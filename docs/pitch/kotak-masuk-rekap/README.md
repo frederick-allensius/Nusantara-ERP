@@ -1,5 +1,7 @@
 # Bahan Demo — Kotak Masuk Rekap
 
+> **Catatan 11 Okt 2026:** gambar dan file di folder ini dibuat sebelum contoh asli dari pemilik diterima. Sejak itu Kotak Masuk Rekap meniru kiriman asli: subjek "Rekap & SJ …", Excel format supplier (sheet per material, judul kolom dua baris), foto DO berbentuk continuous form dengan Nomor DO dan BAP, foto SJ ikut terlampir, dan pemasangan foto–Excel lewat Nomor DO. Gambar baru menyusul bersama video alur pengambilan.
+
 Gambar dan file contoh untuk memperagakan alur rekap timbangan dari email dan pembacaan foto DO ([dokumen 13](../../13-SIMULASI-EMAIL-DAN-CV.md)). Semua nama perusahaan, nomor, dan angka adalah **data contoh**, bukan data perusahaan.
 
 ## Tangkapan layar (urutan demo)

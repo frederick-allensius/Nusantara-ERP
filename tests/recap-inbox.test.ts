@@ -116,9 +116,9 @@ function act(action: string, id?: string) {
   expect(el, sel).toBeTruthy();
   el!.click();
 }
-function choose(sjNo: string, value: string) {
-  const el = document.querySelector(`.ri-choice[data-key="${sjNo}"]`) as HTMLSelectElement;
-  expect(el, sjNo).toBeTruthy();
+function choose(key: string, value: string) {
+  const el = document.querySelector(`.ri-choice[data-key="${key}"]`) as HTMLSelectElement;
+  expect(el, key).toBeTruthy();
   el.value = value;
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }
@@ -145,13 +145,20 @@ describe('Kotak Masuk Rekap', () => {
     expect(email.kind).toBe('clean');
     expect(email.fromEmail).toBe('timbangan@batualam.test');
     expect(email.fileName).toMatch(/\.xlsx$/);
+    // Shaped on the supplier's real mail: subject, file name, DO and SJ photos.
+    expect(email.subject).toMatch(/^Rekap & SJ [A-Z]+/);
+    expect(email.fileName).toMatch(/^REKAP [A-Z]+/);
+    expect(email.photos).toHaveLength(3);
+    expect(email.sjPhotos).toHaveLength(3);
+    expect(email.rows.every((r: any) => /^\d{5}$/.test(r.doNo) && r.ticketNo && r.sjBook)).toBe(true);
     expect(view()).toContain('Baru');
 
     act('riOpen', email.id);
     const rows = RI()._compare(email);
     expect(rows).toHaveLength(3);
     expect(rows.map((r: any) => r.status)).toEqual(['match', 'match', 'match']);
-    // The Excel went through the recap reader: same SJ numbers as the slots.
+    // The Excel went through the recap reader; each truck found its surat jalan
+    // through its PO (Trading.matchRecap), in order.
     expect(rows.map((r: any) => r.sjNo)).toEqual([slot(1).sjNo, slot(2).sjNo, slot(3).sjNo]);
     expect(view()).toContain('Pemeriksaan otomatis');
     expect(view()).toContain('Catat 3 pengambilan');
@@ -217,10 +224,12 @@ describe('Kotak Masuk Rekap', () => {
     const missing = Object.values(rows).find((r: any) => r.status === 'noPhoto') as any;
     expect(conflict.excel.net).toBeCloseTo(conflict.photo.read.net + 3, 3);
     expect(unclear.photo.conf.net).toBeLessThan(0.8);
-    choose(conflict.sjNo, 'photo');
-    choose(unclear.sjNo, 'excel');
-    choose(missing.sjNo, 'hold');
-    choose(slot(1).sjNo, 'excel'); // accept the supplier's new figure on the billed trip
+    // Rows are keyed by DO number: the DO photo and the Excel row of one truck.
+    expect(conflict.key).toBe(conflict.doNo);
+    choose(conflict.key, 'photo');
+    choose(unclear.key, 'excel');
+    choose(missing.key, 'hold');
+    choose(rows[slot(1).sjNo].key, 'excel'); // accept the supplier's new figure on the billed trip
     expect(view()).toContain('Catat 4 pengambilan');
 
     act('saveRecapEmail', email.id);
@@ -241,9 +250,9 @@ describe('Kotak Masuk Rekap', () => {
     expect(rows[missing.sjNo].status).toBe('noPhoto');
     act('riReply', email.id);
     const body = (document.getElementById('ri-reply-body') as HTMLTextAreaElement).value;
-    expect(body).toContain(`${conflict.sjNo}`);
+    expect(body).toContain(`DO ${conflict.doNo}`);
     expect(body).toContain('sesuai foto DO');
-    expect(body).toContain(`${missing.sjNo}`);
+    expect(body).toContain(`DO ${missing.doNo}`);
     expect(body).toContain('belum ada foto DO');
     expect(body).toContain('PT Contoh Dagang');
     act('riSendReply', email.id);
@@ -255,7 +264,7 @@ describe('Kotak Masuk Rekap', () => {
     RI().open();
     act('riCheck');
     expect(RI().waiting()).toBe(1); // unopened
-    const stored = JSON.parse(localStorage.getItem('nsa.recapInbox.v1')!);
+    const stored = JSON.parse(localStorage.getItem('nsa.recapInbox.v2')!);
     expect(stored.emails).toHaveLength(1);
     expect(stored.emails[0].photos[0].url).toBeUndefined(); // photos are redrawn, not stored
     expect(Object.keys(w().DB).some(k => /inbox|recap/i.test(k))).toBe(false);

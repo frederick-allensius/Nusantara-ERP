@@ -23,11 +23,11 @@ Menu **Pengambilan → Kotak Masuk Rekap**: langkah kedua di alur pengambilan, s
 | Bagian | Isi |
 |---|---|
 | Kotak masuk | Email rekap dari supplier: pengirim, subjek, waktu, jumlah lampiran, status (**Baru**, **n perlu keputusan**, **Siap dicatat**, **Selesai**) |
-| Isi email | Pesan supplier, lampiran **Excel** (bisa diunduh, file .xlsx sungguhan) dan **foto DO** per truk |
+| Isi email | Dibentuk seperti email asli dari admin timbangan (contoh diterima 11 Okt 2026): subjek **"Rekap & SJ <kode>-<lokasi> <tanggal>"**, lampiran **Excel** format supplier (satu sheet per material, judul kolom dua baris, Isi/Kosong/Qty dalam ton, subtotal per hari; file .xlsx sungguhan yang bisa diunduh), dan **foto DO bercampur foto SJ**. Foto SJ hanya ditampilkan, tidak dibaca: yang dijadikan patokan adalah DO |
 | Pemeriksaan otomatis | Empat langkah: lampiran diterima → Excel dibaca → foto dibaca → dicocokkan dengan surat jalan |
 | Ringkasan | Siap dicatat · Perlu keputusan · Ditahan · Sudah tercatat |
-| Hasil per surat jalan | Berat **tercatat** di aplikasi, berat di **rekap Excel**, berat di **foto DO** (dengan tingkat keyakinan), hasil, dan keputusan |
-| Foto | Klik foto atau angka foto: foto besar dengan **kotak di bagian yang dibaca** (No. SJ tulisan tangan, tanggal, no. polisi, bruto, tara, netto, no. DO) dan tingkat keyakinan per bagian |
+| Hasil per truk | Satu baris per **Nomor DO**: surat jalan aplikasi yang diisinya, berat **tercatat**, berat di **rekap Excel**, berat di **foto DO** (dengan tingkat keyakinan), hasil, dan keputusan |
+| Foto | Klik foto atau angka foto: foto besar dengan **kotak di bagian yang dibaca** (Nomor DO, BAP, Sales Order No = PO kita, tanggal, no truck, berat isi, berat kosong, qty) dan tingkat keyakinan per bagian. Foto digambar menyerupai foto HP dari DO asli: continuous form berlubang, cetakan dot-matrix pucat, diputar, dengan pantulan lampu |
 | Catat | Satu klik mencatat semua yang cocok dan yang sudah diputuskan, lewat jalur yang sama dengan Impor Rekap Timbangan |
 | Balas ke supplier | Draf balasan otomatis berisi selisih yang perlu dijawab supplier |
 | Riwayat | Kapan dicatat, berapa pengambilan, berapa berat berubah, balasan yang dikirim |
@@ -41,7 +41,7 @@ Ringkasan → **Perlu tindakan** dan angka di samping menu menunjukkan email yan
 | Email masuk | **Diperagakan.** Tombol **Periksa email** membuat email dari PO pengambilan yang masih punya surat jalan siap |
 | Excel dibaca | **Nyata.** File .xlsx dibuat lalu dibaca dengan pembaca yang sama dengan Impor Rekap Timbangan |
 | Foto dibaca (CV) | **Diperagakan.** Foto contoh digambar oleh aplikasi; hasil bacanya dibuat bersama fotonya |
-| Pencocokan foto ↔ Excel ↔ aplikasi | **Nyata** |
+| Pencocokan foto ↔ Excel ↔ aplikasi | **Nyata.** Foto dan baris Excel dipasangkan lewat **Nomor DO**; surat jalan aplikasinya dicari dengan cara yang sama seperti Impor Rekap Timbangan (No PO, lalu No DO) |
 | Pencatatan | **Nyata.** Pengambilan, riwayat berat, foto DO, peringatan Perubahan Timbangan, dan jurnal tercatat seperti impor rekap biasa |
 | Balasan ke supplier | **Diperagakan.** Disimpan di riwayat email, tidak dikirim |
 
@@ -49,7 +49,7 @@ Kotak masuk simulasi hanya disimpan di browser yang dipakai (tidak masuk data pe
 
 > Karena pencatatan nyata, jalankan demo dengan **data contoh**, jangan dengan data perusahaan.
 
-## 3. Hasil pemeriksaan per surat jalan
+## 3. Hasil pemeriksaan per truk
 
 | Hasil | Artinya | Yang dilakukan |
 |---|---|---|
@@ -61,7 +61,7 @@ Kotak masuk simulasi hanya disimpan di browser yang dipakai (tidak masuk data pe
 | **Foto kurang jelas** | Keyakinan baca berat di bawah 80% | Pilih: pakai angka rekap / isi dari foto (ketik) / tunda dan minta foto ulang |
 | **Tanpa foto** | Ada di rekap, tidak ada foto | Pilih: pakai angka rekap / tunda dan minta foto |
 | **Tidak ada di rekap** | Ada foto, tidak ada di rekap | Pilih: pakai angka foto / tunda |
-| **SJ tidak dikenal** / **SJ sudah batal** | Nomor SJ tidak ada atau sudah dibatalkan | Tidak bisa dicatat; masuk balasan ke supplier |
+| **PO tidak dikenal** / **SJ sudah batal** | No PO dan No DO tidak ditemukan di aplikasi, atau surat jalannya sudah dibatalkan | Tidak bisa dicatat; masuk balasan ke supplier |
 
 Batas keyakinan 80% adalah pilihan awal — **REQUIRES USER CONFIRMATION**.
 
@@ -106,7 +106,7 @@ Yang perlu dibangun untuk versi nyata:
 | Penerima email | Alamat khusus rekap, atau email supplier yang sekarang diteruskan otomatis ke alamat itu; email masuk diteruskan ke server aplikasi (Cloud Functions). Email rekap dikenali dari format subjeknya | Butuh layanan penerima email atau akses ke kotak email perusahaan |
 | Pengirim terdaftar | Email bagian timbangan per supplier disimpan di data supplier; email dari alamat lain ditahan | Mencegah rekap palsu |
 | Penyimpanan lampiran | Excel dan foto disimpan bersama data perusahaan (Cloud Storage) | Ikut aturan akses di [12](12-KEAMANAN-DAN-INFRASTRUKTUR.md) |
-| Pembaca foto | Foto dikirim ke layanan AI pembaca dokumen; hasilnya No. SJ, tanggal, no. polisi, bruto, tara, netto, no. DO, dan tingkat keyakinan | Biaya per foto tergantung layanan |
+| Pembaca foto | Foto dikirim ke layanan AI pembaca dokumen; foto DO dan foto SJ dipisahkan dulu, lalu dari DO dibaca Nomor DO, BAP, Sales Order No, tanggal, no truck, berat isi/kosong/qty, dan tingkat keyakinan | Biaya per foto tergantung layanan |
 | Halaman | Kotak Masuk Rekap ini dipakai apa adanya; sumber datanya diganti dari simulasi ke server | — |
 | Balasan | Dikirim dari alamat rekap perusahaan | — |
 
@@ -115,8 +115,8 @@ Yang perlu dibangun untuk versi nyata:
 Semua butir di bawah **REQUIRES USER CONFIRMATION**:
 
 1. **Alamat email rekap.** Email supplier sekarang masuk ke alamat siapa; boleh dibuat alamat khusus atau diteruskan otomatis; siapa yang mengelolanya.
-2. **Contoh email** dari bagian timbangan (subjek, isi, lampiran), dan apakah DO supplier mencantumkan nomor surat jalan atau PO kita (bila tidak, pencocokan memakai tanggal + no. polisi).
+2. ~~Contoh email dan isi DO~~ — diterima 11 Okt 2026: subjek "Rekap & SJ <lokasi> <tanggal>"; DO mencantumkan nomor PO kita (Sales Order No), Nomor DO, dan BAP.
 3. **Layanan AI pembaca foto** dan **siapa yang menanggung biayanya** (dihitung per foto).
-4. **Contoh asli:** foto DO dari supplier (termasuk yang kurang jelas) dan file rekap Excel aslinya, agar pembacaan diuji dengan dokumen nyata.
+4. **Contoh asli:** rekap Excel sudah diterima dan terbaca; foto DO resolusi penuh (termasuk yang kurang jelas) masih dibutuhkan untuk menguji layanan pembaca foto.
 5. **Siapa yang boleh memutuskan selisih** (admin saja, atau perlu persetujuan pemilik untuk truk yang sudah ditagih).
 6. **Batas keyakinan** yang dianggap "jelas" (saat ini 80%).

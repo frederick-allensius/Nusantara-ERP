@@ -1,20 +1,26 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Nusantara ERP — Kotak Masuk Rekap (simulation)  (recap-inbox.js)
 //
-// How the pickup flow works once the weighbridge recap arrives by e-mail: the
-// supplier sends its recap (Excel) and photos of the weighbridge tickets; the
-// system reads the Excel, reads each photo (computer vision: SJ number, date,
-// truck, bruto/tara/netto) and checks three sources against each other — the
-// photo, the Excel and what is recorded in the app — before anything is
-// recorded. Matching trips are recorded in one step; differences are held for a
-// decision and can be sent back to the supplier.
+// How the pickup flow works once the weighbridge recap arrives by e-mail, shaped
+// on the supplier's real mail: subject "Rekap & SJ <code>-<site> <dates>",
+// photos of its printed DOs mixed with photos of our surat jalan, and its recap
+// Excel (one sheet per material, two-row header, Isi/Kosong/Qty in tons). The
+// system reads the Excel, reads each DO photo (computer vision: Nomor DO, BAP,
+// date, truck, Berat Isi / Kosong / Qty, Sales Order No = our PO) and checks
+// three sources against each other per DO number — the photo, the Excel and
+// what is recorded in the app — before anything is recorded. Matching trips are
+// recorded in one step; differences are held for a decision and can be sent
+// back to the supplier. SJ photos are kept as attachments, not read: the DO is
+// the evidence (meeting 14 Sep 2026).
 //
 // SIMULATION: there is no mailbox and no vision service. "Periksa email" builds
 // an e-mail from the pickup POs in the app: a real .xlsx (SheetJS) that goes
-// through the same reader as Impor Rekap Timbangan (Trading.recapRowsFromAoa),
-// and ticket photos drawn on a canvas whose "reading" is generated with them.
-// Applying goes through Trading.matchRecap / applyRecap like a manual import, so
-// trips, weight history, alerts (Perubahan Timbangan) and journals are real.
+// through the same reader as Impor Rekap Timbangan (Trading.recapRowsFromWorkbook),
+// and DO / SJ photos drawn on a canvas to look like phone photos of the real
+// forms, whose "reading" is generated with them. Each truck finds its surat
+// jalan through Trading.matchRecap (No PO, then No DO) and is recorded through
+// Trading.applyRecap like a manual import, so trips, weight history, alerts
+// (Perubahan Timbangan) and journals are real.
 // The inbox itself is kept in this browser only (localStorage), never in DB.
 // Real mailbox + vision service: docs/13-SIMULASI-EMAIL-DAN-CV.md.
 //
@@ -29,7 +35,8 @@
 (function () {
   'use strict';
 
-  var STORE_KEY = 'nsa.recapInbox.v1';
+  // v2: e-mails keyed by DO number (v1 keyed photos by a handwritten SJ number).
+  var STORE_KEY = 'nsa.recapInbox.v2';
   var TOL = 0.005; // ton: weights are read to 10 kg
   var LOW_CONF = 0.8;
   var STEP_MS = 420;
@@ -50,7 +57,7 @@
   var PLATE_AREAS = ['B', 'D', 'F', 'T', 'E', 'Z', 'A'];
   var PLATE_TAIL = ['KYU', 'AB', 'TRK', 'UD', 'XN', 'BQ', 'CD', 'LP', 'NS', 'RV'];
 
-  var S = { active: false, emails: [], openId: null, checkedAt: '', seq: 0 };
+  var S = { active: false, emails: [], openId: null, checkedAt: '', seq: 0, sjBook: 0, doBase: 0 };
   var photos = {}; // photo id → { url, boxes } (drawn on demand, not stored)
   var excelCache = {}; // email id → recap rows read from its .xlsx
   var proc = {}; // email id → processing step shown (0…4) while "reading"
@@ -149,10 +156,68 @@
   }
   function supplierOf(po) {
     var s = po ? find('suppliers', po.supplierId) : null;
+    var name = (s && s.name) || po.supplier || po.supplierName || 'Supplier';
     return {
-      name: (s && s.name) || po.supplier || po.supplierName || 'Supplier',
-      email: (s && s.email) || '',
+      name: name,
+      // The weighbridge admin writes from a personal mailbox.
+      email: (s && s.email) || 'admin.timbangan.' + initials(name).toLowerCase() + '@gmail.com',
     };
+  }
+  // "PT Batu Alam Sejahtera" → "BAS" (legal forms left out).
+  function initials(name) {
+    return (
+      String(name || '')
+        .replace(/^(pt|cv|ud|tb|pd)\.?\s+/i, '')
+        .split(/[^A-Za-z]+/)
+        .filter(Boolean)
+        .map(function (w) {
+          return w[0].toUpperCase();
+        })
+        .join('')
+        .slice(0, 4) || 'X'
+    );
+  }
+  // How the supplier names us in its subject and files ("Rekap & SJ NSA-…").
+  function companyCode() {
+    var c = (db().settings && db().settings.company) || {};
+    return String(c.code || '').trim() || initials(companyName()).slice(0, 3);
+  }
+  // The customer's site: "PT Beton Cipta Mandiri - Cikande" → "Cikande", else the
+  // first word of its address.
+  function siteOf(slot) {
+    var name = String((slot && slot.customer) || '');
+    var dash = name.split(/\s+-\s+/);
+    if (dash.length > 1) return dash[dash.length - 1].trim();
+    var cust = slot && slot.customerId ? find('customers', slot.customerId) : null;
+    var addr = String((cust && cust.address) || (slot && slot.destination) || '').trim();
+    return addr ? addr.split(/[\s,]+/)[0] : '';
+  }
+  // "Keterangan" in the recap: the customer's own word plus the site,
+  // e.g. "BETON CIKANDE".
+  function keteranganOf(slot) {
+    var name = String((slot && slot.customer) || '').split(/\s+-\s+/)[0];
+    var word =
+      name
+        .replace(/^(pt|cv|ud|tb|pd)\.?\s+/i, '')
+        .split(/\s+/)
+        .filter(Boolean)[0] || '';
+    return [word, siteOf(slot)].filter(Boolean).join(' ').toUpperCase();
+  }
+  // Plates as the weighbridge writes them: "B 9198 PYX" → "B9198PYX".
+  function plain(plate) {
+    return String(plate || '')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+  // What the recap puts in "No PO": with the company's PO format (Pengaturan
+  // Umum → Nomor Dokumen) only its running number, 69 for PO-069/…/2026, as the
+  // real recap does; otherwise the whole number, which repeats its running
+  // number every month.
+  function poSeqOf(number) {
+    var fmt = db().settings && db().settings.numberFormats && db().settings.numberFormats.PO;
+    var DE = window.DocEngine;
+    var seq = fmt && fmt.pattern && DE && DE.sequenceOf ? DE.sequenceOf('PO', number) : null;
+    return seq != null ? seq : number;
   }
 
   // Seeded random numbers, so an e-mail (and its photos) look the same after a
@@ -181,6 +246,8 @@
         S.emails = data.emails;
         S.checkedAt = data.checkedAt || '';
         S.seq = data.seq || data.emails.length;
+        S.sjBook = data.sjBook || 0;
+        S.doBase = data.doBase || 0;
       }
     } catch (_) {
       /* a broken or blocked store starts empty */
@@ -191,7 +258,13 @@
       if (window.localStorage) {
         window.localStorage.setItem(
           STORE_KEY,
-          JSON.stringify({ emails: S.emails, checkedAt: S.checkedAt, seq: S.seq })
+          JSON.stringify({
+            emails: S.emails,
+            checkedAt: S.checkedAt,
+            seq: S.seq,
+            sjBook: S.sjBook,
+            doBase: S.doBase,
+          })
         );
       }
     } catch (_) {
@@ -231,23 +304,6 @@
       );
     });
   }
-  function slotBySj(sjNo) {
-    var key = String(sjNo || '')
-      .trim()
-      .toUpperCase();
-    if (!key) return null;
-    return (
-      (db().deliveryOrders || []).find(function (d) {
-        return (
-          T().isPickup(d) &&
-          String(d.sjNo || '')
-            .trim()
-            .toUpperCase() === key
-        );
-      }) || null
-    );
-  }
-
   // ── Building a simulated e-mail ─────────────────────────────────────────────
   function plateFor(rand) {
     return (
@@ -272,28 +328,34 @@
   }
   function confidence(rand) {
     var c = {};
-    ['sjNo', 'date', 'vehicle', 'gross', 'tare', 'net', 'ticketNo'].forEach(function (f) {
+    ['doNo', 'ticketNo', 'poNumber', 'date', 'vehicle', 'gross', 'tare', 'net'].forEach(function (f) {
       c[f] = Math.round((0.93 + rand() * 0.065) * 100) / 100;
     });
     return c;
   }
 
-  // A trip as it appears on the ticket: the values the weighbridge printed.
-  function newTrip(rand, po, slot, date, net, ticketBase, i) {
+  // A trip as the supplier's DO prints it. sjNo is the app's surat jalan the
+  // trip belongs to (the truth the simulation knows); the DO does not carry it.
+  // doNo / ticketNo (BAP) / sjBook (our SJ book number) are numbered in date
+  // order once the e-mail's trips are known (numberTrips).
+  function newTrip(rand, po, slot, date, net) {
     var w = weights(rand, net);
     var t = clock(rand);
     return {
       sjNo: slot.sjNo,
       poNumber: slot.poNumber || poNo(po),
       date: date,
-      vehicle: plateFor(rand),
-      driver: pick(rand, DRIVERS),
+      vehicle: plain(plateFor(rand)),
+      driver: pick(rand, DRIVERS).toUpperCase(),
       itemName: slot.lines && slot.lines[0] ? slot.lines[0].itemName : lineOf(po).itemName,
       customer: slot.customer || '',
+      keterangan: keteranganOf(slot),
       gross: w.gross,
       tare: w.tare,
       net: w.net,
-      ticketNo: 'DO-' + (ticketBase + i),
+      doNo: '',
+      ticketNo: '',
+      sjBook: '',
       timeIn: t.in,
       timeOut: t.out,
     };
@@ -307,17 +369,31 @@
       sjNo: d.sjNo,
       poNumber: d.poNumber || poNo(po),
       date: d.date,
-      vehicle: d.vehicle || plateFor(rand),
-      driver: d.driver || pick(rand, DRIVERS),
+      vehicle: plain(d.vehicle) || plain(plateFor(rand)),
+      driver: String(d.driver || pick(rand, DRIVERS)).toUpperCase(),
       itemName: d.lines && d.lines[0] ? d.lines[0].itemName : lineOf(po).itemName,
       customer: d.customer || '',
+      keterangan: keteranganOf(d),
       gross: w.gross != null ? r2(w.gross) : r2(tare + net),
       tare: tare,
       net: net,
-      ticketNo: d.ticketNo || 'DO-' + (40000 + Math.floor(rand() * 9000)),
+      doNo: d.doNo || '',
+      ticketNo: d.ticketNo || '',
+      sjBook: d.sjRef || '',
       timeIn: t.in,
       timeOut: t.out,
     };
+  }
+  // DO numbers count up with the date; the BAP (weighbridge ticket, "No GJIB" in
+  // the recap) runs a fixed step ahead; our SJ book has its own running number.
+  function numberTrips(trips, rand) {
+    if (!S.doBase) S.doBase = 41000 + Math.floor(rand() * 600);
+    if (!S.sjBook) S.sjBook = 460;
+    trips.forEach(function (t) {
+      if (!t.doNo) t.doNo = String(S.doBase++);
+      if (!t.ticketNo) t.ticketNo = '0' + (Number(t.doNo) + 161);
+      if (!t.sjBook) t.sjBook = String(S.sjBook++);
+    });
   }
 
   // New trips spread over the last days, inside the PO's quota and dates.
@@ -367,7 +443,6 @@
     }
     var seed = (Date.now() ^ (S.seq * 7919)) >>> 0;
     var rand = rng(seed);
-    var ticketBase = 41000 + Math.floor(rand() * 8000);
     var roles = kind === 'issues' ? ['ok', 'conflict', 'unclear', 'nophoto'] : ['ok', 'ok', 'ok'];
     var plan = planNew(rand, po, roles.length);
     if (!plan.length) return null;
@@ -392,10 +467,23 @@
       }
     }
     plan.forEach(function (p, i) {
-      trips.push({ role: roles[i], trip: newTrip(rand, po, p.slot, p.date, p.net, ticketBase, i) });
+      trips.push({ role: roles[i], trip: newTrip(rand, po, p.slot, p.date, p.net) });
     });
     trips.sort(function (a, b) {
       return String(a.trip.date).localeCompare(String(b.trip.date));
+    });
+    numberTrips(
+      trips.map(function (x) {
+        return x.trip;
+      }),
+      rand
+    );
+    trips.forEach(function (x) {
+      if (x.excel) {
+        x.excel.doNo = x.trip.doNo;
+        x.excel.ticketNo = x.trip.ticketNo;
+        x.excel.sjBook = x.trip.sjBook;
+      }
     });
 
     var sup = supplierOf(po);
@@ -411,7 +499,12 @@
     });
     var excelRows = [];
     var photoList = [];
+    var sjPhotos = [];
     trips.forEach(function (x, i) {
+      // Our surat jalan, photographed too: kept with the e-mail, not read.
+      if (x.role !== 'same' && x.role !== 'changed') {
+        sjPhotos.push({ id: 's' + seed + '-' + i, seed: (seed + i * 7907) >>> 0, trip: x.trip });
+      }
       var t = x.trip;
       var xl = x.excel || t;
       if (x.role === 'conflict') {
@@ -423,13 +516,14 @@
       if (x.role === 'nophoto') return;
       var conf = confidence(rand);
       var read = {
-        sjNo: t.sjNo,
+        doNo: t.doNo,
+        ticketNo: t.ticketNo,
+        poNumber: t.poNumber,
         date: t.date,
         vehicle: t.vehicle,
         gross: t.gross,
         tare: t.tare,
         net: t.net,
-        ticketNo: t.ticketNo,
       };
       if (x.role === 'unclear') {
         // A shadow over the figures: netto misread (1 → 7) and unsure.
@@ -444,6 +538,7 @@
         id: 'p' + seed + '-' + i,
         seed: (seed + i * 104729) >>> 0,
         sjNo: t.sjNo,
+        doNo: t.doNo,
         trip: t,
         read: read,
         conf: conf,
@@ -453,14 +548,16 @@
 
     S.seq++;
     var stamp = String(S.seq).padStart(3, '0');
-    var fileName =
-      'Rekap Timbangan ' +
-      sup.name +
-      ' ' +
-      fmtDate(from).replace(/\//g, '-') +
-      ' sd ' +
-      fmtDate(to).replace(/\//g, '-') +
-      '.xlsx';
+    // As the supplier names them: "Rekap & SJ NSA-CIKANDE 05-060926" and
+    // "REKAP NSA-CIKANDE.xlsx".
+    var site = (siteOf(trips[0] && trips[0].trip) || '').toUpperCase();
+    var tag = companyCode() + (site ? '-' + site : '');
+    var span =
+      from.slice(8, 10) +
+      (to !== from ? '-' + to.slice(8, 10) : '') +
+      to.slice(5, 7) +
+      to.slice(2, 4);
+    var fileName = 'REKAP ' + tag + '.xlsx';
     return {
       id: 'em-' + seed + '-' + stamp,
       kind: kind,
@@ -470,21 +567,18 @@
       poId: po.id,
       poNumber: poNo(po),
       supplier: sup.name,
-      fromName: 'Bagian Timbangan ' + sup.name,
+      fromName: 'Admin Timbangan ' + sup.name,
       fromEmail: sup.email,
       to: inboxAddress(),
-      subject: 'Rekap timbangan ' + item + ' ' + fmtDate(from) + ' – ' + fmtDate(to),
+      subject: 'Rekap & SJ ' + tag + ' ' + span,
       body: [
         'Selamat siang,',
-        'Terlampir rekap timbangan pengambilan ' +
+        'Berikut rekap dan foto DO + SJ pengambilan ' +
           item +
-          ' untuk PO ' +
-          poNo(po) +
-          ' periode ' +
+          ' tanggal ' +
           fmtDate(from) +
-          ' s/d ' +
-          fmtDate(to) +
-          ', beserta foto DO per truk.',
+          (to !== from ? ' s/d ' + fmtDate(to) : '') +
+          '.',
         'Terima kasih.',
       ],
       period: { from: from, to: to },
@@ -492,6 +586,7 @@
       title: sup.name,
       rows: excelRows,
       photos: photoList,
+      sjPhotos: sjPhotos,
       decisions: {},
       manual: {},
       applied: [],
@@ -501,55 +596,85 @@
   }
 
   // ── The Excel attachment (a real .xlsx) ─────────────────────────────────────
-  function aoaOf(email) {
-    var head = [
-      'No',
-      'Tanggal',
-      'No SJ',
-      'No PO',
-      'No Polisi',
-      'Sopir',
-      'Barang',
-      'Bruto',
-      'Tara',
-      'Netto',
-    ];
-    var sum = { g: 0, t: 0, n: 0 };
-    var body = email.rows.map(function (r, i) {
-      sum.g += num(r.gross);
-      sum.t += num(r.tare);
-      sum.n += num(r.net);
-      return [
-        i + 1,
-        fmtDate(r.date),
-        r.sjNo,
-        r.poNumber,
-        r.vehicle,
-        r.driver,
-        r.itemName,
+  // The supplier's layout: one sheet per material; rows 1–3 empty; a two-row
+  // header ("No" over GJIB / DO / Surat Jalan / Polisi / PO); "Isi / Kosong /
+  // Qty (kg)" holding tons; numbering and a subtotal row per day; a SUBTOTAL
+  // footer. aoaOf(email, item) → one sheet.
+  var RECAP_HEAD = [
+    ['No', 'No', 'No', 'No', 'No', 'SUPIR', 'Tanggal', 'Isi(kg)', 'Kosong(Kg)', 'Qty(kg)', 'Material', 'Keterangan', 'No'],
+    ['', 'GJIB', 'DO', 'Surat Jalan', 'Polisi', '', '', '', '', '', '', '', 'PO'],
+  ];
+  function materialsOf(email) {
+    var out = [];
+    email.rows.forEach(function (r) {
+      if (out.indexOf(r.itemName) === -1) out.push(r.itemName);
+    });
+    return out;
+  }
+  function aoaOf(email, item) {
+    var rows = email.rows.filter(function (r) {
+      return item == null || r.itemName === item;
+    });
+    var aoa = [[], [], []].concat(RECAP_HEAD);
+    var day = '';
+    var n = 0;
+    var daySum = 0;
+    var total = 0;
+    var closeDay = function () {
+      if (day) aoa.push(['', '', '', '', '', '', '', '', '', r2(daySum)]);
+    };
+    rows.forEach(function (r) {
+      if (r.date !== day) {
+        closeDay();
+        day = r.date;
+        n = 0;
+        daySum = 0;
+      }
+      n++;
+      daySum += num(r.net);
+      total += num(r.net);
+      var d = new Date(String(r.date).slice(0, 10) + 'T00:00:00');
+      aoa.push([
+        n,
+        Number(r.ticketNo) || r.ticketNo,
+        Number(r.doNo) || r.doNo,
+        Number(r.sjBook) || r.sjBook,
+        plain(r.vehicle),
+        String(r.driver || '').toUpperCase(),
+        isNaN(d) ? r.date : d,
         r.gross,
         r.tare,
         r.net,
-      ];
+        r.itemName,
+        r.keterangan || '',
+        poSeqOf(r.poNumber),
+      ]);
     });
-    return [
-      ['REKAP TIMBANGAN'],
-      [String(email.title || '').toUpperCase()],
-      ['Periode ' + fmtDate(email.period.from) + ' s/d ' + fmtDate(email.period.to)],
-      [],
-      head,
-    ]
-      .concat(body)
-      .concat([[], ['', '', '', '', '', '', 'TOTAL', r2(sum.g), r2(sum.t), r2(sum.n)]]);
+    closeDay();
+    aoa.push([], ['', '', '', '', '', '', 'SUBTOTAL'], ['', '', '', '', '', '', item || '', '', '=', r2(total), 'Ton']);
+    return aoa;
   }
   function workbook(email) {
     var X = window.XLSX;
-    var ws = X.utils.aoa_to_sheet(aoaOf(email));
-    ws['!cols'] = [4, 11, 20, 18, 12, 10, 18, 8, 8, 8].map(function (w) {
-      return { wch: w };
-    });
     var wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, ws, 'Rekap Timbangan');
+    materialsOf(email).forEach(function (item) {
+      var ws = X.utils.aoa_to_sheet(aoaOf(email, item), { cellDates: true });
+      ws['!cols'] = [4, 8, 8, 10, 11, 10, 11, 8, 10, 8, 16, 18, 5].map(function (w) {
+        return { wch: w };
+      });
+      ws['!merges'] = [0, 5, 6, 7, 8, 9, 10, 11].map(function (c) {
+        return { s: { r: 3, c: c }, e: { r: 4, c: c } };
+      });
+      // Sheet names as the supplier writes them: "SPLITE 1-2", at most 31 chars.
+      var name = String(item || 'REKAP')
+        .toUpperCase()
+        .replace(/[\\/?*[\]:]/g, ' ')
+        .slice(0, 31);
+      X.utils.book_append_sheet(wb, ws, name);
+    });
+    if (!wb.SheetNames.length) {
+      X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([[], [], []].concat(RECAP_HEAD)), 'REKAP');
+    }
     return wb;
   }
   // The rows as the app reads them: the .xlsx is written and read back through
@@ -580,74 +705,201 @@
     X.writeFile(workbook(email), email.fileName);
   }
 
-  // ── The ticket photo (drawn) ────────────────────────────────────────────────
-  // A printed weighbridge ticket on a desk, photographed at a slight angle, the
-  // SJ number written on it by hand. Field boxes are kept for the overlay that
-  // shows what the reader found (as % of the image).
+  // ── The photos (drawn) ──────────────────────────────────────────────────────
+  // Phone photos like the supplier's: the DO is a continuous form (tractor-feed
+  // holes on both long edges) printed by a dot-matrix printer in pale grey,
+  // lying on a dark glass desk on a stack of other forms, photographed turned on
+  // its side, with glare, uneven light and sensor noise. Field boxes are kept
+  // for the overlay that shows what the reader found (as % of the image).
+  var MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des'];
+  function longDate(iso) {
+    var p = String(iso || '').slice(0, 10).split('-');
+    return p.length === 3 ? Number(p[2]) + ' ' + MONTHS_ID[Number(p[1]) - 1] + ' ' + p[0] : '';
+  }
+  function kgDots(t) {
+    return Math.round(num(t) * 1000).toLocaleString('id-ID');
+  }
+  // "Cikande" → "CKD", "Serang" → "SRG": first, second and last consonant, as
+  // the supplier abbreviates sites.
+  function siteCode(site) {
+    var c = String(site || '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .replace(/[AEIOU]/g, '');
+    return c.length > 3 ? c[0] + c[1] + c[c.length - 1] : c;
+  }
+  // A placement for a sheet in the photo: centre, turn, scale and a slight skew
+  // for the phone's angle. at(x, y) maps sheet coordinates to the image.
+  function placement(cx, cy, angle, s, kx, ky, PW, PH) {
+    var cos = Math.cos(angle);
+    var sin = Math.sin(angle);
+    return {
+      apply: function (g) {
+        g.translate(cx, cy);
+        g.rotate(angle);
+        g.scale(s, s);
+        g.transform(1, ky, kx, 1, 0, 0);
+        g.translate(-PW / 2, -PH / 2);
+      },
+      at: function (x, y) {
+        var px = x - PW / 2;
+        var py = y - PH / 2;
+        var qx = (px + kx * py) * s;
+        var qy = (ky * px + py) * s;
+        return [cx + qx * cos - qy * sin, cy + qx * sin + qy * cos];
+      },
+    };
+  }
+  function deskBackdrop(g, W, H, rand) {
+    g.fillStyle = '#1b1d20';
+    g.fillRect(0, 0, W, H);
+    var glass = g.createLinearGradient(0, 0, W, H);
+    glass.addColorStop(0, 'rgba(70,78,86,0.55)');
+    glass.addColorStop(0.5, 'rgba(25,27,30,0.2)');
+    glass.addColorStop(1, 'rgba(60,66,72,0.45)');
+    g.fillStyle = glass;
+    g.fillRect(0, 0, W, H);
+    // Ceiling lights reflected in the glass.
+    for (var i = 0; i < 3; i++) {
+      var x = W * (0.02 + rand() * 0.12);
+      var y = H * (0.15 + i * 0.3 + rand() * 0.05);
+      var rg = g.createRadialGradient(x, y, 4, x, y, 60 + rand() * 40);
+      rg.addColorStop(0, 'rgba(255,255,255,0.85)');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = rg;
+      g.fillRect(x - 110, y - 110, 220, 220);
+    }
+  }
+  function photoFinish(cv, g, W, H, rand) {
+    // Uneven light: one side brighter, the corners darker.
+    var side = g.createLinearGradient(0, 0, W, 0);
+    side.addColorStop(0, 'rgba(255,255,255,0.10)');
+    side.addColorStop(0.6, 'rgba(0,0,0,0)');
+    side.addColorStop(1, 'rgba(0,0,0,0.18)');
+    g.fillStyle = side;
+    g.fillRect(0, 0, W, H);
+    var vig = g.createRadialGradient(W / 2, H / 2, W * 0.35, W / 2, H / 2, W * 0.95);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.38)');
+    g.fillStyle = vig;
+    g.fillRect(0, 0, W, H);
+    // Sensor noise.
+    for (var k = 0; k < 5200; k++) {
+      var v = rand() < 0.5 ? 0 : 255;
+      g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + (0.04 + rand() * 0.06) + ')';
+      g.fillRect(Math.floor(rand() * W), Math.floor(rand() * H), 1 + Math.floor(rand() * 2), 1);
+    }
+    // A touch of softness, as a phone photo of paper has.
+    if (typeof g.filter === 'string') {
+      var c2 = document.createElement('canvas');
+      c2.width = W;
+      c2.height = H;
+      var g2 = c2.getContext('2d');
+      g2.filter = 'blur(0.8px)';
+      g2.drawImage(cv, 0, 0);
+      g.drawImage(c2, 0, 0);
+    }
+  }
+  // Dot-matrix print: pale grey type, broken by a fine lattice of paper colour.
+  function dotMatrix(g, x, y, w, h, paper) {
+    g.save();
+    g.fillStyle = paper;
+    g.globalAlpha = 0.42;
+    for (var yy = y; yy < y + h; yy += 3) g.fillRect(x, yy, w, 1);
+    g.globalAlpha = 0.3;
+    for (var xx = x; xx < x + w; xx += 3) g.fillRect(xx, y, 1, h);
+    g.restore();
+  }
+  function scribble(g, rand, x, y, w, h, color) {
+    g.save();
+    g.strokeStyle = color;
+    g.lineWidth = 2.2;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(x, y + h * (0.4 + rand() * 0.3));
+    for (var s = 0; s < 7; s++) {
+      g.bezierCurveTo(
+        x + w * (s / 7) + rand() * 20,
+        y + rand() * h,
+        x + w * ((s + 0.6) / 7),
+        y + h * (0.2 + rand() * 0.8),
+        x + w * ((s + 1) / 7),
+        y + h * (0.3 + rand() * 0.5)
+      );
+    }
+    g.stroke();
+    g.restore();
+  }
+
+  // The supplier's DO, as on the real form: kop, BAP, two columns of fields,
+  // the weights in kg, the PO as "Sales Order No", four signature boxes.
   function drawPhoto(p, supplier) {
     if (photos[p.id]) return photos[p.id];
-    var W = 720;
-    var H = 960;
+    var W = 900;
+    var H = 1200;
     var cv = document.createElement('canvas');
     cv.width = W;
     cv.height = H;
     var g = cv.getContext && cv.getContext('2d');
     if (!g) return { url: '', boxes: {} };
     var rand = rng(p.seed);
-    // Desk
-    var desk = g.createLinearGradient(0, 0, W, H);
-    desk.addColorStop(0, '#5a4636');
-    desk.addColorStop(1, '#3a2d23');
-    g.fillStyle = desk;
-    g.fillRect(0, 0, W, H);
-    for (var k = 0; k < 90; k++) {
-      g.strokeStyle = 'rgba(0,0,0,' + (0.04 + rand() * 0.06) + ')';
-      g.lineWidth = 1 + rand() * 2;
-      var y0 = rand() * H;
-      g.beginPath();
-      g.moveTo(0, y0);
-      g.bezierCurveTo(
-        W * 0.3,
-        y0 + rand() * 30 - 15,
-        W * 0.7,
-        y0 + rand() * 30 - 15,
-        W,
-        y0 + rand() * 20 - 10
-      );
-      g.stroke();
+    var t = p.trip;
+    deskBackdrop(g, W, H, rand);
+    var PW = 1150;
+    var PH = 720;
+    var paper = '#e2e2dd';
+    var angle = (-90 + (rand() * 4 - 2)) * (Math.PI / 180);
+    var s = (H * (0.97 + rand() * 0.04)) / PW;
+    var pl = placement(
+      W * (0.55 + rand() * 0.04),
+      H * (0.5 + rand() * 0.02),
+      angle,
+      s,
+      rand() * 0.04 - 0.02,
+      rand() * 0.03 - 0.015,
+      PW,
+      PH
+    );
+    // Other forms underneath.
+    for (var u = 2; u >= 1; u--) {
+      g.save();
+      pl.apply(g);
+      g.translate(u * 14 - rand() * 6, u * 10);
+      g.fillStyle = u === 2 ? '#d9d9d4' : '#e4e4df';
+      g.fillRect(0, 0, PW, PH);
+      g.restore();
     }
-    // Paper
-    var PW = 470;
-    var PH = 760;
-    var angle = (rand() * 5 - 2.5) * (Math.PI / 180);
-    var cx = W / 2 + (rand() * 30 - 15);
-    var cy = H / 2 + (rand() * 24 - 12);
     g.save();
-    g.translate(cx, cy);
-    g.rotate(angle);
-    g.shadowColor = 'rgba(0,0,0,0.45)';
-    g.shadowBlur = 26;
-    g.shadowOffsetX = 8;
-    g.shadowOffsetY = 12;
-    g.fillStyle = '#f3efe4';
-    g.fillRect(-PW / 2, -PH / 2, PW, PH);
+    pl.apply(g);
+    g.shadowColor = 'rgba(0,0,0,0.5)';
+    g.shadowBlur = 18;
+    var pg = g.createLinearGradient(0, 0, PW, PH);
+    pg.addColorStop(0, '#e9e9e5');
+    pg.addColorStop(1, '#d8d8d2');
+    g.fillStyle = pg;
+    g.fillRect(0, 0, PW, PH);
     g.shadowColor = 'transparent';
+    // Tractor-feed strips: holes and the perforation along both long edges.
+    g.fillStyle = '#26282b';
+    for (var hx = 30; hx < PW; hx += 48) {
+      [24, PH - 24].forEach(function (hy) {
+        g.beginPath();
+        g.arc(hx, hy, 9, 0, Math.PI * 2);
+        g.fill();
+      });
+    }
+    g.strokeStyle = 'rgba(80,80,80,0.35)';
+    g.setLineDash([3, 4]);
+    [50, PH - 50].forEach(function (py) {
+      g.beginPath();
+      g.moveTo(0, py);
+      g.lineTo(PW, py);
+      g.stroke();
+    });
+    g.setLineDash([]);
     var boxes = {};
     function mark(key, x, y, w, h) {
-      // Paper coordinates → image %, as the axis-aligned box of the turned rect.
-      var pts = [
-        [x, y],
-        [x + w, y],
-        [x, y + h],
-        [x + w, y + h],
-      ].map(function (q) {
-        var px = q[0] - PW / 2;
-        var py = q[1] - PH / 2;
-        return [
-          cx + px * Math.cos(angle) - py * Math.sin(angle),
-          cy + px * Math.sin(angle) + py * Math.cos(angle),
-        ];
-      });
+      var pts = [pl.at(x, y), pl.at(x + w, y), pl.at(x, y + h), pl.at(x + w, y + h)];
       var xs = pts.map(function (q) {
         return q[0];
       });
@@ -655,156 +907,235 @@
         return q[1];
       });
       var x0 = Math.min.apply(null, xs) - 4;
-      var y0b = Math.min.apply(null, ys) - 4;
+      var y0 = Math.min.apply(null, ys) - 4;
       boxes[key] = {
         x: (x0 / W) * 100,
-        y: (y0b / H) * 100,
+        y: (y0 / H) * 100,
         w: ((Math.max.apply(null, xs) + 4 - x0) / W) * 100,
-        h: ((Math.max.apply(null, ys) + 4 - y0b) / H) * 100,
+        h: ((Math.max.apply(null, ys) + 4 - y0) / H) * 100,
       };
     }
-    g.translate(-PW / 2, -PH / 2);
-    var t = p.trip;
     var mono = '"Courier New", Courier, monospace';
-    var ink = '#2a2a2a';
-    var line = function (y) {
-      g.strokeStyle = 'rgba(40,40,40,0.55)';
-      g.setLineDash([4, 3]);
-      g.beginPath();
-      g.moveTo(26, y);
-      g.lineTo(PW - 26, y);
-      g.stroke();
-      g.setLineDash([]);
-    };
-    var text = function (s, x, y, font, color, align) {
-      g.font = font;
-      g.fillStyle = color || ink;
+    var ink = 'rgba(88,90,98,0.82)';
+    var text = function (str, x, y, size, bold, align) {
+      g.font = (bold ? 'bold ' : '') + size + 'px ' + mono;
+      g.fillStyle = ink;
       g.textAlign = align || 'left';
-      g.fillText(s, x, y);
-      return g.measureText(s).width;
+      g.fillText(str, x, y);
+      return g.measureText(str).width;
     };
-    text(String(supplier || '').toUpperCase(), PW / 2, 58, 'bold 21px ' + mono, ink, 'center');
-    text('BAGIAN TIMBANGAN', PW / 2, 84, '15px ' + mono, ink, 'center');
-    line(102);
-    text('DELIVERY ORDER', 30, 132, 'bold 17px ' + mono);
-    var wT = text('No ' + t.ticketNo, PW - 30, 132, 'bold 17px ' + mono, ink, 'right');
-    mark('ticketNo', PW - 30 - wT, 114, wT, 24);
-    var rows = [
-      ['Tanggal', fmtDate(t.date).replace(/\//g, '-'), 'date'],
-      ['No PO', t.poNumber],
-      ['Jam Masuk', t.timeIn + '   Keluar ' + t.timeOut],
-      ['No Polisi', t.vehicle, 'vehicle'],
-      ['Sopir', t.driver],
-      ['Barang', t.itemName],
-      ['Tujuan', t.customer || '-'],
-    ];
-    var y = 170;
-    rows.forEach(function (r) {
-      text(r[0], 30, y, '15px ' + mono);
-      text(':', 150, y, '15px ' + mono);
-      var w = text(String(r[1] || '').slice(0, 26), 166, y, '15px ' + mono);
-      if (r[2]) mark(r[2], 166, y - 16, w, 21);
-      y += 30;
-    });
-    line(y - 8);
-    y += 30;
-    var blurStart = y - 26;
-    [
-      ['BRUTO', t.gross, 'gross'],
-      ['TARA', t.tare, 'tare'],
-      ['NETTO', t.net, 'net'],
-    ].forEach(function (r) {
-      text(r[0], 30, y, 'bold 20px ' + mono);
-      text(':', 150, y, 'bold 20px ' + mono);
-      var s = Math.round(r[1] * 1000).toLocaleString('id-ID') + ' kg';
-      var w = text(s, PW - 40, y, 'bold 24px ' + mono, ink, 'right');
-      mark(r[2], PW - 40 - w, y - 22, w, 28);
-      y += 42;
-    });
-    var blurEnd = y - 18;
-    line(y - 14);
-    y += 34;
-    text('Operator', 70, y + 60, '14px ' + mono);
-    text('Sopir', PW - 110, y + 60, '14px ' + mono);
-    // Signatures
-    g.strokeStyle = 'rgba(30,30,60,0.75)';
-    g.lineWidth = 1.6;
-    [60, PW - 130].forEach(function (sx) {
+    var sup = 'PT. ' + String(supplier || '').replace(/^PT\.?\s+/i, '').toUpperCase();
+    var wSup = text(sup, 120, 118, 30, true);
+    g.fillStyle = ink;
+    g.fillRect(120, 126, wSup, 2);
+    var bap = 'BAP: ' + t.ticketNo;
+    var wBap = text(bap, PW - 120, 118, 26, false, 'right');
+    mark('ticketNo', PW - 120 - wBap + 70, 96, wBap - 70, 28);
+    var site = siteOf(t);
+    var L = 150;
+    var LV = 380;
+    var R = 650;
+    var RV = 840;
+    var row = function (y, label, value, key) {
+      text(label, L, y, 23);
+      var w = text(value, LV, y, 23);
+      if (key) mark(key, LV, y - 21, w, 27);
+    };
+    var rrow = function (y, label, value, key) {
+      text(label, R, y, 23);
+      var w = text(value, RV, y, 23);
+      if (key) mark(key, RV, y - 21, w, 27);
+    };
+    row(185, 'Tanggal', longDate(t.date), 'date');
+    rrow(185, 'Waktu Masuk', longDate(t.date) + ' ' + String(t.timeIn || '').replace(':', '.'));
+    row(222, 'Nomor DO', String(t.doNo), 'doNo');
+    rrow(222, 'Waktu Keluar', longDate(t.date) + ' ' + String(t.timeOut || '').replace(':', '.'));
+    row(290, 'Customer', 'PT. ' + companyName().replace(/^PT\.?\s+/i, ''));
+    row(325, 'Project', String(t.customer || '').replace(/\s+-\s+/, '- '));
+    row(360, 'No Truck', plain(t.vehicle), 'vehicle');
+    rrow(360, 'Driver', String(t.driver || '').toUpperCase());
+    row(395, 'Product', String(t.itemName || ''));
+    rrow(395, 'Qty (Kg)', kgDots(t.net), 'net');
+    row(430, 'Berat Kosong', kgDots(t.tare), 'tare');
+    rrow(430, 'Berat Isi (Kg)', kgDots(t.gross), 'gross');
+    row(465, 'Sales Order No', String(t.poNumber || ''), 'poNumber');
+    row(500, 'Keterangan', companyCode() + ' ' + siteCode(site));
+    // Signature boxes.
+    var top = 545;
+    var bottom = 668;
+    var cols = [120, 360, 600, 840, 1060];
+    g.strokeStyle = 'rgba(70,72,78,0.75)';
+    g.lineWidth = 1.5;
+    g.strokeRect(cols[0], top, cols[4] - cols[0], bottom - top);
+    for (var ci = 1; ci < 4; ci++) {
       g.beginPath();
-      g.moveTo(sx, y + 34);
-      for (var s = 0; s < 6; s++) {
-        g.quadraticCurveTo(
-          sx + 10 + s * 12,
-          y + 10 + rand() * 30,
-          sx + 18 + s * 12,
-          y + 30 + rand() * 8
-        );
-      }
+      g.moveTo(cols[ci], top);
+      g.lineTo(cols[ci], bottom);
       g.stroke();
+    }
+    g.beginPath();
+    g.moveTo(cols[0], top + 30);
+    g.lineTo(cols[4], top + 30);
+    g.stroke();
+    ['Admin', 'Driver', 'Security', 'Penerima Barang'].forEach(function (lbl, i) {
+      text(lbl, cols[i] + 8, top + 22, 19);
     });
-    // Stamp
+    dotMatrix(g, 100, 80, PW - 200, 600, paper);
+    // Ink by hand: the admin's and the driver's signature, the driver's name.
+    scribble(g, rand, cols[0] + 30, top + 40, 170, 70, 'rgba(25,25,35,0.85)');
+    scribble(g, rand, cols[1] + 40, top + 36, 120, 50, 'rgba(25,25,35,0.85)');
     g.save();
-    g.translate(PW - 120, y + 10);
-    g.rotate(-0.25);
-    g.strokeStyle = 'rgba(160,40,60,0.55)';
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(0, 0, 46, 0, Math.PI * 2);
-    g.stroke();
-    g.beginPath();
-    g.arc(0, 0, 36, 0, Math.PI * 2);
-    g.stroke();
-    text('TIMBANGAN', 0, -6, 'bold 11px Arial, sans-serif', 'rgba(160,40,60,0.6)', 'center');
-    text('OK', 0, 14, 'bold 16px Arial, sans-serif', 'rgba(160,40,60,0.6)', 'center');
+    g.font = 'italic 30px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
+    g.fillStyle = 'rgba(25,25,35,0.85)';
+    g.fillText(String(t.driver || '').toLowerCase(), cols[1] + 50, bottom - 12);
     g.restore();
-    // Our SJ number written on the ticket by hand.
-    var hand = '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
-    g.save();
-    g.translate(30, PH - 92);
-    g.rotate(-0.04);
-    var wl = text('SJ:', 0, 0, '22px ' + hand, '#1d3a8a');
-    var ws = text(t.sjNo, wl + 10, 0, 'bold 22px ' + hand, '#1d3a8a');
-    g.restore();
-    mark('sjNo', 30 + wl + 6, PH - 92 - 26, ws + 8, 36);
-    // A shadow over the figures, as when the photo was taken in a hurry.
+    text('admin.' + initials(supplier).toLowerCase(), cols[0] + 4, bottom + 26, 19);
+    // A shadow over the weights, as when the photo was taken in a hurry.
     if (p.blurry) {
-      var sh = g.createLinearGradient(0, blurStart, 0, blurEnd + 20);
+      var sh = g.createLinearGradient(R - 20, 360, PW, 450);
       sh.addColorStop(0, 'rgba(20,16,12,0.05)');
-      sh.addColorStop(0.5, 'rgba(20,16,12,0.5)');
-      sh.addColorStop(1, 'rgba(20,16,12,0.15)');
+      sh.addColorStop(0.5, 'rgba(20,16,12,0.55)');
+      sh.addColorStop(1, 'rgba(20,16,12,0.2)');
       g.fillStyle = sh;
-      g.fillRect(0, blurStart, PW, blurEnd - blurStart + 30);
+      g.fillRect(L - 20, 365, PW - L, 80);
     }
     g.restore();
-    // Light falloff
-    var light = g.createRadialGradient(W * 0.45, H * 0.4, 80, W / 2, H / 2, W * 0.85);
-    light.addColorStop(0, 'rgba(255,248,230,0.06)');
-    light.addColorStop(1, 'rgba(0,0,0,0.35)');
-    g.fillStyle = light;
+    // Glare from the lamp, over the desk and the edge of the form.
+    var gx = W * (0.08 + rand() * 0.1);
+    var gy = H * (0.3 + rand() * 0.4);
+    var glare = g.createRadialGradient(gx, gy, 10, gx, gy, 260);
+    glare.addColorStop(0, 'rgba(255,255,255,0.55)');
+    glare.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = glare;
     g.fillRect(0, 0, W, H);
-    var out = cv;
-    if (p.blurry && typeof g.filter === 'string' && boxes.gross && boxes.net) {
-      // Shaken over the figures only: the rest of the ticket stays readable.
-      var c2 = document.createElement('canvas');
-      c2.width = W;
-      c2.height = H;
-      var g2 = c2.getContext('2d');
-      g2.filter = 'blur(2.6px)';
-      g2.drawImage(cv, 0, 0);
-      var bx = (Math.min(boxes.gross.x, boxes.net.x) / 100) * W - 260;
-      var by = (boxes.gross.y / 100) * H - 24;
-      var bw =
-        (Math.max(boxes.gross.x + boxes.gross.w, boxes.net.x + boxes.net.w) / 100) * W - bx + 16;
-      var bh = ((boxes.net.y + boxes.net.h) / 100) * H - by + 24;
-      g.drawImage(c2, bx, by, bw, bh, bx, by, bw, bh);
+    photoFinish(cv, g, W, H, rand);
+    if (p.blurry && typeof g.filter === 'string' && boxes.gross && boxes.net && boxes.tare) {
+      // Shaken over the weights only: the rest of the form stays readable.
+      var c3 = document.createElement('canvas');
+      c3.width = W;
+      c3.height = H;
+      var g3 = c3.getContext('2d');
+      g3.filter = 'blur(3px)';
+      g3.drawImage(cv, 0, 0);
+      var bx = Math.min(boxes.gross.x, boxes.net.x, boxes.tare.x);
+      var by = Math.min(boxes.gross.y, boxes.net.y, boxes.tare.y);
+      var bw = Math.max(boxes.gross.x + boxes.gross.w, boxes.net.x + boxes.net.w, boxes.tare.x + boxes.tare.w) - bx;
+      var bh = Math.max(boxes.gross.y + boxes.gross.h, boxes.net.y + boxes.net.h, boxes.tare.y + boxes.tare.h) - by;
+      var X0 = (bx / 100) * W - 10;
+      var Y0 = (by / 100) * H - 10;
+      g.drawImage(c3, X0, Y0, (bw / 100) * W + 20, (bh / 100) * H + 20, X0, Y0, (bw / 100) * W + 20, (bh / 100) * H + 20);
     }
     var url = '';
     try {
-      url = out.toDataURL('image/jpeg', 0.72);
+      url = cv.toDataURL('image/jpeg', 0.72);
     } catch (_) {
       url = '';
     }
     photos[p.id] = { url: url, boxes: boxes };
+    return photos[p.id];
+  }
+
+  // Our surat jalan (the pink carbon copy), filled in by hand at the weighbridge
+  // and photographed with the DO. Shown with the e-mail; not read.
+  function drawSjPhoto(p) {
+    if (photos[p.id]) return photos[p.id];
+    var W = 900;
+    var H = 1200;
+    var cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    var g = cv.getContext && cv.getContext('2d');
+    if (!g) return { url: '', boxes: {} };
+    var rand = rng(p.seed);
+    var t = p.trip;
+    deskBackdrop(g, W, H, rand);
+    var PW = 760;
+    var PH = 1000;
+    var pl = placement(
+      W * (0.5 + rand() * 0.04),
+      H * (0.52 + rand() * 0.02),
+      (rand() * 6 - 3) * (Math.PI / 180),
+      1.04,
+      rand() * 0.04 - 0.02,
+      rand() * 0.03 - 0.015,
+      PW,
+      PH
+    );
+    g.save();
+    pl.apply(g);
+    g.shadowColor = 'rgba(0,0,0,0.5)';
+    g.shadowBlur = 18;
+    g.fillStyle = '#f1d3dc';
+    g.fillRect(0, 0, PW, PH);
+    g.shadowColor = 'transparent';
+    var ink = 'rgba(120,40,70,0.75)';
+    var mono = 'Arial, Helvetica, sans-serif';
+    g.fillStyle = ink;
+    g.font = 'bold 26px ' + mono;
+    g.textAlign = 'left';
+    g.fillText(companyName().toUpperCase(), 50, 70);
+    g.font = 'bold 34px ' + mono;
+    g.textAlign = 'center';
+    g.fillText('SURAT JALAN', PW / 2, 140);
+    g.textAlign = 'left';
+    g.font = '22px ' + mono;
+    var fields = ['No.', 'Tanggal', 'Kepada', 'No. Polisi', 'Sopir'];
+    fields.forEach(function (f, i) {
+      g.fillText(f, 50, 210 + i * 48);
+      g.fillRect(200, 216 + i * 48, PW - 260, 1.5);
+    });
+    // The goods table.
+    g.strokeStyle = ink;
+    g.lineWidth = 1.5;
+    g.strokeRect(50, 470, PW - 100, 260);
+    [520].forEach(function (y) {
+      g.beginPath();
+      g.moveTo(50, y);
+      g.lineTo(PW - 50, y);
+      g.stroke();
+    });
+    [110, 470].forEach(function (x) {
+      g.beginPath();
+      g.moveTo(x, 470);
+      g.lineTo(x, 730);
+      g.stroke();
+    });
+    g.fillText('No', 62, 503);
+    g.fillText('Nama Barang', 130, 503);
+    g.fillText('Jumlah', 490, 503);
+    ['Yang Menyerahkan', 'Sopir', 'Penerima'].forEach(function (lbl, i) {
+      var x = 50 + i * ((PW - 100) / 3);
+      g.strokeRect(x, 780, (PW - 100) / 3, 150);
+      g.fillText(lbl, x + 12, 808);
+    });
+    // Blue ballpoint.
+    var hand = '"Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
+    var pen = 'rgba(25,45,140,0.88)';
+    g.fillStyle = pen;
+    g.font = '28px ' + hand;
+    [
+      String(t.sjBook || ''),
+      fmtDate(t.date),
+      siteOf(t) || String(t.customer || ''),
+      plain(t.vehicle),
+      String(t.driver || '').toLowerCase(),
+    ].forEach(function (v, i) {
+      g.fillText(v, 215, 206 + i * 48);
+    });
+    g.fillText('1', 70, 570);
+    g.fillText(String(t.itemName || ''), 125, 570);
+    g.fillText('± ' + Math.round(num(t.net)) + ' T', 485, 570);
+    scribble(g, rand, 70, 840, 150, 60, pen);
+    scribble(g, rand, 300, 845, 140, 55, pen);
+    g.restore();
+    photoFinish(cv, g, W, H, rand);
+    var url = '';
+    try {
+      url = cv.toDataURL('image/jpeg', 0.72);
+    } catch (_) {
+      url = '';
+    }
+    photos[p.id] = { url: url, boxes: {} };
     return photos[p.id];
   }
 
@@ -841,9 +1172,9 @@
       note: 'Ada foto DO, tidak ada di rekap',
     },
     unknown: {
-      label: 'SJ tidak dikenal',
+      label: 'PO tidak dikenal',
       kind: 'danger',
-      note: 'Nomor surat jalan tidak ada di aplikasi',
+      note: 'No PO dan No DO ini tidak ada di aplikasi',
     },
     void: { label: 'SJ sudah batal', kind: 'danger', note: 'Surat jalan ini sudah dibatalkan' },
   };
@@ -880,30 +1211,63 @@
       .toUpperCase();
   }
 
+  // One row per truck, keyed by its DO number: the Excel row and the DO photo of
+  // that DO, and the surat jalan it belongs to in the app — found the way Impor
+  // Rekap Timbangan finds it (Trading.matchRecap: No PO, then No DO).
   function compare(email) {
     var byKey = {};
     var order = [];
-    function slot(sjNo) {
-      var k = keyOf(sjNo);
+    function slot(k) {
       if (!byKey[k]) {
-        byKey[k] = { key: k, sjNo: sjNo, excel: null, photo: null };
+        byKey[k] = { key: k, excel: null, photo: null };
         order.push(k);
       }
       return byKey[k];
     }
     excelRows(email).forEach(function (r) {
-      if (r.sjNo) slot(r.sjNo).excel = r;
+      var k = keyOf(r.doNo || r.sjNo);
+      if (k) slot(k).excel = r;
     });
     email.photos.forEach(function (p) {
-      slot(p.read.sjNo || p.sjNo).photo = p;
+      var k = keyOf(p.read.doNo || p.doNo || p.sjNo);
+      if (k) slot(k).photo = p;
+    });
+    var probe = order.map(function (k) {
+      return byKey[k].excel || photoRow(byKey[k].photo);
+    });
+    var m = T().matchRecap(probe);
+    var doIdOf = {};
+    ['fill', 'same', 'changed', 'problems'].forEach(function (group) {
+      m[group].forEach(function (it) {
+        if (it.doId) doIdOf[keyOf(it.row.doNo || it.row.sjNo)] = it.doId;
+      });
     });
     return order.map(function (k) {
-      return classify(byKey[k], email);
+      return classify(byKey[k], email, doIdOf[k] ? find('deliveryOrders', doIdOf[k]) : null);
     });
   }
+  // A DO photo as a recap row, for a truck the Excel leaves out.
+  function photoRow(p) {
+    var r = p.read;
+    return {
+      row: 0,
+      sheet: '',
+      sjNo: '',
+      doNo: r.doNo,
+      ticketNo: r.ticketNo,
+      poNumber: r.poNumber,
+      date: r.date,
+      vehicle: r.vehicle,
+      driver: p.trip.driver,
+      itemName: p.trip.itemName,
+      customer: p.trip.keterangan || '',
+      gross: r.gross,
+      tare: r.tare,
+      net: r.net,
+    };
+  }
 
-  function classify(x, email) {
-    var d = slotBySj(x.sjNo);
+  function classify(x, email, d) {
     var recorded = d && T().isTrip(d) ? T().netOf(d) : null;
     var xl = x.excel ? x.excel.net : null;
     var ph = x.photo ? x.photo.read.net : null;
@@ -920,9 +1284,14 @@
     } else if (x.excel) status = recorded != null && eq(recorded, xl) ? 'same' : 'noPhoto';
     else status = recorded != null && eq(recorded, ph) ? 'same' : 'noExcel';
     var choice = email.decisions[x.key] || DEFAULT_CHOICE[status] || '';
+    var t = (x.photo && x.photo.trip) || {};
     return {
       key: x.key,
-      sjNo: x.sjNo,
+      // The DO number; the app's surat jalan it belongs to; our SJ book number
+      // written in the recap.
+      doNo: (x.excel && x.excel.doNo) || (x.photo && x.photo.read.doNo) || x.key,
+      sjNo: d ? d.sjNo : '',
+      sjBook: (x.excel && x.excel.sjNo) || t.sjBook || '',
       doId: d ? d.id : null,
       trip: d,
       excel: x.excel,
@@ -963,11 +1332,13 @@
     var keepWeights = src !== 'manual' && base.gross != null && base.gross > 0;
     return {
       key: r.key,
+      doId: r.doId,
       source: src,
       net: net,
       row: {
         row: 0,
-        sjNo: r.sjNo,
+        sjNo: r.sjBook || '',
+        doNo: r.doNo || '',
         poNumber: base.poNumber || '',
         date: base.date || (r.trip && r.trip.date) || '',
         vehicle: base.vehicle || (r.trip && r.trip.vehicle) || '',
@@ -1118,7 +1489,7 @@
           '<span class="ri-item-meta">' +
           icon('clip', 13) +
           '<span>1 Excel · ' +
-          e.photos.length +
+          (e.photos.length + (e.sjPhotos || []).length) +
           ' foto</span>' +
           badge(st.kind, st.label) +
           '</span></button>'
@@ -1151,7 +1522,10 @@
       return p.conf.net < LOW_CONF;
     }).length;
     var detail = [
-      '1 file Excel, ' + email.photos.length + ' foto',
+      '1 file Excel, ' +
+        email.photos.length +
+        ' foto DO' +
+        ((email.sjPhotos || []).length ? ', ' + email.sjPhotos.length + ' foto SJ' : ''),
       xl.length + ' baris pengambilan',
       email.photos.length - unclear + ' jelas' + (unclear ? ', ' + unclear + ' kurang jelas' : ''),
       rows.length + ' surat jalan · PO ' + email.poNumber,
@@ -1219,8 +1593,8 @@
       decision =
         '<select class="form-select ri-choice" data-key="' +
         esc(r.key) +
-        '" aria-label="Keputusan untuk ' +
-        esc(r.sjNo) +
+        '" aria-label="Keputusan untuk DO ' +
+        esc(r.doNo) +
         '">' +
         (r.choice ? '' : '<option value="" selected>Pilih…</option>') +
         r.choices
@@ -1242,8 +1616,8 @@
             esc(r.key) +
             '" value="' +
             esc(r.manual) +
-            '" placeholder="Netto (ton)" aria-label="Netto dari foto untuk ' +
-            esc(r.sjNo) +
+            '" placeholder="Netto (ton)" aria-label="Netto dari foto untuk DO ' +
+            esc(r.doNo) +
             '">'
           : '');
     } else if (r.status === 'match' || r.status === 'update') {
@@ -1256,10 +1630,13 @@
       r.status +
       '">' +
       '<td data-cell="title"><span class="doc-no">' +
-      esc(r.sjNo) +
+      esc('DO ' + r.doNo) +
       '</span><span class="ri-fig-sub">' +
-      esc([typeof window.tgl === 'function' ? window.tgl(t.date) : fmtDate(t.date), t.vehicle].filter(Boolean).join(' · ')) +
-      '</span></td>' +
+      esc([typeof window.tgl === 'function' ? window.tgl(t.date) : fmtDate(t.date), plain(t.vehicle)].filter(Boolean).join(' · ')) +
+      '</span>' +
+      // The surat jalan it fills: "→ SJ 03" of the e-mail's PO.
+      (r.sjNo ? '<span class="ri-fig-sub">' + esc('→ SJ ' + String(r.sjNo).split('/').pop()) + '</span>' : '') +
+      '</td>' +
       '<td class="t-num" data-cell="meta" data-cap="Tercatat">' +
       (r.recorded != null
         ? figureCell(fmtT(r.recorded), r.invoiced ? 'sudah ditagih' : '')
@@ -1322,22 +1699,29 @@
       esc(email.fileName) +
       '</span><span class="ri-file-hint">Unduh</span></button>' +
       '<div class="ri-thumbs">' +
-      email.photos
-        .map(function (p) {
-          var ph = drawPhoto(p, email.supplier);
+      attachmentsOf(email)
+        .map(function (a) {
+          var p = a.photo;
+          var isDo = a.kind === 'do';
+          var ph = isDo ? drawPhoto(p, email.supplier) : drawSjPhoto(p);
+          var label = isDo ? 'DO ' + p.doNo : 'SJ ' + p.trip.sjBook;
           return (
-            '<button type="button" class="ri-thumb" data-action="riPhoto" data-id="' +
+            '<button type="button" class="ri-thumb' +
+            (isDo ? '' : ' is-sj') +
+            '" data-action="' +
+            (isDo ? 'riPhoto' : 'riSjPhoto') +
+            '" data-id="' +
             esc(email.id) +
             '" data-photo="' +
             esc(p.id) +
-            '" title="Foto DO ' +
-            esc(p.sjNo) +
+            '" title="Foto ' +
+            esc(label) +
             '"><img src="' +
             esc(ph.url) +
-            '" alt="Foto DO ' +
-            esc(p.sjNo) +
+            '" alt="Foto ' +
+            esc(label) +
             '"><span>' +
-            esc(p.sjNo) +
+            esc(label) +
             '</span></button>'
           );
         })
@@ -1371,10 +1755,10 @@
         : '';
     var hasIssues = replyLines(rows).length > 0;
     var table =
-      '<div class="card ri-result"><div class="card-head"><div><div class="card-title">Hasil per surat jalan</div>' +
+      '<div class="card ri-result"><div class="card-head"><div><div class="card-title">Hasil per truk</div>' +
       '<div class="card-sub">Ton</div></div></div>' +
       '<div class="table-wrap"><table class="data-table list-cards ri-table"><thead><tr>' +
-      '<th>Surat jalan</th><th class="t-num">Tercatat</th><th class="t-num">Rekap Excel</th>' +
+      '<th>DO</th><th class="t-num">Tercatat</th><th class="t-num">Rekap Excel</th>' +
       '<th class="t-num">Foto DO</th><th>Hasil</th><th>Keputusan</th></tr></thead><tbody>' +
       rows
         .map(function (r) {
@@ -1526,14 +1910,16 @@
   }
 
   function fieldRows(p, r) {
+    // In the DO's own words.
     var F = [
-      ['sjNo', 'No. SJ (tulisan tangan)', p.read.sjNo],
+      ['doNo', 'Nomor DO', p.read.doNo],
+      ['ticketNo', 'BAP', p.read.ticketNo],
+      ['poNumber', 'Sales Order No (PO kita)', p.read.poNumber],
       ['date', 'Tanggal', fmtDate(p.read.date)],
-      ['vehicle', 'No. polisi', p.read.vehicle],
-      ['gross', 'Bruto', fmtKg(p.read.gross)],
-      ['tare', 'Tara', fmtKg(p.read.tare)],
-      ['net', 'Netto', fmtKg(p.read.net)],
-      ['ticketNo', 'No. DO', p.read.ticketNo],
+      ['vehicle', 'No Truck', p.read.vehicle],
+      ['gross', 'Berat Isi', fmtKg(p.read.gross)],
+      ['tare', 'Berat Kosong', fmtKg(p.read.tare)],
+      ['net', 'Qty (netto)', fmtKg(p.read.net)],
     ];
     return (
       F.map(function (f) {
@@ -1564,6 +1950,42 @@
     );
   }
 
+  // The e-mail's photos as they arrive: DO and SJ photos mixed, truck by truck.
+  function attachmentsOf(email) {
+    var out = [];
+    var sj = (email.sjPhotos || []).slice();
+    email.photos.forEach(function (p) {
+      out.push({ kind: 'do', photo: p });
+      var i = sj.findIndex(function (s) {
+        return s.trip && p.trip && s.trip.doNo === p.trip.doNo;
+      });
+      if (i !== -1) out.push({ kind: 'sj', photo: sj.splice(i, 1)[0] });
+    });
+    sj.forEach(function (s) {
+      out.push({ kind: 'sj', photo: s });
+    });
+    return out;
+  }
+  function showSjPhoto(emailId, photoId) {
+    var email = emailById(emailId);
+    if (!email) return;
+    var p = (email.sjPhotos || []).find(function (x) {
+      return same(x.id, photoId);
+    });
+    if (!p || typeof window.openModal !== 'function') return;
+    var ph = drawSjPhoto(p);
+    window.openModal(
+      'Foto SJ · ' + p.trip.sjBook,
+      '<div class="ri-viewer"><div class="ri-viewer-img"><img src="' +
+        esc(ph.url) +
+        '" alt="Foto SJ ' +
+        esc(p.trip.sjBook) +
+        '"></div><div class="ri-viewer-side"><p class="form-hint">Surat jalan kita, difoto bersama DO. Tidak dibaca: angka yang dipakai berasal dari DO supplier.</p></div></div>',
+      '<button type="button" class="btn-ghost" data-action="closeModal">Tutup</button>',
+      true
+    );
+  }
+
   function showPhoto(emailId, photoId) {
     var email = emailById(emailId);
     if (!email) return;
@@ -1573,7 +1995,7 @@
     if (!p) return;
     var ph = drawPhoto(p, email.supplier);
     var r = compare(email).find(function (x) {
-      return x.key === keyOf(p.read.sjNo || p.sjNo);
+      return x.key === keyOf(p.read.doNo || p.doNo);
     });
     var boxes = Object.keys(ph.boxes)
       .map(function (k) {
@@ -1599,7 +2021,7 @@
       '<div class="ri-viewer-img"><img src="' +
       esc(ph.url) +
       '" alt="Foto DO ' +
-      esc(p.sjNo) +
+      esc(p.doNo) +
       '"><div class="ri-boxes" id="ri-boxes">' +
       boxes +
       '</div></div>' +
@@ -1615,7 +2037,7 @@
       '</div></div>';
     if (typeof window.openModal === 'function') {
       window.openModal(
-        'Foto DO · ' + p.sjNo,
+        'Foto DO · ' + p.doNo,
         body,
         '<button type="button" class="btn-ghost" data-action="closeModal">Tutup</button>',
         true
@@ -1639,28 +2061,37 @@
     var plans = rows.map(planOf).filter(Boolean);
     if (!plans.length) return;
     var go = function () {
-      var result = T().matchRecap(
-        plans.map(function (p) {
-          return p.row;
-        })
-      );
+      // The surat jalan of each truck was found when the e-mail was checked
+      // (compare → Trading.matchRecap); applying records exactly those.
+      var result = { fill: [], same: [], changed: [], unmatched: [], problems: [] };
+      plans.forEach(function (p) {
+        var d = find('deliveryOrders', p.doId);
+        if (!d) return;
+        if (d.status === 'Pending') result.fill.push({ row: p.row, doId: d.id });
+        else
+          result.changed.push({
+            row: p.row,
+            doId: d.id,
+            from: T().netOf(d),
+            to: p.net,
+            invoiced: invoicedTrip(d),
+          });
+      });
       var out = T().applyRecap(result, {
         source: 'Email ' + email.fileName,
         note: 'Kotak Masuk Rekap (simulasi)',
       });
       var failed = {};
       out.errors.forEach(function (e) {
-        failed[keyOf(e.row.sjNo)] = e.error;
-      });
-      result.unmatched.concat(result.problems).forEach(function (m) {
-        failed[keyOf(m.row.sjNo)] = m.reason;
+        failed[keyOf(e.row.doNo || e.row.sjNo)] = e.error;
       });
       plans.forEach(function (p) {
         if (failed[p.key]) return;
         email.appliedKeys[p.key] = p.net;
         email.appliedSrc = email.appliedSrc || {};
         email.appliedSrc[p.key] = p.source;
-        var d = slotBySj(p.row.sjNo);
+        var d = find('deliveryOrders', p.doId);
+        if (d && p.row.doNo && !d.doNo) d.doNo = p.row.doNo;
         if (d && p.photo) {
           var ph = drawPhoto(p.photo, email.supplier);
           if (ph.url) d.ticketPhoto = ph.url;
@@ -1692,7 +2123,7 @@
             ' tidak bisa dicatat: ' +
             Object.keys(failed)
               .map(function (k) {
-                return k + ' (' + failed[k] + ')';
+                return 'DO ' + k + ' (' + failed[k] + ')';
               })
               .join('; '),
           'warning'
@@ -1725,7 +2156,7 @@
   function replyLines(rows) {
     var lines = [];
     rows.forEach(function (r) {
-      var sj = r.sjNo;
+      var sj = 'DO ' + r.doNo;
       var date = r.excel ? fmtDate(r.excel.date) : r.photo ? fmtDate(r.photo.read.date) : '';
       var at = sj + (date ? ' (' + date + ')' : '');
       if (r.status === 'conflict') {
@@ -1757,7 +2188,7 @@
       } else if (r.status === 'noExcel') {
         lines.push(at + ': ada foto DO, tetapi tidak ada di rekap. Mohon dilengkapi.');
       } else if (r.status === 'unknown') {
-        lines.push(sj + ': nomor surat jalan ini tidak kami kenali. Mohon dicek.');
+        lines.push(sj + ': nomor PO dan DO ini tidak kami kenali. Mohon dicek.');
       } else if (r.status === 'void') {
         lines.push(sj + ': surat jalan ini sudah dibatalkan di tempat kami.');
       } else if (r.status === 'applied' && r.excel && !eq(r.excel.net, r.recorded)) {
@@ -1929,6 +2360,9 @@
     },
     riPhoto: function (b) {
       showPhoto(b.getAttribute('data-id'), b.getAttribute('data-photo'));
+    },
+    riSjPhoto: function (b) {
+      showSjPhoto(b.getAttribute('data-id'), b.getAttribute('data-photo'));
     },
     riExcel: function (b) {
       var e = emailById(b.getAttribute('data-id'));
