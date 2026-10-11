@@ -349,6 +349,8 @@
       driver: pick(rand, DRIVERS).toUpperCase(),
       itemName: slot.lines && slot.lines[0] ? slot.lines[0].itemName : lineOf(po).itemName,
       customer: slot.customer || '',
+      customerId: slot.customerId || null,
+      destination: slot.destination || '',
       keterangan: keteranganOf(slot),
       gross: w.gross,
       tare: w.tare,
@@ -373,6 +375,8 @@
       driver: String(d.driver || pick(rand, DRIVERS)).toUpperCase(),
       itemName: d.lines && d.lines[0] ? d.lines[0].itemName : lineOf(po).itemName,
       customer: d.customer || '',
+      customerId: d.customerId || null,
+      destination: d.destination || '',
       keterangan: keteranganOf(d),
       gross: w.gross != null ? r2(w.gross) : r2(tare + net),
       tare: tare,
@@ -389,6 +393,15 @@
   function numberTrips(trips, rand) {
     if (!S.doBase) S.doBase = 41000 + Math.floor(rand() * 600);
     if (!S.sjBook) S.sjBook = 460;
+    // Never reuse a DO or SJ number already on a recorded trip (e.g. from a recap
+    // imported by hand): the supplier's numbers only run on.
+    (db().deliveryOrders || []).forEach(function (d) {
+      if (!T().isPickup(d)) return;
+      var n = parseInt(d.doNo, 10);
+      var s = parseInt(d.sjRef, 10);
+      if (n >= S.doBase) S.doBase = n + 1;
+      if (s >= S.sjBook) S.sjBook = s + 1;
+    });
     trips.forEach(function (t) {
       if (!t.doNo) t.doNo = String(S.doBase++);
       if (!t.ticketNo) t.ticketNo = '0' + (Number(t.doNo) + 161);
@@ -548,9 +561,9 @@
 
     S.seq++;
     var stamp = String(S.seq).padStart(3, '0');
-    // As the supplier names them: "Rekap & SJ NSA-CIKANDE 05-060926" and
-    // "REKAP NSA-CIKANDE.xlsx".
-    var site = (siteOf(trips[0] && trips[0].trip) || '').toUpperCase();
+    // As the supplier names them: "Rekap & SJ NSA-CKD 05-060926" and
+    // "REKAP NSA-CKD.xlsx".
+    var site = siteCode(siteOf(trips[0] && trips[0].trip));
     var tag = companyCode() + (site ? '-' + site : '');
     var span =
       from.slice(8, 10) +
@@ -951,7 +964,7 @@
     row(222, 'Nomor DO', String(t.doNo), 'doNo');
     rrow(222, 'Waktu Keluar', longDate(t.date) + ' ' + String(t.timeOut || '').replace(':', '.'));
     row(290, 'Customer', 'PT. ' + companyName().replace(/^PT\.?\s+/i, ''));
-    row(325, 'Project', String(t.customer || '').replace(/\s+-\s+/, '- '));
+    row(325, 'Project', String(t.customer || '').replace(/\s+-\s+.*$/, '') + (site ? '- ' + site : ''));
     row(360, 'No Truck', plain(t.vehicle), 'vehicle');
     rrow(360, 'Driver', String(t.driver || '').toUpperCase());
     row(395, 'Product', String(t.itemName || ''));
