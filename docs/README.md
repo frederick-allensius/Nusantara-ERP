@@ -44,7 +44,7 @@ Semua dokumen ditulis dalam bahasa Indonesia dan menggambarkan **perilaku aplika
 
 Folder [`pitch/`](pitch/) berisi contoh dokumen cetak, contoh laporan, naskah demo, dan materi penawaran. Materi ini **belum diperbarui** mengikuti dokumentasi di atas; beberapa pernyataan di dalamnya (misalnya hak akses, verifikasi 2 langkah, dan cetak PDF disebut sebagai rencana) sudah tidak sesuai dengan aplikasi saat ini. Gunakan dokumen 01–12 sebagai acuan.
 
-Pengecualian, sudah mengikuti aplikasi saat ini: [`pitch/kotak-masuk-rekap/`](pitch/kotak-masuk-rekap/) (gambar dokumen 13) dan [`pitch/contoh-alur-500-ton/`](pitch/contoh-alur-500-ton/) (gambar dokumen 15).
+Pengecualian, sudah mengikuti aplikasi saat ini: [`pitch/kotak-masuk-rekap/`](pitch/kotak-masuk-rekap/) (gambar dokumen 13) dan [`pitch/contoh-alur-500-ton/`](pitch/contoh-alur-500-ton/) (gambar dokumen 15), dan [`pitch/contoh-dokumen-supplier/`](pitch/contoh-dokumen-supplier/) (kiriman supplier tiruan: rekap Excel, foto DO/SJ, email; dibuat ulang dengan `tools/sample-docs/generate.py`).
 
 Panduan demo per fitur: [SJ_VALIDATION_DEMO.md](SJ_VALIDATION_DEMO.md) (Validasi SJ Supplier). Urutan demo alur pengambilan ada di [MEETING_KIT.md §7](MEETING_KIT.md).
 

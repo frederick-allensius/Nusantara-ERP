@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "xlsx": 4,
+  "photos": 62,
+  "emails": 2,
+  "screenshots": 2,
+  "test_cases": 7,
+  "bytes": 13561338,
+  "megabytes": 13.56,
+  "scope": "openpyxl, Pillow, MIME attachments, subtotal, konsistensi data dan semua kasus; tidak menjalankan ERP atau OCR"
+}
