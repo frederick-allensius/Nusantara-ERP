@@ -228,6 +228,44 @@
     if (el) el.innerHTML = html;
   }
 
+  // Sales DP row menu helper
+  function _sdpMenuItem(label, action, id) {
+    return (
+      '<div class="ctx-item" data-action="' +
+      action +
+      '" data-id="' +
+      esc(id) +
+      '">' +
+      esc(label) +
+      '</div>'
+    );
+  }
+
+  function sdpRowMenu(d) {
+    if (typeof window.inlineRowMenu !== 'function') {
+      // Fallback to inline buttons
+      return (
+        (d.status !== 'Applied'
+          ? '<button class="action-primary" data-action="applySalesDP" data-id="' +
+            esc(d.id) +
+            '">Terapkan</button> '
+          : '') +
+        '<button class="btn-danger-text btn-sm" data-action="delSalesDP" data-id="' +
+        esc(d.id) +
+        '">Hapus</button>'
+      );
+    }
+
+    var items = [];
+    if (d.status !== 'Applied') {
+      items.push(_sdpMenuItem('Terapkan', 'applySalesDP', d.id));
+    }
+    items.push(_sdpMenuItem('Ubah Status', 'setSDPStatus', d.id));
+    items.push(_sdpMenuItem('Hapus', 'delSalesDP', d.id));
+
+    return window.inlineRowMenu(items);
+  }
+
   // ══════════════════════════════════════════════════════════════════════════════
   // § 1  SALES DOWN PAYMENT
   // ══════════════════════════════════════════════════════════════════════════════
@@ -278,14 +316,7 @@
           statusBadge +
           '</td>' +
           '<td class="td-p">' +
-          (d.status !== 'Applied'
-            ? '<button class="action-primary" data-action="applySalesDP" data-id="' +
-              esc(d.id) +
-              '">Terapkan</button> '
-            : '') +
-          '<button class="btn-danger-text btn-sm" data-action="delSalesDP" data-id="' +
-          esc(d.id) +
-          '">Hapus</button>' +
+          sdpRowMenu(d) +
           '</td>' +
           '</tr>'
         );
@@ -434,6 +465,44 @@
     }, 60);
   }
 
+  // Purchase DP row menu helper
+  function _pdpMenuItem(label, action, id) {
+    return (
+      '<div class="ctx-item" data-action="' +
+      action +
+      '" data-id="' +
+      esc(id) +
+      '">' +
+      esc(label) +
+      '</div>'
+    );
+  }
+
+  function pdpRowMenu(d) {
+    if (typeof window.inlineRowMenu !== 'function') {
+      // Fallback to inline buttons
+      return (
+        (d.status !== 'Applied'
+          ? '<button class="action-primary" data-action="applyPurchaseDP" data-id="' +
+            esc(d.id) +
+            '">Terapkan</button> '
+          : '') +
+        '<button class="btn-danger-text btn-sm" data-action="delPurchaseDP" data-id="' +
+        esc(d.id) +
+        '">Hapus</button>'
+      );
+    }
+
+    var items = [];
+    if (d.status !== 'Applied') {
+      items.push(_pdpMenuItem('Terapkan', 'applyPurchaseDP', d.id));
+    }
+    items.push(_pdpMenuItem('Ubah Status', 'setPDPStatus', d.id));
+    items.push(_pdpMenuItem('Hapus', 'delPurchaseDP', d.id));
+
+    return window.inlineRowMenu(items);
+  }
+
   // ══════════════════════════════════════════════════════════════════════════════
   // § 2  PURCHASE DOWN PAYMENT
   // ══════════════════════════════════════════════════════════════════════════════
@@ -484,14 +553,7 @@
           statusBadge +
           '</td>' +
           '<td class="td-p">' +
-          (d.status !== 'Applied'
-            ? '<button class="action-primary" data-action="applyPurchaseDP" data-id="' +
-              esc(d.id) +
-              '">Terapkan</button> '
-            : '') +
-          '<button class="btn-danger-text btn-sm" data-action="delPurchaseDP" data-id="' +
-          esc(d.id) +
-          '">Hapus</button>' +
+          pdpRowMenu(d) +
           '</td>' +
           '</tr>'
         );
@@ -779,6 +841,33 @@
     }, 60);
   }
 
+  // GR row menu helper
+  function grRowMenu(r) {
+    var items = [
+      { label: 'Ubah Status', action: 'setGRStatus', id: r.id },
+      '-',
+      { label: 'Hapus', action: 'delReceipt', id: r.id, danger: true },
+    ];
+    return typeof window.rowActionsMenu === 'function'
+      ? window.rowActionsMenu(r.id, items)
+      : items
+          .filter(function (it) {
+            return it && it !== '-';
+          })
+          .map(function (it) {
+            return (
+              '<button class="btn-danger-text btn-sm" data-action="' +
+              it.action +
+              '" data-id="' +
+              esc(it.id) +
+              '">' +
+              esc(it.label) +
+              '</button> '
+            );
+          })
+          .join('');
+  }
+
   // ══════════════════════════════════════════════════════════════════════════════
   // § 4  RECEIVE ITEM (Goods Receipt from PO)
   // ══════════════════════════════════════════════════════════════════════════════
@@ -827,7 +916,7 @@
             : rc
               ? rc.actions
               : '') +
-          rowMenu(r.id, [{ label: 'Hapus', action: 'delReceipt', id: r.id, danger: true }]) +
+          grRowMenu(r) +
           '</td>' +
           '</tr>'
         );
@@ -1444,6 +1533,26 @@
       case 'addSalesDP':
         addSalesDPModal();
         break;
+      case 'setSDPStatus': {
+        var sdp = ensureArr('salesDownPayments').find(function (x) {
+          return x.id === id;
+        });
+        if (!sdp || !window.setDocumentStatus) return;
+
+        window.setDocumentStatus({
+          documentId: id,
+          documentType: 'SDP',
+          currentStatus: sdp.status,
+          statusOptions: window.SDP_STATUSES,
+          onSave: function (newStatus) {
+            sdp.status = newStatus;
+            save();
+            openSalesDP();
+            toast('Status uang muka penjualan diubah ke: ' + newStatus, 'success');
+          },
+        });
+        break;
+      }
       case 'applySalesDP': {
         if (applyDownPayment('salesDownPayments', 'SO', 'sales', id)) {
           toast('Uang muka diterapkan ke Sales Order', 'success');
@@ -1465,6 +1574,26 @@
       case 'addPurchaseDP':
         addPurchaseDPModal();
         break;
+      case 'setPDPStatus': {
+        var pdp = ensureArr('purchaseDownPayments').find(function (x) {
+          return x.id === id;
+        });
+        if (!pdp || !window.setDocumentStatus) return;
+
+        window.setDocumentStatus({
+          documentId: id,
+          documentType: 'PDP',
+          currentStatus: pdp.status,
+          statusOptions: window.PDP_STATUSES,
+          onSave: function (newStatus) {
+            pdp.status = newStatus;
+            save();
+            openPurchaseDP();
+            toast('Status uang muka pembelian diubah ke: ' + newStatus, 'success');
+          },
+        });
+        break;
+      }
       case 'applyPurchaseDP': {
         if (applyDownPayment('purchaseDownPayments', 'PO', 'purchases', id)) {
           toast('Uang muka diterapkan ke Purchase Order', 'success');
@@ -1511,6 +1640,26 @@
       case 'addReceipt':
         addReceiptModal();
         break;
+      case 'setGRStatus': {
+        var grDoc = ensureArr('goodsReceipts').find(function (x) {
+          return x.id === id;
+        });
+        if (!grDoc || !window.setDocumentStatus) return;
+
+        window.setDocumentStatus({
+          documentId: id,
+          documentType: 'GR',
+          currentStatus: grDoc.posted ? 'Posted' : 'Draft',
+          statusOptions: window.GR_STATUSES,
+          onSave: function (newStatus) {
+            grDoc.posted = (newStatus === 'Posted');
+            save();
+            openReceiveItem();
+            toast('Status penerimaan barang diubah ke: ' + newStatus, 'success');
+          },
+        });
+        break;
+      }
       case 'postReceipt':
         postReceipt(id);
         break;

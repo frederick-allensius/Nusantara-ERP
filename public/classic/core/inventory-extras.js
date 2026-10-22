@@ -308,6 +308,66 @@
     ['Fulfilled', 'Terpenuhi'],
   ];
 
+  // Material Request row menu helper
+  function _mrMenuItem(label, action, id) {
+    return (
+      '<div class="ctx-item" data-action="' +
+      action +
+      '" data-id="' +
+      esc(id) +
+      '">' +
+      esc(label) +
+      '</div>'
+    );
+  }
+
+  function mrRowMenu(r) {
+    if (typeof window.inlineRowMenu !== 'function') {
+      // Fallback to inline buttons
+      var actions = '';
+      if (r.status === 'Draft' || r.status === 'Pending') {
+        actions +=
+          '<button class="btn-ghost btn-sm" data-action="approveIR" data-id="' +
+          esc(r.id) +
+          '">Setujui</button> ' +
+          '<button class="btn-danger-text btn-sm" data-action="rejectIR" data-id="' +
+          esc(r.id) +
+          '">Tolak</button> ';
+      } else if (r.status === 'Approved') {
+        actions +=
+          '<button class="btn btn-sm" data-action="createPOFromIR" data-id="' +
+          esc(r.id) +
+          '">Buat PO</button> ';
+      } else if (r.status === 'PO Dibuat' && r.poId) {
+        actions +=
+          '<button class="btn-ghost btn-sm" data-action="viewPOFromIR" data-id="' +
+          esc(r.poId) +
+          '">Lihat PO</button> ';
+      }
+      actions +=
+        '<button class="btn-danger-text btn-sm" data-action="delIR" data-id="' +
+        esc(r.id) +
+        '">Hapus</button>';
+      return actions;
+    }
+
+    var items = [];
+    
+    if (r.status === 'Draft' || r.status === 'Pending') {
+      items.push(_mrMenuItem('Setujui', 'approveIR', r.id));
+      items.push(_mrMenuItem('Tolak', 'rejectIR', r.id));
+    } else if (r.status === 'Approved') {
+      items.push(_mrMenuItem('Buat PO', 'createPOFromIR', r.id));
+    } else if (r.status === 'PO Dibuat' && r.poId) {
+      items.push(_mrMenuItem('Lihat PO', 'viewPOFromIR', r.poId));
+    }
+
+    items.push(_mrMenuItem('Ubah Status', 'setMRStatus', r.id));
+    items.push(_mrMenuItem('Hapus', 'delIR', r.id));
+
+    return window.inlineRowMenu(items);
+  }
+
   function openItemRequisition() {
     var reqs = ensureArr('itemRequisitions').slice().reverse();
 
@@ -315,30 +375,6 @@
       ? reqs
           .map(function (r) {
             var itemCount = (r.items || []).length;
-            var actions = '';
-            if (r.status === 'Draft' || r.status === 'Pending') {
-              actions +=
-                '<button class="btn-ghost btn-sm" data-action="approveIR" data-id="' +
-                esc(r.id) +
-                '">Setujui</button> ' +
-                '<button class="btn-danger-text btn-sm" data-action="rejectIR" data-id="' +
-                esc(r.id) +
-                '">Tolak</button> ';
-            } else if (r.status === 'Approved') {
-              actions +=
-                '<button class="btn btn-sm" data-action="createPOFromIR" data-id="' +
-                esc(r.id) +
-                '">Buat PO</button> ';
-            } else if (r.status === 'PO Dibuat' && r.poId) {
-              actions +=
-                '<button class="btn-ghost btn-sm" data-action="viewPOFromIR" data-id="' +
-                esc(r.poId) +
-                '">Lihat PO</button> ';
-            }
-            actions +=
-              '<button class="btn-danger-text btn-sm" data-action="delIR" data-id="' +
-              esc(r.id) +
-              '">Hapus</button>';
             return (
               '<tr>' +
               '<td class="td-p" style="font-size:.75rem">' +
@@ -361,7 +397,7 @@
               (r.poId ? ' <span style="font-size:.75rem;color:var(--primary)">→ ' + esc(r.poId) + '</span>' : '') +
               '</td>' +
               '<td class="td-p" style="text-align:center;white-space:nowrap">' +
-              actions +
+              mrRowMenu(r) +
               '</td></tr>'
             );
           })
@@ -925,6 +961,26 @@
       case 'addIR':
         addIRModal();
         break;
+      case 'setMRStatus': {
+        var req = ensureArr('itemRequisitions').find(function (x) {
+          return x.id === id;
+        });
+        if (!req || !window.setDocumentStatus) return;
+
+        window.setDocumentStatus({
+          documentId: id,
+          documentType: 'MR',
+          currentStatus: req.status,
+          statusOptions: window.MR_STATUSES,
+          onSave: function (newStatus) {
+            req.status = newStatus;
+            save();
+            openItemRequisition();
+            toast('Status permintaan diubah ke: ' + newStatus, 'success');
+          },
+        });
+        break;
+      }
       case 'approveIR': {
         var r = ensureArr('itemRequisitions').find(function (x) {
           return x.id === id;

@@ -96,6 +96,65 @@
     return orders.find(o => o.sourceQuotation && (o.sourceQuotation === q.number || o.sourceQuotation === q.id)) || null;
   }
 
+  // Helper to create menu items (matching erp-view.js pattern)
+  function _menuItem(label, attrs, cls, role) {
+    return `<button type="button" role="${role || 'menuitem'}" tabindex="-1" class="row-menu-item${cls ? ' ' + cls : ''}" ${attrs || ''}>${esc(label)}</button>`;
+  }
+
+  // Row "⋯" menu for quotations with status picker
+  function quotationRowMenu(type, q) {
+    const t = TYPES[type];
+    const id = esc(q.id);
+    const num = esc(docNo(q));
+    const order = convertedOrder(type, q);
+
+    const main = [
+      _menuItem('Lihat detail', `data-action="qtView" data-id="${id}" data-type="${type}"`),
+      _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"'),
+      q.status === 'Draft' ? _menuItem('Edit', `data-action="qtEdit" data-id="${id}" data-type="${type}"`) : '',
+      _menuItem('Duplikat', `data-action="qtDuplicate" data-id="${id}" data-type="${type}"`),
+      '<div class="row-menu-sep" role="separator"></div>',
+      q.status === 'Draft' ? _menuItem('Hapus', `data-action="qtDelete" data-id="${id}" data-type="${type}"`, 'is-danger') : '',
+    ]
+      .filter(Boolean)
+      .join('');
+
+    const statuses = type === 'SQ' ? window.SQ_STATUSES : window.PQ_STATUSES;
+    const options = statuses.filter(
+      ([v]) =>
+        v === q.status || (window.DocEngine && window.DocEngine.canTransition(type, q.status, v))
+    );
+    const choices = options
+      .map(([v, l]) =>
+        v === q.status
+          ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+          : _menuItem(
+              l,
+              `aria-checked="false" data-action="setQuotationStatus" data-id="${id}" data-type="${type}" data-status="${esc(v)}"`,
+              '',
+              'menuitemradio'
+            )
+      )
+      .join('');
+    const none =
+      options.filter(([v]) => v !== q.status).length === 0
+        ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+        : '';
+
+    const statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+      ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+      <div class="row-menu-head" role="presentation">Ubah status</div>
+      ${choices}${none}
+    </div>`;
+
+    return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+        aria-label="Aksi ${num}" title="Aksi">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button><div class="row-menu" role="menu" aria-label="Aksi ${num}" hidden>
+        <div class="row-menu-panel" data-panel="main">${main}</div>${statusPanel}
+      </div>`;
+  }
+
   // ── List ────────────────────────────────────────────────────────────────────
   function listHTML(type) {
     const t = TYPES[type];
@@ -112,12 +171,6 @@
       .map(d => {
         const order = convertedOrder(type, d);
         const expired = d.validUntil && d.validUntil < today && (d.status === 'Draft' || d.status === 'Sent');
-        let action = `<button class="btn-ghost btn-sm" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`;
-        if (d.status === 'Draft') {
-          action = `<button class="action-primary" data-action="qtSend" data-id="${esc(d.id)}" data-type="${type}">Tandai Dikirim</button>`;
-        } else if (d.status === 'Accepted' && !order) {
-          action = `<button class="action-primary" data-action="qtConvert" data-id="${esc(d.id)}" data-type="${type}">Buat ${t.target}</button>`;
-        }
         return `<tr class="row-link" data-action="qtView" data-id="${esc(d.id)}" data-type="${type}">
           <td class="doc-no">${esc(docNo(d))}</td>
           <td class="t-strong">${esc(d[t.party] || '—')}</td>
@@ -125,7 +178,7 @@
           <td class="${expired ? 't-danger' : 't-muted'}">${esc(d.validUntil || '—')}</td>
           <td class="t-num">${money(d.amount || 0)}</td>
           <td>${badge(d.status)}${order ? ` <span class="chip">→ ${esc(docNo(order))}</span>` : ''}</td>
-          <td class="t-actions">${action}</td>
+          <td class="t-actions">${quotationRowMenu(type, d)}</td>
         </tr>`;
       })
       .join('');
@@ -392,6 +445,32 @@
     toast(`${docNo(q)} ${labels[next] || next}`, 'success');
   }
 
+  // Inline status change from row menu
+  function setQuotationStatus(type, id, newStatus) {
+    const q = findQuote(type, id);
+    if (!q) {
+      return;
+    }
+    const old = q.status;
+
+    if (
+      old !== newStatus &&
+      window.DocEngine &&
+      !window.DocEngine.canTransition(type, old, newStatus)
+    ) {
+      toast(`Transisi ${old} → ${newStatus} tidak diizinkan`, 'warning');
+      refresh();
+      return;
+    }
+
+    q.status = newStatus;
+    save();
+    refresh();
+    const statuses = type === 'SQ' ? window.SQ_STATUSES : window.PQ_STATUSES;
+    const statusLabel = statuses.find(([v]) => v === newStatus)?.[1] || newStatus;
+    toast(`${docNo(q)} → ${statusLabel}`, 'success');
+  }
+
   async function deleteDraft(type, id) {
     const list = db()[TYPES[type].coll] || [];
     const idx = list.findIndex(d => same(d.id, id));
@@ -554,5 +633,13 @@
     reg('qtAccept', (id, type) => id && TYPES[type] && setStatus(type, id, 'Accepted'));
     reg('qtReject', (id, type) => id && TYPES[type] && setStatus(type, id, 'Rejected'));
     reg('qtConvert', (id, type) => id && TYPES[type] && convertQuotation(type, id));
+    reg('setQuotationStatus', (id, type, val) => {
+      const btn = event && event.target;
+      const newStatus = btn && btn.dataset && btn.dataset.status;
+      if (!btn || btn.disabled || !id || !newStatus) {
+        return;
+      }
+      setQuotationStatus(type, id, newStatus);
+    });
   }
 })();

@@ -1966,6 +1966,59 @@ function stockDeliveries() {
   return (DB.deliveryOrders || []).filter(o => o && o.pickup !== true);
 }
 
+// Row "⋯" menu for delivery orders with status picker
+function deliveryOrderRowMenu(d) {
+  const id = escapeHtml(d.id);
+  const num = escapeHtml(docNum(d.number, d.id));
+  const cancelled = d.status === 'Cancelled';
+  const canCancel = !cancelled && (!window.DocEngine || window.DocEngine.canTransition('DO', d.status, 'Cancelled'));
+
+  const main = [
+    _menuItem('Lihat detail', `data-action="viewDO" data-id="${id}"`),
+    _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"'),
+    _menuItem('Edit', `data-action="editDO" data-id="${id}"`),
+    _menuItem('Cetak', `data-action="printDO" data-id="${id}"`),
+    '<div class="row-menu-sep" role="separator"></div>',
+    canCancel ? _menuItem('Batalkan', `data-action="cancelDO" data-id="${id}"`, 'is-danger') : '',
+    _menuItem('Hapus', `data-action="confirmDeleteDO" data-id="${id}"`, 'is-danger'),
+  ]
+    .filter(Boolean)
+    .join('');
+
+  const options = DO_STATUSES.filter(
+    ([v]) => v === d.status || (window.DocEngine && window.DocEngine.canTransition('DO', d.status, v))
+  );
+  const choices = options
+    .map(([v, l]) =>
+      v === d.status
+        ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+        : _menuItem(
+            l,
+            `aria-checked="false" data-action="setDOStatus" data-id="${id}" data-status="${escapeHtml(v)}"`,
+            '',
+            'menuitemradio'
+          )
+    )
+    .join('');
+  const none =
+    options.filter(([v]) => v !== d.status).length === 0
+      ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+      : '';
+
+  const statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+    ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+    <div class="row-menu-head" role="presentation">Ubah status</div>
+    ${choices}${none}
+  </div>`;
+
+  return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+      aria-label="Aksi ${num}" title="Aksi">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button><div class="row-menu" role="menu" aria-label="Aksi ${num}" hidden>
+      <div class="row-menu-panel" data-panel="main">${main}</div>${statusPanel}
+    </div>`;
+}
+
 function renderLogistics() {
   const f = filters.logistics;
   const dos = stockDeliveries();
@@ -2047,7 +2100,7 @@ function renderLogistics() {
               <td class="td-p" data-cell="meta">${escapeHtml(d.driver)}</td>
               <td class="td-p mono" data-cell="meta">${escapeHtml(d.vehicle)}</td>
               <td class="td-p" data-cell="status">${badge(d.status)}</td>
-              <td class="td-p" data-cell="menu">${actionBtns('DO', d.id)}</td>
+              <td class="td-p" data-cell="menu">${deliveryOrderRowMenu(d)}</td>
             </tr>`;
                   })
                   .join('')
@@ -2618,6 +2671,11 @@ document.addEventListener('click', async e => {
       break;
     case 'deleteDO':
       deleteDO(id);
+      break;
+    case 'setDOStatus':
+      if (!btn.disabled && id && btn.dataset.status) {
+        setDOStatus(id, btn.dataset.status);
+      }
       break;
 
     // FIX #2: Fleet & Expedition CRUD — previously defined in erp-crud.js but

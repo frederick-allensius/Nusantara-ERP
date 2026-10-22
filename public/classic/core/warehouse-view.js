@@ -212,6 +212,34 @@
     );
   }
 
+  // ── Transfer row menu helper ──────────────────────────────────────────────
+  function _transferMenuItem(label, action, id) {
+    return (
+      '<div class="ctx-item" data-action="' +
+      action +
+      '" data-id="' +
+      esc(id) +
+      '">' +
+      esc(label) +
+      '</div>'
+    );
+  }
+
+  function transferRowMenu(t) {
+    var viewBtn =
+      '<button class="btn-ghost btn-sm" data-action="whViewIT" data-id="' +
+      esc(t.id) +
+      '">Lihat</button>';
+    if (typeof window.inlineRowMenu !== 'function') return viewBtn;
+
+    var items = [_transferMenuItem('Lihat', 'whViewIT', t.id)];
+    if (t.status !== 'Posted') {
+      items.push(_transferMenuItem('Ubah Status', 'setWTStatus', t.id));
+    }
+
+    return window.inlineRowMenu(items);
+  }
+
   // ── Tab 3: Item Transfers ─────────────────────────────────────────────────
   function transfersTab() {
     var transfers = (db().itemTransfers || []).slice().reverse();
@@ -248,9 +276,9 @@
           '<td class="td-p">' +
           statusBadge(t.status) +
           '</td>' +
-          '<td class="td-p"><button class="btn-ghost btn-sm" data-action="whViewIT" data-id="' +
-          esc(t.id) +
-          '">Lihat</button></td>' +
+          '<td class="td-p">' +
+          transferRowMenu(t) +
+          '</td>' +
           '</tr>'
         );
       })
@@ -643,6 +671,27 @@
     );
   }
 
+  // ── Set Transfer Status ───────────────────────────────────────────────────
+  function setWTStatus(id) {
+    var doc = (db().itemTransfers || []).find(function (d) {
+      return d.id === id;
+    });
+    if (!doc || !window.setDocumentStatus) return;
+
+    window.setDocumentStatus({
+      documentId: id,
+      documentType: 'WT',
+      currentStatus: doc.status,
+      statusOptions: window.WT_STATUSES,
+      onSave: function (newStatus) {
+        doc.status = newStatus;
+        if (window.saveDB) window.saveDB();
+        refresh();
+        window.showToast('Status transfer diubah ke: ' + newStatus, 'success');
+      },
+    });
+  }
+
   // ── Wire up ───────────────────────────────────────────────────────────────
   window.renderWarehouse = renderWarehouse;
 
@@ -687,6 +736,10 @@
     });
     window.ERP.registerAction('whViewIT', function (id) {
       if (id) viewIT(id);
+      return true;
+    });
+    window.ERP.registerAction('setWTStatus', function (id) {
+      if (id) setWTStatus(id);
       return true;
     });
   }

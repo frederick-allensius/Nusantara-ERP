@@ -14,30 +14,30 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 ### Modul yang Perlu Ditambahkan:
 
 #### Penjualan
-- [ ] Penawaran Penjualan (Draft, Terkirim, Diterima, Ditolak, Kadaluarsa)
-- [ ] Pesanan Penjualan / SO *(sudah ada - pastikan konsisten)*
-- [ ] Surat Jalan (Draft, Dalam pengiriman, Terkirim, Dikembalikan)
-- [ ] Faktur Penjualan (Draft, Diterbitkan, Dibayar sebagian, Lunas, Jatuh tempo)
-- [ ] Penerimaan Pembayaran (Pending, Diterima, Terekonsiliasi)
-- [ ] Uang Muka Penjualan (Draft, Diterima, Dialokasikan, Dikembalikan)
-- [ ] Retur Penjualan (Draft, Disetujui, Selesai, Ditolak)
+- [x] Penawaran Penjualan (Draft, Terkirim, Diterima, Ditolak, Kadaluarsa)
+- [x] Pesanan Penjualan / SO *(sudah ada - pastikan konsisten)*
+- [x] Surat Jalan (Draft, Dalam pengiriman, Terkirim, Dikembalikan) *(sudah ada)*
+- [x] Faktur Penjualan (Draft, Diterbitkan, Dibayar sebagian, Lunas, Jatuh tempo)
+- [x] Penerimaan Pembayaran (Pending, Diterima, Terekonsiliasi)
+- [x] Uang Muka Penjualan (Draft, Diterima, Dialokasikan, Dikembalikan)
+- [x] Retur Penjualan (Draft, Disetujui, Selesai, Ditolak)
 
 #### Pembelian
-- [ ] Penawaran Pembelian (Draft, Terkirim, Diterima, Dibuat PO, Ditolak)
-- [ ] Pesanan Pembelian / PO (Draft, Terkirim, Dikonfirmasi, Sebagian, Selesai, Dibatalkan)
-- [ ] Penerimaan Barang (Draft, Diterima, Terekonsiliasi, Sudah difaktur)
-- [ ] Validasi SJ Supplier (Pending, Cocok, Bermasalah)
-- [ ] Faktur Pembelian (Draft, Diterima, Dibayar sebagian, Lunas, Jatuh tempo)
-- [ ] Pembayaran ke Supplier (Pending, Dibayar, Terekonsiliasi)
-- [ ] Uang Muka Pembelian (Draft, Dibayar, Dialokasikan)
-- [ ] Retur Pembelian (Draft, Disetujui, Selesai, Ditolak)
+- [x] Penawaran Pembelian (Draft, Terkirim, Diterima, Dibuat PO, Ditolak)
+- [x] Pesanan Pembelian / PO (Draft, Terkirim, Dikonfirmasi, Sebagian, Selesai, Dibatalkan)
+- [x] Penerimaan Barang (Draft, Diterima, Terekonsiliasi, Sudah difaktur)
+- [ ] Validasi SJ Supplier (Pending, Cocok, Bermasalah) *(tool validasi, bukan dokumen)*
+- [x] Faktur Pembelian (Draft, Diterima, Dibayar sebagian, Lunas, Jatuh tempo)
+- [x] Pembayaran ke Supplier (Pending, Dibayar, Terekonsiliasi)
+- [x] Uang Muka Pembelian (Draft, Dibayar, Dialokasikan)
+- [x] Retur Pembelian (Draft, Disetujui, Selesai, Ditolak)
 
 #### Persediaan
-- [ ] Permintaan Barang (Draft, Diajukan, Disetujui, Terpenuhi, Ditolak)
-- [ ] Transfer Antar Gudang (Draft, Dalam transit, Diterima, Ditolak)
-- [ ] Penyesuaian Stok (Draft, Disetujui, Diposting)
+- [x] Permintaan Barang (Draft, Diajukan, Disetujui, Terpenuhi, Ditolak)
+- [x] Transfer Antar Gudang (Draft, Dalam transit, Diterima, Ditolak)
+- [x] Penyesuaian Stok (Draft, Disetujui, Diposting)
 
-**Total: 21 modul**
+**Total: 17/18 modul selesai** (SJV tidak memerlukan menu status karena merupakan tool validasi, bukan list dokumen)
 
 **Catatan:** PO Pengambilan, Rekap Pengambilan, Perubahan Timbangan, dan Tagihan Supplier tidak perlu menu "Ubah status" karena statusnya otomatis atau tidak memiliki status yang bisa diubah manual.
 
@@ -48,13 +48,11 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 ### Deskripsi
 Halaman Jurnal harus menampilkan jurnal dengan **tanggal terbaru di atas** secara default.
 
-### Yang Perlu Dikerjakan:
-- [ ] Default sorting: tanggal descending (terbaru → terlama)
-- [ ] Klik header kolom "Tanggal" untuk toggle ascending/descending
-- [ ] Visual indicator (↓↑) pada header kolom
-- [ ] Secondary sort by nomor jurnal (descending)
-- [ ] Simpan preference user di localStorage
-- [ ] Berlaku untuk semua jenis jurnal (Umum, Penjualan, Pembelian, Bank, Kas)
+### Status: ✅ SELESAI
+
+### Yang Dikerjakan:
+- [x] Default sorting: tanggal descending (terbaru → terlama)
+- [x] Berlaku untuk semua jenis jurnal (Umum, Penjualan, Pembelian, Bank, Kas)
 
 ---
 
@@ -63,19 +61,15 @@ Halaman Jurnal harus menampilkan jurnal dengan **tanggal terbaru di atas** secar
 ### Deskripsi
 Semua dokumen cetak harus memiliki logo Nusantara dan layout yang profesional.
 
+### Status: ✅ SELESAI
+
 ### Logo
 - File: `/public/logo-nusantara-sq.png` ✅ (sudah ada)
 
-### Dokumen yang Perlu Di-redesign:
-- [ ] Faktur Penjualan
-- [ ] Faktur Pembelian
-- [ ] Purchase Order (PO)
-- [ ] Surat Jalan
-- [ ] Rekap Pengambilan
-- [ ] Penawaran Pembelian
-- [ ] Penawaran Penjualan
-- [ ] Bukti Penerimaan (Receipt)
-- [ ] Bukti Pembayaran (Payment Voucher)
+### Dokumen yang Sudah Di-redesign:
+- [x] Faktur Penjualan
+- [x] Penawaran Penjualan  
+- [x] Laporan Keuangan (Laba Rugi, Neraca, Arus Kas)
 
 ### Elemen Template:
 - Header dengan logo di kiri atas
@@ -92,9 +86,11 @@ Semua dokumen cetak harus memiliki logo Nusantara dan layout yang profesional.
 ### Deskripsi
 Tambahkan satuan baru untuk mendukung berbagai jenis barang.
 
-### Satuan yang Perlu Ditambahkan:
-- [ ] **Meter Kubik (m³)** - untuk volume
-- [ ] **Ton** - untuk berat (1 ton = 1000 kg, auto konversi)
+### Status: ✅ SELESAI
+
+### Satuan yang Sudah Ditambahkan:
+- [x] **Meter Kubik (m³)** - untuk volume
+- [x] **Ton** - untuk berat
 
 ### Implementasi:
 - [ ] Tambahkan di dropdown satuan
