@@ -6914,6 +6914,29 @@ function inlinePOStatus(id, newStatus) {
   showToast(`${o.number || id} → ${statusLabel}`, 'success');
 }
 
+// ── Generic Status Change ──────────────────────────────────────────────────────
+// Generic status change function for modules without complex business logic.
+// Used by: Invoices, Payments, Returns, etc.
+window.setDocumentStatus = function setDocumentStatus(collection, statusConstants, id, newStatus) {
+  const doc = (DB[collection] || []).find(d => d.id === id);
+  if (!doc) {
+    showToast('Dokumen tidak ditemukan', 'error');
+    return false;
+  }
+
+  const old = doc.status;
+  if (old === newStatus) {
+    return true;
+  }
+
+  doc.status = newStatus;
+  saveDB();
+  
+  const statusLabel = statusConstants.find(([v]) => v === newStatus)?.[1] || newStatus;
+  showToast(`${doc.number || doc.id} → ${statusLabel}`, 'success');
+  return true;
+};
+
 // ════════════════════════════════════════════════════════════════════════════════
 // § 10  BULK STATUS + SELECTION STATE
 // ════════════════════════════════════════════════════════════════════════════════
