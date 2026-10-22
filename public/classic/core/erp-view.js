@@ -932,7 +932,7 @@ function orderRowMenu(view, o) {
     !cancelled && (!window.DocEngine || window.DocEngine.canTransition(T, o.status, 'Cancelled'));
   const main = [
     _menuItem('Lihat detail', `data-action="view${T}" data-id="${id}"`),
-    isSO ? _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"') : '',
+    _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"'),
     _menuItem('Edit', `data-action="edit${T}" data-id="${id}"`),
     _menuItem('Duplikat', `data-action="duplicate${T}" data-id="${id}"`),
     _menuItem('Cetak', `data-action="print${T}" data-id="${id}"`),
@@ -942,33 +942,32 @@ function orderRowMenu(view, o) {
   ].join('');
 
   let statusPanel = '';
-  if (isSO) {
-    const options = SO_STATUSES.filter(
-      ([v]) =>
-        v === o.status || (window.DocEngine && window.DocEngine.canTransition('SO', o.status, v))
-    );
-    const choices = options
-      .map(([v, l]) =>
-        v === o.status
-          ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
-          : _menuItem(
-              l,
-              `aria-checked="false" data-action="setOrderStatus" data-id="${id}" data-status="${escapeHtml(v)}"`,
-              '',
-              'menuitemradio'
-            )
-      )
-      .join('');
-    const none =
-      options.filter(([v]) => v !== o.status).length === 0
-        ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
-        : '';
-    statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
-      ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
-      <div class="row-menu-head" role="presentation">Ubah status</div>
-      ${choices}${none}
-    </div>`;
-  }
+  const statuses = isSO ? SO_STATUSES : PO_STATUSES;
+  const options = statuses.filter(
+    ([v]) =>
+      v === o.status || (window.DocEngine && window.DocEngine.canTransition(T, o.status, v))
+  );
+  const choices = options
+    .map(([v, l]) =>
+      v === o.status
+        ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+        : _menuItem(
+            l,
+            `aria-checked="false" data-action="setOrderStatus" data-id="${id}" data-status="${escapeHtml(v)}" data-type="${T}"`,
+            '',
+            'menuitemradio'
+          )
+    )
+    .join('');
+  const none =
+    options.filter(([v]) => v !== o.status).length === 0
+      ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+      : '';
+  statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+    ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+    <div class="row-menu-head" role="presentation">Ubah status</div>
+    ${choices}${none}
+  </div>`;
 
   return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
       aria-label="Aksi ${num}" title="Aksi">
@@ -2741,10 +2740,16 @@ document.addEventListener('click', async e => {
       setOrderStage(type, '');
       break;
     case 'setOrderStatus':
-      // inlineSOStatus: transition checks, cancel flow, stock reservation /
+      // inlineSOStatus / inlinePOStatus: transition checks, cancel flow, stock reservation /
       // delivery effects, save and re-render.
       if (!btn.disabled && id && btn.dataset.status) {
-        inlineSOStatus(id, btn.dataset.status);
+        const type = btn.dataset.type || 'SO';
+        const newStatus = btn.dataset.status;
+        if (type === 'SO') {
+          inlineSOStatus(id, newStatus);
+        } else if (type === 'PO') {
+          inlinePOStatus(id, newStatus);
+        }
       }
       break;
 

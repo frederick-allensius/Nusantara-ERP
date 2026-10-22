@@ -6879,6 +6879,41 @@ function inlineSOStatus(id, newStatus) {
   showToast(`${id} → ${statusLabel}`, 'success');
 }
 
+// ── inlinePOStatus ─────────────────────────────────────────────────────────────
+// Simple PO status change from row menu. Unlike SO, PO doesn't have complex
+// stock reservation logic, just status transitions.
+function inlinePOStatus(id, newStatus) {
+  const o = DB.purchaseOrders.find(o => o.id === id);
+  if (!o) {
+    return;
+  }
+  const old = o.status;
+
+  if (old !== newStatus && window.DocEngine && !window.DocEngine.canTransition('PO', old, newStatus)) {
+    showToast(`Transisi ${old} → ${newStatus} tidak diizinkan`, 'warning');
+    navigate(activeView);
+    return;
+  }
+
+  // Prevent status change if PO has child documents (GR, PI, etc.)
+  if (newStatus === 'Cancelled') {
+    const hasInvoices = (DB.purchaseInvoices || []).some(inv => 
+      inv.sourcePO === o.id || inv.sourceId === o.id
+    );
+    if (hasInvoices) {
+      showToast('PO tidak bisa dibatalkan karena sudah ada faktur pembelian', 'warning');
+      navigate(activeView);
+      return;
+    }
+  }
+
+  o.status = newStatus;
+  saveDB();
+  navigate(activeView);
+  const statusLabel = PO_STATUSES.find(([v]) => v === newStatus)?.[1] || newStatus;
+  showToast(`${o.number || id} → ${statusLabel}`, 'success');
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // § 10  BULK STATUS + SELECTION STATE
 // ════════════════════════════════════════════════════════════════════════════════
