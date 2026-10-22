@@ -850,6 +850,127 @@ const DO_STATUSES = [
   ['In Transit', 'Dalam Pengiriman'],
   ['Delivered', 'Terkirim'],
 ];
+
+// Sales Quotation statuses
+const SQ_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Sent', 'Terkirim'],
+  ['Accepted', 'Diterima'],
+  ['Rejected', 'Ditolak'],
+  ['Expired', 'Kadaluarsa'],
+];
+
+// Purchase Quotation statuses
+const PQ_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Sent', 'Terkirim'],
+  ['Accepted', 'Diterima'],
+  ['Created PO', 'Dibuat PO'],
+  ['Rejected', 'Ditolak'],
+];
+
+// Sales Invoice statuses
+const SI_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Issued', 'Diterbitkan'],
+  ['Partially Paid', 'Dibayar sebagian'],
+  ['Paid', 'Lunas'],
+  ['Overdue', 'Jatuh tempo'],
+];
+
+// Purchase Invoice statuses
+const PI_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Received', 'Diterima'],
+  ['Partially Paid', 'Dibayar sebagian'],
+  ['Paid', 'Lunas'],
+  ['Overdue', 'Jatuh tempo'],
+];
+
+// Payment Receipt statuses
+const SR_STATUSES = [
+  ['Pending', 'Pending'],
+  ['Received', 'Diterima'],
+  ['Reconciled', 'Terekonsiliasi'],
+];
+
+// Supplier Payment statuses
+const PP_STATUSES = [
+  ['Pending', 'Pending'],
+  ['Paid', 'Dibayar'],
+  ['Reconciled', 'Terekonsiliasi'],
+];
+
+// Sales Down Payment statuses
+const SDP_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Received', 'Diterima'],
+  ['Allocated', 'Dialokasikan'],
+  ['Returned', 'Dikembalikan'],
+];
+
+// Purchase Down Payment statuses
+const PDP_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Paid', 'Dibayar'],
+  ['Allocated', 'Dialokasikan'],
+];
+
+// Sales Return statuses
+const SRN_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Approved', 'Disetujui'],
+  ['Completed', 'Selesai'],
+  ['Rejected', 'Ditolak'],
+];
+
+// Purchase Return statuses
+const PRN_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Approved', 'Disetujui'],
+  ['Completed', 'Selesai'],
+  ['Rejected', 'Ditolak'],
+];
+
+// Goods Receipt statuses
+const GR_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Received', 'Diterima'],
+  ['Reconciled', 'Terekonsiliasi'],
+  ['Invoiced', 'Sudah difaktur'],
+];
+
+// Supplier DO Validation statuses
+const SJV_STATUSES = [
+  ['Pending', 'Pending'],
+  ['Matched', 'Cocok'],
+  ['Issue', 'Bermasalah'],
+];
+
+// Material Request statuses
+const MR_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Submitted', 'Diajukan'],
+  ['Approved', 'Disetujui'],
+  ['Fulfilled', 'Terpenuhi'],
+  ['Rejected', 'Ditolak'],
+];
+
+// Warehouse Transfer statuses
+const WT_STATUSES = [
+  ['Draft', 'Draft'],
+  ['In Transit', 'Dalam transit'],
+  ['Received', 'Diterima'],
+  ['Rejected', 'Ditolak'],
+];
+
+// Stock Adjustment statuses
+const ADJ_STATUSES = [
+  ['Draft', 'Draft'],
+  ['Approved', 'Disetujui'],
+  ['Posted', 'Diposting'],
+];
+
 function statusOptions(list, current) {
   // If the document carries a status outside the known list (e.g. legacy or
   // Accurate-imported values), keep it as a selectable option — otherwise the
