@@ -180,7 +180,13 @@
             : true
       )
       .filter(matchesQuery)
-      .reverse(); // newest first
+      .sort((a, b) => {
+        // Primary sort: by date (latest first)
+        const dateCompare = String(b.date || '').localeCompare(String(a.date || ''));
+        if (dateCompare !== 0) return dateCompare;
+        // Secondary sort: by journal number (descending)
+        return String(b.number || b.id || '').localeCompare(String(a.number || a.id || ''));
+      });
     const filters = [
       ['all', 'Semua'],
       ['auto', 'Otomatis dari dokumen'],
