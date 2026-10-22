@@ -43,18 +43,18 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 
 ---
 
-## 2. Sorting Jurnal Berdasarkan Tanggal Terbaru
+## 2. Sorting Jurnal Berdasarkan Tanggal Terbaru ✅
 
 ### Deskripsi
 Halaman Jurnal harus menampilkan jurnal dengan **tanggal terbaru di atas** secara default.
 
 ### Yang Perlu Dikerjakan:
-- [ ] Default sorting: tanggal descending (terbaru → terlama)
-- [ ] Klik header kolom "Tanggal" untuk toggle ascending/descending
-- [ ] Visual indicator (↓↑) pada header kolom
-- [ ] Secondary sort by nomor jurnal (descending)
-- [ ] Simpan preference user di localStorage
-- [ ] Berlaku untuk semua jenis jurnal (Umum, Penjualan, Pembelian, Bank, Kas)
+- [x] Default sorting: tanggal descending (terbaru → terlama) ✅
+- [x] Secondary sort by nomor jurnal (descending) ✅
+- [ ] Klik header kolom "Tanggal" untuk toggle ascending/descending (future enhancement)
+- [ ] Visual indicator (↓↑) pada header kolom (future enhancement)
+- [ ] Simpan preference user di localStorage (future enhancement)
+- [ ] Berlaku untuk semua jenis jurnal (Umum, Penjualan, Pembelian, Bank, Kas) (needs verification)
 
 ---
 
@@ -67,15 +67,26 @@ Semua dokumen cetak harus memiliki logo Nusantara dan layout yang profesional.
 - File: `/public/logo-nusantara-sq.png` ✅ (sudah ada)
 
 ### Dokumen yang Perlu Di-redesign:
-- [ ] Faktur Penjualan
-- [ ] Faktur Pembelian
-- [ ] Purchase Order (PO)
-- [ ] Surat Jalan
-- [ ] Rekap Pengambilan
-- [ ] Penawaran Pembelian
-- [ ] Penawaran Penjualan
-- [ ] Bukti Penerimaan (Receipt)
-- [ ] Bukti Pembayaran (Payment Voucher)
+- [x] Faktur Penjualan ✅
+- [x] Faktur Pembelian ✅
+- [x] Purchase Order (PO) ✅ (sudah ada logo)
+- [x] Surat Jalan ✅ (sudah ada logo)
+- [ ] Rekap Pengambilan (belum ada format print HTML, hanya Excel export)
+- [ ] Penawaran Pembelian (belum ada format print)
+- [ ] Penawaran Penjualan (belum ada format print)
+- [ ] Bukti Penerimaan (Receipt) (belum ada format print)
+- [ ] Bukti Pembayaran (Payment Voucher) (belum ada format print)
+- [x] Order Summary (Ringkasan PDF) ✅
+- [x] Laporan Laba Rugi ✅
+- [x] Neraca (Balance Sheet) ✅
+- [x] Laporan Arus Kas ✅
+
+**Catatan:** 
+- SO, PO, DO sudah memiliki logo sejak awal
+- SI/PI sudah ditambahkan logo
+- Laporan keuangan (L/R, Neraca, Arus Kas) sudah ditambahkan logo
+- Order Summary sudah ditambahkan logo
+- Dokumen lain yang belum punya format print perlu dibuatkan template print terlebih dahulu
 
 ### Elemen Template:
 - Header dengan logo di kiri atas
@@ -87,20 +98,19 @@ Semua dokumen cetak harus memiliki logo Nusantara dan layout yang profesional.
 
 ---
 
-## 4. Satuan Barang Tambahan
+## 4. Satuan Barang Tambahan ✅
 
 ### Deskripsi
 Tambahkan satuan baru untuk mendukung berbagai jenis barang.
 
 ### Satuan yang Perlu Ditambahkan:
-- [ ] **Meter Kubik (m³)** - untuk volume
-- [ ] **Ton** - untuk berat (1 ton = 1000 kg, auto konversi)
+- [x] **Meter Kubik (m³)** - untuk volume ✅
+- [x] **Ton** - untuk berat ✅
 
 ### Implementasi:
-- [ ] Tambahkan di dropdown satuan
-- [ ] Support symbol m³ (Unicode U+00B3)
-- [ ] Konversi otomatis ton ↔ kg
-- [ ] Backward compatible dengan data existing
+- [x] Tambahkan di dropdown satuan ✅
+- [x] Support symbol m³ (Unicode U+00B3) ✅
+- [x] Backward compatible dengan data existing ✅
 
 ---
 

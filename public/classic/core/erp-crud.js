@@ -118,6 +118,7 @@ function buildInvoiceDoc(type, data) {
       ? window.Balances.invoiceBalance(side, data)
       : null;
   const notesHtml = data.note ? escapeHtml(data.note).replace(/\r?\n/g, '<br>') : '';
+  const logoUrl = `${location.origin}/logo-nusantara-sq.png`;
 
   return `<style>
     .inv-doc { font-family: Arial, sans-serif; color:#1a1a1a; font-size:12px; }
@@ -125,6 +126,8 @@ function buildInvoiceDoc(type, data) {
     .inv-doc td, .inv-doc th { padding:0; }
     .inv-head { width:100%; }
     .inv-head td { vertical-align:top; }
+    .inv-logo { width:120px; }
+    .inv-logo img { width:96px; height:auto; }
     .inv-coname { font-size:22px; font-weight:bold; margin:0 0 4px; }
     .inv-coaddr { color:#333; line-height:1.5; }
     .inv-title { font-size:22px; color:#1b3a5b; text-align:right; margin:0 0 6px; letter-spacing:.5px; }
@@ -150,6 +153,7 @@ function buildInvoiceDoc(type, data) {
   </style>
   <div class="inv-doc">
     <table class="inv-head"><tr>
+      <td class="inv-logo"><img src="${logoUrl}" alt=""></td>
       <td>
         <div class="inv-coname">${escapeHtml(lh.name)}</div>
         <div class="inv-coaddr">${lh.addressLines.map(escapeHtml).join('<br>')}${lh.phone ? `<br>Telp. ${escapeHtml(lh.phone)}` : ''}${lh.npwp ? `<br>NPWP ${escapeHtml(lh.npwp)}` : ''}</div>

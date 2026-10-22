@@ -88,6 +88,7 @@
   function _buildPrintHtml(kind, from, to, agg) {
     const company = (DB.settings && DB.settings.company) || {};
     const companyName = company.name || 'NUSANTARA';
+    const logoUrl = `${location.origin}/logo-nusantara-sq.png`;
     const days = _daysBetween(from, to);
     const itemRows = agg.items.length
       ? agg.items
@@ -123,6 +124,8 @@
       h2 { font-size: 13px; margin: 22px 0 6px; }
       .muted { color: #666; }
       .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:14px; }
+      .head-left { display:flex; align-items:center; gap:12px; }
+      .logo img { width:64px; height:auto; }
       .stats { display:flex; gap:24px; margin:10px 0 4px; flex-wrap:wrap; }
       .stat .v { font-size:16px; font-weight:700; }
       .stat .l { font-size:11px; color:#666; }
@@ -133,9 +136,12 @@
       @media print { body { margin: 0; } }
     </style></head><body>
       <div class="head">
-        <div>
-          <h1>${esc(companyName)}</h1>
-          <div class="muted">Ringkasan ${esc(agg.cfg.label)}</div>
+        <div class="head-left">
+          <div class="logo"><img src="${logoUrl}" alt=""></div>
+          <div>
+            <h1>${esc(companyName)}</h1>
+            <div class="muted">Ringkasan ${esc(agg.cfg.label)}</div>
+          </div>
         </div>
         <div style="text-align:right" class="muted">
           <div>Periode: <strong>${esc(from)}</strong> s/d <strong>${esc(to)}</strong></div>

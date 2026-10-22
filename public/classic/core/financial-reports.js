@@ -703,6 +703,9 @@
         : activeTab === 'bs'
           ? 'Neraca (Balance Sheet)'
           : 'Laporan Arus Kas';
+    var company = (DB.settings && DB.settings.company) || {};
+    var companyName = company.name || 'NUSANTARA';
+    var logoUrl = location.origin + '/logo-nusantara-sq.png';
     var w = window.open('', '_blank');
     w.document.write(
       '<!DOCTYPE html><html><head><title>' +
@@ -710,11 +713,17 @@
         '</title>' +
         '<style>' +
         PRINT_CSS +
+        '.fin-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}' +
+        '.fin-logo img{width:64px;height:auto}' +
         '</style>' +
         '</head><body>' +
-        '<h2>' +
+        '<div class="fin-header">' +
+        '<div class="fin-logo"><img src="' + logoUrl + '" alt=""></div>' +
+        '<div><h2>' +
         esc(title) +
         '</h2>' +
+        '<div style="font-size:.875rem;color:var(--text);font-weight:600">' + esc(companyName) + '</div></div>' +
+        '</div>' +
         '<div class="fin-printed">Dicetak: ' +
         new Date().toLocaleDateString('id-ID') +
         (periodFrom || periodTo
