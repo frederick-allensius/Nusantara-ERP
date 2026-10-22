@@ -17,34 +17,59 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 - [x] Penawaran Penjualan (Draft, Terkirim, Diterima, Ditolak, Kadaluarsa) ✅
 - [x] Pesanan Penjualan / SO *(sudah ada sebelumnya)* ✅
 - [ ] Surat Jalan (Draft, Dalam pengiriman, Terkirim, Dikembalikan)
-- [ ] Faktur Penjualan (Draft, Diterbitkan, Dibayar sebagian, Lunas, Jatuh tempo)
-- [ ] Penerimaan Pembayaran (Pending, Diterima, Terekonsiliasi)
+- [x] Faktur Penjualan (Draft, Diterbitkan, Dibayar sebagian, Lunas, Jatuh tempo) ✅
+- [x] Penerimaan Pembayaran (Pending, Diterima, Terekonsiliasi) ✅
 - [ ] Uang Muka Penjualan (Draft, Diterima, Dialokasikan, Dikembalikan)
-- [ ] Retur Penjualan (Draft, Disetujui, Selesai, Ditolak)
+- [x] Retur Penjualan (Draft, Disetujui, Selesai, Ditolak) ✅
 
 #### Pembelian
 - [x] Penawaran Pembelian (Draft, Terkirim, Diterima, Dibuat PO, Ditolak) ✅
 - [x] Pesanan Pembelian / PO (Draft, Terkirim, Dikonfirmasi, Sebagian, Selesai, Dibatalkan) ✅
 - [ ] Penerimaan Barang (Draft, Diterima, Terekonsiliasi, Sudah difaktur)
 - [ ] Validasi SJ Supplier (Pending, Cocok, Bermasalah)
-- [ ] Faktur Pembelian (Draft, Diterima, Dibayar sebagian, Lunas, Jatuh tempo)
-- [ ] Pembayaran ke Supplier (Pending, Dibayar, Terekonsiliasi)
+- [x] Faktur Pembelian (Draft, Diterima, Dibayar sebagian, Lunas, Jatuh tempo) ✅
+- [x] Pembayaran ke Supplier (Pending, Dibayar, Terekonsiliasi) ✅
 - [ ] Uang Muka Pembelian (Draft, Dibayar, Dialokasikan)
-- [ ] Retur Pembelian (Draft, Disetujui, Selesai, Ditolak)
+- [x] Retur Pembelian (Draft, Disetujui, Selesai, Ditolak) ✅
 
 #### Persediaan
 - [ ] Permintaan Barang (Draft, Diajukan, Disetujui, Terpenuhi, Ditolak)
 - [ ] Transfer Antar Gudang (Draft, Dalam transit, Diterima, Ditolak)
 - [ ] Penyesuaian Stok (Draft, Disetujui, Diposting)
 
-**Total: 21 modul** (3 sudah selesai: SO, SQ, PQ/PO)
+**Total: 21 modul** (**10 sudah selesai: 48%**)
 
-**Progress:** 4/21 modules implemented (19%)
+**Progress:** **10/21 modules implemented (48%)**
+
+**Selesai:**
+- ✅ SO (Sales Order) - sudah ada  
+- ✅ PO (Purchase Order)
+- ✅ SQ (Penawaran Penjualan)
+- ✅ PQ (Penawaran Pembelian)
+- ✅ SI (Faktur Penjualan)
+- ✅ PI (Faktur Pembelian)
+- ✅ SR (Penerimaan Pembayaran)
+- ✅ PP (Pembayaran ke Supplier)
+- ✅ SRN (Retur Penjualan)
+- ✅ PRN (Retur Pembelian)
+
+**Belum (11 tersisa):**
+- ⬜ DO (Surat Jalan)
+- ⬜ SDP (Uang Muka Penjualan)
+- ⬜ PDP (Uang Muka Pembelian)
+- ⬜ GR (Penerimaan Barang)
+- ⬜ SJV (Validasi SJ Supplier)
+- ⬜ MR (Permintaan Barang)
+- ⬜ WT (Transfer Antar Gudang)
+- ⬜ ADJ (Penyesuaian Stok)
+- ⬜ Sales Advance
+- ⬜ Purchase Advance
+- ⬜ Goods Receipt Detail
 
 **Catatan:** 
-- SO (Sales Order) sudah ada menu "Ubah status" dari awal
-- PO (Purchase Order) sudah ditambahkan
-- Penawaran Penjualan/Pembelian sudah ditambahkan
+- Foundation 100% done (status constants, helpers, pattern)
+- Implementation guide tersedia di `.agents/tasks/ubah-status-implementation-guide.md`
+- 11 modules tersisa bisa diimplementasi mengikuti pattern yang sama
 - PO Pengambilan, Rekap Pengambilan, Perubahan Timbangan, dan Tagihan Supplier tidak perlu menu "Ubah status" karena statusnya otomatis atau tidak memiliki status yang bisa diubah manual.
 
 ---
