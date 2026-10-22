@@ -14,8 +14,8 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 ### Modul yang Perlu Ditambahkan:
 
 #### Penjualan
-- [ ] Penawaran Penjualan (Draft, Terkirim, Diterima, Ditolak, Kadaluarsa)
-- [ ] Pesanan Penjualan / SO *(sudah ada - pastikan konsisten)*
+- [x] Penawaran Penjualan (Draft, Terkirim, Diterima, Ditolak, Kadaluarsa) ✅
+- [x] Pesanan Penjualan / SO *(sudah ada sebelumnya)* ✅
 - [ ] Surat Jalan (Draft, Dalam pengiriman, Terkirim, Dikembalikan)
 - [ ] Faktur Penjualan (Draft, Diterbitkan, Dibayar sebagian, Lunas, Jatuh tempo)
 - [ ] Penerimaan Pembayaran (Pending, Diterima, Terekonsiliasi)
@@ -23,8 +23,8 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 - [ ] Retur Penjualan (Draft, Disetujui, Selesai, Ditolak)
 
 #### Pembelian
-- [ ] Penawaran Pembelian (Draft, Terkirim, Diterima, Dibuat PO, Ditolak)
-- [ ] Pesanan Pembelian / PO (Draft, Terkirim, Dikonfirmasi, Sebagian, Selesai, Dibatalkan)
+- [x] Penawaran Pembelian (Draft, Terkirim, Diterima, Dibuat PO, Ditolak) ✅
+- [x] Pesanan Pembelian / PO (Draft, Terkirim, Dikonfirmasi, Sebagian, Selesai, Dibatalkan) ✅
 - [ ] Penerimaan Barang (Draft, Diterima, Terekonsiliasi, Sudah difaktur)
 - [ ] Validasi SJ Supplier (Pending, Cocok, Bermasalah)
 - [ ] Faktur Pembelian (Draft, Diterima, Dibayar sebagian, Lunas, Jatuh tempo)
@@ -37,9 +37,15 @@ Tambahkan menu **"Ubah status"** di action menu (⋮) setiap baris tabel, sehing
 - [ ] Transfer Antar Gudang (Draft, Dalam transit, Diterima, Ditolak)
 - [ ] Penyesuaian Stok (Draft, Disetujui, Diposting)
 
-**Total: 21 modul**
+**Total: 21 modul** (3 sudah selesai: SO, SQ, PQ/PO)
 
-**Catatan:** PO Pengambilan, Rekap Pengambilan, Perubahan Timbangan, dan Tagihan Supplier tidak perlu menu "Ubah status" karena statusnya otomatis atau tidak memiliki status yang bisa diubah manual.
+**Progress:** 4/21 modules implemented (19%)
+
+**Catatan:** 
+- SO (Sales Order) sudah ada menu "Ubah status" dari awal
+- PO (Purchase Order) sudah ditambahkan
+- Penawaran Penjualan/Pembelian sudah ditambahkan
+- PO Pengambilan, Rekap Pengambilan, Perubahan Timbangan, dan Tagihan Supplier tidak perlu menu "Ubah status" karena statusnya otomatis atau tidak memiliki status yang bisa diubah manual.
 
 ---
 
