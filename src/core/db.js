@@ -1174,7 +1174,7 @@ function getDefaultValue(key) {
       },
       users: [],
       itemCategories: ['Umum', 'ATK', 'Elektronik', 'Bahan Baku'],
-      units: ['pcs', 'box', 'unit', 'rim', 'roll', 'kg'],
+      units: ['pcs', 'box', 'unit', 'rim', 'roll', 'kg', 'm³', 'ton'],
       assetCategories: ['Bangunan', 'Kendaraan', 'Peralatan'],
       assetFiscalCategories: ['Golongan 1', 'Golongan 2', 'Golongan 3'],
       assets: [],

@@ -1960,6 +1960,6 @@ export function buildDemoData(now = new Date()) {
     employees: EMPLOYEES.map(e => ({ ...e })),
     bankAccounts: BANK_ACCOUNTS.map(b => ({ ...b })),
     itemCategories: [...new Set(ITEMS.map(i => i.category))],
-    units: ['Ton', 'M3'],
+    units: ['ton', 'm³'],
   };
 }
