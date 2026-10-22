@@ -194,11 +194,7 @@
           <td class="t-muted">${esc(d.date || '')}</td>
           <td class="t-num">${money(d.amount || 0)}</td>
           <td>${badge(d.status)}</td>
-          <td class="t-actions">${
-            d.status === 'Draft'
-              ? `<button class="action-primary" data-action="rtPost" data-id="${esc(d.id)}" data-type="${type}">Posting</button>`
-              : `<button class="btn-ghost btn-sm" data-action="rtView" data-id="${esc(d.id)}" data-type="${type}">Lihat</button>`
-          }</td>
+          <td class="t-actions">${returnRowMenu(type, d)}</td>
         </tr>`
       )
       .join('');
@@ -206,6 +202,57 @@
       <thead><tr><th>No. Retur</th><th>${t.partyLabel}</th><th>Sumber</th><th>Tanggal</th><th class="t-num">Jumlah</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div></div>`;
+  }
+
+  function _menuItem(label, attrs, cls, role) {
+    return `<button type="button" role="${role || 'menuitem'}" tabindex="-1" class="row-menu-item${cls ? ' ' + cls : ''}" ${attrs}>${esc(label)}</button>`;
+  }
+
+  function returnRowMenu(type, r) {
+    const id = esc(r.id);
+    const num = esc(docNo(r));
+    const isDraft = r.status === 'Draft';
+
+    const main = [
+      _menuItem('Lihat detail', `data-action="rtView" data-id="${id}" data-type="${type}"`),
+      _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"'),
+      isDraft ? _menuItem('Edit', `data-action="rtEdit" data-id="${id}" data-type="${type}"`) : '',
+      '<div class="row-menu-sep" role="separator"></div>',
+      isDraft ? _menuItem('Posting', `data-action="rtPost" data-id="${id}" data-type="${type}"`, 'action-primary') : '',
+      isDraft ? _menuItem('Batalkan', `data-action="rtCancel" data-id="${id}" data-type="${type}"`, 'is-danger') : '',
+    ].filter(Boolean).join('');
+
+    const statuses = type === 'SRN' ? window.SRN_STATUSES : window.PRN_STATUSES;
+    const options = statuses ? statuses : [];
+    
+    const choices = options
+      .map(([v, l]) =>
+        v === r.status
+          ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+          : _menuItem(
+              l,
+              `aria-checked="false" data-action="setReturnStatus" data-id="${id}" data-type="${type}" data-status="${esc(v)}"`,
+              '',
+              'menuitemradio'
+            )
+      )
+      .join('');
+    const none = options.filter(([v]) => v !== r.status).length === 0
+      ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+      : '';
+
+    const statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+      ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+      <div class="row-menu-head" role="presentation">Ubah status</div>
+      ${choices}${none}
+    </div>`;
+
+    return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+        aria-label="Aksi ${num}" title="Aksi">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button><div class="row-menu" role="menu" aria-label="Aksi ${num}" hidden>
+        <div class="row-menu-panel" data-panel="main">${main}</div>${statusPanel}
+      </div>`;
   }
 
   function renderReturns() {
@@ -590,5 +637,33 @@
       }
       return true;
     });
+    window.ERP.registerAction('setReturnStatus', function (id, type, status) {
+      if (id && TYPES[type] && status) {
+        setReturnStatus(type, id, status);
+      }
+      return true;
+    });
   }
-})();
+
+  function setReturnStatus(type, id, newStatus) {
+    const r = findReturn(type, id);
+    if (!r) {
+      toast('Retur tidak ditemukan', 'error');
+      return;
+    }
+
+    const old = r.status;
+    if (old === newStatus) {
+      return;
+    }
+
+    r.status = newStatus;
+    save();
+    refresh();
+    
+    const statuses = type === 'SRN' ? window.SRN_STATUSES : window.PRN_STATUSES;
+    const statusLabel = statuses && statuses.find(([v]) => v === newStatus)?.[1] || newStatus;
+    toast(`${docNo(r)} → ${statusLabel}`, 'success');
+  }
+
+  })();
