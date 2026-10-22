@@ -320,7 +320,7 @@
             <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
             <td class="t-num" data-cell="meta" data-cap="Sisa">${bal ? (bal.outstanding > B().EPS ? money(bal.outstanding) : '<span class="t-muted">—</span>') : '<span class="t-muted">—</span>'}</td>
             <td data-cell="status">${overdue ? '<span class="badge badge-danger">Lewat tempo</span>' : badge(d.status)}</td>
-            <td class="t-actions" data-cell="menu"><svg class="row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></td>
+            <td class="t-actions" data-cell="menu">${invoiceRowMenu(type, d)}</td>
           </tr>`;
         })
         .join('');
@@ -338,7 +338,7 @@
             <td class="t-muted" data-cell="meta">${esc(d.paymentMethod || '—')}</td>
             <td class="t-num" data-cell="amount">${money(d.amount || 0)}</td>
             <td data-cell="status">${badge(d.status)}</td>
-            <td class="t-actions" data-cell="menu"><svg class="row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></td>
+            <td class="t-actions" data-cell="menu">${invoiceRowMenu(type, d)}</td>
           </tr>`;
         })
         .join('');
@@ -346,6 +346,60 @@
     return `<div class="card card-flush"><div class="table-wrap"><table class="data-table list-cards">
       <thead><tr>${head}</tr></thead><tbody>${rows}</tbody>
     </table></div>${pagerHTML(type, all.length)}</div>`;
+  }
+
+  // ── Row Menu ────────────────────────────────────────────────────────────────
+  function _menuItem(label, attrs, cls, role) {
+    return `<button type="button" role="${role || 'menuitem'}" tabindex="-1" class="row-menu-item${cls ? ' ' + cls : ''}" ${attrs}>${esc(label)}</button>`;
+  }
+
+  function invoiceRowMenu(type, doc) {
+    const t = TYPES[type];
+    const id = esc(doc.id);
+    const num = esc(docNo(doc));
+    const isDraft = doc.status === 'Draft';
+    const active = isInvoice(type) && B() && B().isActiveInvoice(doc);
+
+    const main = [
+      _menuItem('Lihat detail', `data-action="invView" data-id="${id}" data-type="${type}"`),
+      _menuItem('Ubah status', 'data-action="rowMenuPanel" data-panel="status" aria-haspopup="menu"'),
+      isInvoice(type) ? _menuItem('Cetak', `data-action="invPrint" data-id="${id}" data-type="${type}"`) : '',
+      '<div class="row-menu-sep" role="separator"></div>',
+      active ? _menuItem('Batalkan', `data-action="invCancel" data-id="${id}" data-type="${type}"`, 'is-danger') : '',
+      isDraft ? _menuItem('Posting', `data-action="invPost" data-id="${id}" data-type="${type}"`, 'action-primary') : '',
+    ].filter(Boolean).join('');
+
+    const statusConst = type === 'SI' ? window.SI_STATUSES : type === 'PI' ? window.PI_STATUSES : type === 'SR' ? window.SR_STATUSES : window.PP_STATUSES;
+    const options = statusConst ? statusConst.filter(([v]) => v === doc.status || true) : [];
+    
+    const choices = options
+      .map(([v, l]) =>
+        v === doc.status
+          ? _menuItem(l, 'aria-checked="true" disabled', 'is-current', 'menuitemradio')
+          : _menuItem(
+              l,
+              `aria-checked="false" data-action="setInvoiceStatus" data-id="${id}" data-type="${type}" data-status="${esc(v)}"`,
+              '',
+              'menuitemradio'
+            )
+      )
+      .join('');
+    const none = options.filter(([v]) => v !== doc.status).length === 0
+      ? '<div class="row-menu-note">Status ini tidak bisa diubah dari daftar.</div>'
+      : '';
+
+    const statusPanel = `<div class="row-menu-panel" data-panel="status" hidden>
+      ${_menuItem('‹ Kembali', 'data-action="rowMenuPanel" data-panel="main"', 'row-menu-back')}
+      <div class="row-menu-head" role="presentation">Ubah status</div>
+      ${choices}${none}
+    </div>`;
+
+    return `<button type="button" class="row-menu-btn" data-action="rowMenu" aria-haspopup="menu" aria-expanded="false"
+        aria-label="Aksi ${num}" title="Aksi">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button><div class="row-menu" role="menu" aria-label="Aksi ${num}" hidden>
+        <div class="row-menu-panel" data-panel="main">${main}</div>${statusPanel}
+      </div>`;
   }
 
   function renderInvoices() {
@@ -1140,5 +1194,35 @@
       }
       return true;
     });
+    window.ERP.registerAction('setInvoiceStatus', function (id, type, status) {
+      if (id && TYPES[type] && status) {
+        setInvoiceDocStatus(type, id, status);
+      }
+      return true;
+    });
   }
-})();
+
+  function setInvoiceDocStatus(type, id, newStatus) {
+    const doc = findDoc(type, id);
+    if (!doc) {
+      toast('Dokumen tidak ditemukan', 'error');
+      return;
+    }
+
+    const old = doc.status;
+    if (old === newStatus) {
+      return;
+    }
+
+    // Note: For invoices (SI/PI), status is often computed by Balances module
+    // This manual override should be used carefully
+    doc.status = newStatus;
+    save();
+    refresh();
+    
+    const statusConst = type === 'SI' ? window.SI_STATUSES : type === 'PI' ? window.PI_STATUSES : type === 'SR' ? window.SR_STATUSES : window.PP_STATUSES;
+    const statusLabel = statusConst && statusConst.find(([v]) => v === newStatus)?.[1] || newStatus;
+    toast(`${docNo(doc)} → ${statusLabel}`, 'success');
+  }
+
+  })();
