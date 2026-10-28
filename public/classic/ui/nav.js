@@ -157,7 +157,6 @@
       module: 'inventory',
       items: [
         { label: 'Barang & Stok', view: 'inventory' },
-        { label: 'Daftar Harga Jual', view: 'inventory', module: 'inventory' },
         { label: 'Gudang', view: 'warehouse' },
         { label: 'Transfer Antar Gudang', view: 'warehouse', hidden: true, opens: 'Gudang' },
         { label: 'Penyesuaian Stok', view: 'adjustments' },

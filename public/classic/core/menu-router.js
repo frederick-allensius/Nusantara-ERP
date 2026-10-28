@@ -86,7 +86,7 @@
     'Kategori Supplier': ['_masterExtras', 'openSupplierCategory'],
     'Kategori Penjualan': ['_settingsExtras', 'openSalesCategory'],
     'Satuan Barang': ['_inventoryExtras', 'openItemUnit'],
-    'Daftar Harga Jual': ['_inventoryExtras', 'openPriceList'],    'Kategori Barang': ['_inventoryExtras', 'openItemCategory'],
+    'Kategori Barang': ['_inventoryExtras', 'openItemCategory'],
     'Merek Barang': ['_inventoryExtras', 'openItemBrand'],
 
     // ── Pengaturan ───────────────────────────────────────────────────────────
