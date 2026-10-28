@@ -349,10 +349,12 @@ describe('access groups', () => {
       );
     });
     used.forEach(m => expect([...listed, ...RBAC.ALWAYS_ALLOWED]).toContain(m));
-    expect(RBAC.accessMenus('tax')).toEqual(['Akuntansi: Pajak & PPN, Ekspor Coretax']);
+    expect(RBAC.accessMenus('tax')).toEqual([
+      'Akuntansi: Pajak & PPN, Ekspor Coretax, Laporan Perkiraan Pajak',
+    ]);
     expect(RBAC.accessMenus('gl')).toEqual([
       'Kas & Bank',
-      'Akuntansi (kecuali Pajak & PPN, Ekspor Coretax)',
+      'Akuntansi (kecuali Pajak & PPN, Ekspor Coretax, Laporan Perkiraan Pajak)',
     ]);
     expect(RBAC.accessMenus('purchases')).toEqual(
       expect.arrayContaining(['Entri Harian', 'Pembelian'])
