@@ -777,7 +777,11 @@ function buildDeliveryOrderDoc(data) {
 }
 
 // ── Print / Cetak Dokumen ─────────────────────────────────────────────────────
-// Opens a new browser window with a print-ready SO, PO, DO or invoice (SI/PI).
+// Renders a print-ready SO, PO, DO or invoice (SI/PI). When the html2pdf
+// library is loaded (window.html2pdf, bridged in src/main.js) it produces a
+// REAL one-click PDF download — no browser print dialog. When the library is
+// absent or fails, it falls back to the original popup + window.print() path so
+// the feature degrades safely (e.g. before `npm install html2pdf.js` has run).
 function printDocument(type, data) {
   let title, body;
 
@@ -801,6 +805,72 @@ function printDocument(type, data) {
     return;
   }
 
+  // Shared page styling (also used by the print fallback).
+  const pageCss = `
+      body { font-family: Arial, sans-serif; font-size: 14px; margin: 32px 40px; color: #1a1a1a; }
+      table { width: 100%; border-collapse: collapse; }
+      thead tr { border-bottom: 2px solid #000; }
+      tfoot tr { border-top: 2px solid #000; }
+      tbody tr { border-bottom: 1px solid #e5e7eb; }
+      td, th { padding: 6px 8px; }`;
+
+  // Filename-safe document number for the download, e.g. "Pesanan Pembelian PO-0001.pdf".
+  const safeName = String(title).trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ') || 'Dokumen';
+  const fileName = `${safeName}.pdf`;
+
+  // Preferred path: real PDF download via html2pdf.js. The document bodies carry
+  // their own scoped styles plus a letterhead logo, so we render them inside an
+  // off-screen container that mirrors the print page styling, then let html2pdf
+  // rasterize it to a crisp A4 PDF and trigger the download.
+  if (typeof window !== 'undefined' && typeof window.html2pdf === 'function') {
+    try {
+      const holder = document.createElement('div');
+      // Off-screen but still laid out (display:none would give zero dimensions
+      // and a blank render). A fixed content width keeps the A4 scaling stable.
+      holder.style.cssText =
+        'position:fixed;left:-10000px;top:0;width:760px;background:#fff;color:#1a1a1a;' +
+        'font-family:Arial, sans-serif;font-size:14px;padding:32px 40px;box-sizing:border-box;';
+      holder.innerHTML = `<style>${pageCss}</style>${body}`;
+      document.body.appendChild(holder);
+
+      const finish = () => {
+        if (holder.parentNode) holder.parentNode.removeChild(holder);
+      };
+
+      window
+        .html2pdf()
+        .set({
+          margin: [10, 10, 12, 10], // mm — top,left,bottom,right
+          filename: fileName,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        })
+        .from(holder)
+        .save()
+        .then(finish)
+        .catch(err => {
+          finish();
+          // If rendering fails mid-flight, fall back to the print window.
+          if (console && console.warn) console.warn('[printDocument] PDF render failed, using print fallback', err);
+          _printDocumentFallback(title, body, pageCss);
+        });
+      return;
+    } catch (e) {
+      // Any synchronous failure (old library, DOM issue) → print fallback.
+      _printDocumentFallback(title, body, pageCss);
+      return;
+    }
+  }
+
+  // Fallback path: html2pdf not available — open a print window as before.
+  _printDocumentFallback(title, body, pageCss);
+}
+
+// Original popup + window.print() behaviour, kept as the fallback for when the
+// html2pdf library has not loaded (e.g. offline-first boot or pre-install).
+function _printDocumentFallback(title, body, pageCss) {
   const win = window.open('', '_blank', 'width=780,height=900');
   if (!win) {
     showToast('Pop-up diblokir browser — izinkan pop-up untuk mencetak', 'warning');
@@ -809,13 +879,7 @@ function printDocument(type, data) {
   try {
     win.document.write(`<!DOCTYPE html><html><head>
     <meta charset="UTF-8"><title>${escapeHtml(title)}</title>
-    <style>
-      body { font-family: Arial, sans-serif; font-size: 14px; margin: 32px 40px; color: #1a1a1a; }
-      table { width: 100%; border-collapse: collapse; }
-      thead tr { border-bottom: 2px solid #000; }
-      tfoot tr { border-top: 2px solid #000; }
-      tbody tr { border-bottom: 1px solid #e5e7eb; }
-      td, th { padding: 6px 8px; }
+    <style>${pageCss}
       @media print { body { margin: 0; } }
     </style>
   </head><body>${body}<script>window.onload=()=>window.print()</scr${''}ipt></body></html>`);
@@ -3009,6 +3073,9 @@ function showTaxSettings() {
   const t = (DB.settings && DB.settings.tax) || {};
   const ppnRate = typeof t.ppnRate === 'number' ? t.ppnRate * 100 : 11;
   const pphRate = typeof t.pphRate === 'number' ? t.pphRate * 100 : 0;
+  // E18 estimate assumption rates (percent). Defaults mirror tax-estimate.js.
+  const pph21Rate = typeof t.pph21Rate === 'number' ? t.pph21Rate * 100 : 5;
+  const pph25Rate = typeof t.pph25Rate === 'number' ? t.pph25Rate * 100 : 1.25;
 
   openModal(
     'Pengaturan Pajak',
@@ -3036,6 +3103,16 @@ function showTaxSettings() {
         <input class="form-input" id="tax-pph" type="number" step="0.01" value="${pphRate}">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tarif perkiraan PPh 21 (%)</label>
+        <input class="form-input" id="tax-pph21" type="number" step="0.01" value="${pph21Rate}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tarif perkiraan PPh 25 (%)</label>
+        <input class="form-input" id="tax-pph25" type="number" step="0.01" value="${pph25Rate}">
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">Pembulatan Pajak</label>
       <select class="form-select" id="tax-rounding">
@@ -3061,6 +3138,8 @@ function showTaxSettings() {
       const pkp = document.getElementById('tax-pkp').value === 'true';
       let ppn = sanitizeInput(document.getElementById('tax-ppn').value, 'number');
       let pph = sanitizeInput(document.getElementById('tax-pph').value, 'number');
+      let pph21 = sanitizeInput(document.getElementById('tax-pph21').value, 'number');
+      let pph25 = sanitizeInput(document.getElementById('tax-pph25').value, 'number');
       const npwp = sanitizeInput(document.getElementById('tax-npwp').value);
       const rounding = document.getElementById('tax-rounding').value;
 
@@ -3070,13 +3149,29 @@ function showTaxSettings() {
       if (pph > 1) {
         pph = pph / 100;
       }
+      if (pph21 > 1) {
+        pph21 = pph21 / 100;
+      }
+      if (pph25 > 1) {
+        pph25 = pph25 / 100;
+      }
       ppn = Math.max(0, Math.min(ppn, 1));
       pph = Math.max(0, Math.min(pph, 1));
+      pph21 = Math.max(0, Math.min(pph21, 1));
+      pph25 = Math.max(0, Math.min(pph25, 1));
 
       if (!DB.settings) {
         DB.settings = {};
       }
-      DB.settings.tax = { pkp, npwp, ppnRate: ppn, pphRate: pph, rounding };
+      DB.settings.tax = {
+        pkp,
+        npwp,
+        ppnRate: ppn,
+        pphRate: pph,
+        pph21Rate: pph21,
+        pph25Rate: pph25,
+        rounding,
+      };
       saveDB();
       closeModal();
       showToast('Pengaturan pajak diperbarui', 'success');

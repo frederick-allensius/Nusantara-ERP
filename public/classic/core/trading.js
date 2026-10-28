@@ -36,6 +36,11 @@
   'use strict';
 
   var DEFAULT_CAPACITY = 35;
+  // E09 — over-quota tolerance: a pickup PO may be exceeded by up to one dump
+  // truck load (1 DT = 37 ton) WITHOUT needing the manual over-quota override.
+  // Beyond this the trip is still blocked unless the user explicitly allows it.
+  // ("Toleransi: boleh lebih 1 DT (37 ton) dari kuota.")
+  var OVER_QUOTA_TOLERANCE = 37;
 
   function db() {
     return window.DB || {};
@@ -755,6 +760,34 @@
     var warnings = [];
     var after = r3(u.taken + w.net);
     if (u.ordered > 0 && after > u.ordered) {
+      var overBy = r3(after - u.ordered);
+      // E09 tolerance: a pickup PO may be exceeded by at most 1 DT (37 ton).
+      // Beyond that the trip is hard-blocked — not even the over-quota
+      // confirmation lets it through. Within the tolerance the existing
+      // confirm-then-record flow still applies (opts.allowOverQuota), so the
+      // user is always asked before an overage is accepted.
+      if (overBy > OVER_QUOTA_TOLERANCE + 0.0005) {
+        return {
+          error:
+            'Melebihi kuota PO lebih dari toleransi ' +
+            OVER_QUOTA_TOLERANCE +
+            ' ' +
+            u.unit +
+            ' (kelebihan ' +
+            overBy +
+            ' ' +
+            u.unit +
+            '): sudah diambil ' +
+            u.taken +
+            ', kuota ' +
+            u.ordered +
+            ' ' +
+            u.unit +
+            '. Buka PO baru untuk sisa pengambilan.',
+          overQuota: true,
+          overTolerance: true,
+        };
+      }
       if (!opts.allowOverQuota) {
         return {
           error:
@@ -764,11 +797,17 @@
             u.ordered +
             ' ' +
             u.unit +
-            '.',
+            '. Masih dalam toleransi 1 DT (' +
+            OVER_QUOTA_TOLERANCE +
+            ' ' +
+            u.unit +
+            ') — konfirmasi untuk lanjut.',
           overQuota: true,
         };
       }
-      warnings.push('Melebihi kuota PO sebesar ' + r3(after - u.ordered) + ' ' + u.unit + '.');
+      warnings.push(
+        'Melebihi kuota PO sebesar ' + overBy + ' ' + u.unit + ' (dalam toleransi 1 DT).'
+      );
     }
     if (d.capacity && w.net > d.capacity * 1.25) {
       warnings.push('Netto ' + w.net + ' jauh di atas kapasitas truk ' + d.capacity + '.');
@@ -969,6 +1008,54 @@
       }
     });
     return closed;
+  }
+
+  // E12 — "Penjumlahan berdasarkan nomor PO": tonnage summed per pickup PO.
+  // One row per pickup PO (keyed by its PO number), carrying the ordered quota,
+  // the tonnage taken so far, what remains and any overage, plus the supplier,
+  // period (cut-off) and status. Reuses usage() so every figure matches the
+  // per-PO view. opts.includeClosed (default true) keeps closed/cancelled POs in
+  // the roll-up; pass false for only still-open POs. Sorted by PO number.
+  // NOTE: where this total is surfaced in the UI is not yet decided (plan E12);
+  // this is the data source a report/panel can render from.
+  function tonnageByPO(opts) {
+    opts = opts || {};
+    var includeClosed = opts.includeClosed !== false;
+    var rows = [];
+    (db().purchaseOrders || []).forEach(function (po) {
+      if (!isPickupOrder(po)) return;
+      if (!includeClosed && (po.status === 'Closed' || po.status === 'Cancelled')) return;
+      var u = usage(po);
+      var line = orderLine(po) || {};
+      rows.push({
+        poId: po.id,
+        poNumber: po.number || po.id,
+        supplier: po.supplier || '',
+        itemName: line.itemName || (line.name || ''),
+        unit: u.unit,
+        ordered: u.ordered,
+        taken: u.taken,
+        remaining: u.remaining,
+        over: u.over,
+        cutoff: u.cutoff,
+        status: po.status || '',
+        full: u.full,
+      });
+    });
+    rows.sort(function (a, b) {
+      return String(a.poNumber).localeCompare(String(b.poNumber));
+    });
+    var totalTaken = r3(
+      rows.reduce(function (s, r) {
+        return s + r.taken;
+      }, 0)
+    );
+    var totalOrdered = r3(
+      rows.reduce(function (s, r) {
+        return s + r.ordered;
+      }, 0)
+    );
+    return { rows: rows, totalTaken: totalTaken, totalOrdered: totalOrdered, count: rows.length };
   }
 
   // ── Weighbridge recap (Excel) ──────────────────────────────────────────────
@@ -1563,6 +1650,8 @@
     closePickupPO: closePickupPO,
     reopenPickupPO: reopenPickupPO,
     sweepCutoffs: sweepCutoffs,
+    tonnageByPO: tonnageByPO,
+    OVER_QUOTA_TOLERANCE: OVER_QUOTA_TOLERANCE,
     recapRowsFromAoa: recapRowsFromAoa,
     recapRowsFromWorkbook: recapRowsFromWorkbook,
     destinationOff: destinationOff,

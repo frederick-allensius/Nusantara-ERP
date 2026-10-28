@@ -15,19 +15,23 @@ export function applyStockMutation(order, direction) {
     return false;
   }
 
-  // Validate stock availability before applying mutations
+  // E01 — "stok boleh negatif saat penjualan": a sale is no longer blocked when
+  // stock is short. We still compute the shortage and WARN (non-blocking) so the
+  // user knows the item has gone minus, then let the mutation run with
+  // allowNegative so the on-hand figure can drop below zero.
+  let allowNegative = false;
   if (direction === 'out') {
     const problems = stockShortages(order.lines, order.warehouseId);
     if (problems.length > 0) {
       const msg = problems
-        .map(p => `${p.itemName}: butuh ${p.needed} tapi hanya tersedia ${p.available}`)
+        .map(p => `${p.itemName}: butuh ${p.needed}, tersedia ${p.available}`)
         .join('; ');
-      showToast(`Stok tidak mencukupi: ${msg}`, 'danger');
-      return false;
+      showToast(`Stok menjadi minus (penjualan tetap diproses): ${msg}`, 'warning');
+      allowNegative = true;
     }
   }
 
-  moveStockLines(order.lines, direction, order.warehouseId);
+  moveStockLines(order.lines, direction, order.warehouseId, allowNegative);
   order.stockMutated = true;
   return true;
 }
@@ -77,8 +81,13 @@ export function stockShortages(lines, warehouseId) {
 /**
  * Move stock for a set of lines without validation. Routes through the Warehouse
  * module so item.warehouseStock and the item.stock total stay in sync.
+ *
+ * allowNegative (default false): when true, an 'out' move may drive stock below
+ * zero instead of clamping at 0. Used only by the sales stock-out path (E01 —
+ * "stok boleh negatif saat penjualan"); every other caller leaves it off so
+ * purchases, transfers, adjustments and returns keep the clamp.
  */
-export function moveStockLines(lines, direction, warehouseId) {
+export function moveStockLines(lines, direction, warehouseId, allowNegative) {
   const wh = window.Warehouse;
   const whId = warehouseId || (wh ? wh.DEFAULT_WH_ID : null);
   (lines || []).forEach(line => {
@@ -92,12 +101,13 @@ export function moveStockLines(lines, direction, warehouseId) {
     }
     if (wh && whId) {
       if (direction === 'out') {
-        wh.removeStock(item, whId, qty);
+        wh.removeStock(item, whId, qty, allowNegative);
       } else if (direction === 'in') {
         wh.addStock(item, whId, qty);
       }
     } else if (direction === 'out') {
-      item.stock = Math.max(0, (Number(item.stock) || 0) - qty);
+      const next = (Number(item.stock) || 0) - qty;
+      item.stock = allowNegative ? next : Math.max(0, next);
     } else if (direction === 'in') {
       item.stock = (Number(item.stock) || 0) + qty;
     }

@@ -80,6 +80,11 @@ const classicAll = [
   'public/classic/core/master-extras.js',
   'public/classic/core/bank-extras.js',
   'public/classic/core/tax-extras.js',
+  // tax-estimate.js: E18 "Laporan Perkiraan Pajak" — monthly PPN masa + PPh 21 +
+  // PPh 25 estimate from the GL journals, on-screen + Excel (NSAXlsx). Loads
+  // after tax-extras.js (shares the 'tax' view) and after gl.js/xlsx-export.js
+  // whose journals and writer it reads.
+  'public/classic/core/tax-estimate.js',
   'public/classic/core/report-extras.js',
   // funnel-report.js: pipeline funnel analytics (dashboard) + custom-range
   // report (Reports menu). Depends on the goodsReceipts/reconciled shape and is

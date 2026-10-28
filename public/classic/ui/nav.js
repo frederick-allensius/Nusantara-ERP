@@ -157,6 +157,7 @@
       module: 'inventory',
       items: [
         { label: 'Barang & Stok', view: 'inventory' },
+        { label: 'Daftar Harga Jual', view: 'inventory', module: 'inventory' },
         { label: 'Gudang', view: 'warehouse' },
         { label: 'Transfer Antar Gudang', view: 'warehouse', hidden: true, opens: 'Gudang' },
         { label: 'Penyesuaian Stok', view: 'adjustments' },
@@ -199,6 +200,7 @@
         { heading: 'Pajak' },
         { label: 'Pajak & PPN', view: 'tax', module: 'tax' },
         { label: 'Ekspor Coretax', view: 'tax', module: 'tax' },
+        { label: 'Laporan Perkiraan Pajak', view: 'tax', module: 'tax' },
         { label: 'Rekap PPN', view: 'tax', module: 'tax', hidden: true, opens: 'Pajak & PPN' },
       ],
     },

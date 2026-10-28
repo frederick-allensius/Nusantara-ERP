@@ -62,6 +62,7 @@
     'Realisasi Anggaran': ['_budgetGLExtras', 'openBudgetMonitor'],
     'Transfer Anggaran': ['_budgetGLExtras', 'openBudgetTransfer'],
     'Ekspor Coretax': ['_taxExtras', 'openEFakturCTAS'],
+    'Laporan Perkiraan Pajak': ['_taxEstimate', 'open'],
 
     // ── Aset Tetap ───────────────────────────────────────────────────────────
     'Kategori Aset': ['_assetExtras', 'openAssetCategory'],
@@ -85,7 +86,7 @@
     'Kategori Supplier': ['_masterExtras', 'openSupplierCategory'],
     'Kategori Penjualan': ['_settingsExtras', 'openSalesCategory'],
     'Satuan Barang': ['_inventoryExtras', 'openItemUnit'],
-    'Kategori Barang': ['_inventoryExtras', 'openItemCategory'],
+    'Daftar Harga Jual': ['_inventoryExtras', 'openPriceList'],    'Kategori Barang': ['_inventoryExtras', 'openItemCategory'],
     'Merek Barang': ['_inventoryExtras', 'openItemBrand'],
 
     // ── Pengaturan ───────────────────────────────────────────────────────────

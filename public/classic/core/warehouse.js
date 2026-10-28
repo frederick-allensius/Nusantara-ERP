@@ -118,13 +118,18 @@
     syncTotal(item);
   }
 
-  // Remove stock from a warehouse. Clamps to 0. Also updates item.stock total.
-  function removeStock(item, whId, qty) {
+  // Remove stock from a warehouse. Clamps to 0 by default; pass
+  // allowNegative=true to let the figure go below zero (E01 — stock may go
+  // negative on a SALE, "stok boleh negatif saat penjualan"). Only the sales
+  // stock-out path opts in; every other caller keeps the clamp. Also updates
+  // item.stock total.
+  function removeStock(item, whId, qty, allowNegative) {
     if (!item || qty <= 0) return;
     whId = whId || DEFAULT_WH_ID;
     ensureItemWH(item);
     var current = Number(item.warehouseStock[whId]) || 0;
-    item.warehouseStock[whId] = Math.max(0, current - qty);
+    var next = current - qty;
+    item.warehouseStock[whId] = allowNegative ? next : Math.max(0, next);
     syncTotal(item);
   }
 

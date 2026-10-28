@@ -509,3 +509,60 @@ describe('down payment on a pickup order', () => {
     expect(B().invoiceBalance('purchases', bill).outstanding).toBe(0);
   });
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// E09 over-quota tolerance (1 DT = 37 ton) + E12 tonnage summed per PO number
+// ═══════════════════════════════════════════════════════════════════════════════
+describe('E09 over-quota tolerance (37 ton)', () => {
+  // Quota 100 ton (seed PO-1/SO-1). Capacity 50 → ceil(100/50)=2 up-front slots;
+  // open with a 4th-slot headroom by using capacity 25 (ceil(100/25)=4) so there
+  // are enough slots to push past the quota in the tests.
+  beforeEach(() => T().openPickupPO('PO-1', { soId: 'SO-1', capacity: 25 }));
+
+  it('asks before an overage within tolerance, then records it on confirm', () => {
+    // 4 × 25 = 100 (exactly quota) then a 5th is impossible (only 4 slots), so
+    // overload an existing-sized run: take 3 × 25 = 75, then 60 on slot 4 →
+    // total 135, i.e. 35 over (≤ 37, within tolerance).
+    trip(1, '2026-09-03', 25);
+    trip(2, '2026-09-04', 25);
+    trip(3, '2026-09-05', 25);
+    const first = trip(4, '2026-09-06', 60); // 35 over quota, within tolerance
+    expect(first.overQuota).toBe(true);
+    expect(first.overTolerance).toBeUndefined(); // confirmable, not a hard block
+    const ok = T().recordTrip(slot(4).id, { date: '2026-09-06', net: 60 }, { allowOverQuota: true });
+    expect(ok.ok).toBe(true);
+    expect(ok.warnings.join(' ')).toMatch(/toleransi 1 DT/);
+  });
+
+  it('hard-blocks an overage beyond tolerance even with allowOverQuota', () => {
+    trip(1, '2026-09-03', 25);
+    trip(2, '2026-09-04', 25);
+    trip(3, '2026-09-05', 25);
+    // slot 4 = 65 → total 140, i.e. 40 over quota (> 37). Must be refused even
+    // when the user confirms; the sisa needs a new PO.
+    const r = T().recordTrip(slot(4).id, { date: '2026-09-06', net: 65 }, { allowOverQuota: true });
+    expect(r.ok).toBeUndefined();
+    expect(r.overTolerance).toBe(true);
+    expect(r.error).toMatch(/lebih dari toleransi 37/);
+    expect(slot(4).status).toBe('Pending'); // nothing recorded
+  });
+});
+
+describe('E12 tonnageByPO roll-up', () => {
+  beforeEach(() => T().openPickupPO('PO-1', { soId: 'SO-1', capacity: 50 }));
+
+  it('sums tonnage grouped by PO number', () => {
+    trip(1, '2026-09-03', 40);
+    trip(2, '2026-09-04', 30);
+    const roll = T().tonnageByPO();
+    expect(roll.count).toBe(1);
+    const row = roll.rows[0];
+    expect(row.poNumber).toBe('PO.2026.09.00001');
+    expect(row.ordered).toBe(100);
+    expect(row.taken).toBe(70);
+    expect(row.remaining).toBe(30);
+    expect(roll.totalTaken).toBe(70);
+    expect(roll.totalOrdered).toBe(100);
+  });
+});

@@ -65,11 +65,13 @@ describe('applyStockMutation', () => {
     expect(so.stockMutated).toBe(true);
   });
 
-  it('blocks out when qty > stock and returns false (stock unchanged)', () => {
+  it('E01: allows out when qty > stock — sale proceeds and stock goes negative', () => {
     const so = { id: 'SO-1', lines: [{ itemId: 100, qty: 100 }], stockMutated: false };
-    expect(applyStockMutation(so, 'out')).toBe(false);
-    expect((window as any).DB.inventoryItems[0].stock).toBe(50);
-    expect(so.stockMutated).toBe(false);
+    // E01 ("stok boleh negatif saat penjualan"): a short sale is no longer
+    // blocked. It proceeds, stock drops below zero, and the order is mutated.
+    expect(applyStockMutation(so, 'out')).toBe(true);
+    expect((window as any).DB.inventoryItems[0].stock).toBe(-50);
+    expect(so.stockMutated).toBe(true);
   });
 
   it('is idempotent: stockMutated=true skips re-application', () => {

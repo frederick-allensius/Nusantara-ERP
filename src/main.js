@@ -87,6 +87,33 @@ import './classic/core/doc-registry.js';
 import Chart from 'chart.js/auto';
 window.Chart = Chart;
 
+// html2pdf.js — exposes window.html2pdf so the classic layer's printDocument()
+// (public/classic/core/erp-crud.js) can render a styled document's HTML into a
+// real one-click PDF download. Bridged via window because the classic bundle is
+// plain IIFE concatenation with no module system (same pattern as XLSX/Chart).
+//
+// Sourced from a locally VENDORED UMD bundle (src/vendor/html2pdf.bundle.min.js)
+// rather than the npm package, because this environment's npm registry endpoint
+// is unreachable. The file is the official html2pdf.js@0.10.3 dist bundle
+// (jsPDF + html2canvas included); package.json still declares the dependency so
+// a normal `npm install` reproduces it when the registry is available.
+//
+// Loaded lazily so (a) the ~0.9 MB bundle stays out of the initial app chunk —
+// it is only needed when the user actually prints — and (b) a load failure can
+// never break app boot: printDocument falls back to the popup-print path
+// whenever window.html2pdf is absent. The UMD bundle assigns window.html2pdf as
+// a side effect; we also read the module export as a belt-and-braces fallback.
+import('./vendor/html2pdf.bundle.min.js')
+  .then(m => {
+    if (typeof window.html2pdf !== 'function' && m && (m.default || m)) {
+      window.html2pdf = m.default || m;
+    }
+  })
+  .catch(() => {
+    // Bundle missing / failed to load — printDocument keeps using the browser
+    // print-dialog fallback. No console noise in production.
+  });
+
 // Make functions globally available
 window.erpAuth = {
   logout,

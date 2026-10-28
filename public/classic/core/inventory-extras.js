@@ -1022,6 +1022,148 @@
     openItemBrand: openItemBrand,
     openItemRequisition: openItemRequisition,
     openJobCosting: openJobCosting,
+    openPriceList: openPriceList,
   };
   console.log('[InventoryExtras] Inventory extras ready');
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // § 6  MASTER HARGA — Daftar Harga Jual (E03)
+  // One sell price per item (no per-customer, no per-period variation — the
+  // supplier price-by-date master stays separate). This is a consolidated,
+  // inline-editable view over item.sell, which is the single price the sales
+  // flow already reads; saving here writes straight back to item.sell. Excel
+  // export included (on-screen + Excel, no custom print — matches E18's scope).
+  // ══════════════════════════════════════════════════════════════════════════
+  function openPriceList() {
+    var items = (db().inventoryItems || []).slice().sort(function (a, b) {
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+
+    var rows = items
+      .map(function (it) {
+        var cost = Number(it.cost) || 0;
+        var sell = Number(it.sell) || 0;
+        var margin = cost > 0 ? Math.round(((sell - cost) / cost) * 100) : 0;
+        return (
+          '<tr>' +
+          '<td class="td-p">' + esc(it.sku || it.code || '') + '</td>' +
+          '<td class="td-p">' + esc(it.name || '') + '</td>' +
+          '<td class="td-p">' + esc(it.unit || '') + '</td>' +
+          '<td class="td-p" style="text-align:right">' + money(cost) + '</td>' +
+          '<td class="td-p" style="text-align:right">' +
+          '<input class="form-input pl-sell" data-id="' + esc(it.id) +
+          '" type="number" min="0" step="1" value="' + sell +
+          '" style="width:140px;text-align:right" aria-label="Harga jual ' + esc(it.name || '') + '">' +
+          '</td>' +
+          '<td class="td-p" style="text-align:right" data-margin="' + esc(it.id) + '">' + margin + '%</td>' +
+          '</tr>'
+        );
+      })
+      .join('') ||
+      '<tr><td colspan="6" class="td-empty">Belum ada barang. Tambahkan barang di menu Barang.</td></tr>';
+
+    injectView(
+      'inventory',
+      '<div class="sec-hdr"><div><h1>Daftar Harga Jual</h1>' +
+        '<p>Satu harga jual per barang. Harga supplier per tanggal diatur terpisah.</p></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn-ghost" data-action="exportPriceList">Ekspor Excel</button>' +
+        '<button class="btn" data-action="savePriceList">Simpan Semua</button></div></div>' +
+        '<div class="card" style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse">' +
+        '<thead><tr>' +
+        '<th style="' + TH + '">Kode</th>' +
+        '<th style="' + TH + '">Nama Barang</th>' +
+        '<th style="' + TH + '">Satuan</th>' +
+        '<th style="' + TH + 'text-align:right">Harga Beli</th>' +
+        '<th style="' + TH + 'text-align:right">Harga Jual (Rp)</th>' +
+        '<th style="' + TH + 'text-align:right">Margin</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+    );
+  }
+
+  function savePriceList() {
+    var inputs = document.querySelectorAll('.pl-sell');
+    if (!inputs.length) {
+      toast('Tidak ada harga untuk disimpan', 'warning');
+      return;
+    }
+    var changed = 0;
+    inputs.forEach(function (el) {
+      var id = el.getAttribute('data-id');
+      var it = (db().inventoryItems || []).find(function (x) {
+        return String(x.id) === String(id);
+      });
+      if (!it) return;
+      var v = Math.max(0, Math.round(Number(el.value) || 0));
+      if ((Number(it.sell) || 0) !== v) {
+        it.sell = v;
+        changed++;
+      }
+    });
+    if (changed) {
+      save();
+      toast(changed + ' harga jual diperbarui', 'success');
+    } else {
+      toast('Tidak ada perubahan harga', 'info');
+    }
+    openPriceList();
+  }
+
+  function exportPriceList() {
+    if (!window.NSAXlsx || typeof window.NSAXlsx.download !== 'function') {
+      toast('Modul ekspor Excel belum siap', 'warning');
+      return;
+    }
+    var items = (db().inventoryItems || []).slice().sort(function (a, b) {
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+    var columns = [
+      { header: 'Kode', width: 16, type: 'text' },
+      { header: 'Nama Barang', width: 36, type: 'text' },
+      { header: 'Satuan', width: 12, type: 'text' },
+      { header: 'Harga Beli', width: 18, type: 'currency' },
+      { header: 'Harga Jual', width: 18, type: 'currency' },
+      { header: 'Margin %', width: 12, type: 'int' },
+    ];
+    var rows = items.map(function (it) {
+      var cost = Number(it.cost) || 0;
+      var sell = Number(it.sell) || 0;
+      return [
+        it.sku || it.code || '',
+        it.name || '',
+        it.unit || '',
+        cost,
+        sell,
+        cost > 0 ? Math.round(((sell - cost) / cost) * 100) : 0,
+      ];
+    });
+    window.NSAXlsx.download('daftar_harga_jual_' + today().replace(/-/g, '') + '.xlsx', [
+      { name: 'Daftar Harga Jual', columns: columns, rows: rows },
+    ]);
+    toast('Daftar harga jual diekspor', 'success');
+  }
+
+  // Live margin recompute as the user edits a sell price, and the page actions.
+  document.addEventListener('input', function (ev) {
+    var el = ev.target;
+    if (!el || !el.classList || !el.classList.contains('pl-sell')) return;
+    var id = el.getAttribute('data-id');
+    var it = (db().inventoryItems || []).find(function (x) {
+      return String(x.id) === String(id);
+    });
+    var cell = document.querySelector('[data-margin="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+    if (it && cell) {
+      var cost = Number(it.cost) || 0;
+      var sell = Math.max(0, Number(el.value) || 0);
+      cell.textContent = (cost > 0 ? Math.round(((sell - cost) / cost) * 100) : 0) + '%';
+    }
+  });
+
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest && ev.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'savePriceList') savePriceList();
+    else if (btn.dataset.action === 'exportPriceList') exportPriceList();
+  });
 })();
